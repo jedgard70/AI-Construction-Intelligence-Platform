@@ -81,6 +81,49 @@ textarea::placeholder{color:var(--muted);}
 .ctx-item.selected .ctx-check{background:var(--teal);border-color:var(--teal);color:#000;}
 .ctx-text{font-size:10px;font-weight:500;}
 
+/* EVM PANEL */
+.evm-panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.evm-panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.evm-panel-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;}
+.evm-tabs{display:flex;gap:4px;}
+.evm-tab-btn{padding:3px 10px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.evm-tab-btn.active{background:var(--gold);border-color:var(--gold);color:#000;}
+.evm-tab-content{padding:12px 14px;}
+
+/* EVM PROJECT CARDS */
+.evm-project{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;}
+.evm-project:last-child{margin-bottom:0;}
+.evm-proj-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.evm-proj-name{font-size:11px;font-weight:600;}
+.evm-prog-bar{height:4px;background:var(--border2);border-radius:2px;margin-bottom:8px;overflow:hidden;}
+.evm-prog-fill{height:100%;border-radius:2px;transition:width .4s;}
+.evm-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.evm-kpi{text-align:center;}
+.evm-kpi-label{font-size:8px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.evm-kpi-val{font-size:12px;font-weight:700;font-family:var(--mono);}
+.evm-kpi-val.ok{color:var(--ok);}
+.evm-kpi-val.warn{color:var(--warn);}
+.evm-kpi-val.danger{color:var(--danger);}
+.evm-kpi-val.neutral{color:var(--text);}
+.evm-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;font-family:var(--mono);}
+.evm-badge.ok{background:rgba(34,197,94,.15);color:var(--ok);}
+.evm-badge.warn{background:rgba(247,127,0,.15);color:var(--warn);}
+.evm-badge.danger{background:rgba(255,77,109,.15);color:var(--danger);}
+
+/* EVM CALCULATOR */
+.evm-calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.evm-input-group{display:flex;flex-direction:column;gap:4px;}
+.evm-input-group label{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;}
+.evm-input-group input{background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:12px;padding:7px 10px;outline:none;transition:border-color .15s;}
+.evm-input-group input:focus{border-color:var(--gold);}
+.evm-calc-btn{width:100%;padding:8px;background:var(--teal);color:#000;border:none;border-radius:7px;font-family:var(--font);font-size:11px;font-weight:700;cursor:pointer;margin-bottom:12px;transition:opacity .2s;}
+.evm-calc-btn:hover{opacity:.85;}
+.evm-results-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
+.evm-result{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px;}
+.evm-result-label{font-size:8px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.evm-result-val{font-size:14px;font-weight:700;font-family:var(--mono);}
+.evm-result-desc{font-size:9px;color:var(--muted);margin-top:2px;}
+
 /* RIGHT PANEL - CHAT */
 .right{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;}
 .chat-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -209,6 +252,120 @@ textarea::placeholder{color:var(--muted);}
       </div>
     </div>
 
+    <!-- EVM PANEL -->
+    <div class="evm-panel">
+      <div class="evm-panel-header">
+        <span class="evm-panel-title">📊 EVM — Earned Value Management</span>
+        <div class="evm-tabs">
+          <button class="evm-tab-btn active" onclick="evmTab('projetos')">Projetos</button>
+          <button class="evm-tab-btn" onclick="evmTab('portfolio')">Portfólio</button>
+          <button class="evm-tab-btn" onclick="evmTab('calc')">Calculadora</button>
+        </div>
+      </div>
+
+      <!-- TAB: PROJETOS -->
+      <div id="evm-projetos" class="evm-tab-content">
+        <!-- Horizonte -->
+        <div class="evm-project">
+          <div class="evm-proj-header">
+            <span class="evm-proj-name">🏙 Edifício Horizonte — Torre A</span>
+            <span class="evm-badge ok">✔ OK</span>
+          </div>
+          <div class="evm-prog-bar"><div class="evm-prog-fill" style="width:72%;background:var(--ok)"></div></div>
+          <div class="evm-kpi-row">
+            <div class="evm-kpi"><div class="evm-kpi-label">CPI</div><div class="evm-kpi-val ok">1.029</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">SPI</div><div class="evm-kpi-val ok">1.050</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">EAC</div><div class="evm-kpi-val neutral">R$22.7M</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">VAC</div><div class="evm-kpi-val ok">+R$658k</div></div>
+          </div>
+        </div>
+        <!-- Vale Verde -->
+        <div class="evm-project">
+          <div class="evm-proj-header">
+            <span class="evm-proj-name">🌿 Condomínio Vale Verde</span>
+            <span class="evm-badge warn">⚠ ALERTA</span>
+          </div>
+          <div class="evm-prog-bar"><div class="evm-prog-fill" style="width:45%;background:var(--warn)"></div></div>
+          <div class="evm-kpi-row">
+            <div class="evm-kpi"><div class="evm-kpi-label">CPI</div><div class="evm-kpi-val warn">0.819</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">SPI</div><div class="evm-kpi-val warn">0.820</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-val neutral">R$19.8M</div><div class="evm-kpi-label">EAC</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">VAC</div><div class="evm-kpi-val danger">-R$3.6M</div></div>
+          </div>
+        </div>
+        <!-- Industrial -->
+        <div class="evm-project">
+          <div class="evm-proj-header">
+            <span class="evm-proj-name">🏭 Complexo Industrial Norte</span>
+            <span class="evm-badge danger">✖ CRÍTICO</span>
+          </div>
+          <div class="evm-prog-bar"><div class="evm-prog-fill" style="width:31%;background:var(--danger)"></div></div>
+          <div class="evm-kpi-row">
+            <div class="evm-kpi"><div class="evm-kpi-label">CPI</div><div class="evm-kpi-val danger">0.743</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">SPI</div><div class="evm-kpi-val ok">0.981</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">EAC</div><div class="evm-kpi-val danger">R$51.3M</div></div>
+            <div class="evm-kpi"><div class="evm-kpi-label">VAC</div><div class="evm-kpi-val danger">-R$13.2M</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: PORTFÓLIO -->
+      <div id="evm-portfolio" class="evm-tab-content" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="evm-result"><div class="evm-result-label">CPI Médio</div><div class="evm-result-val warn">0.864</div><div class="evm-result-desc">Estouro de custo no portfólio</div></div>
+          <div class="evm-result"><div class="evm-result-label">SPI Médio</div><div class="evm-result-val warn">0.950</div><div class="evm-result-desc">Leve atraso no cronograma</div></div>
+          <div class="evm-result"><div class="evm-result-label">BAC Total</div><div class="evm-result-val neutral">R$77.7M</div><div class="evm-result-desc">Orçamento original</div></div>
+          <div class="evm-result"><div class="evm-result-label">EAC Total</div><div class="evm-result-val danger">R$93.8M</div><div class="evm-result-desc">Projeção ao final</div></div>
+          <div class="evm-result"><div class="evm-result-label">VAC Total</div><div class="evm-result-val danger">-R$16.1M</div><div class="evm-result-desc">Estouro projetado</div></div>
+          <div class="evm-result"><div class="evm-result-label">TCPI Médio</div><div class="evm-result-val warn">1.113</div><div class="evm-result-desc">Desempenho necessário</div></div>
+        </div>
+        <!-- Curva S simplificada -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;">Curva S — Portfólio (R$ M)</div>
+          <svg viewBox="0 0 320 80" style="width:100%;height:80px;">
+            <!-- PV line (blue) -->
+            <polyline points="0,72 53,54 107,34 160,14 213,4 267,0" fill="none" stroke="var(--blue)" stroke-width="1.5" opacity="0.8"/>
+            <!-- AC line (orange) -->
+            <polyline points="0,74 53,57 107,37 160,17 213,7 267,2" fill="none" stroke="var(--warn)" stroke-width="1.5" opacity="0.8"/>
+            <!-- EV line (teal) -->
+            <polyline points="0,76 53,61 107,43 160,22 213,11 267,5" fill="none" stroke="var(--teal)" stroke-width="1.5"/>
+            <!-- Forecast dashed -->
+            <polyline points="267,5 293,3 307,1 320,0" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="3,2"/>
+            <!-- Labels -->
+            <text x="2" y="79" font-size="7" fill="var(--muted)">Jan</text>
+            <text x="245" y="79" font-size="7" fill="var(--muted)">Jun/25</text>
+            <text x="293" y="79" font-size="7" fill="var(--gold)">Forecast</text>
+          </svg>
+          <div style="display:flex;gap:12px;margin-top:4px;">
+            <span style="font-size:9px;color:var(--blue)">■ PV</span>
+            <span style="font-size:9px;color:var(--teal)">■ EV</span>
+            <span style="font-size:9px;color:var(--warn)">■ AC</span>
+            <span style="font-size:9px;color:var(--gold)">-- Forecast</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: CALCULADORA -->
+      <div id="evm-calc" class="evm-tab-content" style="display:none">
+        <div class="evm-calc-grid">
+          <div class="evm-input-group"><label>BAC (R$)</label><input type="number" id="c-bac" placeholder="Ex: 1000000" oninput="calcEVM()"></div>
+          <div class="evm-input-group"><label>PV (R$)</label><input type="number" id="c-pv" placeholder="Ex: 600000" oninput="calcEVM()"></div>
+          <div class="evm-input-group"><label>EV (R$)</label><input type="number" id="c-ev" placeholder="Ex: 550000" oninput="calcEVM()"></div>
+          <div class="evm-input-group"><label>AC (R$)</label><input type="number" id="c-ac" placeholder="Ex: 620000" oninput="calcEVM()"></div>
+        </div>
+        <div class="evm-results-grid" id="evm-results">
+          <div class="evm-result"><div class="evm-result-label">CPI</div><div class="evm-result-val neutral" id="r-cpi">—</div><div class="evm-result-desc">EV / AC</div></div>
+          <div class="evm-result"><div class="evm-result-label">SPI</div><div class="evm-result-val neutral" id="r-spi">—</div><div class="evm-result-desc">EV / PV</div></div>
+          <div class="evm-result"><div class="evm-result-label">CV (R$)</div><div class="evm-result-val neutral" id="r-cv">—</div><div class="evm-result-desc">EV − AC</div></div>
+          <div class="evm-result"><div class="evm-result-label">SV (R$)</div><div class="evm-result-val neutral" id="r-sv">—</div><div class="evm-result-desc">EV − PV</div></div>
+          <div class="evm-result"><div class="evm-result-label">EAC (R$)</div><div class="evm-result-val neutral" id="r-eac">—</div><div class="evm-result-desc">BAC / CPI</div></div>
+          <div class="evm-result"><div class="evm-result-label">ETC (R$)</div><div class="evm-result-val neutral" id="r-etc">—</div><div class="evm-result-desc">EAC − AC</div></div>
+          <div class="evm-result"><div class="evm-result-label">VAC (R$)</div><div class="evm-result-val neutral" id="r-vac">—</div><div class="evm-result-desc">BAC − EAC</div></div>
+          <div class="evm-result"><div class="evm-result-label">TCPI</div><div class="evm-result-val neutral" id="r-tcpi">—</div><div class="evm-result-desc">(BAC−EV)/(BAC−AC)</div></div>
+        </div>
+      </div>
+    </div>
+
     <!-- QUICK ACTIONS -->
     <div>
       <div class="sec-label">Ações Rápidas</div>
@@ -315,10 +472,10 @@ const agentConfigs = {
 };
 
 const projectContexts = {
-  horizonte: 'Edifício Horizonte Torre A: obra corporativa em SP, 72% de progresso, CPI 1.03, SPI 1.05, EAC R$22.7M (BAC R$23.4M), no prazo e dentro do orçamento.',
-  industrial: 'Complexo Industrial Norte: obra industrial, 31% de progresso, CPI 0.74 (CRÍTICO), SPI 0.98, EAC R$41.3M (BAC R$38.1M), risco geotécnico ativo no Lote C, TCPI 1.38.',
-  valeverde: 'Condomínio Vale Verde: obra residencial, 45% de progresso, CPI 0.82 (ALERTA), SPI 0.97, EAC R$18.7M (BAC R$16.2M), aditivo pendente de R$1.2M.',
-  portfolio: 'Portfólio consolidado: 7 obras ativas, CPI médio 0.87, SPI médio 1.02, orçamento total R$127M, EAC projetado R$146M, VAC -R$19M, 3 riscos críticos ativos.'
+  horizonte: 'Edifício Horizonte — Torre A: obra corporativa, 72% executado. BAC R$23.4M | PV R$16.05M | EV R$16.85M | AC R$16.37M. CPI 1.029 (abaixo do orçamento) | SPI 1.050 (adiantado) | EAC R$22.74M | VAC +R$658k | TCPI 0.933. CV +R$474k | SV +R$796k. STATUS: ✔ OK.',
+  industrial: 'Complexo Industrial Norte: obra industrial, 31% executado. BAC R$38.1M | PV R$12.04M | EV R$11.81M | AC R$15.9M. CPI 0.743 (CRÍTICO — estouro de custo) | SPI 0.981 (leve atraso) | EAC R$51.3M | VAC -R$13.2M | TCPI 1.184. CV -R$4.09M | SV -R$229k. STATUS: ✖ CRÍTICO.',
+  valeverde: 'Condomínio Vale Verde: obra residencial, 45% executado. BAC R$16.2M | PV R$8.89M | EV R$7.29M | AC R$8.90M. CPI 0.819 (ALERTA — estouro de custo) | SPI 0.820 (atrasado) | EAC R$19.78M | VAC -R$3.58M | TCPI 1.221. CV -R$1.61M | SV -R$1.60M. STATUS: ⚠ ALERTA.',
+  portfolio: 'Portfólio Consolidado (3 obras ativas): CPI médio 0.864 | SPI médio 0.950 | BAC total R$77.7M | EAC total R$93.8M | VAC total -R$16.1M | TCPI médio 1.113 | % exec média 49.3%. Curva S: Jan-Jun/25 realizado; Forecast até Nov/25 projetando R$133.2M AC acumulado.'
 };
 
 function selectAgent(id, icon, name, desc, status) {
@@ -466,6 +623,70 @@ function clearChat() {
   msgs.innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon">🤖</div><div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.2.</div></div>';
   msgCount = 0;
   document.getElementById('msg-count').textContent = 'Aguardando consulta...';
+}
+
+/* ---- EVM ---- */
+function evmTab(tab) {
+  ['projetos','portfolio','calc'].forEach(t => {
+    document.getElementById('evm-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.evm-tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['projetos','portfolio','calc'][i] === tab);
+  });
+}
+
+function fmtR(v) {
+  if(!isFinite(v)) return '—';
+  const abs = Math.abs(v);
+  const s = v < 0 ? '-' : '+';
+  if(abs >= 1e6) return s + 'R$' + (abs/1e6).toFixed(2) + 'M';
+  if(abs >= 1e3) return s + 'R$' + (abs/1e3).toFixed(1) + 'k';
+  return s + 'R$' + abs.toFixed(0);
+}
+
+function setVal(id, val, colorFn) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'evm-result-val ' + (colorFn ? colorFn(parseFloat(val)) : 'neutral');
+}
+
+function cpiColor(v) { return v >= 1 ? 'ok' : v >= 0.9 ? 'warn' : 'danger'; }
+function spiColor(v) { return v >= 1 ? 'ok' : v >= 0.9 ? 'warn' : 'danger'; }
+function tcpiColor(v) { return v <= 1 ? 'ok' : v <= 1.1 ? 'warn' : 'danger'; }
+function varColor(v) { return v >= 0 ? 'ok' : 'danger'; }
+
+function calcEVM() {
+  const bac = parseFloat(document.getElementById('c-bac').value) || 0;
+  const pv  = parseFloat(document.getElementById('c-pv').value)  || 0;
+  const ev  = parseFloat(document.getElementById('c-ev').value)  || 0;
+  const ac  = parseFloat(document.getElementById('c-ac').value)  || 0;
+  if(!bac || !pv || !ev || !ac) return;
+
+  const cpi  = ev / ac;
+  const spi  = ev / pv;
+  const cv   = ev - ac;
+  const sv   = ev - pv;
+  const eac  = bac / cpi;
+  const etc  = eac - ac;
+  const vac  = bac - eac;
+  const tcpi = (bac - ev) / (bac - ac);
+
+  document.getElementById('r-cpi').textContent  = cpi.toFixed(3);
+  document.getElementById('r-cpi').className    = 'evm-result-val ' + cpiColor(cpi);
+  document.getElementById('r-spi').textContent  = spi.toFixed(3);
+  document.getElementById('r-spi').className    = 'evm-result-val ' + spiColor(spi);
+  document.getElementById('r-cv').textContent   = fmtR(cv);
+  document.getElementById('r-cv').className     = 'evm-result-val ' + varColor(cv);
+  document.getElementById('r-sv').textContent   = fmtR(sv);
+  document.getElementById('r-sv').className     = 'evm-result-val ' + varColor(sv);
+  document.getElementById('r-eac').textContent  = fmtR(eac);
+  document.getElementById('r-eac').className    = 'evm-result-val neutral';
+  document.getElementById('r-etc').textContent  = fmtR(etc);
+  document.getElementById('r-etc').className    = 'evm-result-val neutral';
+  document.getElementById('r-vac').textContent  = fmtR(vac);
+  document.getElementById('r-vac').className    = 'evm-result-val ' + varColor(vac);
+  document.getElementById('r-tcpi').textContent = tcpi.toFixed(3);
+  document.getElementById('r-tcpi').className   = 'evm-result-val ' + tcpiColor(tcpi);
 }
 
 document.getElementById('promptInput').addEventListener('keydown', function(e) {
