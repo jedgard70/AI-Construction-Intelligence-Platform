@@ -1,0 +1,178 @@
+{
+  "system_name": "AI Construction Intelligence Platform",
+  "architecture_type": "event-driven microservices + modular AI system",
+
+  "core_principles": [
+    "modularidade total",
+    "event-driven communication",
+    "agent autonomy",
+    "real-time data processing",
+    "scalability horizontal",
+    "API-first design"
+  ],
+
+  "system_layers": {
+    "edge_layer": {
+      "description": "Entrada de dados e integração com sistemas externos",
+      "components": [
+        "BIM software connectors (Revit, ArchiCAD, IFC)",
+        "IoT sensors (canteiro de obras)",
+        "ERP integrations",
+        "user dashboard inputs",
+        "API Gateway"
+      ]
+    },
+
+    "core_layer": {
+      "description": "Orquestração central e inteligência do sistema",
+      "services": {
+        "CORE_ORCHESTRATOR": {
+          "role": "coordenação geral do sistema",
+          "functions": [
+            "routing de tarefas",
+            "gestão de agentes",
+            "priorização de eventos",
+            "controle de fluxo de dados"
+          ]
+        },
+        "AI_DECISION_ENGINE": {
+          "role": "motor de decisão inteligente",
+          "functions": [
+            "inferência de cenários",
+            "otimização de projetos",
+            "análise de viabilidade"
+          ]
+        }
+      }
+    },
+
+    "microservices_layer": {
+      "description": "Serviços especializados independentes",
+      "services": {
+        "bim_service": {
+          "responsibility": "processamento e interpretação BIM",
+          "inputs": ["IFC", "Revit models"],
+          "outputs": ["model analysis", "clash detection", "quantification"]
+        },
+
+        "cost_engine_service": {
+          "responsibility": "estimativa e controle de custos",
+          "inputs": ["project specs", "market data"],
+          "outputs": ["budget forecast", "cost optimization"]
+        },
+
+        "feasibility_service": {
+          "responsibility": "análise de viabilidade técnica e financeira",
+          "outputs": ["go/no-go decision support", "risk score"]
+        },
+
+        "planning_service": {
+          "responsibility": "cronogramas e simulações de obra",
+          "outputs": ["timeline optimization", "delay prediction"]
+        },
+
+        "automation_service": {
+          "responsibility": "automação de processos construtivos",
+          "outputs": ["workflow automation", "task scheduling"]
+        }
+      }
+    },
+
+    "agent_layer": {
+      "description": "Agentes autônomos especializados",
+      "agents": {
+        "BIM_ANALYST_AGENT": {
+          "role": "interpretação avançada de modelos BIM"
+        },
+        "SITE_MONITOR_AGENT": {
+          "role": "monitoramento de obra em tempo real"
+        },
+        "COST_OPTIMIZER_AGENT": {
+          "role": "redução e otimização de custos"
+        },
+        "RISK_ANALYST_AGENT": {
+          "role": "detecção e previsão de riscos"
+        }
+      }
+    },
+
+    "event_bus": {
+      "description": "Camada de comunicação assíncrona",
+      "technology": "Kafka / RabbitMQ",
+      "event_types": [
+        "BIM_UPDATED",
+        "COST_CHANGED",
+        "SITE_PROGRESS",
+        "RISK_DETECTED",
+        "PROJECT_VALIDATED"
+      ]
+    },
+
+    "data_layer": {
+      "databases": {
+        "graph_db": "relacionamentos de projetos e entidades",
+        "time_series_db": "dados de obra em tempo real",
+        "document_db": "projetos e relatórios",
+        "vector_db": "embeddings para IA generativa"
+      }
+    }
+  },
+
+  "api_design": {
+    "type": "REST + GraphQL + Event Streaming",
+
+    "endpoints": [
+      {
+        "endpoint": "/project/analyze",
+        "method": "POST",
+        "description": "análise completa de projeto"
+      },
+      {
+        "endpoint": "/bim/process",
+        "method": "POST",
+        "description": "processamento de modelo BIM"
+      },
+      {
+        "endpoint": "/feasibility/run",
+        "method": "POST",
+        "description": "avaliação de viabilidade"
+      },
+      {
+        "endpoint": "/cost/forecast",
+        "method": "POST",
+        "description": "previsão de custos"
+      }
+    ]
+  },
+
+  "data_flow_example": {
+    "trigger": "novo modelo BIM enviado",
+    "flow": [
+      "API Gateway recebe modelo",
+      "CORE_ORCHESTRATOR valida entrada",
+      "evento BIM_UPDATED publicado",
+      "BIM_SERVICE processa modelo",
+      "COST_ENGINE calcula impactos financeiros",
+      "RISK_AGENT avalia riscos",
+      "AI_DECISION_ENGINE consolida insights",
+      "OUTPUT gerado para dashboard"
+    ]
+  },
+
+  "outputs": {
+    "formats": [
+      "dashboards em tempo real",
+      "relatórios técnicos automatizados",
+      "simulações 3D/BIM",
+      "alertas de risco",
+      "recomendações de otimização"
+    ]
+  },
+
+  "deployment": {
+    "infrastructure": "cloud-native (AWS / Azure / GCP)",
+    "containerization": "Docker + Kubernetes",
+    "scaling": "horizontal auto-scaling",
+    "ai_runtime": "GPU clusters + distributed inference"
+  }
+}
