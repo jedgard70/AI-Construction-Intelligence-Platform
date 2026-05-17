@@ -1,6 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed' } })
   }
@@ -30,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     return res.status(200).json(data)
-  } catch (err: any) {
+  } catch (err) {
     return res.status(500).json({ error: { message: err.message || 'Erro interno do servidor.' } })
   }
 }
