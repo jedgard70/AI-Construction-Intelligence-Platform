@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Construction Platform — API Demo</title>
+<title>AI Construction Intelligence Platform v5.3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -244,7 +244,7 @@ textarea::placeholder{color:var(--muted);}
     <div class="logo-mark">AI</div>
     <div>
       <div class="logo-text">Construction Intelligence Platform</div>
-      <div class="logo-ver">v5.2 · API Integration Demo</div>
+      <div class="logo-ver">v5.3 · Enterprise Cognitive Infrastructure</div>
     </div>
   </div>
   <div class="mode-pill"><span class="dot-live"></span>AGENTES IA ATIVOS</div>
@@ -289,10 +289,22 @@ textarea::placeholder{color:var(--muted);}
           <div class="ab-desc">NR18, NR35, NR10</div>
           <div class="ab-status ok">● ATIVO</div>
         </div>
-        <div class="agent-btn" id="btn-inv" onclick="selectAgent('Investment_Analyst_AI','📈','Investment Analyst','ROI, Valuation','ok')">
+        <div class="agent-btn" id="btn-inv" onclick="selectAgent('Investment_Analyst_AI','📈','Investment Analyst','ROI, ESG, Valuation','ok')">
           <div class="ab-icon">📈</div>
           <div class="ab-name">Investment Analyst</div>
-          <div class="ab-desc">ROI, Valuation</div>
+          <div class="ab-desc">ROI, ESG, Valuation</div>
+          <div class="ab-status ok">● ATIVO</div>
+        </div>
+        <div class="agent-btn" id="btn-qc" onclick="selectAgent('Quality_Control_AI','🔍','Quality Control','NBR 15575, NCs','ok')">
+          <div class="ab-icon">🔍</div>
+          <div class="ab-name">Quality Control</div>
+          <div class="ab-desc">NBR 15575, NCs</div>
+          <div class="ab-status ok">● ATIVO</div>
+        </div>
+        <div class="agent-btn" id="btn-doc" onclick="selectAgent('Document_Intelligence_AI','📑','Doc Intelligence','OCR, Classificação','ok')">
+          <div class="ab-icon">📑</div>
+          <div class="ab-name">Doc Intelligence</div>
+          <div class="ab-desc">OCR, Classificação</div>
           <div class="ab-status ok">● ATIVO</div>
         </div>
       </div>
@@ -474,10 +486,20 @@ textarea::placeholder{color:var(--muted);}
           <div class="ac-title">Tese Cerrado Sul II</div>
           <div class="ac-agent">→ Investment Analyst</div>
         </div>
-        <div class="action-card" onclick="quickAction('Liste os clashes BIM críticos ativos por disciplina (estrutural, elétrica, hidráulica). Priorize por impacto no cronograma.')">
-          <div class="ac-label">BIM</div>
+        <div class="action-card" onclick="quickAction('Liste os clashes BIM críticos ativos por disciplina (estrutural, elétrica, hidráulica, HVAC) incluindo impacto nas dimensões 6D (sustentabilidade) e 7D (facility management). Priorize por impacto no cronograma.')">
+          <div class="ac-label">BIM 6D/7D</div>
           <div class="ac-title">Clashes críticos</div>
           <div class="ac-agent">→ BIM Coordinator</div>
+        </div>
+        <div class="action-card" onclick="quickAction('Gere relatório de não conformidades abertas com classificação de criticidade, plano de ação corretiva e prazos de resolução conforme NBR 15575.')">
+          <div class="ac-label">Qualidade</div>
+          <div class="ac-title">Não conformidades</div>
+          <div class="ac-agent">→ Quality Control AI</div>
+        </div>
+        <div class="action-card" onclick="quickAction('Analise os documentos do portfólio: classifique contratos, laudos e memorandos pendentes. Identifique inconsistências, cláusulas críticas e documentos com prazo de vencimento próximo.')">
+          <div class="ac-label">Documentos</div>
+          <div class="ac-title">Análise documental</div>
+          <div class="ac-agent">→ Doc Intelligence AI</div>
         </div>
       </div>
     </div>
@@ -510,7 +532,7 @@ textarea::placeholder{color:var(--muted);}
     <div class="messages" id="messages">
       <div class="empty-state" id="empty-state">
         <div class="empty-icon">🤖</div>
-        <div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.2.</div>
+        <div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.3.</div>
       </div>
     </div>
   </div>
@@ -521,7 +543,7 @@ textarea::placeholder{color:var(--muted);}
 <div class="rel-overlay" id="rel-overlay" onclick="closeRelOutside(event)">
 <div class="rel-modal">
   <div class="rel-modal-header">
-    <div class="rel-modal-title">📄 Relatório Executivo de Obra <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)">executive_responses · v5.2</span></div>
+    <div class="rel-modal-title">📄 Relatório Executivo de Obra <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)">executive_responses · v5.3</span></div>
     <button class="rdo-close" onclick="closeRelatorio()">✕</button>
   </div>
   <div class="rel-body">
@@ -618,7 +640,7 @@ textarea::placeholder{color:var(--muted);}
 <div class="rdo-overlay" id="rdo-overlay" onclick="closeRDOOutside(event)">
 <div class="rdo-modal">
   <div class="rdo-modal-header">
-    <div class="rdo-modal-title">📋 RDO — Relatório Diário de Obra <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)">AI Construction Platform v5.2</span></div>
+    <div class="rdo-modal-title">📋 RDO — Relatório Diário de Obra <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)">AI Construction Platform v5.3</span></div>
     <button class="rdo-close" onclick="closeRDO()">✕</button>
   </div>
   <div class="rdo-body">
@@ -793,27 +815,35 @@ const activeContexts = new Set(['horizonte','portfolio']);
 const agentConfigs = {
   'BIM_Coordinator_AI': {
     format: 'operational_responses',
-    role: 'Você é o BIM_Coordinator_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**STATUS ATUAL:** [status dos modelos BIM]\n**AÇÕES TOMADAS:** [ações executadas]\n**PENDÊNCIAS:** [itens pendentes]\n**ALERTAS:** [alertas críticos]\n\nEspecialidade: clash detection, coordenação BIM, Revit, Navisworks.'
+    role: 'Você é o BIM_Coordinator_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**STATUS ATUAL:** [status dos modelos BIM — incluindo dimensões 6D sustentabilidade e 7D facility management]\n**AÇÕES TOMADAS:** [ações executadas]\n**PENDÊNCIAS:** [itens pendentes]\n**ALERTAS:** [alertas críticos]\n\nEspecialidade: clash detection, coordenação BIM 6D/7D, Revit, Navisworks, Autodesk ACC, Trimble Connect. Inclua fonte dos dados e nível de confiança.'
   },
   'Construction_Planner_AI': {
     format: 'technical_responses',
-    role: 'Você é o Construction_Planner_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**RESUMO EXECUTIVO:** [síntese]\n**ANÁLISE TÉCNICA:** [análise detalhada]\n**RISCOS IDENTIFICADOS:** [lista de riscos]\n**RECOMENDAÇÕES:** [ações recomendadas]\n**PRÓXIMOS PASSOS:** [próximas ações]\n\nEspecialidade: cronograma físico-financeiro, EVM, SPI.'
+    role: 'Você é o Construction_Planner_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**RESUMO EXECUTIVO:** [síntese]\n**ANÁLISE TÉCNICA:** [análise detalhada com Earned Schedule]\n**RISCOS IDENTIFICADOS:** [lista de riscos]\n**RECOMENDAÇÕES:** [ações recomendadas]\n**PRÓXIMOS PASSOS:** [próximas ações]\n\nEspecialidade: cronograma físico-financeiro, EVM completo, Earned Schedule, SPI, integração SINAPI. Inclua fonte dos dados e data da análise.'
   },
   'Cost_Controller_AI': {
     format: 'executive_responses',
-    role: 'Você é o Cost_Controller_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**HEADLINE:** [situação financeira em 1 linha]\n**KPIs CRÍTICOS:** CPI, SPI, EAC, VAC, TCPI com valores e interpretação\n**DECISÕES NECESSÁRIAS:** [decisões financeiras pendentes]\n**PRAZO PARA AÇÃO:** [urgência]\n\nEspecialidade: EVM completo, EAC, TCPI, VAC, controle de custos.'
+    role: 'Você é o Cost_Controller_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**HEADLINE DO PROJETO:** [situação financeira em 1 linha de impacto]\n**KPIs CRÍTICOS:** CPI, SPI, EAC, VAC, TCPI, Earned Schedule com valores e interpretação\n**DECISÕES NECESSÁRIAS:** [decisões financeiras pendentes para o gestor]\n**PRAZO PARA AÇÃO:** [urgência]\n\nEspecialidade: EVM completo, EAC, TCPI, VAC, benchmarking SINAPI em tempo real, controle de custos. Inclua fonte dos dados.'
   },
   'Risk_Analysis_AI': {
     format: 'technical_responses',
-    role: 'Você é o Risk_Analysis_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**RESUMO EXECUTIVO:** [panorama de riscos]\n**ANÁLISE TÉCNICA:** [análise dos riscos identificados com probabilidade e impacto]\n**RISCOS IDENTIFICADOS:** [lista priorizada]\n**RECOMENDAÇÕES:** [plano de resposta]\n**PRÓXIMOS PASSOS:** [ações imediatas]\n\nEspecialidade: análise preditiva de riscos, risk register, FMEA.'
+    role: 'Você é o Risk_Analysis_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**RESUMO EXECUTIVO:** [panorama de riscos]\n**ANÁLISE TÉCNICA:** [análise dos riscos com probabilidade, impacto e nível]\n**RISCOS IDENTIFICADOS:** [tabela priorizada: risco, causa, prob., impacto, nível, ação]\n**RECOMENDAÇÕES:** [plano de resposta]\n**PRÓXIMOS PASSOS:** [ações imediatas]\n\nEspecialidade: análise preditiva de riscos, risk register, FMEA, riscos climáticos e geotécnicos. Inclua nível de confiança.'
   },
   'Safety_Monitor_AI': {
     format: 'operational_responses',
-    role: 'Você é o Safety_Monitor_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**STATUS ATUAL:** [status de segurança]\n**AÇÕES TOMADAS:** [ações de segurança executadas]\n**PENDÊNCIAS:** [pendências de conformidade]\n**ALERTAS:** [alertas NR e incidentes]\n\nEspecialidade: NR-18, NR-35, NR-10, gestão de EPI, prevenção de acidentes.'
+    role: 'Você é o Safety_Monitor_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**STATUS ATUAL:** [status de segurança]\n**AÇÕES TOMADAS:** [ações de segurança executadas]\n**PENDÊNCIAS:** [pendências de conformidade]\n**ALERTAS:** [alertas NR e incidentes]\n\nEspecialidade: NR-6, NR-10, NR-18, NR-33, NR-35, gestão de EPI, prevenção de acidentes, ISO 14001. Inclua referência NR específica em cada item.'
   },
   'Investment_Analyst_AI': {
     format: 'investment_responses',
-    role: 'Você é o Investment_Analyst_AI do AI Construction Intelligence Platform v5.2. Responda em português do Brasil. Formato obrigatório:\n**TESE DE INVESTIMENTO:** [tese clara e objetiva]\n**INDICADORES FINANCEIROS:** TIR, VPL, ROI, VGV, Cap Rate (conforme aplicável)\n**RISCO-RETORNO:** [análise de risco vs retorno]\n**RECOMENDAÇÃO:** [BUY / HOLD / PASS com justificativa]\n**PRÓXIMOS PASSOS:** [ações para captação ou execução]\n\nEspecialidade: valuation, TIR, VPL, pitch de captação, análise imobiliária.'
+    role: 'Você é o Investment_Analyst_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**TESE DE INVESTIMENTO:** [tese clara e objetiva]\n**INDICADORES FINANCEIROS:** TIR, VPL, ROI, VGV, Cap Rate, NOI (conforme aplicável)\n**RISCO-RETORNO:** [análise de risco vs retorno]\n**ESCORE ESG:** [avaliação ambiental, social e governança]\n**RECOMENDAÇÃO:** [BUY / HOLD / PASS com justificativa]\n**PRÓXIMOS PASSOS:** [ações para captação ou execução]\n\nEspecialidade: valuation, TIR, VPL, NOI, Cap Rate, ESG scoring, crowdfunding imobiliário, pitch de captação.'
+  },
+  'Quality_Control_AI': {
+    format: 'quality_responses',
+    role: 'Você é o Quality_Control_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**STATUS QUALIDADE:** [situação geral do controle de qualidade]\n**NÃO CONFORMIDADES ABERTAS:** [lista de NCs com classificação e prazo]\n**INDICADORES DE RETRABALHO:** [métricas de retrabalho e impacto]\n**PLANO DE AÇÃO CORRETIVA:** [ações corretivas e preventivas]\n**PRAZO DE RESOLUÇÃO:** [cronograma de fechamento das NCs]\n\nEspecialidade: controle de qualidade, gestão de não conformidades, NBR 15575, ABNT, inspeções e ensaios. Inclua referência normativa em cada item.'
+  },
+  'Document_Intelligence_AI': {
+    format: 'technical_responses',
+    role: 'Você é o Document_Intelligence_AI do AI Construction Intelligence Platform v5.3 Enterprise. Responda em português do Brasil. Formato obrigatório:\n**RESUMO EXECUTIVO:** [síntese do documento ou conjunto de documentos analisados]\n**ANÁLISE TÉCNICA:** [extração e classificação das informações relevantes]\n**RISCOS IDENTIFICADOS:** [inconsistências, cláusulas críticas, pendências documentais]\n**RECOMENDAÇÕES:** [ações para gestão documental]\n**PRÓXIMOS PASSOS:** [indexação, aprovações, arquivamento]\n\nEspecialidade: OCR, classificação automática de documentos, extração de dados contratuais, memorandos, projetos, laudos e NFs. Inclua nível de confiança da extração.'
   }
 };
 
@@ -832,7 +862,9 @@ function selectAgent(id, icon, name, desc, status) {
     'Cost_Controller_AI':'btn-cost',
     'Risk_Analysis_AI':'btn-risk',
     'Safety_Monitor_AI':'btn-safe',
-    'Investment_Analyst_AI':'btn-inv'
+    'Investment_Analyst_AI':'btn-inv',
+    'Quality_Control_AI':'btn-qc',
+    'Document_Intelligence_AI':'btn-doc'
   };
   document.getElementById(map[id]).classList.add('active');
   selectedAgent = id;
@@ -966,7 +998,7 @@ async function sendMessage() {
 
 function clearChat() {
   const msgs = document.getElementById('messages');
-  msgs.innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon">🤖</div><div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.2.</div></div>';
+  msgs.innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon">🤖</div><div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.3.</div></div>';
   msgCount = 0;
   document.getElementById('msg-count').textContent = 'Aguardando consulta...';
 }
@@ -1044,7 +1076,7 @@ ${ctx ? '\nContexto adicional: ' + ctx : ''}
 SEÇÕES OBRIGATÓRIAS:
 ${secoes}
 
-Use o formato executive_responses do CORE_SYSTEM v5.2. Seja direto, objetivo e executivo. Use **negrito** para destacar números críticos e *itálico* para recomendações.`;
+Use o formato executive_responses do CORE_SYSTEM v5.3. Seja direto, objetivo e executivo. Use **negrito** para destacar números críticos e *itálico* para recomendações.`;
 
   closeRelatorio();
   selectAgent('Cost_Controller_AI', '💲', 'Cost Controller', 'EAC, TCPI, VAC', 'warn');
