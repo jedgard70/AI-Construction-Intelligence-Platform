@@ -1,4 +1,9 @@
-node_modules
+node_modules/
 .env
-dist
-.cache
+.env.local
+.env.production
+dist/
+.cache/
+.next/
+out/
+*.log
