@@ -1,12 +1,5 @@
 export function getServerSideProps() {
-  return {
-    redirect: {
-      destination: '/dashboard.html',
-      permanent: false,
-    },
-  }
+  return { redirect: { destination: '/login', permanent: false } }
 }
 
-export default function Home() {
-  return null
-}
+export default function Home() { return null }

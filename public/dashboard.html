@@ -247,7 +247,10 @@ textarea::placeholder{color:var(--muted);}
       <div class="logo-ver">v5.3 · Enterprise Cognitive Infrastructure</div>
     </div>
   </div>
-  <div class="mode-pill"><span class="dot-live"></span>AGENTES IA ATIVOS</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="mode-pill"><span class="dot-live"></span>AGENTES IA ATIVOS</div>
+    <button onclick="handleLogout()" style="padding:4px 12px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.06em;border:1px solid rgba(255,77,109,.3);background:rgba(255,77,109,.08);color:#ff4d6d;cursor:pointer;font-family:inherit;">SAIR</button>
+  </div>
 </div>
 
 <div class="main">
@@ -807,6 +810,24 @@ textarea::placeholder{color:var(--muted);}
 </div>
 
 <script>
+// Session guard — redirects to /login if not authenticated
+(function() {
+  fetch('/api/config')
+    .then(function(r) { return r.json(); })
+    .then(function(cfg) {
+      if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) return; // demo mode, no auth required
+      var STORAGE_KEY = 'sb-' + cfg.supabaseUrl.replace(/https?:\/\//, '').split('.')[0] + '-auth-token';
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) { window.location.replace('/login'); return; }
+      try {
+        var session = JSON.parse(raw);
+        var expiresAt = session.expires_at || (session.session && session.session.expires_at);
+        if (!expiresAt || Date.now() / 1000 > expiresAt) { window.location.replace('/login'); }
+      } catch(e) { window.location.replace('/login'); }
+    })
+    .catch(function() {}); // on error, allow access (network issue)
+})();
+
 let selectedAgent = 'BIM_Coordinator_AI';
 let selectedAgentLabel = '🏗 BIM_Coordinator_AI';
 let msgCount = 0;
@@ -1200,6 +1221,19 @@ function calcEVM() {
 document.getElementById('promptInput').addEventListener('keydown', function(e) {
   if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendMessage();
 });
+
+function handleLogout() {
+  fetch('/api/config')
+    .then(function(r) { return r.json(); })
+    .then(function(cfg) {
+      if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
+        var STORAGE_KEY = 'sb-' + cfg.supabaseUrl.replace(/https?:\/\//, '').split('.')[0] + '-auth-token';
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      window.location.replace('/login');
+    })
+    .catch(function() { window.location.replace('/login'); });
+}
 </script>
 </body>
 </html>
