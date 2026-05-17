@@ -181,6 +181,39 @@ textarea::placeholder{color:var(--muted);}
 .msg.ai .msg-bubble{background:var(--bg3);border:1px solid var(--border);border-radius:12px 12px 12px 2px;}
 .msg.ai .msg-bubble.loading{border-color:var(--border2);}
 
+/* RELATORIO MODAL */
+.rel-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.rel-overlay.open{display:flex;}
+.rel-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:700px;overflow:hidden;margin:auto;}
+.rel-modal-header{padding:14px 20px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.rel-modal-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.rel-body{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.rel-section{background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.rel-sec-title{padding:8px 14px;background:var(--bg4);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;}
+.rel-sec-body{padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+.rel-row{display:grid;gap:8px;}
+.rel-field{display:flex;flex-direction:column;gap:3px;}
+.rel-field label{font-size:9px;font-weight:600;letter-spacing:.07em;color:var(--muted);text-transform:uppercase;}
+.rel-field input,.rel-field select,.rel-field textarea{background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font);font-size:11px;padding:6px 10px;outline:none;transition:border-color .15s;width:100%;}
+.rel-field input:focus,.rel-field select:focus,.rel-field textarea:focus{border-color:var(--gold);}
+.rel-field select option{background:var(--bg3);}
+.rel-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.rel-check-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:11px;transition:border-color .15s;}
+.rel-check-item:hover{border-color:var(--border2);}
+.rel-check-item input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;}
+.rel-preview{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:11px;line-height:1.7;color:var(--muted);font-family:var(--mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;}
+.rel-kpi-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rel-kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;}
+.rel-kpi-card .lbl{font-size:8px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:3px;}
+.rel-kpi-card .val{font-size:16px;font-weight:700;font-family:var(--mono);}
+.rel-actions{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;background:var(--bg3);}
+.rel-btn-gen{flex:1;padding:10px;background:var(--gold);color:#000;border:none;border-radius:8px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.rel-btn-gen:hover{opacity:.9;}
+.rel-btn-close{padding:10px 18px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font);font-size:12px;cursor:pointer;transition:all .15s;}
+.rel-btn-close:hover{border-color:var(--danger);color:var(--danger);}
+.rel-trigger{width:100%;padding:10px 14px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:10px;color:var(--blue);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .2s;display:flex;align-items:center;gap:8px;}
+.rel-trigger:hover{background:rgba(59,130,246,.15);border-color:var(--blue);}
+
 /* STRUCTURED RESPONSE */
 .struct-response{background:var(--bg3);border:1px solid var(--border);border-radius:12px 12px 12px 2px;overflow:hidden;max-width:95%;}
 .sr-header{padding:8px 12px;background:var(--bg4);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
@@ -402,6 +435,11 @@ textarea::placeholder{color:var(--muted);}
       </div>
     </div>
 
+    <!-- RELATÓRIO EXECUTIVO BUTTON -->
+    <button class="rel-trigger" onclick="openRelatorio()">
+      📄 <span>Relatório Executivo de Obra</span>
+    </button>
+
     <!-- RDO BUTTON -->
     <button class="rdo-trigger" onclick="openRDO()">
       📋 <span>Novo RDO — Relatório Diário de Obra</span>
@@ -477,6 +515,103 @@ textarea::placeholder{color:var(--muted);}
     </div>
   </div>
 
+</div>
+
+<!-- RELATÓRIO EXECUTIVO MODAL -->
+<div class="rel-overlay" id="rel-overlay" onclick="closeRelOutside(event)">
+<div class="rel-modal">
+  <div class="rel-modal-header">
+    <div class="rel-modal-title">📄 Relatório Executivo de Obra <span style="font-size:10px;color:var(--muted);font-weight:400;font-family:var(--mono)">executive_responses · v5.2</span></div>
+    <button class="rdo-close" onclick="closeRelatorio()">✕</button>
+  </div>
+  <div class="rel-body">
+
+    <!-- CONFIGURAÇÃO -->
+    <div class="rel-section">
+      <div class="rel-sec-title">Configuração do Relatório</div>
+      <div class="rel-sec-body">
+        <div class="rel-row" style="grid-template-columns:2fr 1fr 1fr">
+          <div class="rel-field">
+            <label>Obra / Projeto</label>
+            <select id="rel-projeto" onchange="atualizarKPIs()">
+              <option value="industrial">Complexo Industrial Norte</option>
+              <option value="horizonte">Edifício Horizonte — Torre A</option>
+              <option value="valeverde">Condomínio Vale Verde</option>
+              <option value="portfolio">Portfólio Consolidado</option>
+            </select>
+          </div>
+          <div class="rel-field">
+            <label>Período</label>
+            <input id="rel-periodo" type="text" value="Janeiro – Junho 2025">
+          </div>
+          <div class="rel-field">
+            <label>Destinatário</label>
+            <select id="rel-dest">
+              <option>Diretor Executivo</option>
+              <option>Conselho / Board</option>
+              <option>Cliente / Contratante</option>
+              <option>Comitê de Riscos</option>
+            </select>
+          </div>
+        </div>
+        <div class="rel-field">
+          <label>Contexto adicional (opcional)</label>
+          <textarea id="rel-contexto" style="min-height:50px" placeholder="Ex: reunião de diretoria, visita do cliente, solicitação de aditivo..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs PREVIEW -->
+    <div class="rel-section">
+      <div class="rel-sec-title">KPIs do Projeto Selecionado</div>
+      <div class="rel-sec-body">
+        <div class="rel-kpi-strip" id="rel-kpis">
+          <div class="rel-kpi-card"><div class="lbl">CPI</div><div class="val danger" id="rk-cpi">0.743</div></div>
+          <div class="rel-kpi-card"><div class="lbl">SPI</div><div class="val ok" id="rk-spi">0.981</div></div>
+          <div class="rel-kpi-card"><div class="lbl">% Exec.</div><div class="val neutral" id="rk-exec">31%</div></div>
+          <div class="rel-kpi-card"><div class="lbl">BAC</div><div class="val neutral" id="rk-bac">R$38.1M</div></div>
+          <div class="rel-kpi-card"><div class="lbl">EAC</div><div class="val danger" id="rk-eac">R$51.3M</div></div>
+          <div class="rel-kpi-card"><div class="lbl">VAC</div><div class="val danger" id="rk-vac">-R$13.2M</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÕES DO RELATÓRIO -->
+    <div class="rel-section">
+      <div class="rel-sec-title">Seções a Incluir</div>
+      <div class="rel-sec-body">
+        <div class="rel-checks">
+          <label class="rel-check-item"><input type="checkbox" id="rs-headline" checked> 1. Headline Executivo</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-kpis" checked> 2. KPIs EVM Consolidados</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-tecnica" checked> 3. Análise Técnica</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-riscos" checked> 4. Riscos Identificados</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-recom" checked> 5. Recomendações</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-decisoes" checked> 6. Decisões Necessárias</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-passos" checked> 7. Próximos Passos (30/60/90d)</label>
+          <label class="rel-check-item"><input type="checkbox" id="rs-curvas"> Curva S e Tendências</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENTES -->
+    <div class="rel-section">
+      <div class="rel-sec-title">Agentes IA Envolvidos</div>
+      <div class="rel-sec-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;padding:4px 10px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:6px;color:var(--gold);font-family:var(--mono);">Cost_Controller_AI</span>
+          <span style="font-size:10px;padding:4px 10px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:6px;color:var(--gold);font-family:var(--mono);">Construction_Planner_AI</span>
+          <span style="font-size:10px;padding:4px 10px;background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:6px;color:var(--gold);font-family:var(--mono);">Risk_Analysis_AI</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);">O relatório será gerado no formato <span style="color:var(--teal);font-family:var(--mono)">executive_responses</span> — headline, KPIs críticos, análise, riscos, recomendações e próximos passos.</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="rel-actions">
+    <button class="rel-btn-gen" onclick="gerarRelatorio()">📄 Gerar Relatório Executivo com IA</button>
+    <button class="rel-btn-close" onclick="closeRelatorio()">Fechar</button>
+  </div>
+</div>
 </div>
 
 <!-- RDO MODAL -->
@@ -834,6 +969,87 @@ function clearChat() {
   msgs.innerHTML = '<div class="empty-state" id="empty-state"><div class="empty-icon">🤖</div><div class="empty-text">Selecione um agente e envie uma consulta.<br>As respostas seguirão o formato definido<br>no CORE_SYSTEM v5.2.</div></div>';
   msgCount = 0;
   document.getElementById('msg-count').textContent = 'Aguardando consulta...';
+}
+
+/* ---- RELATÓRIO EXECUTIVO ---- */
+const relKPIs = {
+  industrial: { cpi:'0.743', spi:'0.981', exec:'31%', bac:'R$38.1M', eac:'R$51.3M', vac:'-R$13.2M', cpiCls:'danger', spiCls:'ok', eacCls:'danger', vacCls:'danger' },
+  horizonte:  { cpi:'1.029', spi:'1.050', exec:'72%', bac:'R$23.4M', eac:'R$22.7M', vac:'+R$658k', cpiCls:'ok',     spiCls:'ok', eacCls:'neutral', vacCls:'ok'     },
+  valeverde:  { cpi:'0.819', spi:'0.820', exec:'45%', bac:'R$16.2M', eac:'R$19.8M', vac:'-R$3.6M', cpiCls:'warn',   spiCls:'warn', eacCls:'danger', vacCls:'danger' },
+  portfolio:  { cpi:'0.864', spi:'0.950', exec:'49%', bac:'R$77.7M', eac:'R$93.8M', vac:'-R$16.1M', cpiCls:'warn',  spiCls:'warn', eacCls:'danger', vacCls:'danger' }
+};
+
+const relContextos = {
+  industrial: `Complexo Industrial Norte — obra industrial em andamento.
+BAC R$38.1M | PV R$12.04M | EV R$11.81M | AC R$15.9M
+CPI 0.743 (CRÍTICO — estouro de custo) | SPI 0.981 | EAC R$51.3M | VAC -R$13.2M | TCPI 1.184
+CV -R$4.09M | SV -R$229k | 31% executado | 12 de 36 meses decorridos
+Riscos ativos: instabilidade geotécnica Lote C (CRÍTICO), ruptura fornecimento aço CA-50 (CRÍTICO), não conformidade NR-18 Bloco C (ALTO)
+Efetivo médio: 84 op. (previsto 95) | Concretagem: 1.654m³ (prev. 1.820m³)`,
+  horizonte: `Edifício Horizonte Torre A — obra corporativa em SP.
+BAC R$23.4M | PV R$16.05M | EV R$16.85M | AC R$16.37M
+CPI 1.029 (abaixo do orçamento) | SPI 1.050 (adiantado) | EAC R$22.7M | VAC +R$658k | TCPI 0.933
+CV +R$474k | SV +R$796k | 72% executado | 17 de 24 meses decorridos`,
+  valeverde: `Condomínio Vale Verde — obra residencial.
+BAC R$16.2M | PV R$8.89M | EV R$7.29M | AC R$8.90M
+CPI 0.819 (ALERTA) | SPI 0.820 (atrasado) | EAC R$19.8M | VAC -R$3.6M | TCPI 1.221
+CV -R$1.61M | SV -R$1.60M | 45% executado | 16 de 30 meses decorridos
+Aditivo pendente de R$1.2M`,
+  portfolio: `Portfólio Consolidado — 3 obras ativas.
+BAC total R$77.7M | EAC total R$93.8M | VAC total -R$16.1M
+CPI médio 0.864 | SPI médio 0.950 | TCPI médio 1.113 | % exec. média 49.3%
+Horizonte: ✔ OK | Vale Verde: ⚠ ALERTA | Industrial Norte: ✖ CRÍTICO`
+};
+
+function openRelatorio() {
+  document.getElementById('rel-overlay').classList.add('open');
+  atualizarKPIs();
+}
+function closeRelatorio() { document.getElementById('rel-overlay').classList.remove('open'); }
+function closeRelOutside(e) { if(e.target === document.getElementById('rel-overlay')) closeRelatorio(); }
+
+function atualizarKPIs() {
+  const proj = document.getElementById('rel-projeto').value;
+  const k = relKPIs[proj];
+  document.getElementById('rk-cpi').textContent  = k.cpi;  document.getElementById('rk-cpi').className  = 'val ' + k.cpiCls;
+  document.getElementById('rk-spi').textContent  = k.spi;  document.getElementById('rk-spi').className  = 'val ' + k.spiCls;
+  document.getElementById('rk-exec').textContent = k.exec; document.getElementById('rk-exec').className = 'val neutral';
+  document.getElementById('rk-bac').textContent  = k.bac;  document.getElementById('rk-bac').className  = 'val neutral';
+  document.getElementById('rk-eac').textContent  = k.eac;  document.getElementById('rk-eac').className  = 'val ' + k.eacCls;
+  document.getElementById('rk-vac').textContent  = k.vac;  document.getElementById('rk-vac').className  = 'val ' + k.vacCls;
+}
+
+function gerarRelatorio() {
+  const proj    = document.getElementById('rel-projeto').value;
+  const periodo = document.getElementById('rel-periodo').value;
+  const dest    = document.getElementById('rel-dest').value;
+  const ctx     = document.getElementById('rel-contexto').value;
+  const secoes  = [
+    document.getElementById('rs-headline').checked  && '1. Headline Executivo (situação em 1 frase de impacto)',
+    document.getElementById('rs-kpis').checked      && '2. KPIs EVM Consolidados (CPI, SPI, EAC, VAC, TCPI com interpretação)',
+    document.getElementById('rs-tecnica').checked   && '3. Análise Técnica (progresso físico vs. planejado, desvios)',
+    document.getElementById('rs-riscos').checked    && '4. Riscos Identificados (tabela: risco, causa, prob., impacto, nível, ação)',
+    document.getElementById('rs-recom').checked     && '5. Recomendações (imediatas, curto e médio prazo)',
+    document.getElementById('rs-decisoes').checked  && '6. Decisões Necessárias (para o ' + dest + ', com valor/impacto e prazo)',
+    document.getElementById('rs-passos').checked    && '7. Próximos Passos (horizonte 30 / 60 / 90 dias)',
+    document.getElementById('rs-curvas').checked    && '8. Curva S e Tendências (análise da evolução CPI/SPI mensal)',
+  ].filter(Boolean).join('\n');
+
+  const prompt = `Gere um Relatório Executivo de Obra completo para o ${dest}, período ${periodo}.
+
+DADOS DO PROJETO:
+${relContextos[proj]}
+${ctx ? '\nContexto adicional: ' + ctx : ''}
+
+SEÇÕES OBRIGATÓRIAS:
+${secoes}
+
+Use o formato executive_responses do CORE_SYSTEM v5.2. Seja direto, objetivo e executivo. Use **negrito** para destacar números críticos e *itálico* para recomendações.`;
+
+  closeRelatorio();
+  selectAgent('Cost_Controller_AI', '💲', 'Cost Controller', 'EAC, TCPI, VAC', 'warn');
+  document.getElementById('promptInput').value = prompt;
+  sendMessage();
 }
 
 /* ---- RDO ---- */
