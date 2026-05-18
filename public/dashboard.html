@@ -160,6 +160,14 @@ textarea::placeholder{color:var(--muted);}
 .rdo-trigger{width:100%;padding:10px 14px;background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.3);border-radius:10px;color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .2s;display:flex;align-items:center;gap:8px;}
 .rdo-trigger:hover{background:rgba(240,165,0,.15);border-color:var(--gold);}
 
+/* App nav links */
+.nav-app-link{display:flex;align-items:center;gap:8px;padding:8px 10px;color:#185FA5;font-size:13px;text-decoration:none;border-radius:8px;transition:background .15s;}
+.nav-app-link:hover{background:rgba(24,95,165,.08);}
+.nav-juridico{align-items:flex-start;padding:9px 10px;margin-bottom:2px;}
+.nav-juridico .nav-icon{font-size:16px;line-height:1;margin-top:1px;flex-shrink:0;}
+.nav-juridico strong{display:block;font-size:12px;font-weight:700;color:#1a1f36;}
+.nav-juridico small{display:block;font-size:10px;color:#8890a0;margin-top:1px;}
+
 /* RIGHT PANEL - CHAT */
 .right{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;}
 .chat-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -463,8 +471,48 @@ textarea::placeholder{color:var(--muted);}
     <!-- APPS -->
     <div>
       <div class="sec-label">Apps</div>
-      <a href="/plantas" style="display:flex;gap:8px;padding:8px 10px;color:#185FA5;font-size:13px;text-decoration:none;">🔍 Análise de Plantas</a>
-      <a href="/contratos/novo" style="display:flex;gap:8px;padding:8px 10px;color:#185FA5;font-size:13px;text-decoration:none;">📄 Novo Contrato</a>
+      <a href="/plantas" class="nav-app-link">🔍 Análise de Plantas</a>
+      <a href="/contratos/novo" class="nav-app-link">📄 Novo Contrato</a>
+    </div>
+
+    <!-- JURÍDICO -->
+    <div>
+      <div class="sec-label">Jurídico & Compliance</div>
+      <a href="/contratos/novo" class="nav-app-link nav-juridico">
+        <span class="nav-icon">📄</span>
+        <span>
+          <strong>Novo Contrato</strong>
+          <small>Preencher e gerar contrato de obra</small>
+        </span>
+      </a>
+      <a href="/juridico/contratos" class="nav-app-link nav-juridico">
+        <span class="nav-icon">🔍</span>
+        <span>
+          <strong>Analisar Contrato</strong>
+          <small>Análise jurídica com IA</small>
+        </span>
+      </a>
+      <a href="/juridico/compliance" class="nav-app-link nav-juridico">
+        <span class="nav-icon">✅</span>
+        <span>
+          <strong>Compliance</strong>
+          <small>ISO, NRs, LGPD, ABNT</small>
+        </span>
+      </a>
+      <a href="/juridico/due-diligence" class="nav-app-link nav-juridico">
+        <span class="nav-icon">📊</span>
+        <span>
+          <strong>Due Diligence</strong>
+          <small>Relatório para investidor</small>
+        </span>
+      </a>
+      <a href="/juridico/assinatura" class="nav-app-link nav-juridico">
+        <span class="nav-icon">✍️</span>
+        <span>
+          <strong>Assinatura Digital</strong>
+          <small>Enviar e acompanhar via Lumin</small>
+        </span>
+      </a>
     </div>
 
     <!-- QUICK ACTIONS -->
