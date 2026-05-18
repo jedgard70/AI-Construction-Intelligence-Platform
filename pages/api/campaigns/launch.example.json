@@ -1,0 +1,17 @@
+{
+  "action": "launch_new_campaign",
+  "project_id": "PRJ-2026-ALPHA",
+  "strategic_data": {
+    "target_audience": "investidores_imobiliarios",
+    "expected_roi": 18.5,
+    "esg_score_label": "Excelente"
+  },
+  "creatives": {
+    "primary_image_url": "https://seu-servidor.com/renders/fachada_principal_4k.jpg",
+    "ad_copy": "Invista na construção autônoma. Rentabilidade projetada de 18.5% ao ano com Score ESG de excelência. Conheça o projeto Alpha."
+  },
+  "crm_routing": {
+    "pipeline_stage": "Novo Oportunidade - Fundo de Investimento",
+    "assign_to": "equipe_vendas_vip"
+  }
+}

@@ -1,0 +1,110 @@
+/* ─────────────────────────────────────────────────────────────────
+ * ConstructAI Design System — Foundations
+ * Construction Intelligence Platform v5.3 · Apex Global Ltda
+ * ───────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --brand-blue:        #185FA5;
+  --brand-blue-deep:   #0C447C;
+  --brand-blue-tint:   #EFF4FF;
+  --brand-blue-mid:    #B5D4F4;
+  --brand-amber:       #f0a500;
+  --brand-red:         #A32D2D;
+  --brand-navy:        #1a2a4a;
+
+  --dark-bg:           #0a0d12;
+  --dark-bg-2:         #111520;
+  --dark-bg-3:         #0f1a2e;
+  --dark-border:       #1e2535;
+  --dark-fg-1:         #e8ecf5;
+  --dark-fg-2:         #9ca3c4;
+  --dark-fg-3:         #6b7a99;
+
+  --app-bg:            #f4f5f7;
+  --app-surface:       #ffffff;
+  --app-surface-2:     #f8f9fc;
+  --app-surface-3:     #fafbfd;
+  --app-surface-4:     #f0f2f7;
+  --app-border:        #e5e8f0;
+  --app-border-strong: #d0d5e0;
+  --fg-1:              #1a1f36;
+  --fg-2:              #3a4166;
+  --fg-3:              #5a6282;
+  --fg-4:              #8b93a7;
+  --fg-5:              #a0a8bb;
+
+  --success:           #3B6D11;
+  --success-soft-bg:   #EAF3DE;
+  --success-soft-border:#97C459;
+  --warning:           #BA7517;
+  --warning-soft-bg:   #FAEEDA;
+  --warning-text:      #854F0B;
+  --info:              #185FA5;
+  --info-soft-bg:      #E6F1FB;
+  --danger:            #A32D2D;
+  --danger-soft-bg:    #FCEBEB;
+  --danger-soft-border:#F09595;
+  --purple:            #534AB7;
+  --purple-deep:       #4338A0;
+  --orange-deep:       #854F0B;
+  --neutral-status:    #5F5E5A;
+
+  --role-diretor:      #534AB7;
+  --role-financeiro:   #3B6D11;
+  --role-coordenador:  #185FA5;
+  --role-engenheiro:   #BA7517;
+  --role-qualidade:    #A32D2D;
+  --role-investidor:   #854F0B;
+
+  --font-sans-app:     'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans-display: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:         'Noto Sans Mono', 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-9:   9px;   --fs-10: 10px;  --fs-11: 11px;  --fs-12: 12px;
+  --fs-13: 13px;   --fs-14: 14px;  --fs-15: 15px;  --fs-16: 16px;
+  --fs-18: 18px;   --fs-20: 20px;  --fs-22: 22px;  --fs-26: 26px;
+  --fs-30: 30px;   --fs-36: 36px;
+
+  --tracking-tight:    -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.06em;
+  --tracking-wider:    0.08em;
+  --tracking-mono:     2px;
+  --leading-tight:     1.2;
+  --leading-snug:      1.5;
+  --leading-body:      1.6;
+  --leading-loose:     1.75;
+
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-pill: 20px;
+  --radius-full: 999px;
+
+  --space-1:   4px;   --space-2:   8px;   --space-3:  12px;
+  --space-4:  16px;   --space-5:  20px;   --space-6:  24px;
+  --space-7:  32px;   --space-8:  48px;   --space-9:  64px;
+
+  --shadow-cta:    0 0 0 3px rgba(240, 165, 0, 0.12);
+  --shadow-focus:  0 0 0 3px rgba(24, 95, 165, 0.18);
+  --shadow-help:   0 4px 16px rgba(24, 95, 165, 0.40);
+  --shadow-panel:  0 8px 40px rgba(0, 0, 0, 0.18);
+  --shadow-modal:  0 16px 48px rgba(0, 0, 0, 0.20);
+
+  --gradient-login-stage: linear-gradient(160deg, #0a0d12 0%, #111520 60%, #0f1a2e 100%);
+  --gradient-modal-veil:  rgba(0, 0, 0, 0.45);
+
+  --motion-fast:    0.10s ease;
+  --motion-base:    0.15s ease;
+  --motion-slow:    0.20s ease;
+  --motion-color:   color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--app-border-strong); border-radius: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
