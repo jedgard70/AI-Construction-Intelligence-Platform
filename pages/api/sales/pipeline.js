@@ -9,12 +9,16 @@
  *
  * Trigger events válidos:
  *   cinematic_assets_approved | roi_and_valuation_locked | esg_score_published
+ *   cinematic_render_approved | roi_report_generated | milestone_reached
  */
 
 const VALID_TRIGGERS = [
   'cinematic_assets_approved',
+  'cinematic_render_approved',
   'roi_and_valuation_locked',
+  'roi_report_generated',
   'esg_score_published',
+  'milestone_reached',
 ]
 
 function validate(body) {
