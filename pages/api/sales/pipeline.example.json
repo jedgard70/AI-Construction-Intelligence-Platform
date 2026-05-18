@@ -1,0 +1,17 @@
+{
+  "project_id": "PRJ-2026-ALPHA",
+  "trigger_event": "esg_score_published",
+  "assets": {
+    "creative_urls": [
+      "link_render_fachada_v1.jpg",
+      "link_video_drone_sora.mp4"
+    ],
+    "esg_score": 92,
+    "expected_roi": 18.5
+  },
+  "audience": {
+    "interests": ["Real Estate Investing", "Smart Homes", "BIM"],
+    "locations": ["São Paulo", "Paraná", "Global"]
+  },
+  "daily_budget": "definido_pelo_budget_agent"
+}
