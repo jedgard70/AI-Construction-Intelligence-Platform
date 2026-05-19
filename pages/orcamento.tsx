@@ -13,5 +13,5 @@ const OrcamentoClient = dynamic(() => import('../components/OrcamentoClient'), {
 })
 
 export default function OrcamentoPage() {
-  return <OrcamentoClient />
+  return <OrcamentoClient profile={null} />
 }

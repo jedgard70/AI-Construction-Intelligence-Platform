@@ -52,7 +52,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
-    const sb = null // getSupabase()
+    const sb = getSupabase()
     if (!sb) {
       // Demo data
       setProjects([
