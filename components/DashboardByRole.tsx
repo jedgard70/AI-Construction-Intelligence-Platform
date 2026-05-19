@@ -137,7 +137,7 @@ const ROLE_CONFIG: Record<string, {
     label: 'Gestor Financeiro', icon: '💲', accentColor: '#3B6D11',
     nav: [
       { icon: '▪', label: 'Dashboard' },
-      { icon: '▪', label: 'Curva S / EVM', href: '/orcamento', href: '/orcamento' },
+      { icon: '▪', label: 'Curva S / EVM' },
       { icon: '▪', label: 'SINAPI Realtime' },
       { icon: '▪', label: 'Contratos' },
       { icon: '▪', label: 'ROI / TIR' },
