@@ -8,6 +8,7 @@ jobs:
   deploy:
     name: Deploy to Vercel Production
     runs-on: ubuntu-latest
+    if: vars.VERCEL_CONFIGURED == 'true'
 
     steps:
       - name: Checkout
