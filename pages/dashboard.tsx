@@ -57,36 +57,49 @@ export default function Dashboard() {
         return
       }
 
-      // Verifica sessão ativa
-      const { data: { session } } = await sb.auth.getSession()
-      if (!session) {
-        router.replace('/login')
-        return
-      }
+      try {
+        // Verifica sessão ativa
+        const { data: { session } } = await sb.auth.getSession()
+        if (!session) {
+          router.replace('/login')
+          return
+        }
 
-      // Busca perfil com role
-      const { data: prof, error } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single()
+        // Busca perfil com role
+        const { data: prof, error } = await sb
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
 
-      if (error || !prof) {
-        // Perfil ainda não criado (novo usuário) — usa dados do auth
+        if (error || !prof) {
+          // Perfil ainda não criado (novo usuário) — usa dados do auth
+          setProfile({
+            id: session.user.id,
+            email: session.user.email ?? '',
+            full_name: session.user.user_metadata?.full_name ?? null,
+            role: 'engenheiro_campo',
+            company: null,
+            avatar_url: null,
+            is_active: true,
+          })
+        } else {
+          setProfile(prof as Profile)
+        }
+      } catch {
+        // Erro de rede ou configuração — modo demo
         setProfile({
-          id: session.user.id,
-          email: session.user.email ?? '',
-          full_name: session.user.user_metadata?.full_name ?? null,
-          role: 'engenheiro_campo',   // default até admin definir o role
-          company: null,
+          id: 'demo',
+          email: 'demo@constructai.com.br',
+          full_name: 'Usuário Demo',
+          role: 'diretor_executivo',
+          company: 'ConstructAI Demo',
           avatar_url: null,
           is_active: true,
         })
-      } else {
-        setProfile(prof as Profile)
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     init()
