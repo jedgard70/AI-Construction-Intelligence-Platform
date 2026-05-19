@@ -57,7 +57,7 @@ export default function AppShell() {
               alt="User" 
               fill 
               className="object-cover"
-              referrerPolicy="no-referrer"
+              unoptimized
             />
           </div>
         </div>
