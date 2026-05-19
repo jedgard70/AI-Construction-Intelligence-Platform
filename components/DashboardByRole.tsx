@@ -451,6 +451,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
             ))}
           <div style={{borderTop:'1px solid #e5e8f0',margin:'8px 0 4px',padding:'8px 8px 0'}}>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:'.1em',color:'#b0b8c8',textTransform:'uppercase',padding:'0 2px 6px'}}>Ferramentas</div>
+            <a href='/bim-ops' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#0d6e6e',fontSize:12,fontWeight:600,textDecoration:'none',borderRadius:8,transition:'background .15s',background:'#E6F7F7'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#c8efef')} onMouseLeave={e=>(e.currentTarget.style.background='#E6F7F7')}>🏗️ Atlas BIM Ops</a>
+            <a href='/platform' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#185FA5',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🗺️ Platform Map</a>
             <a href='/archvis' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#3B6D11',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
               onMouseEnter={e=>(e.currentTarget.style.background='#EAF3DE')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎨 ArchVis Pro</a>
             <a href='/director-cut' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
