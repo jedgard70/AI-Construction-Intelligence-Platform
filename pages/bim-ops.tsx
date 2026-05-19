@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 
 // ─── Types ──────────────────────────────────────────────────────
-type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes'
+type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential'
 type ClashItem = { id:string; discipline:string; severity:'Critical'|'Major'|'Minor'; description:string; location:string; status:string }
 
 const CLASH_DATA: ClashItem[] = [
@@ -162,6 +162,98 @@ const STATUS_COLOR: Record<string,string> = {
   'In Progress':'#185FA5','Overdue':'#A32D2D','Critical':'#A32D2D',
   'High':'#BA7517','Medium':'#534AB7',
 }
+const RESIDENTIAL_SYSTEMS = [
+  {
+    id: 'foundation',
+    icon: '🪨',
+    label: 'Foundation Types',
+    systems: [
+      { name: 'Slab-on-Grade', code: 'IRC R403.1', desc: 'Most common in TX/FL/AZ. Monolithic or post-tension. Thickened edges at bearing walls. PT cables at 4\'-0" OC per geotechnical report.', specs: ['Min 4" concrete slab', 'Post-tension: 150 ksi strands', 'Vapor retarder: 10-mil polyethylene', 'Compacted fill: 95% proctor'] },
+      { name: 'Crawl Space', code: 'IRC R408', desc: 'Common in SE and Carolinas. Vented or conditioned (sealed). Min 18" clearance from grade to bottom of floor joist.', specs: ['Min 18" clearance floor joist', 'Vent area: 1:150 floor area', 'Ground cover: 6-mil vapor barrier', 'Access: 18"×24" min opening'] },
+      { name: 'Basement / Walk-out', code: 'IRC R404', desc: 'Prevalent in midwest and northeast. ICF or poured concrete walls. Waterproofing + drainage board on exterior.', specs: ['8" min poured concrete wall', 'Waterproofing: crystalline or membrane', 'Drainage board + 4" perf pipe', 'Window egress: 5.7 sq ft min'] },
+      { name: 'Pier & Beam', code: 'IRC R403.1.3', desc: 'Historic TX/Southeast. Steel or concrete piers. Adjustable for expansive soils. Easier utility access. Re-leveling required every 10–15 years.', specs: ['Pier spacing: 8\'-0" max OC', 'Grade beam: 12"×24" min', 'Beam: 4×8 or double 2×10', 'Concrete piers: 12" dia min'] },
+      { name: 'Helical Piers', code: 'ICC AC358', desc: 'Engineered deep foundation for poor soils or additions. Torque-installed steel shafts. Immediate load-bearing. Common in expansive clay regions.', specs: ['Min 3" dia shaft', 'Torque: 3,500–10,000 ft-lbs', 'Depth to bearing stratum', 'Corrosion protection: galvanized'] },
+    ]
+  },
+  {
+    id: 'framing',
+    icon: '🪵',
+    label: 'Wood Framing',
+    systems: [
+      { name: 'Platform Frame (Western)', code: 'IRC R602', desc: 'Standard US residential. Each story framed on top of previous. 2×4 or 2×6 studs at 16" OC. Engineered lumber for headers and long spans.', specs: ['Studs: 2×6 @ 16" OC (exterior)', 'Studs: 2×4 @ 16" OC (interior)', 'Double top plate: 2×6 min', 'Headers: LVL or built-up per span table'] },
+      { name: 'Advanced Framing (OVE)', code: 'IRC R602 / DOE', desc: 'Optimized Value Engineering — 2×6 @ 24" OC, single top plate, insulated headers. 20–30% less lumber, higher R-value walls.', specs: ['2×6 studs @ 24" OC', 'Single top plate w/ rim board', 'Insulated or no headers in gable', 'Aligns joists/rafters/studs'] },
+      { name: 'Balloon Frame', code: 'Legacy / IRC R302.12', desc: 'Pre-1940s construction. Studs run full height 2 stories. Fire-blocking required at every floor level per IRC R302.12.', specs: ['Fire blocking at floor joists', '2-story continuous studs', 'Ledger board for floor support', 'Firestop: 2" nominal material'] },
+      { name: 'Cold-Form Steel Framing', code: 'AISI S230', desc: 'Non-combustible. Common in SE high-wind zones. 18-gauge tracks and studs. Thermal bridging managed with CI insulation.', specs: ['18-ga or 20-ga studs', '8" deep @ 24" OC typical', 'Screw pattern: #10 screws', 'CI: 1" min polyiso exterior'] },
+    ]
+  },
+  {
+    id: 'drywall',
+    icon: '🧱',
+    label: 'Drywall Systems',
+    systems: [
+      { name: 'Standard GWB (5/8")', code: 'IRC R702 / ASTM C36', desc: 'Standard interior finish. 5/8" Type X at fire-rated assemblies. 1/2" at non-rated walls and ceilings.', specs: ['5/8" Type X: fire-rated 1-hour', '1/2" standard: non-rated', 'Fasteners: 1-5/8" drywall screws', 'Screw spacing: 8" OC framing'] },
+      { name: 'Mold-Resistant (Greenboard)', code: 'ASTM C1396', desc: 'Bathrooms, laundry, kitchens. Paper-faced mold-resistant core. NOT a substitute for cement board in wet areas at tile.', specs: ['5/8" or 1/2" thickness', 'Paper or fiberglass faced', 'Max humidity: 95% RH', 'Requires vapor retarder in walls'] },
+      { name: 'Cement Board / Tile Backer', code: 'TCNA / ANSI A108', desc: 'Tile substrate in showers, tub surrounds, floors. HardieBacker, DensShield, USG Durock. Requires waterproof membrane for showers.', specs: ['1/4" or 1/2" thickness', 'Screw: 1-1/4" wafer head', 'Waterproof membrane over board', 'Alkali-resistant mesh tape'] },
+      { name: 'Shaft Wall / Area Separation', code: 'UL U467 / IRC R302.2', desc: '2-hour assembly between townhome units. 1" coreboard + 5/8" Type X. No shared framing — independent chase walls.', specs: ['2-hour UL assembly', 'No penetrations allowed', 'EIFS or gypsum cap at top', 'Extends from foundation to roof'] },
+    ]
+  },
+  {
+    id: 'roofing',
+    icon: '🏠',
+    label: 'Roofing Systems',
+    systems: [
+      { name: 'Asphalt Shingles (Class A)', code: 'IRC R905.2 / ASTM D3462', desc: 'Most common US residential. 3-tab or architectural (laminated). Min 2:12 slope with low-slope underlayment. 30-yr architectural standard.', specs: ['Min slope: 2:12 w/ 2 layers felt', 'Ice & water shield: 24" past wall', 'Starter strip: min 8" exposure', 'Nailing: 4 nails per shingle'] },
+      { name: 'Metal Roofing (Standing Seam)', code: 'IRC R905.10', desc: 'High-wind and hurricane zones (FL, TX coast). 24-ga steel or 0.032 aluminum. Concealed clips — no exposed fasteners. 50-yr life.', specs: ['24 or 26 ga steel', 'Panel width: 12"–18"', 'Concealed clip @ 24" OC', 'Min slope: 1/4:12 for hidden seam'] },
+      { name: 'Tile (Concrete / Clay)', code: 'IRC R905.3', desc: 'Dominant in FL and SW. Min 4:12 slope. Dead load 8–14 PSF — structural must account for weight. Superior longevity (50+ years).', specs: ['Min slope: 4:12', 'Underlayment: 2-layer No. 30 felt', 'Battens: 1×4 horizontal', 'Hip/ridge: mortar-set or mechanically fastened'] },
+      { name: 'Flat / Low-Slope (TPO/EPDM)', code: 'IRC R905.12 / NRCA', desc: 'Patio covers, additions, commercial rooftop. TPO heat-welded seams. EPDM vulcanized rubber. Min 1/4:12 slope to drain.', specs: ['TPO: 45-mil or 60-mil', 'EPDM: 60-mil black', 'Seams: heat-welded (TPO) or taped', 'Insulation: 3" polyiso min'] },
+    ]
+  },
+  {
+    id: 'hvac',
+    icon: '🌡️',
+    label: 'HVAC Layouts',
+    systems: [
+      { name: 'Forced Air (Split System)', code: 'IRC M1401 / ACCA Manual J/D/S', desc: 'Dominant US residential. Gas furnace + AC condenser or heat pump. Manual J load calc required. Duct sizing per Manual D.', specs: ['Blower: 400 CFM/ton typical', 'Supply: 0.1" WC static pressure', 'Return: min 150 sq in / ton', 'Duct leakage: max 4% conditioned'] },
+      { name: 'Heat Pump (Air-Source)', code: 'IRC M1401 / AHRI 210/240', desc: 'Standard in mild climates (SE, Pacific NW). Single unit handles heating and cooling. 2024 energy code default in many states. COP 3.0–4.5.', specs: ['Min SEER2: 15.2 (south), 14.3 (north)', 'Min HSPF2: 7.5', 'Auxiliary heat: strip or gas backup', 'Defrost cycle: below 35°F'] },
+      { name: 'Mini-Split (Ductless)', code: 'IRC M1401', desc: 'Multi-zone control. No ductwork. Ideal for additions and renovations. Wall mount, ceiling cassette, or concealed air handler.', specs: ['1 outdoor to 4–8 indoor heads', 'Refrigerant line: 3/8" + 5/8"', 'Drain line: 3/4" PVC', 'Linesets: max 100\' without booster'] },
+      { name: 'Geothermal (Ground-Source)', code: 'IRC M1401 / IGSHPA', desc: 'Ultra-efficient. COP 4–6. Vertical bores or horizontal loops. High upfront cost, 30% federal tax credit (IRA 2022), 25-yr life.', specs: ['Vertical: 150–250 ft/ton bore', 'Horizontal: 400–600 sq ft/ton', 'Loop: 3/4" or 1" HDPE', 'Antifreeze: propylene glycol 20%'] },
+    ]
+  },
+  {
+    id: 'electrical',
+    icon: '⚡',
+    label: 'Electrical Plans',
+    systems: [
+      { name: 'Service & Panel', code: 'NEC 2023 Art. 230/240', desc: '200A minimum for new residential. 400A for EV + heat pump + induction. Main breaker, 42-space panel standard. Arc-fault and GFCI requirements.', specs: ['200A min service (new)', 'Panel: 42-space minimum', 'AFCI: all branch circuits (Art. 210.12)', 'GFCI: kitchen/bath/garage/outdoor/basement'] },
+      { name: 'Branch Circuits — Kitchen', code: 'NEC Art. 210.11', desc: 'Minimum 2 small appliance circuits at 20A. Dedicated 20A refrigerator circuit. Range: 50A/240V. Dishwasher: 20A/120V dedicated.', specs: ['2× 20A small appliance circuits', '1× 20A refrigerator dedicated', '50A/240V range or oven', '20A dishwasher dedicated'] },
+      { name: 'EV Charging Rough-In', code: 'NEC 625 / IRC E3602', desc: '2021 IRC requires EV-ready conduit in new single-family. 50A/240V circuit to garage. Many states mandate Level 2 ready outlet.', specs: ['50A/240V 14-50R outlet', '1" conduit to panel', 'NEMA 14-50 or hardwired EVSE', 'Outdoor GFCI if exposed'] },
+      { name: 'Low-Voltage / Smart Home', code: 'NEC Art. 725/800', desc: 'Cat6A structured wiring, coax, security, speakers. Separate low-voltage panel. Conduit sleeves for future upgrades. Ring / Nest pre-wire packages.', specs: ['Cat6A at all rooms (2 ports)', 'Coax at TV locations', '1" conduit sleeves between floors', 'Low-voltage panel in closet'] },
+    ]
+  },
+  {
+    id: 'plumbing',
+    icon: '🚿',
+    label: 'Plumbing Plans',
+    systems: [
+      { name: 'Water Supply (PEX)', code: 'IRC P2903 / ASTM F876', desc: 'PEX-A or PEX-B replacing copper in new construction. Manifold system for individual shut-offs. Color coded: red hot, blue cold. No solder joints.', specs: ['3/4" main to manifold', '1/2" branch to fixtures', 'PEX-A preferred (crosslinked)', 'Manifold: 10-port min for 3/2 home'] },
+      { name: 'DWV (Drain/Waste/Vent)', code: 'IRC P3001', desc: 'ABS or PVC drainage. 3" min stack to water closet. 2" for lavs. Air admittance valves where conventional venting impractical. Slope: 1/4" per foot.', specs: ['4" house sewer to septic/public', '3" stack: WC and washing machine', '2" branch: lav, tub, shower', 'Slope: 1/4" per foot of run'] },
+      { name: 'Water Heater — Tankless', code: 'IRC P2801', desc: 'On-demand heating. Gas (199,000 BTU) or electric (240V 80A). Condensing units require PVC flue. Min 3/4" gas line at 7" WC.', specs: ['Gas: 3/4" min gas line', '199,000 BTU max input', 'Condensing: PVC flue 2" or 3"', 'Isolation valves + pressure relief'] },
+      { name: 'Irrigation / Outdoor', code: 'IRC P2904 / UPC 603', desc: 'Backflow preventer required at all irrigation connections. Separate zone valve manifold. Rain sensor required in FL and water-restricted states.', specs: ['Backflow: RPZ or dual check', 'Zone valves: 3/4" poly or brass', 'Rain/soil sensor: FL required', 'Max pressure: 150 PSI at meter'] },
+    ]
+  },
+  {
+    id: 'permit',
+    icon: '📋',
+    label: 'Permit Workflow',
+    systems: [
+      { name: 'Pre-Application Phase', code: 'Local AHJ', desc: 'Zoning check, HOA approval, setback verification, utility locate (811). Title search and deed restrictions. Pre-application meeting with AHJ for complex projects.', specs: ['Zoning: setbacks, height, FAR', 'HOA submission: 30–45 day review', '811 locate: 3 business days min', 'Survey: signed & sealed required'] },
+      { name: 'Permit Submission', code: 'IRC R105 / Local AHJ', desc: 'Full permit set: site plan, floor plans, elevations, sections, structural calcs, MEP plans, energy compliance (ResCheck/COMcheck). Digital submission in most jurisdictions.', specs: ['Site plan: FEMA flood zone check', 'Structural: wet stamp PE if required', 'Energy: ResCheck 2021 IECC', 'MEP: mechanical, electrical, plumbing'] },
+      { name: 'Plan Review & Corrections', code: 'IRC R105.3', desc: 'Typical 10–21 business day review. Plan check comments (PCCs) issued. One revision cycle included. Second re-check may incur fee.', specs: ['1st review: 10–21 business days', 'Response: 30–90 days to resubmit', 'Redlines: mark-up each comment', 'Expedited plan check: 50–100% fee'] },
+      { name: 'Inspection Sequence', code: 'IRC R109', desc: 'Sequential inspections: foundation → framing → rough MEP (mechanical/electrical/plumbing) → insulation → drywall → final. Each must be approved before next phase starts.', specs: ['Foundation: after form, before pour', 'Rough frame: after sheathing, before insulation', 'Rough MEP: before drywall', 'Final: C of O issuance'] },
+    ]
+  },
+]
+
 const STATUS_BG: Record<string,string> = {
   'Complete':'#EAF3DE','In Review':'#EFF4FF','Pending':'#FFF3E0',
   'Not Started':'#f4f5f7','Open':'#FCEBEB','Resolved':'#EAF3DE','Under Review':'#FFF3E0',
@@ -289,12 +381,17 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
     { id:'upload',    icon:'⬆️', label:'BIM Upload' },
     { id:'clash',     icon:'⚡', label:'Clash Detection' },
     { id:'permits',   icon:'📋', label:'Permit Documentation' },
-    { id:'codes',     icon:'📖', label:'US Building Codes' },
-    { id:'docs',      icon:'📁', label:'Construction Docs' },
+    { id:'codes',       icon:'📖', label:'US Building Codes' },
+    { id:'residential', icon:'🏠', label:'Residential Systems' },
+    { id:'docs',        icon:'📁', label:'Construction Docs' },
     { id:'workflow',  icon:'🔄', label:'AI Workflow' },
     { id:'reports',   icon:'📈', label:'AI Reports' },
   ]
 
+  const [activeResSystem, setActiveResSystem] = useState('foundation')
+  const [resQuery, setResQuery] = useState('')
+  const [resAI, setResAI] = useState('')
+  const [resAILoading, setResAILoading] = useState(false)
   const [activeCode, setActiveCode] = useState('irc')
   const [codeQuery, setCodeQuery] = useState('')
   const [codeAI, setCodeAI] = useState('')
@@ -838,6 +935,146 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                           </div>
                         ))}
                       </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+
+            {/* ── RESIDENTIAL SYSTEMS ── */}
+            {activeModule === 'residential' && (
+              <>
+                <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>🏠 Residential Construction Systems</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:16 }}>US residential construction types, specs, and code references — wood framing · drywall · roofing · HVAC · electrical · plumbing · permit workflow · foundation</div>
+
+                {/* System selector tabs */}
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap' as const, marginBottom:18 }}>
+                  {RESIDENTIAL_SYSTEMS.map(sys => (
+                    <button key={sys.id} onClick={() => { setActiveResSystem(sys.id); setResAI('') }}
+                      style={{ padding:'8px 14px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer',
+                        background: activeResSystem === sys.id ? '#238636' : '#161b22',
+                        color: activeResSystem === sys.id ? '#fff' : '#8b93a7',
+                        border: `1px solid ${activeResSystem === sys.id ? '#238636' : '#30363d'}` }}>
+                      {sys.icon} {sys.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active system detail */}
+                {RESIDENTIAL_SYSTEMS.filter(s => s.id === activeResSystem).map(sys => (
+                  <div key={sys.id}>
+                    {/* System cards */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:18 }}>
+                      {sys.systems.map(item => (
+                        <div key={item.name} style={{ background:'#161b22', border:'1px solid #30363d', borderRadius:10, padding:16 }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>{item.name}</div>
+                            <span style={{ fontSize:10, background:'#0d1117', border:'1px solid #30363d',
+                              color:'#58a6ff', padding:'2px 7px', borderRadius:10, whiteSpace:'nowrap' as const }}>
+                              {item.code}
+                            </span>
+                          </div>
+                          <div style={{ fontSize:11, color:'#8b93a7', lineHeight:1.5, marginBottom:10 }}>{item.desc}</div>
+                          <div style={{ fontSize:11, color:'#3fb950', fontWeight:600, marginBottom:5 }}>Key Specs:</div>
+                          {item.specs.map(spec => (
+                            <div key={spec} style={{ fontSize:11, color:'#c9d1d9', padding:'3px 0',
+                              borderBottom:'1px solid #21262d', display:'flex', gap:6 }}>
+                              <span style={{ color:'#238636' }}>▸</span> {spec}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* AI Q&A for this system */}
+                    <div style={{ background:'#161b22', border:'1px solid #30363d', borderRadius:10, padding:16 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3', marginBottom:10 }}>
+                        🤖 AI Assistant — {sys.icon} {sys.label}
+                      </div>
+                      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                        <input value={resQuery} onChange={e => setResQuery(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && resQuery && (async () => {
+                            setResAILoading(true)
+                            const q = resQuery; setResQuery('')
+                            const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                              body: JSON.stringify({ messages:[{ role:'user', content:`You are a US residential construction expert. System: ${sys.label}. Question: ${q}. Provide practical answer with code refs (IRC/NEC/local), typical specs, cost range, and common mistakes. Be concise.` }] }) })
+                            const d = await r.json()
+                            setResAI(d.content?.[0]?.text || d.error || 'No response')
+                            setResAILoading(false)
+                          })()}
+                          placeholder={`Ask about ${sys.label}...`}
+                          style={{ flex:1, background:'#0d1117', border:'1px solid #30363d', borderRadius:6,
+                            padding:'8px 12px', color:'#e6edf3', fontSize:12 }} />
+                        <button onClick={async () => {
+                          if (!resQuery) return
+                          setResAILoading(true)
+                          const q = resQuery; setResQuery('')
+                          const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                            body: JSON.stringify({ messages:[{ role:'user', content:`You are a US residential construction expert. System: ${sys.label}. Question: ${q}. Provide practical answer with code refs (IRC/NEC/local), typical specs, cost range, and common mistakes. Be concise.` }] }) })
+                          const d = await r.json()
+                          setResAI(d.content?.[0]?.text || d.error || 'No response')
+                          setResAILoading(false)
+                        }} style={{ ...s.btn, whiteSpace:'nowrap' as const }}>
+                          Ask AI
+                        </button>
+                      </div>
+
+                      {/* Quick question chips */}
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' as const, marginBottom:10 }}>
+                        {sys.id === 'foundation' && ['What soil tests are needed?', 'PT slab vs conventional slab cost?', 'When is PE stamp required?', 'Expansive clay soil recommendations'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'framing' && ['LVL vs solid lumber headers?', '2×6 vs 2×4 wall cost difference?', 'Advanced framing energy savings?', 'Wind uplift connections hurricane zone'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'drywall' && ['Drywall thickness for 1-hour fire rating?', 'Cement board vs Schluter for showers?', 'Level 5 finish cost premium?', 'Type X vs Type C drywall'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'roofing' && ['Metal roof cost vs shingles?', 'Wind rating for FL coastal zones?', 'Tile roof structural requirements?', 'Ice and water shield coverage rules'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'hvac' && ['Manual J load calc requirements?', 'Heat pump vs gas furnace in Texas?', 'Mini-split for room addition?', 'HVAC duct leakage test procedure'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'electrical' && ['200A vs 400A panel for EV + heat pump?', 'AFCI circuit requirements 2023?', 'EV charging rough-in best practices?', 'Whole-home generator sizing'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'plumbing' && ['PEX-A vs PEX-B for residential?', 'Tankless vs tank water heater ROI?', 'Drain slope requirements?', 'Backflow preventer requirements by state'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                        {sys.id === 'permit' && ['Typical permit timeline by state?', 'What triggers a PE stamp requirement?', 'How to respond to plan check comments?', 'Expedited permit options'].map(q => (
+                          <button key={q} onClick={() => setResQuery(q)}
+                            style={{ fontSize:10, padding:'3px 9px', background:'#0d1117', border:'1px solid #30363d',
+                              color:'#8b93a7', borderRadius:12, cursor:'pointer' }}>{q}</button>
+                        ))}
+                      </div>
+
+                      {resAILoading && (
+                        <div style={{ textAlign:'center' as const, padding:'16px', color:'#58a6ff', fontSize:12 }}>
+                          ⏳ AI analyzing {sys.label}...
+                        </div>
+                      )}
+                      {resAI && !resAILoading && (
+                        <div style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8,
+                          padding:14, fontSize:12, color:'#c9d1d9', lineHeight:1.7,
+                          fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
+                          {resAI}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -39,6 +39,47 @@ const TIPOS_CONTRATO = [
 const ESTADOS_CIVIS = ['solteiro(a)', 'casado(a)', 'divorciado(a)', 'viúvo(a)', 'união estável']
 const CLASSIFICACOES = ['Residencial Unifamiliar', 'Residencial Multifamiliar', 'Comercial', 'Industrial', 'Misto']
 
+const US_CONSTRUCTION_TYPES = [
+  { id: 'new_residential',    label: 'New Residential Construction' },
+  { id: 'addition_remodel',   label: 'Addition / Remodel' },
+  { id: 'commercial_tenant',  label: 'Commercial Tenant Improvement' },
+  { id: 'new_commercial',     label: 'New Commercial Construction' },
+  { id: 'custom_home',        label: 'Custom Home (Owner-Directed)' },
+  { id: 'multi_family',       label: 'Multi-Family (Duplex / ADU / Apt)' },
+]
+
+const US_RESIDENTIAL_SYSTEMS = [
+  'Wood Framing (Platform / Advanced)',
+  'Cold-Formed Steel Framing',
+  'Foundation: Slab-on-Grade (Post-Tension)',
+  'Foundation: Slab-on-Grade (Conventional)',
+  'Foundation: Crawl Space',
+  'Foundation: Pier & Beam',
+  'Foundation: Basement / Walk-out',
+  'Drywall Systems (GWB / Cement Board)',
+  'Roofing: Asphalt Shingles (Architectural)',
+  'Roofing: Metal (Standing Seam)',
+  'Roofing: Tile (Concrete / Clay)',
+  'Roofing: Flat / TPO / EPDM',
+  'HVAC: Forced Air (Split System)',
+  'HVAC: Heat Pump (Air-Source)',
+  'HVAC: Mini-Split (Ductless)',
+  'HVAC: Geothermal',
+  'Electrical: 200A Service & Panel',
+  'Electrical: 400A Service (EV + HP)',
+  'Electrical: Low-Voltage / Smart Home',
+  'Plumbing: PEX Water Supply',
+  'Plumbing: DWV (ABS / PVC)',
+  'Plumbing: Tankless Water Heater',
+  'Exterior: Windows & Exterior Doors',
+  'Exterior: Stucco / EIFS Cladding',
+  'Exterior: Fiber Cement Siding',
+  'Interior: Insulation (Spray Foam / Batt)',
+  'Interior: Tile & Stone Flooring',
+  'Interior: Hardwood / Engineered Wood',
+  'Permit: Building Permit Package',
+]
+
 const US_CONTRACT_TYPES = [
   { id: 'fixed_price',  label: 'Fixed-Price Contract',     icon: '📋', desc: 'Lump sum — contractor provides all labor & materials at a set price' },
   { id: 'cost_plus',    label: 'Cost-Plus Contract',        icon: '🏗',  desc: 'Owner pays actual costs + contractor fee/markup (similar to Adm. a Custo)' },
@@ -102,6 +143,7 @@ export default function JuridicoClient() {
   })
   const [usProject, setUsProject] = useState({
     description: '', address: '', city: '', state: 'TX', zip: '', scope: '', startDate: '', endDate: '',
+    constructionType: 'new_residential', systems: [] as string[],
   })
   const [usFinancial, setUsFinancial] = useState({
     contractValue: '', deposit: '', milestones: '3', paymentTerms: 'Net 30', retainage: '10',
@@ -497,6 +539,8 @@ ${p('<strong>CONTRACTOR:</strong> ' + ATLAS_US.company + ', ' + ATLAS_US.license
 ${cl(2,'PROJECT & SCOPE OF WORK')}
 ${p('<strong>Project Address:</strong> ' + [usProject.address, usProject.city, usProject.state, usProject.zip].filter(Boolean).join(', '))}
 ${p('<strong>Description:</strong> ' + (usProject.description || '[Project description per attached plans and specifications]'))}
+${p('<strong>Construction Type:</strong> ' + (US_CONSTRUCTION_TYPES.find(t => t.id === usProject.constructionType)?.label || 'New Residential Construction'))}
+${usProject.systems.length > 0 ? p('<strong>Construction Systems:</strong> ' + usProject.systems.join(' · ')) : ''}
 ${p('<strong>Scope:</strong> ' + (usProject.scope || 'Construction services as described in the attached Exhibit A — Scope of Work, Plans, and Specifications, incorporated herein by reference.'))}
 ${usTipoContrato === 'fixed_price' ? p('Contract Type: <strong>Fixed-Price (Lump Sum)</strong>. The Contract Price is firm and all-inclusive unless a written Change Order is executed per Section 7.') : ''}
 ${usTipoContrato === 'cost_plus'   ? p('Contract Type: <strong>Cost-Plus with GMP</strong>. Owner pays actual documented costs plus a Contractor Fee of 15%, subject to a Guaranteed Maximum Price (GMP) established in Exhibit B.') : ''}
@@ -1222,6 +1266,31 @@ RG:   ________________________________            RG:   ________________________
                 <div style={s.sectionTitle}>🏗️ Project Information</div>
                 <div style={s.field}><label style={s.label}>Project Description *</label>
                   <input style={s.input} placeholder="New residential construction, 2,800 SF, 4 bed / 3 bath" value={usProject.description} onChange={e => setUsProject(p => ({...p, description: e.target.value}))} /></div>
+
+                <div style={{ ...s.field, marginTop: 10 }}><label style={s.label}>Construction Type</label>
+                  <select style={s.select} value={usProject.constructionType} onChange={e => setUsProject(p => ({...p, constructionType: e.target.value}))}>
+                    {US_CONSTRUCTION_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  </select>
+                </div>
+
+                <div style={{ ...s.field, marginTop: 10 }}>
+                  <label style={s.label}>Construction Systems & Scope Items (select all that apply)</label>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4, marginTop:6 }}>
+                    {US_RESIDENTIAL_SYSTEMS.map(sys => (
+                      <label key={sys} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12,
+                        padding:'4px 8px', borderRadius:6, cursor:'pointer',
+                        background: usProject.systems.includes(sys) ? '#E6F1FB' : '#f8f9fa',
+                        border: usProject.systems.includes(sys) ? '1px solid #185FA5' : '1px solid #e5e8f0' }}>
+                        <input type="checkbox" checked={usProject.systems.includes(sys)}
+                          onChange={e => setUsProject(p => ({...p,
+                            systems: e.target.checked ? [...p.systems, sys] : p.systems.filter(s => s !== sys)
+                          }))} style={{ accentColor:'#185FA5' }} />
+                        {sys}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <div style={{ ...s.field, marginTop: 10 }}><label style={s.label}>Scope of Work</label>
                   <textarea style={s.textarea} placeholder="Full scope per plans and specifications attached as Exhibit A..." value={usProject.scope} onChange={e => setUsProject(p => ({...p, scope: e.target.value}))} /></div>
                 <div style={{ ...s.field, marginTop: 10 }}><label style={s.label}>Project Address</label>
