@@ -304,8 +304,6 @@ Responda em pt-BR. Seja direto e técnico. Máximo 3 frases. Termine com "Posso 
     <>
       <Head>
         <title>Análise de Plantas — ConstructAI v5.3</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com"/>
-        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
       </Head>
 
       <style>{`

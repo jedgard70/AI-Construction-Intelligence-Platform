@@ -9,6 +9,14 @@ const LoginClient = dynamic(() => import('../components/LoginClient'), {
   ),
 })
 
+export function getServerSideProps() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  if (!supabaseUrl) {
+    return { redirect: { destination: '/dashboard.html', permanent: false } }
+  }
+  return { props: {} }
+}
+
 export default function Login() {
   return <LoginClient />
 }
