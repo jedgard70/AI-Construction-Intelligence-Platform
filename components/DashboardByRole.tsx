@@ -2,6 +2,7 @@
 import HelpButton from './HelpButton'
 import NewProjectModal from './NewProjectModal'
 import NewClientModal from './NewClientModal'
+import { printDocument } from './PrintShareModal'
 import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
@@ -582,8 +583,43 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               {cfg.showAgentEvents && (
                 <div style={{ background:'#fff', border:'1px solid #e5e8f0',
                   borderRadius:12, padding:'16px' }}>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36', marginBottom:14 }}>
-                    🤖 Alertas dos Agentes IA
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
+                      🤖 Alertas dos Agentes IA
+                    </div>
+                    {events.length > 0 && (
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button onClick={() => {
+                          const html = `
+<h1>🤖 Relatório de Alertas — Agentes IA</h1>
+<div class="meta"><span>📅 ${new Date().toLocaleDateString('pt-BR')}</span><span>${events.length} alertas</span></div>
+<table>
+  <tr><th>Prioridade</th><th>Agente</th><th>Hora</th><th>Resumo</th></tr>
+  ${events.map(ev => `<tr>
+    <td><span class="badge badge-${ev.priority==='critico'?'red':ev.priority==='alto'?'yellow':'blue'}">${ev.priority.toUpperCase()}</span></td>
+    <td>${ev.source_agent.replace('_AI','')}</td>
+    <td>${new Date(ev.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
+    <td>${ev.summary}</td>
+  </tr>`).join('')}
+</table>`
+                          printDocument('Alertas dos Agentes IA', html)
+                        }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer',
+                          fontFamily:'inherit', color:'#5a6282', display:'flex', alignItems:'center', gap:4 }}>
+                          🖨️ Imprimir
+                        </button>
+                        <button onClick={() => {
+                          const text = `🤖 ALERTAS DOS AGENTES IA\n${new Date().toLocaleDateString('pt-BR')}\n\n` +
+                            events.map(ev => `[${ev.priority.toUpperCase()}] ${ev.source_agent.replace('_AI','')} — ${ev.summary}`).join('\n')
+                          const wa = encodeURIComponent(text)
+                          window.open(`https://wa.me/?text=${wa}`, '_blank')
+                        }} style={{ padding:'5px 10px', border:'1px solid #3B6D11', borderRadius:6,
+                          background:'#EAF3DE', fontSize:11, fontWeight:600, cursor:'pointer',
+                          fontFamily:'inherit', color:'#3B6D11', display:'flex', alignItems:'center', gap:4 }}>
+                          📤 Compartilhar
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {events.map(ev => (
