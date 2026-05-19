@@ -36,7 +36,7 @@ function validate(body) {
 function buildPrompt(body) {
   return `Você é o Investment_Analyst_AI com função de due diligence jurídica da AI Construction Intelligence Platform.
 
-Gere um relatório completo de due diligence para um investidor considerando os dados abaixo.
+Gere um relatório de due diligence conciso para um investidor. Máximo 3 itens por array, strings curtas (max 120 chars cada).
 
 Retorne JSON com estrutura exata:
 {
@@ -106,16 +106,20 @@ async function generateWithAI(body) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
+        max_tokens: 8192,
+        system: 'Responda APENAS com JSON válido, sem texto antes ou depois. Sem markdown, sem code fences.',
         messages: [{ role: 'user', content: buildPrompt(body) }],
       }),
     })
     const data = await resp.json()
-    const text = data?.content?.[0]?.text || ''
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-    return JSON.parse(jsonMatch[0])
-  } catch {
+    if (data.error) { console.error('[Investment_Analyst_AI] API error:', data.error.message); return null }
+    const text = data?.content?.[0]?.text?.trim() || ''
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start === -1 || end === -1) return null
+    return JSON.parse(text.slice(start, end + 1))
+  } catch (err) {
+    console.error('[Investment_Analyst_AI] parse error:', err?.message)
     return null
   }
 }

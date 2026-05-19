@@ -50,7 +50,7 @@ function buildPrompt(body, standardsToCheck) {
 
   return `Você é o Compliance_Agent da AI Construction Intelligence Platform. Avalie o escopo do projeto abaixo contra os padrões de compliance listados.
 
-Para cada padrão, determine se está CONFORME, NÃO_CONFORME ou PARCIALMENTE_CONFORME com base nas informações fornecidas.
+Para cada padrão, determine se está CONFORME, NÃO_CONFORME ou PARCIALMENTE_CONFORME. Máximo 2 itens por array, strings curtas (max 100 chars).
 
 Retorne JSON com estrutura exata:
 {
@@ -95,16 +95,20 @@ async function checkWithAI(body, standardsToCheck) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
+        max_tokens: 8192,
+        system: 'Responda APENAS com JSON válido, sem texto antes ou depois. Sem markdown, sem code fences.',
         messages: [{ role: 'user', content: buildPrompt(body, standardsToCheck) }],
       }),
     })
     const data = await resp.json()
-    const text = data?.content?.[0]?.text || ''
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-    return JSON.parse(jsonMatch[0])
-  } catch {
+    if (data.error) { console.error('[Safety_Monitor_AI] API error:', data.error.message); return null }
+    const text = data?.content?.[0]?.text?.trim() || ''
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start === -1 || end === -1) return null
+    return JSON.parse(text.slice(start, end + 1))
+  } catch (err) {
+    console.error('[Safety_Monitor_AI] parse error:', err?.message)
     return null
   }
 }

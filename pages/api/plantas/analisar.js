@@ -45,14 +45,14 @@ function buildPrompt(body) {
 
 Analise a planta abaixo e identifique achados (findings) técnicos.
 
-Para cada finding retorne:
-- id: string no formato "F-XXX" (número sequencial de 3 dígitos)
+Identifique no máximo 5 findings principais. Para cada finding retorne:
+- id: "F-XXX" (sequencial 3 dígitos)
 - cat: uma de: ${FINDING_CATEGORIES.join(', ')}
 - sev: uma de: ${SEVERITY_LEVELS.join(', ')}
-- conf: número 0.0-1.0 (confiança da análise)
-- title: título curto e técnico (máx 60 chars)
-- body: descrição técnica detalhada com medidas e referências normativas
-- ref: referência normativa (ex: "NBR 9077 §4.5.3", "NR-18", "ADA §304.3")
+- conf: número 0.0-1.0
+- title: máx 60 chars
+- body: descrição técnica curta (máx 120 chars)
+- ref: referência normativa (ex: "NBR 9077 §4.5.3")
 - room: ambiente afetado
 
 Retorne JSON com:
@@ -91,16 +91,25 @@ async function analyzeWithAI(body) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 3000,
-        messages: [{ role: 'user', content: buildPrompt(body) }],
+        max_tokens: 8192,
+        messages: [
+          { role: 'user', content: buildPrompt(body) },
+        ],
+        system: 'Responda APENAS com JSON válido, sem texto antes ou depois. Sem markdown, sem code fences.',
       }),
     })
     const data = await resp.json()
-    const text = data?.content?.[0]?.text || ''
-    const match = text.match(/\{[\s\S]*\}/)
-    if (!match) return null
-    return JSON.parse(match[0])
-  } catch {
+    if (data.error) {
+      console.error('[BIM_Coordinator_AI] API error:', JSON.stringify(data.error))
+      return null
+    }
+    const text = data?.content?.[0]?.text?.trim() || ''
+    const start = text.indexOf('{')
+    const end = text.lastIndexOf('}')
+    if (start === -1 || end === -1) return null
+    return JSON.parse(text.slice(start, end + 1))
+  } catch (err) {
+    console.error('[BIM_Coordinator_AI] error:', err?.message || err)
     return null
   }
 }
