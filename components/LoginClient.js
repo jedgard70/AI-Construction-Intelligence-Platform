@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/frontend/lib/supabase'
+import { supabase } from '@/frontend/lib/supabase'
 
 const FEATURES = [
   { icon: '🏢', label: 'BIM Intelligence', desc: 'Clash detection · 3D/4D/5D/6D/7D' },
@@ -21,7 +21,7 @@ export default function LoginClient() {
     setLoading(true)
     setError('')
     try {
-      const supabase = createClient()
+
       if (tab === 'login') {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password })
         if (err) throw err
