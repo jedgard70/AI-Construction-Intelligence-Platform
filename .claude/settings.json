@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; echo \"$f\" | grep -qE '\\.(ts|tsx|js|jsx)$' && cd /home/user/AI-Construction-Intelligence-Platform && npm run build 2>&1 | tail -5; } 2>/dev/null || true",
+            "timeout": 60,
+            "statusMessage": "Verificando build...",
+            "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -q 'git commit' && echo '{\"systemMessage\":\"✅ Commit feito — push em andamento\"}' || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
