@@ -2,8 +2,6 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
-  // Disable Turbopack — has module resolution bugs on Windows
-  turbopack: { disable: true },
   async redirects() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
     const dest = supabaseUrl ? '/login' : '/dashboard.html'
