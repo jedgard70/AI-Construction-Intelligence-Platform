@@ -373,7 +373,27 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               textTransform: 'uppercase', letterSpacing: '0.08em',
               padding: '8px 8px 4px' }}>Principal</div>
             {cfg.nav.map((item, i) => (
-              <button key={i} onClick={() => { setActiveNav(i); if(item.label==='Curva S / EVM'||item.label==='Orçamento') window.location.href='/orcamento'; }}
+              <button key={i} onClick={() => {
+                setActiveNav(i)
+                const routes: Record<string,string> = {
+                  'Curva S / EVM': '/orcamento',
+                  'Orçamento': '/orcamento',
+                  'RDO': '/rdo',
+                  'Não conformidades': '/qualidade',
+                  'NCIs abertas': '/qualidade',
+                  'Checklists': '/qualidade',
+                  'NBR 15575': '/qualidade',
+                  'Documentos': '/documentos',
+                  'ROI / TIR': '/investimentos',
+                  'NOI / Cap Rate': '/investimentos',
+                  'ESG Score': '/investimentos',
+                  'Pitch Deck': '/investimentos',
+                  'Investimentos': '/investimentos',
+                  'Plantas': '/plantas',
+                  'BIM / Clash': '/plantas',
+                }
+                if (routes[item.label]) window.location.href = routes[item.label]
+              }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   width: '100%', padding: '8px 10px',
