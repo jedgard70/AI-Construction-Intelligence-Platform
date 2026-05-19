@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 
 // ─── Types ──────────────────────────────────────────────────────
-type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload'
+type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes'
 type ClashItem = { id:string; discipline:string; severity:'Critical'|'Major'|'Minor'; description:string; location:string; status:string }
 
 const CLASH_DATA: ClashItem[] = [
@@ -47,6 +47,111 @@ const MARKET_ROLES = [
   { role:'Estimator', rate:'$75–$120/hr', demand:'High ↑', icon:'💰' },
   { role:'Construction Doc Mgr', rate:'$90–$140/hr', demand:'High ↑', icon:'📁' },
   { role:'Residential Designer', rate:'$55–$90/hr', demand:'Medium →', icon:'🏠' },
+]
+
+// ─── US Building Codes ──────────────────────────────────────────
+const US_CODES = [
+  {
+    id: 'irc',
+    name: 'IRC 2021',
+    full: 'International Residential Code',
+    scope: '1 & 2 Family Dwellings + Townhouses ≤ 3 stories',
+    icon: '🏠',
+    color: '#185FA5',
+    bg: '#EFF4FF',
+    adoptedBy: 'Most US states — check local amendments',
+    chapters: [
+      { ref: 'R301',      title: 'Design Criteria',                   desc: 'Wind, seismic, snow, flood loads. Wind speed maps, exposure categories, design wind pressure.' },
+      { ref: 'R302',      title: 'Fire-Resistant Construction',        desc: 'Exterior wall fire-resistance based on lot-line distance. Projections, openings, penetrations.' },
+      { ref: 'R303',      title: 'Light, Ventilation & Heating',      desc: 'Min. 8% floor area for glazing, 4% for ventilation. Min 68°F habitable space heating.' },
+      { ref: 'R401–R404', title: 'Foundations',                       desc: 'Footings, foundation walls, slabs-on-grade. Min. depth per frost line. Drainage requirements.' },
+      { ref: 'R501–R507', title: 'Floors',                            desc: 'Wood floor framing, span tables, notching/boring limits, floor sheathing.' },
+      { ref: 'R601–R614', title: 'Wall Construction',                 desc: 'Wood framing, braced wall panels, insulation, sheathing, exterior wall covering.' },
+      { ref: 'R702–R703', title: 'Interior/Exterior Wall Covering',   desc: 'Gypsum board, weather-resistive barrier, water-managed cladding systems.' },
+      { ref: 'R801–R807', title: 'Roof-Ceiling Construction',         desc: 'Rafter/ceiling joist span tables, attic ventilation (1/150 ratio), roof sheathing.' },
+      { ref: 'R902',      title: 'Roof Classification',               desc: 'Class A, B, C roofing. Fire exposure requirements. Re-roofing provisions.' },
+      { ref: 'R1001–R1006', title: 'Masonry / Fireplace & Chimney', desc: 'Hearth extension min. 16" front, 8" sides. Flue sizing. Smoke chamber.' },
+      { ref: 'E3501–E3706', title: 'Electrical (NEC Derivative)',    desc: 'Service entrance, panel sizing, branch circuits, AFCI/GFCI requirements per NEC.' },
+      { ref: 'P2503–P3114', title: 'Plumbing',                      desc: 'DWV sizing, water supply, fixture units, cleanouts, trap requirements.' },
+      { ref: 'M1301–M1411', title: 'Mechanical / HVAC',             desc: 'Equipment installation, combustion air, duct sizing, exhaust ventilation.' },
+    ],
+  },
+  {
+    id: 'ibc',
+    name: 'IBC 2021',
+    full: 'International Building Code',
+    scope: 'Commercial, Multi-Family, Mixed-Use, Assembly, Institutional',
+    icon: '🏢',
+    color: '#534AB7',
+    bg: '#F0EEFF',
+    adoptedBy: '49 states + DC (with local amendments)',
+    chapters: [
+      { ref: 'Ch. 3',       title: 'Use & Occupancy Classification',     desc: 'Groups A (Assembly), B (Business), E (Educational), F (Factory), H (Hazardous), I (Institutional), M (Mercantile), R (Residential), S (Storage), U (Utility).' },
+      { ref: 'Ch. 5',       title: 'General Building Heights & Areas',   desc: 'Max height/stories/area per construction type and occupancy. Sprinkler increases. Mixed-use area aggregation.' },
+      { ref: 'Ch. 6',       title: 'Types of Construction',              desc: 'Types I-A through V-B. Fire-resistance ratings for structural elements, exterior walls, floor/ceiling assemblies.' },
+      { ref: 'Ch. 7',       title: 'Fire & Smoke Protection Features',   desc: 'Fire walls, fire barriers, fire partitions. Rated corridor construction. Shaft enclosures. Opening protectives.' },
+      { ref: 'Ch. 9',       title: 'Fire Protection Systems',            desc: 'Automatic sprinkler (NFPA 13/13R/13D). Standpipes. Fire alarm & detection (NFPA 72). Smoke control.' },
+      { ref: 'Ch. 10',      title: 'Means of Egress',                   desc: 'Occupant load calc. Exit widths. Travel distance limits. Dead-end corridors. Stairway requirements. Emergency lighting.' },
+      { ref: 'Ch. 11',      title: 'Accessibility',                      desc: 'ADA & ABA standards. Accessible routes, parking, restrooms, signage. Accessible means of egress. FHA requirements.' },
+      { ref: 'Ch. 13',      title: 'Energy Efficiency (IECC)',           desc: 'Compliance via prescriptive or performance path. COMcheck software. U-factors, SHGCs, R-values by climate zone.' },
+      { ref: 'Ch. 16',      title: 'Structural Design — Loads',          desc: 'Dead, live, roof, wind (ASCE 7), seismic (ASCE 7 Ch. 11-12), snow, rain, flood, tsunami loads. Load combinations.' },
+      { ref: 'Ch. 17',      title: 'Special Inspections & Tests',        desc: 'Statement of Special Inspections. Concrete, steel, masonry, soils, fire-resistive assemblies, sprayed fire-resistant materials.' },
+      { ref: 'Ch. 18',      title: 'Soils & Foundations',                desc: 'Geotechnical investigation. Allowable bearing capacity. Foundation requirements. Grading and drainage.' },
+      { ref: 'Ch. 19',      title: 'Concrete',                           desc: 'ACI 318 by reference. Mix design, reinforcement, cover, formwork, testing, special inspection.' },
+      { ref: 'Ch. 22',      title: 'Steel',                              desc: 'AISC 360 (design), AISC 341 (seismic), AWS D1.1 (welding). High-strength bolts, connections.' },
+      { ref: 'Ch. 26–30',   title: 'Gypsum Board / Plastering',         desc: 'Fire-resistance assemblies, GA-600. Shaft wall assemblies. Separation between occupancies.' },
+    ],
+  },
+  {
+    id: 'nec',
+    name: 'NEC 2023',
+    full: 'National Electrical Code (NFPA 70)',
+    scope: 'All electrical installations — residential, commercial, industrial',
+    icon: '⚡',
+    color: '#B87000',
+    bg: '#FFF8E6',
+    adoptedBy: 'Adopted by all 50 states (some use 2020 or 2017 edition)',
+    chapters: [
+      { ref: 'Art. 100',    title: 'Definitions',                        desc: 'Authoritative definitions: AHJ, bonding, branch circuit, feeder, grounded/grounding, identified, labeled, listed, service, utilization equipment.' },
+      { ref: 'Art. 110',    title: 'Requirements for Electrical Installations', desc: 'Min. working clearances (110.26): 36" front panel depth, 30" width, 6\'6" headroom. Examination of equipment. Interrupting ratings.' },
+      { ref: 'Art. 200',    title: 'Use of Grounded (Neutral) Conductors', desc: 'White/gray insulation for grounded conductors. Identification of terminals. Polarity.' },
+      { ref: 'Art. 210',    title: 'Branch Circuits',                    desc: 'Small appliance circuits (20A). Bathroom circuits. AFCI (210.12) — all 120V 15/20A circuits in dwelling. GFCI (210.8) — bathrooms, kitchens, outdoors, basements.' },
+      { ref: 'Art. 220',    title: 'Branch-Circuit & Service Load Calc', desc: 'Demand factors for feeders. Cooking equipment demand. Lighting load calculations. Service load for dwellings (220.82, optional calc 220.83).' },
+      { ref: 'Art. 230',    title: 'Services',                           desc: 'Service entrance conductors. Overhead clearances (230.24). Underground service. Disconnecting means. Service equipment.' },
+      { ref: 'Art. 240',    title: 'Overcurrent Protection',             desc: 'Fuse and CB ratings. Location of overcurrent devices. Standard ratings (15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100A…). Coordination.' },
+      { ref: 'Art. 250',    title: 'Grounding & Bonding',                desc: 'System grounding. Equipment grounding conductors (EGC) sizing per 250.122. Grounding electrode system (250.50). UFER ground. Bonding of metal piping.' },
+      { ref: 'Art. 300',    title: 'Wiring Methods — General',           desc: 'Wiring in spaces. Cable routing. Securing and supporting. Protection from damage. Fill calculations. Wet/damp locations.' },
+      { ref: 'Art. 310',    title: 'Conductors for General Wiring',      desc: 'Conductor ampacity tables (310.15). Temperature ratings (60°C, 75°C, 90°C). Derating for conduit fill. Aluminum conductor requirements.' },
+      { ref: 'Art. 406',    title: 'Receptacles, Cord Connectors & Attachment Plugs', desc: 'GFCI protection locations. Tamper-resistant receptacles in dwelling units. Weatherproof in-use covers. Isolated ground receptacles.' },
+      { ref: 'Art. 408',    title: 'Switchboards, Switchgear & Panelboards', desc: 'Panel labeling. Dedicated space (408.18). Max 42 circuits per panelboard. Main bonding jumper. Neutral bar bonding.' },
+      { ref: 'Art. 410',    title: 'Luminaires, Lampholders',            desc: 'Recessed lighting near insulation. Type IC vs non-IC. Wet/damp location fixtures. Emergency lighting (700). Exit signs (701).' },
+      { ref: 'Art. 700–701', title: 'Emergency & Legally Required Standby', desc: 'Transfer time requirements. Generator sizing. ATS. UPS systems. Maintenance requirements. Testing intervals.' },
+    ],
+  },
+  {
+    id: 'fbc',
+    name: 'FBC 8th Ed.',
+    full: 'Florida Building Code (2023)',
+    scope: 'All construction in Florida — includes FL-specific amendments to IBC/IRC',
+    icon: '🌴',
+    color: '#2D7A4F',
+    bg: '#E6F4ED',
+    adoptedBy: 'Statewide — Florida only. Local amendments require state approval.',
+    chapters: [
+      { ref: 'FBC Ch. 16',  title: 'Structural — Wind Loads (ASCE 7-22)', desc: 'Ultimate design wind speed maps per risk category. Florida is Risk Cat II/III/IV statewide. 170+ mph in South FL. Product approval required.' },
+      { ref: 'HVHZ',        title: 'High Velocity Hurricane Zone',        desc: 'Applies to Miami-Dade and Broward counties only. Strictest wind requirements in the US (185 mph+). NOA (Notice of Acceptance) required for all products. Separate HVHZ code provisions.' },
+      { ref: 'FBC R301.2.1.1', title: 'Wind Exposure Categories (Residential)', desc: 'Exposure B, C, D based on terrain. South FL coast = Exposure D. Wood frame must be designed per WFCM or engineering. Continuous load path required.' },
+      { ref: 'FBC Ch. 18',  title: 'Soils — Special FL Requirements',    desc: 'Expansive soils (not typical in FL). Organic soils — common in South FL, require remediation. High water table considerations. Soil testing mandatory for most projects.' },
+      { ref: 'Impact Glazing', title: 'Impact-Resistant Glazing',        desc: 'Required in Wind-Borne Debris Regions (all of South FL, coastal areas). Large missile test (ASTM E1996). Opening protection or SMS. Miami-Dade NOA or FL product approval.' },
+      { ref: 'FBC Energy',  title: 'Florida Energy Code (IECC w/ FL Amend.)', desc: 'Mandatory blower door test (≤ 5 ACH50 residential). EnergyGauge software. Solar-ready provisions (FBC R406). Manual J for HVAC sizing.' },
+      { ref: 'FBC Plumbing', title: 'Florida Plumbing Code',             desc: 'Based on IPC. Septic systems under FDEP. Backflow prevention. Water heater elevation in flood zones. Rain water harvesting provisions.' },
+      { ref: 'FBC Mech.',   title: 'Florida Mechanical Code (HVAC)',     desc: 'Based on IMC. Manual J/S/D required. Duct leakage testing (4 CFM25 per 100 SF). Air handler in conditioned space or R-8 duct insulation.' },
+      { ref: 'FBC Elec.',   title: 'Florida Electrical Code',            desc: 'Based on NEC 2023. Additional GFCI requirements. Surge protection (FBC E280.0). Generator and EV provisions. Solar PV (Art. 690).' },
+      { ref: 'FBC Flood',   title: 'Flood-Resistant Construction',       desc: 'ASCE 24-14 by reference. Lowest Floor Elevation (LFE) above BFE. Flood openings in enclosures. V-Zone pile/column foundations. Breakaway walls.' },
+      { ref: 'FBC Roof',    title: 'Roofing — FL Requirements',          desc: '25-year warranty minimum for commercial. Steep-slope: min 2 layers felt + roof covering. Low-slope: FM approvals. Miami-Dade NOA for HVHZ. Metal roof fastening.' },
+      { ref: 'FBC 553',     title: 'Florida Statute 553 — Building Codes', desc: 'State law requiring statewide uniform code. 7th edition adopted March 2023. Local amendments process. Product approval system (floridabuilding.org).' },
+    ],
+  },
 ]
 
 const SEV_COLOR: Record<string,string> = { Critical:'#A32D2D', Major:'#BA7517', Minor:'#3B6D11' }
@@ -184,10 +289,54 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
     { id:'upload',    icon:'⬆️', label:'BIM Upload' },
     { id:'clash',     icon:'⚡', label:'Clash Detection' },
     { id:'permits',   icon:'📋', label:'Permit Documentation' },
+    { id:'codes',     icon:'📖', label:'US Building Codes' },
     { id:'docs',      icon:'📁', label:'Construction Docs' },
     { id:'workflow',  icon:'🔄', label:'AI Workflow' },
     { id:'reports',   icon:'📈', label:'AI Reports' },
   ]
+
+  const [activeCode, setActiveCode] = useState('irc')
+  const [codeQuery, setCodeQuery] = useState('')
+  const [codeAI, setCodeAI] = useState('')
+  const [codeAILoading, setCodeAILoading] = useState(false)
+  const [expandedSection, setExpandedSection] = useState<string|null>(null)
+
+  async function askCodeAI(query: string, codeId: string) {
+    if (!query.trim()) return
+    setCodeAILoading(true); setCodeAI('')
+    const code = US_CODES.find(c => c.id === codeId)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 1200,
+          system: `You are a US building code expert specializing in ${code?.full} (${code?.name}). You have deep knowledge of all US building codes: IRC, IBC, NEC/NFPA 70, and the Florida Building Code. Provide precise, actionable answers citing specific code sections. Always mention when local amendments may apply.`,
+          messages: [{ role: 'user', content: `Code: ${code?.full} (${code?.name})\n\nQuestion: ${query}\n\nProvide a precise answer citing specific sections. Include practical application notes for construction professionals.` }]
+        })
+      })
+      const data = await res.json()
+      setCodeAI(data?.content?.[0]?.text || 'Response complete.')
+    } catch { setCodeAI('Connection error. Please check API configuration.') }
+    setCodeAILoading(false)
+  }
+
+  async function generateCodeChecklist(codeId: string, discipline: string) {
+    setCodeAILoading(true); setCodeAI('')
+    const code = US_CODES.find(c => c.id === codeId)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6', max_tokens: 1500,
+          system: `You are a US building code compliance expert. Generate precise, field-ready compliance checklists for construction professionals.`,
+          messages: [{ role: 'user', content: `Generate a compliance checklist for ${discipline} under ${code?.full} (${code?.name}). Format as a numbered checklist with: section reference, requirement, pass/fail criteria. Focus on the most common compliance failures and inspector questions. Include 15-20 items.` }]
+        })
+      })
+      const data = await res.json()
+      setCodeAI(data?.content?.[0]?.text || '')
+    } catch { setCodeAI('Error generating checklist.') }
+    setCodeAILoading(false)
+  }
 
   return (
     <>
@@ -542,6 +691,156 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                     <div style={s.pre}>{reportResult}</div>
                   </div>
                 )}
+              </>
+            )}
+
+            {/* ── US BUILDING CODES ── */}
+            {activeModule === 'codes' && (
+              <>
+                <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>📖 US Building Codes</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:20 }}>IRC · IBC · NEC (NFPA 70) · Florida Building Code — reference + AI compliance assistant</div>
+
+                {/* Code selector tabs */}
+                <div style={{ display:'flex', gap:8, marginBottom:20, flexWrap:'wrap' as const }}>
+                  {US_CODES.map(code => (
+                    <button key={code.id} onClick={() => { setActiveCode(code.id); setCodeAI(''); setExpandedSection(null) }}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 16px',
+                        background: activeCode === code.id ? code.color : '#161b22',
+                        color: activeCode === code.id ? '#fff' : '#8b93a7',
+                        border: `1px solid ${activeCode === code.id ? code.color : '#30363d'}`,
+                        borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'all .15s' }}>
+                      <span>{code.icon}</span>
+                      <span>{code.name}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {US_CODES.filter(c => c.id === activeCode).map(code => (
+                  <div key={code.id}>
+                    {/* Code header */}
+                    <div style={{ background:`${code.color}18`, border:`1px solid ${code.color}44`, borderRadius:12, padding:'16px 20px', marginBottom:16 }}>
+                      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap' as const, gap:12 }}>
+                        <div>
+                          <div style={{ fontSize:22, fontWeight:800, color:code.color, marginBottom:4 }}>
+                            {code.icon} {code.full}
+                          </div>
+                          <div style={{ fontSize:12, color:'#8b93a7', marginBottom:6 }}>
+                            <strong style={{ color:'#e6edf3' }}>Scope:</strong> {code.scope}
+                          </div>
+                          <div style={{ fontSize:11, color:'#8b93a7' }}>
+                            <strong style={{ color:'#e6edf3' }}>Adopted by:</strong> {code.adoptedBy}
+                          </div>
+                        </div>
+                        <div style={{ display:'flex', gap:8, flexShrink:0 }}>
+                          {['Structural','Electrical','Plumbing','HVAC'].map(disc => (
+                            <button key={disc} onClick={() => generateCodeChecklist(code.id, disc)}
+                              style={{ padding:'6px 12px', background:'#0d1117', border:`1px solid ${code.color}66`, borderRadius:6,
+                                color:code.color, fontSize:10, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                              ✓ {disc} Checklist
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* AI Q&A */}
+                    <div style={{ ...s.card, marginBottom:16 }}>
+                      <div style={{ ...s.secTit, color:code.color }}>🤖 Ask {code.name} AI</div>
+                      <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+                        <input
+                          style={s.input}
+                          placeholder={`Ask anything about ${code.name}… e.g. "What is the min. egress window size?" or "GFCI requirements for kitchen"`}
+                          value={codeQuery}
+                          onChange={e => setCodeQuery(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && askCodeAI(codeQuery, code.id)}
+                        />
+                        <button style={{ ...s.btn, background:code.color, whiteSpace:'nowrap' as const, flexShrink:0 }}
+                          onClick={() => askCodeAI(codeQuery, code.id)} disabled={codeAILoading || !codeQuery.trim()}>
+                          {codeAILoading ? '⏳' : '→ Ask'}
+                        </button>
+                      </div>
+                      {/* Quick questions */}
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap' as const }}>
+                        {(code.id === 'irc' ? [
+                          'Min. egress window size bedroom',
+                          'Smoke detector requirements',
+                          'Stair riser/tread dimensions',
+                          'Attic ventilation ratio',
+                          'Deck ledger connection',
+                        ] : code.id === 'ibc' ? [
+                          'Occupancy load calculation',
+                          'Exit width requirements',
+                          'Travel distance to exit',
+                          'Sprinkler requirement thresholds',
+                          'Type V-B max height and area',
+                        ] : code.id === 'nec' ? [
+                          'GFCI locations in dwelling',
+                          'AFCI requirements 2023',
+                          'Panel working clearance 110.26',
+                          'EV charger circuit requirements',
+                          'Solar PV disconnecting means',
+                        ] : [
+                          'HVHZ product approval process',
+                          'Impact glazing requirements',
+                          'Wind speed South Florida',
+                          'Duct leakage test requirement',
+                          'Blower door test requirement',
+                        ]).map(q => (
+                          <button key={q} onClick={() => { setCodeQuery(q); askCodeAI(q, code.id) }}
+                            style={{ padding:'4px 10px', background:'#0d1117', border:'1px solid #30363d', borderRadius:20,
+                              fontSize:10, color:'#8b93a7', cursor:'pointer', fontFamily:'inherit', transition:'border-color .15s' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = code.color}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#30363d'}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+
+                      {codeAILoading && (
+                        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'16px 0', color:'#58a6ff', fontSize:13 }}>
+                          <div style={{ width:18, height:18, borderRadius:'50%', border:`2px solid ${code.color}`,
+                            borderTopColor:'transparent', animation:'spin 0.8s linear infinite', flexShrink:0 }} />
+                          Consulting {code.name}…
+                        </div>
+                      )}
+                      {codeAI && !codeAILoading && (
+                        <div style={{ ...s.pre, marginTop:12, borderLeft:`3px solid ${code.color}` }}>{codeAI}</div>
+                      )}
+                    </div>
+
+                    {/* Code sections reference */}
+                    <div style={s.card}>
+                      <div style={s.secTit}>📋 Key Code Sections — {code.name}</div>
+                      <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                        {code.chapters.map((ch, i) => (
+                          <div key={i}
+                            onClick={() => setExpandedSection(expandedSection === `${code.id}-${i}` ? null : `${code.id}-${i}`)}
+                            style={{ background:'#0d1117', border:`1px solid ${expandedSection === `${code.id}-${i}` ? code.color+'66' : '#30363d'}`,
+                              borderLeft:`3px solid ${expandedSection === `${code.id}-${i}` ? code.color : '#30363d'}`,
+                              borderRadius:8, padding:'10px 14px', cursor:'pointer', transition:'all .15s' }}>
+                            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                <span style={{ fontSize:10, fontFamily:'monospace', color:code.color, fontWeight:700,
+                                  background:`${code.color}18`, padding:'2px 8px', borderRadius:4, flexShrink:0 }}>{ch.ref}</span>
+                                <span style={{ fontSize:12, fontWeight:600, color:'#e6edf3' }}>{ch.title}</span>
+                              </div>
+                              <span style={{ fontSize:11, color:'#8b93a7' }}>{expandedSection === `${code.id}-${i}` ? '▲' : '▼'}</span>
+                            </div>
+                            {expandedSection === `${code.id}-${i}` && (
+                              <div style={{ marginTop:10, paddingTop:10, borderTop:'1px solid #30363d' }}>
+                                <div style={{ fontSize:12, color:'#cac4d0', lineHeight:1.7, marginBottom:10 }}>{ch.desc}</div>
+                                <button onClick={e => { e.stopPropagation(); askCodeAI(`Explain ${ch.ref} — ${ch.title} in practical terms with examples and common mistakes to avoid.`, code.id) }}
+                                  style={{ ...s.btnGhost, fontSize:10, borderColor:`${code.color}44`, color:code.color }}>
+                                  🤖 AI Explain This Section
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </>
             )}
 
