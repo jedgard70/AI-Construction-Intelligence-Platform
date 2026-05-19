@@ -4,9 +4,20 @@
 -- ══════════════════════════════════════════════════════════════════════════════
 
 -- ── Helper: role do usuário logado ────────────────────────────────────────────
+-- Usa plpgsql + SET LOCAL row_security = OFF para evitar recursão infinita:
+-- as políticas de profiles chamam esta função, que por sua vez consulta profiles.
+-- Sem o bypass, o Supabase detecta recursão e bloqueia a query.
 create or replace function public.current_role_acip()
-returns public.user_role language sql stable security definer as $$
-  select role from public.profiles where id = auth.uid()
+returns public.user_role language plpgsql stable security definer
+set search_path = public
+as $$
+declare
+  v_role public.user_role;
+begin
+  set local row_security = off;
+  select role into v_role from public.profiles where id = auth.uid();
+  return v_role;
+end;
 $$;
 
 

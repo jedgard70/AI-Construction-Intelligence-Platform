@@ -1,3 +1,5 @@
+export const config = { api: { bodyParser: { sizeLimit: '20mb' } } }
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: { message: 'Method not allowed' } })
@@ -18,7 +20,12 @@ export default async function handler(req, res) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({ model, max_tokens, system, messages }),
+      body: JSON.stringify({
+        model:      model      || 'claude-sonnet-4-6',
+        max_tokens: max_tokens || 1500,
+        system,
+        messages,
+      }),
     })
 
     const data = await response.json()

@@ -21,6 +21,11 @@ export default function LoginClient() {
     setLoading(true)
     setError('')
     try {
+      // Demo mode — no Supabase configured, go straight to dashboard
+      if (!supabase) {
+        window.location.href = '/dashboard'
+        return
+      }
       if (tab === 'login') {
         const { error: err } = await supabase.auth.signInWithPassword({ email, password })
         if (err) throw err

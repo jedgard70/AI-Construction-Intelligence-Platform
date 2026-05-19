@@ -2,6 +2,7 @@
 import HelpButton from './HelpButton'
 import NewProjectModal from './NewProjectModal'
 import NewClientModal from './NewClientModal'
+import { printDocument } from './PrintShareModal'
 import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
@@ -268,6 +269,11 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [showPlantasViewer, setShowPlantasViewer] = useState(false)
   const [activeNav, setActiveNav]     = useState(0)
   const [activePlanta, setActivePlanta] = useState(0)
+  const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
+  const [plantUploading, setPlantUploading] = useState(false)
+  const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
+  const [agentRunning, setAgentRunning] = useState(false)
+  const [agentResult, setAgentResult]   = useState('')
 
   const cfg = ROLE_CONFIG[profile.role] ?? DEFAULT_ROLE_CONFIG
 
@@ -445,6 +451,12 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
             ))}
           <div style={{borderTop:'1px solid #e5e8f0',margin:'8px 0 4px',padding:'8px 8px 0'}}>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:'.1em',color:'#b0b8c8',textTransform:'uppercase',padding:'0 2px 6px'}}>Ferramentas</div>
+            <a href='/bim-ops' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#0d6e6e',fontSize:12,fontWeight:600,textDecoration:'none',borderRadius:8,transition:'background .15s',background:'#E6F7F7'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#c8efef')} onMouseLeave={e=>(e.currentTarget.style.background='#E6F7F7')}>🏗️ Atlas BIM Ops</a>
+            <a href='/us-brand' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#0F4C81',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#E8F0F9')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🌎 US Brand Strategy</a>
+            <a href='/platform' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#185FA5',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🗺️ Platform Map</a>
             <a href='/archvis' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#3B6D11',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
               onMouseEnter={e=>(e.currentTarget.style.background='#EAF3DE')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎨 ArchVis Pro</a>
             <a href='/director-cut' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
@@ -556,6 +568,34 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               ))}
             </div>
 
+            {/* ── 4 Cards Agentes IA ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+              {[
+                { id:'bim',    icon:'🏢', label:'BIM Intelligence',    sub:'Clash detection · 3D/4D/5D/6D/7D',   color:'#185FA5', bg:'#EFF4FF',
+                  prompt:'Você é o BIM_Intelligence_AI. Analise o portfólio de obras e simule uma detecção de clashes BIM. Retorne: 1) Número de interferências detectadas por disciplina (Estrutural, Hidráulica, Elétrica, HVAC); 2) Nível de severidade (Crítico/Médio/Baixo); 3) Top 3 conflitos prioritários com descrição técnica; 4) Índice 4D de cronograma e 5D de custo vinculados; 5) Recomendações de resolução. Use dados fictícios realistas de obras brasileiras.' },
+                { id:'evm',    icon:'📊', label:'EVM Analytics',        sub:'CPI, SPI, EAC, VAC, TCPI em tempo real', color:'#534AB7', bg:'#F0EEFF',
+                  prompt:'Você é o EVM_Analytics_AI. Calcule e analise os indicadores de Earned Value Management do portfólio. Forneça: 1) CPI (Cost Performance Index) por projeto; 2) SPI (Schedule Performance Index); 3) EAC (Estimate at Completion); 4) VAC (Variance at Completion); 5) TCPI (To-Complete Performance Index); 6) Análise da Curva S; 7) Previsão de encerramento e custo final. Use os projetos do portfólio e mostre cálculos detalhados.' },
+                { id:'nr',     icon:'🛡', label:'Conformidade NR',      sub:'NR-6, NR-10, NR-18, NR-33, NR-35',  color:'#3B6D11', bg:'#EAF3DE',
+                  prompt:'Você é o NR_Compliance_AI. Faça uma auditoria completa de conformidade com Normas Regulamentadoras no portfólio de obras. Analise: 1) NR-18 (Segurança na Construção Civil) — itens críticos; 2) NR-6 (EPIs) — cobertura e adequação; 3) NR-10 (Eletricidade) — pontos de risco; 4) NR-33 (Espaços Confinados); 5) NR-35 (Trabalho em Altura). Para cada NR: status de conformidade, pendências, prazo para regularização e risco de multa (valor estimado). Emita score geral de segurança.' },
+                { id:'multi',  icon:'🤖', label:'Multi-Agent AI',       sub:'8 especialistas cognitivos simultâneos', color:'#A32D2D', bg:'#FCEBEB',
+                  prompt:'Você é o MultiAgent_Coordinator. Coordene 8 agentes especializados e produza uma análise estratégica completa do portfólio: [Cost_Controller_AI] Desvios de custo e alertas SINAPI; [Construction_Planner_AI] Caminho crítico e reprogramações; [BIM_Intelligence_AI] Detecção de clashes e compatibilização; [Legal_Compliance_AI] Conformidade contratual e regulatória; [ESG_Monitor_AI] Score de sustentabilidade; [Risk_Assessment_AI] Matriz de riscos atualizada; [Market_Intelligence_AI] Benchmarking setorial; [Finance_Optimizer_AI] Fluxo de caixa e otimização. Consolide em relatório executivo com score geral 0-100 e top 5 ações prioritárias.' },
+              ].map(ag => (
+                <div key={ag.id}
+                  onClick={() => { setAiAgentModal(ag.id); setAgentResult('') }}
+                  style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12,
+                    padding:'14px 16px', cursor:'pointer', transition:'all .15s',
+                    borderLeftWidth:3, borderLeftColor:ag.color }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background=ag.bg; (e.currentTarget as HTMLElement).style.borderColor=ag.color }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='#fff'; (e.currentTarget as HTMLElement).style.borderLeftColor=ag.color; (e.currentTarget as HTMLElement).style.borderTopColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderRightColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderBottomColor='#e5e8f0' }}>
+                  <div style={{ fontSize:22, marginBottom:6 }}>{ag.icon}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:3 }}>{ag.label}</div>
+                  <div style={{ fontSize:10, color:'#8b93a7', lineHeight:1.4 }}>{ag.sub}</div>
+                  <div style={{ marginTop:10, fontSize:10, fontWeight:600, color:ag.color,
+                    display:'flex', alignItems:'center', gap:4 }}>▶ Executar agente</div>
+                </div>
+              ))}
+            </div>
+
             {/* Linha central */}
             <div style={{ display:'grid',
               gridTemplateColumns: cfg.showCurvaS ? '1.6fr 1fr' : '1fr',
@@ -580,8 +620,43 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               {cfg.showAgentEvents && (
                 <div style={{ background:'#fff', border:'1px solid #e5e8f0',
                   borderRadius:12, padding:'16px' }}>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36', marginBottom:14 }}>
-                    🤖 Alertas dos Agentes IA
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
+                      🤖 Alertas dos Agentes IA
+                    </div>
+                    {events.length > 0 && (
+                      <div style={{ display:'flex', gap:6 }}>
+                        <button onClick={() => {
+                          const html = `
+<h1>🤖 Relatório de Alertas — Agentes IA</h1>
+<div class="meta"><span>📅 ${new Date().toLocaleDateString('pt-BR')}</span><span>${events.length} alertas</span></div>
+<table>
+  <tr><th>Prioridade</th><th>Agente</th><th>Hora</th><th>Resumo</th></tr>
+  ${events.map(ev => `<tr>
+    <td><span class="badge badge-${ev.priority==='critico'?'red':ev.priority==='alto'?'yellow':'blue'}">${ev.priority.toUpperCase()}</span></td>
+    <td>${ev.source_agent.replace('_AI','')}</td>
+    <td>${new Date(ev.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td>
+    <td>${ev.summary}</td>
+  </tr>`).join('')}
+</table>`
+                          printDocument('Alertas dos Agentes IA', html)
+                        }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer',
+                          fontFamily:'inherit', color:'#5a6282', display:'flex', alignItems:'center', gap:4 }}>
+                          🖨️ Imprimir
+                        </button>
+                        <button onClick={() => {
+                          const text = `🤖 ALERTAS DOS AGENTES IA\n${new Date().toLocaleDateString('pt-BR')}\n\n` +
+                            events.map(ev => `[${ev.priority.toUpperCase()}] ${ev.source_agent.replace('_AI','')} — ${ev.summary}`).join('\n')
+                          const wa = encodeURIComponent(text)
+                          window.open(`https://wa.me/?text=${wa}`, '_blank')
+                        }} style={{ padding:'5px 10px', border:'1px solid #3B6D11', borderRadius:6,
+                          background:'#EAF3DE', fontSize:11, fontWeight:600, cursor:'pointer',
+                          fontFamily:'inherit', color:'#3B6D11', display:'flex', alignItems:'center', gap:4 }}>
+                          📤 Compartilhar
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {events.map(ev => (
@@ -706,155 +781,385 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         </main>
       </div>
 
+      {/* ── MODAL AGENTE IA ── */}
+      {aiAgentModal && (() => {
+        const AGENTS: Record<string,{icon:string,label:string,color:string,prompt:string}> = {
+          bim:   { icon:'🏢', label:'BIM Intelligence', color:'#185FA5',
+            prompt:'Você é o BIM_Intelligence_AI. Analise o portfólio de obras e simule uma detecção de clashes BIM. Retorne: 1) Interferências detectadas por disciplina (Estrutural, Hidráulica, Elétrica, HVAC) com quantidades; 2) Severidade (Crítico/Médio/Baixo); 3) Top 3 conflitos prioritários com descrição técnica detalhada; 4) Índice 4D de cronograma e 5D de custo vinculados; 5) Recomendações de resolução. Use dados fictícios realistas de obras brasileiras de médio porte.' },
+          evm:   { icon:'📊', label:'EVM Analytics', color:'#534AB7',
+            prompt:'Você é o EVM_Analytics_AI. Calcule e analise indicadores de Earned Value Management do portfólio. Mostre: 1) CPI por projeto com interpretação; 2) SPI por projeto; 3) EAC e VAC calculados; 4) TCPI necessário para cumprir budget; 5) Análise da Curva S com pontos de inflexão; 6) Previsão de encerramento. Inclua tabela resumo e análise executiva. Dados reais: projetos com CPI médio 0.94 e SPI 0.91.' },
+          nr:    { icon:'🛡', label:'Conformidade NR', color:'#3B6D11',
+            prompt:'Você é o NR_Compliance_AI. Realize auditoria de conformidade NR no portfólio. Avalie: 1) NR-18 — itens críticos e status; 2) NR-6 (EPIs) — cobertura por função; 3) NR-10 (Eletricidade) — pontos de risco elétrico; 4) NR-33 (Espaços Confinados); 5) NR-35 (Altura). Para cada: status (Conforme/Parcial/Não conforme), pendências, prazo de regularização e multa estimada. Emita score geral 0-100 e plano de ação.' },
+          multi: { icon:'🤖', label:'Multi-Agent AI', color:'#A32D2D',
+            prompt:'Você é o MultiAgent_Coordinator. Coordene 8 agentes especializados e produza análise estratégica completa: [Cost_Controller_AI] Desvios de custo e alertas SINAPI; [Construction_Planner_AI] Caminho crítico; [BIM_Intelligence_AI] Clashes; [Legal_Compliance_AI] Conformidade contratual; [ESG_Monitor_AI] Score sustentabilidade; [Risk_Assessment_AI] Matriz de riscos; [Market_Intelligence_AI] Benchmarking; [Finance_Optimizer_AI] Fluxo de caixa. Consolide em relatório executivo com score geral 0-100 e top 5 ações prioritárias.' },
+        }
+        const ag = AGENTS[aiAgentModal]
+
+        async function runAgent() {
+          setAgentRunning(true); setAgentResult('')
+          try {
+            const res = await fetch('/api/chat', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2000,
+                system: ag.prompt,
+                messages:[{ role:'user', content:`Execute análise completa agora para o portfólio de ${projects.length} projetos ativos. Data: ${new Date().toLocaleDateString('pt-BR')}.` }]
+              })
+            })
+            const data = await res.json()
+            setAgentResult(data?.content?.[0]?.text || 'Análise concluída.')
+          } catch { setAgentResult('Erro ao conectar com o agente.') }
+          setAgentRunning(false)
+        }
+
+        return (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9999,
+            display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Geist',system-ui,sans-serif" }}
+            onClick={e => e.target === e.currentTarget && setAiAgentModal(null)}>
+            <div style={{ background:'#fff', borderRadius:16, width:700, maxHeight:'88vh',
+              display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.25)',
+              border:'1px solid #e5e8f0', overflow:'hidden' }}>
+              {/* header */}
+              <div style={{ padding:'16px 22px', borderBottom:'1px solid #e5e8f0',
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                background:`${ag.color}08` }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ fontSize:24 }}>{ag.icon}</div>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36' }}>{ag.label}</div>
+                    <div style={{ fontSize:11, color:'#8b93a7' }}>Agente especializado · AI Construction Platform</div>
+                  </div>
+                </div>
+                <button onClick={() => setAiAgentModal(null)}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'#8b93a7' }}>✕</button>
+              </div>
+              {/* body */}
+              <div style={{ flex:1, overflowY:'auto', padding:'20px 22px' }}>
+                {!agentResult && !agentRunning && (
+                  <div style={{ textAlign:'center', padding:'32px 0' }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>{ag.icon}</div>
+                    <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>
+                      {ag.label} pronto para executar
+                    </div>
+                    <div style={{ fontSize:12, color:'#8b93a7', marginBottom:24, maxWidth:400, margin:'0 auto 24px' }}>
+                      O agente irá analisar seu portfólio de {projects.length} projetos e gerar relatório completo com recomendações.
+                    </div>
+                    <button onClick={runAgent}
+                      style={{ padding:'12px 28px', background:ag.color, color:'#fff', border:'none',
+                        borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                      ▶ Executar {ag.label}
+                    </button>
+                  </div>
+                )}
+                {agentRunning && (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'40px 0', gap:16 }}>
+                    <div style={{ width:48, height:48, borderRadius:'50%', border:`3px solid ${ag.color}`,
+                      borderTopColor:'transparent', animation:'spin 0.8s linear infinite' }} />
+                    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                    <div style={{ fontSize:13, color:ag.color, fontWeight:600 }}>
+                      {ag.label} analisando portfólio...
+                    </div>
+                    <div style={{ fontSize:11, color:'#8b93a7' }}>Processando {projects.length} projetos com IA Claude</div>
+                  </div>
+                )}
+                {agentResult && (
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#3B6D11' }}>✅ Análise concluída</div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        <button onClick={() => { printDocument(ag.label, `<h1>${ag.icon} ${ag.label}</h1><pre style="white-space:pre-wrap;font-family:inherit">${agentResult}</pre>`) }}
+                          style={{ padding:'5px 12px', border:'1px solid #e5e8f0', borderRadius:6, background:'#fff',
+                            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                          🖨️ Imprimir
+                        </button>
+                        <button onClick={runAgent}
+                          style={{ padding:'5px 12px', border:`1px solid ${ag.color}`, borderRadius:6, background:'#fff',
+                            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', color:ag.color }}>
+                          🔄 Reanalisar
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ background:'#f8f9fc', borderLeft:`3px solid ${ag.color}`, borderRadius:'0 8px 8px 0',
+                      padding:'14px 16px', fontSize:12, lineHeight:1.8, color:'#1a1f36',
+                      whiteSpace:'pre-wrap', fontFamily:'monospace' }}>
+                      {agentResult}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── VISUALIZADOR DE PLANTAS ── */}
-      {showPlantasViewer && (
+      {showPlantasViewer && (() => {
+        const SUPPORTED_EXTS = ['pdf','dwg','dxf','dgn','ifc','rvt','dwf','dwfx','fbx','stl','step','stp','obj','sat','gbxml','nwc','nwd']
+        const EXT_META: Record<string, {icon:string,cat:string,color:string}> = {
+          pdf:   { icon:'📄', cat:'Documento',  color:'#E53E3E' },
+          dwg:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          dxf:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          dgn:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          ifc:   { icon:'🏗️', cat:'BIM / IFC',   color:'#3B6D11' },
+          rvt:   { icon:'🏗️', cat:'Revit',       color:'#3B6D11' },
+          dwf:   { icon:'📦', cat:'DWF',         color:'#8A4E2F' },
+          dwfx:  { icon:'📦', cat:'DWFx',        color:'#8A4E2F' },
+          fbx:   { icon:'🎲', cat:'3D / FBX',    color:'#6B4EBF' },
+          stl:   { icon:'🖨️', cat:'3D / STL',    color:'#6B4EBF' },
+          step:  { icon:'🔩', cat:'STEP',        color:'#B45309' },
+          stp:   { icon:'🔩', cat:'STEP',        color:'#B45309' },
+          obj:   { icon:'🎲', cat:'3D / OBJ',    color:'#6B4EBF' },
+          sat:   { icon:'🔷', cat:'SAT / ACIS',  color:'#0E7490' },
+          gbxml: { icon:'🌿', cat:'gbXML / MEP', color:'#15803D' },
+          nwc:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
+          nwd:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
+        }
+        const activePf = plantFiles[activePlanta] ?? null
+        const isPDF = activePf?.ext === 'pdf'
+
+        function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+          const files = Array.from(e.target.files || [])
+          if (!files.length) return
+          setPlantUploading(true)
+          const newEntries = files.map(f => {
+            const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+            return { name: f.name, type: f.type || 'application/octet-stream', url: URL.createObjectURL(f), size: f.size, ext }
+          })
+          setPlantFiles(prev => {
+            const merged = [...prev, ...newEntries]
+            setActivePlanta(merged.length - newEntries.length)
+            return merged
+          })
+          setPlantUploading(false)
+          e.target.value = ''
+        }
+
+        function removeFile(idx: number) {
+          setPlantFiles(prev => {
+            URL.revokeObjectURL(prev[idx].url)
+            const next = prev.filter((_,i) => i !== idx)
+            setActivePlanta(Math.max(0, Math.min(activePlanta, next.length - 1)))
+            return next
+          })
+        }
+
+        function fmtSize(b: number) {
+          if (b < 1024) return b + ' B'
+          if (b < 1048576) return (b/1024).toFixed(1) + ' KB'
+          return (b/1048576).toFixed(1) + ' MB'
+        }
+
+        return (
         <div onClick={e => { if (e.target === e.currentTarget) setShowPlantasViewer(false) }}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:300,
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999,
             display:'flex', alignItems:'flex-start', justifyContent:'center',
             padding:20, overflowY:'auto' }}>
-          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:960,
-            margin:'auto', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:1100,
+            margin:'auto', overflow:'hidden', boxShadow:'0 24px 72px rgba(0,0,0,.35)',
+            display:'flex', flexDirection:'column', maxHeight:'calc(100vh - 40px)' }}>
 
             {/* Header */}
             <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
-              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#1a1f36' }}>
-                  🏗️ Visualizador de Plantas Arquitetônicas
+                  🏗️ Visualizador de Plantas e Arquivos BIM / CAD
                 </div>
                 <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>
-                  José Edgard de Oliveira · Lote 255,12 m² · Área construída 280 m²
+                  PDF · DWG · DXF · DGN · IFC · RVT · DWF · FBX · STL · STEP · OBJ · SAT · gbXML · Navisworks
                 </div>
               </div>
               <button onClick={() => setShowPlantasViewer(false)}
-                style={{ background:'none', border:'none', fontSize:20, cursor:'pointer',
-                  color:'#8890a0', lineHeight:1 }}>✕</button>
+                style={{ background:'none', border:'none', fontSize:22, cursor:'pointer',
+                  color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', minHeight:520 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
 
-              {/* Índice de Plantas */}
-              <div style={{ borderRight:'1px solid #e5e8f0', padding:'16px 12px',
-                background:'#fafafa', display:'flex', flexDirection:'column', gap:4 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
-                  letterSpacing:'.1em', marginBottom:8, paddingLeft:8 }}>Índice de Plantas</div>
-                {[
-                  { icon:'🏠', label:'Planta Baixa', sub:'Pavimento Térreo' },
-                  { icon:'⬜', label:'Planta de Forro', sub:'Modulação de gesso' },
-                  { icon:'🔺', label:'Planta de Telhado', sub:'Cobertura e caimentos' },
-                  { icon:'✂️', label:'Cortes', sub:'Corte AA / BB' },
-                  { icon:'📐', label:'Elevações', sub:'4 fachadas' },
-                  { icon:'🏛️', label:'Fachada Principal', sub:'Vista frontal' },
-                ].map((p, i) => (
-                  <button key={i} onClick={() => setActivePlanta(i)}
-                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px',
-                      borderRadius:8, border:'none', cursor:'pointer', fontFamily:'inherit',
-                      textAlign:'left', width:'100%', transition:'all .15s',
-                      background: activePlanta===i ? '#EFF4FF' : 'transparent',
-                      borderLeft: activePlanta===i ? '3px solid #185FA5' : '3px solid transparent' }}>
-                    <span style={{ fontSize:18, flexShrink:0 }}>{p.icon}</span>
-                    <div>
-                      <div style={{ fontSize:12, fontWeight:600,
-                        color: activePlanta===i ? '#185FA5' : '#1a1f36' }}>{p.label}</div>
-                      <div style={{ fontSize:10, color:'#8890a0' }}>{p.sub}</div>
+              {/* Sidebar — lista de arquivos */}
+              <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
+                background:'#fafafa', overflow:'hidden' }}>
+
+                {/* Upload button */}
+                <label style={{ margin:'12px', display:'block', cursor:'pointer' }}>
+                  <input type="file" multiple style={{ display:'none' }}
+                    accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
+                    onChange={handleFileInput} />
+                  <div style={{ padding:'9px 14px', background:'#185FA5', borderRadius:8,
+                    color:'#fff', fontSize:12, fontWeight:600, textAlign:'center',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                    opacity: plantUploading ? 0.65 : 1 }}>
+                    {plantUploading ? '⏳ Carregando...' : '📂 Abrir arquivo(s)'}
+                  </div>
+                </label>
+
+                {/* File list */}
+                <div style={{ flex:1, overflowY:'auto', padding:'0 8px 8px' }}>
+                  {plantFiles.length === 0 ? (
+                    <div style={{ padding:'24px 12px', textAlign:'center' }}>
+                      <div style={{ fontSize:32, marginBottom:8 }}>📁</div>
+                      <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5 }}>
+                        Nenhum arquivo.<br/>Clique em "Abrir arquivo(s)"<br/>para carregar plantas.
+                      </div>
+                      <div style={{ marginTop:16, fontSize:10, color:'#aab0c0', lineHeight:1.6 }}>
+                        Formatos suportados:<br/>
+                        PDF · DWG · DXF · DGN<br/>
+                        IFC · RVT · DWF · DWFx<br/>
+                        FBX · STL · STEP · OBJ<br/>
+                        SAT · gbXML · NWC · NWD
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  ) : (
+                    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                      {plantFiles.map((pf, i) => {
+                        const m = EXT_META[pf.ext] ?? { icon:'📎', cat:'Arquivo', color:'#5a6282' }
+                        return (
+                          <div key={i}
+                            style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 10px',
+                              borderRadius:8, cursor:'pointer', transition:'all .12s', position:'relative',
+                              background: activePlanta===i ? '#EFF4FF' : 'transparent',
+                              border: activePlanta===i ? '1px solid #b8cdff' : '1px solid transparent' }}
+                            onClick={() => setActivePlanta(i)}>
+                            <div style={{ width:32, height:32, borderRadius:6, flexShrink:0,
+                              background: m.color+'18', display:'flex', alignItems:'center',
+                              justifyContent:'center', fontSize:16 }}>{m.icon}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:11, fontWeight:600, color: activePlanta===i ? '#185FA5' : '#1a1f36',
+                                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pf.name}</div>
+                              <div style={{ fontSize:10, color:'#8890a0' }}>{m.cat} · {fmtSize(pf.size)}</div>
+                            </div>
+                            <button onClick={e => { e.stopPropagation(); removeFile(i) }}
+                              title="Remover"
+                              style={{ background:'none', border:'none', cursor:'pointer', color:'#ccc',
+                                fontSize:14, padding:'2px 4px', flexShrink:0, lineHeight:1 }}>✕</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
 
-                {/* Quadro de Áreas */}
-                <div style={{ marginTop:'auto', padding:'12px', background:'#fff',
-                  border:'1px solid #e5e8f0', borderRadius:10 }}>
-                  <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
-                    letterSpacing:'.08em', marginBottom:8 }}>Quadro de Áreas</div>
+                {/* Formats legend */}
+                <div style={{ padding:'12px', borderTop:'1px solid #e5e8f0', background:'#fff' }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
+                    letterSpacing:'.1em', marginBottom:8 }}>Categorias</div>
                   {[
-                    { label:'Lote', val:'255,12 m²' },
-                    { label:'Área construída', val:'280,00 m²' },
-                    { label:'Taxa de ocupação', val:'55%' },
-                    { label:'Coeficiente', val:'1,10' },
-                    { label:'Área livre', val:'115,12 m²' },
-                  ].map(r => (
-                    <div key={r.label} style={{ display:'flex', justifyContent:'space-between',
-                      fontSize:11, padding:'3px 0', borderBottom:'1px solid #f0f0f0' }}>
-                      <span style={{ color:'#5a6282' }}>{r.label}</span>
-                      <span style={{ fontWeight:600, color:'#1a1f36', fontFamily:'monospace' }}>{r.val}</span>
+                    { color:'#E53E3E', label:'PDF / Documentos' },
+                    { color:'#185FA5', label:'CAD (DWG, DXF, DGN)' },
+                    { color:'#3B6D11', label:'BIM (IFC, RVT)' },
+                    { color:'#6B4EBF', label:'3D (FBX, STL, OBJ)' },
+                    { color:'#B45309', label:'Intercâmbio (STEP, SAT)' },
+                    { color:'#15803D', label:'gbXML / MEP' },
+                  ].map(c => (
+                    <div key={c.label} style={{ display:'flex', alignItems:'center', gap:6,
+                      fontSize:10, color:'#5a6282', marginBottom:4 }}>
+                      <div style={{ width:8, height:8, borderRadius:2, background:c.color, flexShrink:0 }} />
+                      {c.label}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Área de visualização */}
-              <div style={{ display:'flex', flexDirection:'column' }}>
+              {/* Main viewer area */}
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {/* Toolbar */}
-                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0',
-                  display:'flex', alignItems:'center', gap:8 }}>
-                  {['🔍 Zoom +','🔍 Zoom -','↔ Ajustar','📏 Medidas','🖨️ Imprimir'].map(a => (
-                    <button key={a} style={{ padding:'5px 10px', border:'1px solid #e5e8f0',
-                      borderRadius:6, background:'#fff', fontSize:11, cursor:'pointer',
-                      fontFamily:'inherit', color:'#5a6282' }}>{a}</button>
-                  ))}
-                </div>
-
-                {/* Canvas da planta */}
-                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-                  background:'#f0f2f5', padding:24, minHeight:380 }}>
-                  <div style={{ background:'#fff', borderRadius:8, padding:32,
-                    boxShadow:'0 2px 12px rgba(0,0,0,.1)', width:'100%', maxWidth:560, aspectRatio:'4/3',
-                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                    border:'2px solid #e5e8f0' }}>
-                    {[
-                      { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
-                      { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
-                      { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
-                      { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
-                      { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
-                      { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
-                    ][activePlanta] && (() => {
-                      const p = [
-                        { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
-                        { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
-                        { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
-                        { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
-                        { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
-                        { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
-                      ][activePlanta]
-                      return (
-                        <>
-                          <div style={{ fontSize:56, marginBottom:16 }}>{p.icon}</div>
-                          <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36', marginBottom:8, textAlign:'center' }}>{p.msg}</div>
-                          <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>{p.detail}</div>
-                          <div style={{ marginTop:20, padding:'8px 16px', background:'#EFF4FF',
-                            borderRadius:6, fontSize:11, color:'#185FA5', fontWeight:600 }}>
-                            📎 Arquivo: {['PB-01','PF-01','PT-01','CR-01','EL-01','FA-01'][activePlanta]}.dwg
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
-
-                {/* Metadados */}
-                <div style={{ padding:'12px 16px', borderTop:'1px solid #e5e8f0',
-                  background:'#fafafa', display:'flex', gap:24, flexWrap:'wrap' }}>
-                  {[
-                    { label:'Proprietário', val:'José Edgard de Oliveira' },
-                    { label:'CREA', val:'5071162007' },
-                    { label:'Endereço', val:'Promissão / SP' },
-                    { label:'Revisão', val:'Rev.02 — Mai/2026' },
-                    { label:'Escala', val:'1:50' },
-                    { label:'Norma', val:'ABNT NBR 6492' },
-                  ].map(m => (
-                    <div key={m.label}>
-                      <div style={{ fontSize:9, fontWeight:700, color:'#8890a0',
-                        textTransform:'uppercase', letterSpacing:'.07em' }}>{m.label}</div>
-                      <div style={{ fontSize:11, fontWeight:600, color:'#1a1f36' }}>{m.val}</div>
+                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
+                  display:'flex', alignItems:'center', gap:8, background:'#fff' }}>
+                  {activePf && isPDF && (
+                    <>
+                      <button onClick={() => window.print()}
+                        style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                        🖨️ Imprimir
+                      </button>
+                      <a href={activePf.url} download={activePf.name}
+                        style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit',
+                          color:'#5a6282', textDecoration:'none' }}>
+                        ⬇️ Baixar
+                      </a>
+                    </>
+                  )}
+                  {activePf && !isPDF && (
+                    <a href={activePf.url} download={activePf.name}
+                      style={{ padding:'6px 14px', border:'none', borderRadius:6,
+                        background:'#185FA5', fontSize:11, fontWeight:600, cursor:'pointer',
+                        fontFamily:'inherit', color:'#fff', textDecoration:'none',
+                        display:'flex', alignItems:'center', gap:5 }}>
+                      ⬇️ Baixar {activePf.name}
+                    </a>
+                  )}
+                  {activePf && (
+                    <div style={{ marginLeft:'auto', fontSize:11, color:'#8890a0' }}>
+                      {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat} · {fmtSize(activePf.size)}
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                {/* Viewer canvas */}
+                <div style={{ flex:1, overflow:'hidden', background:'#f0f2f5', position:'relative' }}>
+                  {!activePf ? (
+                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
+                      alignItems:'center', justifyContent:'center', gap:12 }}>
+                      <div style={{ fontSize:56 }}>🏗️</div>
+                      <div style={{ fontSize:15, fontWeight:600, color:'#1a1f36' }}>
+                        Nenhum arquivo selecionado
+                      </div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', maxWidth:320, lineHeight:1.6 }}>
+                        Use o botão <strong>"📂 Abrir arquivo(s)"</strong> na lateral<br/>
+                        para carregar plantas em PDF, DWG, IFC e outros formatos.
+                      </div>
+                      <label style={{ cursor:'pointer' }}>
+                        <input type="file" multiple style={{ display:'none' }}
+                          accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
+                          onChange={handleFileInput} />
+                        <div style={{ padding:'10px 22px', background:'#185FA5', color:'#fff',
+                          borderRadius:8, fontSize:13, fontWeight:600 }}>
+                          📂 Abrir arquivo(s)
+                        </div>
+                      </label>
+                      <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4, textAlign:'center', lineHeight:1.8 }}>
+                        PDF · DWG · DXF · DGN · IFC · RVT · DWF · DWFx<br/>
+                        FBX · STL · STEP/STP · OBJ · SAT · gbXML · NWC · NWD
+                      </div>
+                    </div>
+                  ) : isPDF ? (
+                    <iframe src={activePf.url} title={activePf.name}
+                      style={{ width:'100%', height:'100%', border:'none', display:'block' }} />
+                  ) : (
+                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
+                      alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
+                      <div style={{ fontSize:64 }}>
+                        {(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}
+                      </div>
+                      <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36', textAlign:'center' }}>
+                        {activePf.name}
+                      </div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>
+                        Formato <strong>.{activePf.ext.toUpperCase()}</strong> — {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat}
+                        <br/>Tamanho: {fmtSize(activePf.size)}
+                        <br/><br/>
+                        Este formato requer software especializado para visualização 3D/CAD.<br/>
+                        Faça o download para abrir no AutoCAD, Revit, Navisworks ou software compatível.
+                      </div>
+                      <a href={activePf.url} download={activePf.name}
+                        style={{ padding:'11px 28px', background:'#185FA5', color:'#fff',
+                          borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none',
+                          display:'flex', alignItems:'center', gap:8 }}>
+                        ⬇️ Baixar {activePf.name}
+                      </a>
+                      <div style={{ padding:'10px 16px', background:'#EFF4FF', borderRadius:8,
+                        fontSize:11, color:'#185FA5', textAlign:'center', maxWidth:380 }}>
+                        💡 <strong>Dica:</strong> Exporte para PDF no AutoCAD / Revit para visualizar diretamente aqui.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadData} />}
       {showNewClient && <NewClientModal onClose={() => setShowNewClient(false)} onCreated={loadData} />}

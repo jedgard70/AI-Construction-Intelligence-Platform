@@ -130,7 +130,11 @@ export default function NewClientModal({ onClose, onCreated }) {
     const { error: err } = await sb.from('clients').insert(payload)
 
     if (err) {
-      setError('Erro ao salvar: ' + err.message)
+      if (err.code === '23505' || err.message?.includes('clients_cpf_cnpj_key')) {
+        setError(`CPF/CNPJ ${form.cpf_cnpj} já está cadastrado. Verifique os clientes existentes ou atualize o registro.`)
+      } else {
+        setError('Erro ao salvar: ' + err.message)
+      }
       setLoading(false)
       return
     }
