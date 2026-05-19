@@ -117,28 +117,13 @@ export default function JuridicoClient() {
       })
       const isPDF     = file.type === 'application/pdf'
       const mediaType = isPDF ? 'application/pdf' : file.type as any
-      const response  = await fetch('https://api.anthropic.com/v1/messages', {
+      const response  = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: `Extraia os dados pessoais deste documento (RG, CPF ou comprovante de residência).
-Responda SOMENTE com JSON válido neste formato exato, sem texto antes ou depois:
-{"nome":"","cpf":"","rg":"","nacionalidade":"brasileiro(a)","estado_civil":"","profissao":"","endereco":"","cep":"","cidade":"","estado":""}
-Se algum campo não estiver visível, deixe como string vazia.` }
-            ]
-          }]
-        })
+        body: JSON.stringify({ base64, mediaType, isPDF }),
       })
-      const data      = await response.json()
-      const text      = data.content?.[0]?.text || ''
-      const clean     = text.replace(/```json|```/g, '').trim()
-      const extracted = JSON.parse(clean)
+      const extracted = await response.json()
+      if (extracted.error) throw new Error(extracted.error)
       setParte(prev => ({
         ...prev,
         nome:          extracted.nome          || prev.nome,

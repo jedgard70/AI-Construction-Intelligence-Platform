@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { base64, mediaType, isPDF } = req.body
   try {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       messages: [{ role: 'user', content: [
         { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: base64 } } as any,
