@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
+  transpilePackages: ['recharts', 'victory-vendor'],
   async redirects() {
     return [
       {
