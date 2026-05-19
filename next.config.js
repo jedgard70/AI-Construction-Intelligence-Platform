@@ -2,17 +2,10 @@
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
-  transpilePackages: ['recharts', 'victory-vendor', 'es-toolkit'],
-  // Webpack alias ensures react-is (peer dep of recharts) is found during
-  // production builds where Turbopack resolveAlias doesn't cover imports
-  // originating from within transpilePackages.
-  webpack(config) {
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'react-is': require.resolve('react-is'),
-    }
-    return config
-  },
+  // recharts and victory-vendor removed from transpilePackages:
+  // Turbopack handles ESM natively so transpiling causes the react-is
+  // peer dependency to become unresolvable in Turbopack's module graph.
+  transpilePackages: ['es-toolkit'],
   turbopack: {
     // Turbopack cannot resolve es-toolkit's wildcard exports map (./compat/*)
     // so we alias each subpath directly to its CJS file.
