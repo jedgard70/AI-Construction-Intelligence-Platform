@@ -268,6 +268,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [showPlantasViewer, setShowPlantasViewer] = useState(false)
   const [activeNav, setActiveNav]     = useState(0)
   const [activePlanta, setActivePlanta] = useState(0)
+  const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
+  const [plantUploading, setPlantUploading] = useState(false)
 
   const cfg = ROLE_CONFIG[profile.role] ?? DEFAULT_ROLE_CONFIG
 
@@ -707,154 +709,274 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
       </div>
 
       {/* ── VISUALIZADOR DE PLANTAS ── */}
-      {showPlantasViewer && (
+      {showPlantasViewer && (() => {
+        const SUPPORTED_EXTS = ['pdf','dwg','dxf','dgn','ifc','rvt','dwf','dwfx','fbx','stl','step','stp','obj','sat','gbxml','nwc','nwd']
+        const EXT_META: Record<string, {icon:string,cat:string,color:string}> = {
+          pdf:   { icon:'📄', cat:'Documento',  color:'#E53E3E' },
+          dwg:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          dxf:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          dgn:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
+          ifc:   { icon:'🏗️', cat:'BIM / IFC',   color:'#3B6D11' },
+          rvt:   { icon:'🏗️', cat:'Revit',       color:'#3B6D11' },
+          dwf:   { icon:'📦', cat:'DWF',         color:'#8A4E2F' },
+          dwfx:  { icon:'📦', cat:'DWFx',        color:'#8A4E2F' },
+          fbx:   { icon:'🎲', cat:'3D / FBX',    color:'#6B4EBF' },
+          stl:   { icon:'🖨️', cat:'3D / STL',    color:'#6B4EBF' },
+          step:  { icon:'🔩', cat:'STEP',        color:'#B45309' },
+          stp:   { icon:'🔩', cat:'STEP',        color:'#B45309' },
+          obj:   { icon:'🎲', cat:'3D / OBJ',    color:'#6B4EBF' },
+          sat:   { icon:'🔷', cat:'SAT / ACIS',  color:'#0E7490' },
+          gbxml: { icon:'🌿', cat:'gbXML / MEP', color:'#15803D' },
+          nwc:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
+          nwd:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
+        }
+        const activePf = plantFiles[activePlanta] ?? null
+        const isPDF = activePf?.ext === 'pdf'
+
+        function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+          const files = Array.from(e.target.files || [])
+          if (!files.length) return
+          setPlantUploading(true)
+          const newEntries = files.map(f => {
+            const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+            return { name: f.name, type: f.type || 'application/octet-stream', url: URL.createObjectURL(f), size: f.size, ext }
+          })
+          setPlantFiles(prev => {
+            const merged = [...prev, ...newEntries]
+            setActivePlanta(merged.length - newEntries.length)
+            return merged
+          })
+          setPlantUploading(false)
+          e.target.value = ''
+        }
+
+        function removeFile(idx: number) {
+          setPlantFiles(prev => {
+            URL.revokeObjectURL(prev[idx].url)
+            const next = prev.filter((_,i) => i !== idx)
+            setActivePlanta(Math.max(0, Math.min(activePlanta, next.length - 1)))
+            return next
+          })
+        }
+
+        function fmtSize(b: number) {
+          if (b < 1024) return b + ' B'
+          if (b < 1048576) return (b/1024).toFixed(1) + ' KB'
+          return (b/1048576).toFixed(1) + ' MB'
+        }
+
+        return (
         <div onClick={e => { if (e.target === e.currentTarget) setShowPlantasViewer(false) }}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:300,
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999,
             display:'flex', alignItems:'flex-start', justifyContent:'center',
             padding:20, overflowY:'auto' }}>
-          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:960,
-            margin:'auto', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:1100,
+            margin:'auto', overflow:'hidden', boxShadow:'0 24px 72px rgba(0,0,0,.35)',
+            display:'flex', flexDirection:'column', maxHeight:'calc(100vh - 40px)' }}>
 
             {/* Header */}
             <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
-              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'#1a1f36' }}>
-                  🏗️ Visualizador de Plantas Arquitetônicas
+                  🏗️ Visualizador de Plantas e Arquivos BIM / CAD
                 </div>
                 <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>
-                  José Edgard de Oliveira · Lote 255,12 m² · Área construída 280 m²
+                  PDF · DWG · DXF · DGN · IFC · RVT · DWF · FBX · STL · STEP · OBJ · SAT · gbXML · Navisworks
                 </div>
               </div>
               <button onClick={() => setShowPlantasViewer(false)}
-                style={{ background:'none', border:'none', fontSize:20, cursor:'pointer',
-                  color:'#8890a0', lineHeight:1 }}>✕</button>
+                style={{ background:'none', border:'none', fontSize:22, cursor:'pointer',
+                  color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', minHeight:520 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
 
-              {/* Índice de Plantas */}
-              <div style={{ borderRight:'1px solid #e5e8f0', padding:'16px 12px',
-                background:'#fafafa', display:'flex', flexDirection:'column', gap:4 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
-                  letterSpacing:'.1em', marginBottom:8, paddingLeft:8 }}>Índice de Plantas</div>
-                {[
-                  { icon:'🏠', label:'Planta Baixa', sub:'Pavimento Térreo' },
-                  { icon:'⬜', label:'Planta de Forro', sub:'Modulação de gesso' },
-                  { icon:'🔺', label:'Planta de Telhado', sub:'Cobertura e caimentos' },
-                  { icon:'✂️', label:'Cortes', sub:'Corte AA / BB' },
-                  { icon:'📐', label:'Elevações', sub:'4 fachadas' },
-                  { icon:'🏛️', label:'Fachada Principal', sub:'Vista frontal' },
-                ].map((p, i) => (
-                  <button key={i} onClick={() => setActivePlanta(i)}
-                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px',
-                      borderRadius:8, border:'none', cursor:'pointer', fontFamily:'inherit',
-                      textAlign:'left', width:'100%', transition:'all .15s',
-                      background: activePlanta===i ? '#EFF4FF' : 'transparent',
-                      borderLeft: activePlanta===i ? '3px solid #185FA5' : '3px solid transparent' }}>
-                    <span style={{ fontSize:18, flexShrink:0 }}>{p.icon}</span>
-                    <div>
-                      <div style={{ fontSize:12, fontWeight:600,
-                        color: activePlanta===i ? '#185FA5' : '#1a1f36' }}>{p.label}</div>
-                      <div style={{ fontSize:10, color:'#8890a0' }}>{p.sub}</div>
+              {/* Sidebar — lista de arquivos */}
+              <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
+                background:'#fafafa', overflow:'hidden' }}>
+
+                {/* Upload button */}
+                <label style={{ margin:'12px', display:'block', cursor:'pointer' }}>
+                  <input type="file" multiple style={{ display:'none' }}
+                    accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
+                    onChange={handleFileInput} />
+                  <div style={{ padding:'9px 14px', background:'#185FA5', borderRadius:8,
+                    color:'#fff', fontSize:12, fontWeight:600, textAlign:'center',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                    opacity: plantUploading ? 0.65 : 1 }}>
+                    {plantUploading ? '⏳ Carregando...' : '📂 Abrir arquivo(s)'}
+                  </div>
+                </label>
+
+                {/* File list */}
+                <div style={{ flex:1, overflowY:'auto', padding:'0 8px 8px' }}>
+                  {plantFiles.length === 0 ? (
+                    <div style={{ padding:'24px 12px', textAlign:'center' }}>
+                      <div style={{ fontSize:32, marginBottom:8 }}>📁</div>
+                      <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5 }}>
+                        Nenhum arquivo.<br/>Clique em "Abrir arquivo(s)"<br/>para carregar plantas.
+                      </div>
+                      <div style={{ marginTop:16, fontSize:10, color:'#aab0c0', lineHeight:1.6 }}>
+                        Formatos suportados:<br/>
+                        PDF · DWG · DXF · DGN<br/>
+                        IFC · RVT · DWF · DWFx<br/>
+                        FBX · STL · STEP · OBJ<br/>
+                        SAT · gbXML · NWC · NWD
+                      </div>
                     </div>
-                  </button>
-                ))}
+                  ) : (
+                    <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                      {plantFiles.map((pf, i) => {
+                        const m = EXT_META[pf.ext] ?? { icon:'📎', cat:'Arquivo', color:'#5a6282' }
+                        return (
+                          <div key={i}
+                            style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 10px',
+                              borderRadius:8, cursor:'pointer', transition:'all .12s', position:'relative',
+                              background: activePlanta===i ? '#EFF4FF' : 'transparent',
+                              border: activePlanta===i ? '1px solid #b8cdff' : '1px solid transparent' }}
+                            onClick={() => setActivePlanta(i)}>
+                            <div style={{ width:32, height:32, borderRadius:6, flexShrink:0,
+                              background: m.color+'18', display:'flex', alignItems:'center',
+                              justifyContent:'center', fontSize:16 }}>{m.icon}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:11, fontWeight:600, color: activePlanta===i ? '#185FA5' : '#1a1f36',
+                                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pf.name}</div>
+                              <div style={{ fontSize:10, color:'#8890a0' }}>{m.cat} · {fmtSize(pf.size)}</div>
+                            </div>
+                            <button onClick={e => { e.stopPropagation(); removeFile(i) }}
+                              title="Remover"
+                              style={{ background:'none', border:'none', cursor:'pointer', color:'#ccc',
+                                fontSize:14, padding:'2px 4px', flexShrink:0, lineHeight:1 }}>✕</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
 
-                {/* Quadro de Áreas */}
-                <div style={{ marginTop:'auto', padding:'12px', background:'#fff',
-                  border:'1px solid #e5e8f0', borderRadius:10 }}>
-                  <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
-                    letterSpacing:'.08em', marginBottom:8 }}>Quadro de Áreas</div>
+                {/* Formats legend */}
+                <div style={{ padding:'12px', borderTop:'1px solid #e5e8f0', background:'#fff' }}>
+                  <div style={{ fontSize:9, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
+                    letterSpacing:'.1em', marginBottom:8 }}>Categorias</div>
                   {[
-                    { label:'Lote', val:'255,12 m²' },
-                    { label:'Área construída', val:'280,00 m²' },
-                    { label:'Taxa de ocupação', val:'55%' },
-                    { label:'Coeficiente', val:'1,10' },
-                    { label:'Área livre', val:'115,12 m²' },
-                  ].map(r => (
-                    <div key={r.label} style={{ display:'flex', justifyContent:'space-between',
-                      fontSize:11, padding:'3px 0', borderBottom:'1px solid #f0f0f0' }}>
-                      <span style={{ color:'#5a6282' }}>{r.label}</span>
-                      <span style={{ fontWeight:600, color:'#1a1f36', fontFamily:'monospace' }}>{r.val}</span>
+                    { color:'#E53E3E', label:'PDF / Documentos' },
+                    { color:'#185FA5', label:'CAD (DWG, DXF, DGN)' },
+                    { color:'#3B6D11', label:'BIM (IFC, RVT)' },
+                    { color:'#6B4EBF', label:'3D (FBX, STL, OBJ)' },
+                    { color:'#B45309', label:'Intercâmbio (STEP, SAT)' },
+                    { color:'#15803D', label:'gbXML / MEP' },
+                  ].map(c => (
+                    <div key={c.label} style={{ display:'flex', alignItems:'center', gap:6,
+                      fontSize:10, color:'#5a6282', marginBottom:4 }}>
+                      <div style={{ width:8, height:8, borderRadius:2, background:c.color, flexShrink:0 }} />
+                      {c.label}
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Área de visualização */}
-              <div style={{ display:'flex', flexDirection:'column' }}>
+              {/* Main viewer area */}
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {/* Toolbar */}
-                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0',
-                  display:'flex', alignItems:'center', gap:8 }}>
-                  {['🔍 Zoom +','🔍 Zoom -','↔ Ajustar','📏 Medidas','🖨️ Imprimir'].map(a => (
-                    <button key={a} style={{ padding:'5px 10px', border:'1px solid #e5e8f0',
-                      borderRadius:6, background:'#fff', fontSize:11, cursor:'pointer',
-                      fontFamily:'inherit', color:'#5a6282' }}>{a}</button>
-                  ))}
-                </div>
-
-                {/* Canvas da planta */}
-                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center',
-                  background:'#f0f2f5', padding:24, minHeight:380 }}>
-                  <div style={{ background:'#fff', borderRadius:8, padding:32,
-                    boxShadow:'0 2px 12px rgba(0,0,0,.1)', width:'100%', maxWidth:560, aspectRatio:'4/3',
-                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                    border:'2px solid #e5e8f0' }}>
-                    {[
-                      { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
-                      { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
-                      { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
-                      { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
-                      { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
-                      { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
-                    ][activePlanta] && (() => {
-                      const p = [
-                        { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
-                        { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
-                        { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
-                        { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
-                        { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
-                        { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
-                      ][activePlanta]
-                      return (
-                        <>
-                          <div style={{ fontSize:56, marginBottom:16 }}>{p.icon}</div>
-                          <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36', marginBottom:8, textAlign:'center' }}>{p.msg}</div>
-                          <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>{p.detail}</div>
-                          <div style={{ marginTop:20, padding:'8px 16px', background:'#EFF4FF',
-                            borderRadius:6, fontSize:11, color:'#185FA5', fontWeight:600 }}>
-                            📎 Arquivo: {['PB-01','PF-01','PT-01','CR-01','EL-01','FA-01'][activePlanta]}.dwg
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
-
-                {/* Metadados */}
-                <div style={{ padding:'12px 16px', borderTop:'1px solid #e5e8f0',
-                  background:'#fafafa', display:'flex', gap:24, flexWrap:'wrap' }}>
-                  {[
-                    { label:'Proprietário', val:'José Edgard de Oliveira' },
-                    { label:'CREA', val:'5071162007' },
-                    { label:'Endereço', val:'Promissão / SP' },
-                    { label:'Revisão', val:'Rev.02 — Mai/2026' },
-                    { label:'Escala', val:'1:50' },
-                    { label:'Norma', val:'ABNT NBR 6492' },
-                  ].map(m => (
-                    <div key={m.label}>
-                      <div style={{ fontSize:9, fontWeight:700, color:'#8890a0',
-                        textTransform:'uppercase', letterSpacing:'.07em' }}>{m.label}</div>
-                      <div style={{ fontSize:11, fontWeight:600, color:'#1a1f36' }}>{m.val}</div>
+                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
+                  display:'flex', alignItems:'center', gap:8, background:'#fff' }}>
+                  {activePf && isPDF && (
+                    <>
+                      <button onClick={() => window.print()}
+                        style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                        🖨️ Imprimir
+                      </button>
+                      <a href={activePf.url} download={activePf.name}
+                        style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit',
+                          color:'#5a6282', textDecoration:'none' }}>
+                        ⬇️ Baixar
+                      </a>
+                    </>
+                  )}
+                  {activePf && !isPDF && (
+                    <a href={activePf.url} download={activePf.name}
+                      style={{ padding:'6px 14px', border:'none', borderRadius:6,
+                        background:'#185FA5', fontSize:11, fontWeight:600, cursor:'pointer',
+                        fontFamily:'inherit', color:'#fff', textDecoration:'none',
+                        display:'flex', alignItems:'center', gap:5 }}>
+                      ⬇️ Baixar {activePf.name}
+                    </a>
+                  )}
+                  {activePf && (
+                    <div style={{ marginLeft:'auto', fontSize:11, color:'#8890a0' }}>
+                      {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat} · {fmtSize(activePf.size)}
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                {/* Viewer canvas */}
+                <div style={{ flex:1, overflow:'hidden', background:'#f0f2f5', position:'relative' }}>
+                  {!activePf ? (
+                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
+                      alignItems:'center', justifyContent:'center', gap:12 }}>
+                      <div style={{ fontSize:56 }}>🏗️</div>
+                      <div style={{ fontSize:15, fontWeight:600, color:'#1a1f36' }}>
+                        Nenhum arquivo selecionado
+                      </div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', maxWidth:320, lineHeight:1.6 }}>
+                        Use o botão <strong>"📂 Abrir arquivo(s)"</strong> na lateral<br/>
+                        para carregar plantas em PDF, DWG, IFC e outros formatos.
+                      </div>
+                      <label style={{ cursor:'pointer' }}>
+                        <input type="file" multiple style={{ display:'none' }}
+                          accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
+                          onChange={handleFileInput} />
+                        <div style={{ padding:'10px 22px', background:'#185FA5', color:'#fff',
+                          borderRadius:8, fontSize:13, fontWeight:600 }}>
+                          📂 Abrir arquivo(s)
+                        </div>
+                      </label>
+                      <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4, textAlign:'center', lineHeight:1.8 }}>
+                        PDF · DWG · DXF · DGN · IFC · RVT · DWF · DWFx<br/>
+                        FBX · STL · STEP/STP · OBJ · SAT · gbXML · NWC · NWD
+                      </div>
+                    </div>
+                  ) : isPDF ? (
+                    <iframe src={activePf.url} title={activePf.name}
+                      style={{ width:'100%', height:'100%', border:'none', display:'block' }} />
+                  ) : (
+                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
+                      alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
+                      <div style={{ fontSize:64 }}>
+                        {(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}
+                      </div>
+                      <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36', textAlign:'center' }}>
+                        {activePf.name}
+                      </div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>
+                        Formato <strong>.{activePf.ext.toUpperCase()}</strong> — {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat}
+                        <br/>Tamanho: {fmtSize(activePf.size)}
+                        <br/><br/>
+                        Este formato requer software especializado para visualização 3D/CAD.<br/>
+                        Faça o download para abrir no AutoCAD, Revit, Navisworks ou software compatível.
+                      </div>
+                      <a href={activePf.url} download={activePf.name}
+                        style={{ padding:'11px 28px', background:'#185FA5', color:'#fff',
+                          borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none',
+                          display:'flex', alignItems:'center', gap:8 }}>
+                        ⬇️ Baixar {activePf.name}
+                      </a>
+                      <div style={{ padding:'10px 16px', background:'#EFF4FF', borderRadius:8,
+                        fontSize:11, color:'#185FA5', textAlign:'center', maxWidth:380 }}>
+                        💡 <strong>Dica:</strong> Exporte para PDF no AutoCAD / Revit para visualizar diretamente aqui.
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadData} />}
       {showNewClient && <NewClientModal onClose={() => setShowNewClient(false)} onCreated={loadData} />}
