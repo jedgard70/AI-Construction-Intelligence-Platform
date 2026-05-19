@@ -145,18 +145,70 @@ export default function JuridicoClient() {
   // ─── Análise jurídica via Claude ─────────────────────────
   const handleAnaliseIA = useCallback(async () => {
     setAnalisando(true); setAnaliseIA('')
+    const JURIDICO_SYSTEM = `Você é o Juridico_Intelligence_AI — advogado sênior especialista em direito da construção civil, contratos de engenharia e investimentos imobiliários.
+
+JURISDIÇÕES E BASES LEGAIS QUE VOCÊ DOMINA:
+
+🇧🇷 BRASIL:
+• Código Civil (Lei 10.406/2002): Art. 618 (responsabilidade do empreiteiro), Art. 927 (responsabilidade civil), Arts. 421-480 (contratos)
+• Lei 8.666/93 e Lei 14.133/2021 (licitações públicas)
+• Lei 13.709/2018 — LGPD
+• NR-18 (segurança em obras), PBQP-H, NBR 15575
+• CPC/2015 (arbitragem e foro competente), Lei 9.307/96 (arbitragem)
+• Código de Defesa do Consumidor (CDC) quando aplicável
+• Código Tributário Nacional — retenções ISS, INSS, IRRF sobre contratos
+• CLT — aspectos trabalhistas em empreitadas
+
+🇪🇺 EUROPA:
+• Diretiva 2014/24/UE — contratos públicos na União Europeia
+• Regulamento (UE) 2016/679 — GDPR (proteção de dados em contratos)
+• Diretiva 2011/7/UE — combate a atrasos de pagamento em transações comerciais
+• EN 1337 / Eurocodes — normas técnicas de construção na UE
+• Diretiva 2006/123/CE — serviços no mercado interno
+🇵🇹 Portugal: Código Civil Português, DL 18/2008 (CCP — Código dos Contratos Públicos), RGEU
+🇩🇪 Alemanha: BGB §§631-651 (Werkvertrag/contrato de empreitada), VOB/B (condições gerais para obras)
+🇫🇷 França: Code Civil Art. 1787-1800 (contrat d'entreprise), Loi MOP (maîtrise d'ouvrage public)
+🇪🇸 Espanha: Ley de Contratos del Sector Público, Ley de Ordenación de la Edificación (LOE)
+🇮🇹 Itália: Codice Civile Art. 1655-1677 (appalto), D.Lgs. 50/2016 (Codice dei contratti pubblici)
+
+COMPETÊNCIAS ADICIONAIS:
+• Arbitragem internacional (ICC, CCI, LCIA, CAM-CCBC)
+• Contratos FIDIC (Red Book, Yellow Book, Silver Book)
+• Force Majeure e cláusulas de variação de preços
+• Seguros de obra (RC Engenheiros, Seguro de Garantia, Decennial Liability)
+• ESG e critérios de sustentabilidade em contratos
+
+Analise com rigor técnico, cite artigos e normas aplicáveis, e use linguagem acessível ao cliente. Estruture bem a resposta com seções numeradas.`
+
     try {
-      const prompt = `Você é advogado especialista em direito da construção civil no Brasil.
-Analise este contrato de ${TIPOS_CONTRATO.find(t => t.id === tipoContrato)?.label}:
-CONTRATANTE: ${parte.nome}, CPF ${parte.cpf}, ${parte.estado_civil}, ${parte.profissao}
+      const userPrompt = `Analise este contrato de ${TIPOS_CONTRATO.find(t => t.id === tipoContrato)?.label}:
+
+CONTRATANTE: ${parte.nome || '[não informado]'}, CPF ${parte.cpf || '-'}, ${parte.estado_civil || '-'}, ${parte.profissao || '-'}
 CONTRATADO: ${modoContratado === 'apex' ? APEX.nome + ' CNPJ ' + APEX.cnpj : ENG.nome + ' CREA ' + ENG.crea}
-OBJETO: ${obra.classificacao} — ${obra.area_construir}m² em ${obra.endereco}
-VALORES: Total ${financeiro.valor_total}, Entrada ${financeiro.entrada}, ${financeiro.parcelas} parcelas de ${financeiro.valor_parcela}
-Aponte: 1) Pontos positivos 2) Riscos e cláusulas de atenção 3) Sugestões de melhoria 4) Conformidade com Art. 618 do Código Civil. Use linguagem acessível.`
-      const res  = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], agent: 'juridico' }) })
+OBJETO: ${obra.classificacao || '-'} — ${obra.area_construir || '-'}m² em ${obra.endereco || '-'}
+VALORES: Total ${financeiro.valor_total || '-'}, Entrada ${financeiro.entrada || '-'}, ${financeiro.parcelas || '-'} parcelas de ${financeiro.valor_parcela || '-'}
+
+Por favor forneça:
+1. ✅ Pontos positivos do contrato
+2. ⚠️ Riscos e cláusulas de atenção (com base legal citada)
+3. 💡 Sugestões de melhoria
+4. 📋 Conformidade com legislação brasileira (Art. 618 CC, NR-18, CLT, LGPD)
+5. 🌍 Observações se houver partes ou execução na Europa (diretivas EU aplicáveis)
+6. ⚖️ Score de risco geral (0–100) e recomendação final`
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          system: JURIDICO_SYSTEM,
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      })
       const data = await res.json()
-      setAnaliseIA(data.response || data.content?.[0]?.text || 'Análise concluída.')
-    } catch { setAnaliseIA('Erro ao conectar ao agente jurídico.') }
+      setAnaliseIA(data?.content?.[0]?.text || data.response || 'Análise concluída.')
+    } catch { setAnaliseIA('Erro ao conectar ao agente jurídico. Verifique a conexão.') }
     setAnalisando(false)
   }, [tipoContrato, parte, obra, financeiro, modoContratado])
 

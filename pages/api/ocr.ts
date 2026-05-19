@@ -19,7 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
     const text  = response.content[0].type === 'text' ? response.content[0].text : ''
     const clean = text.replace(/```json|```/g, '').trim()
-    res.status(200).json(JSON.parse(clean))
+    const jsonMatch = clean.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) throw new Error('Resposta inválida da IA — JSON não encontrado')
+    res.status(200).json(JSON.parse(jsonMatch[0]))
   } catch (err: any) {
     res.status(500).json({ error: err.message })
   }
