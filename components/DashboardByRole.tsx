@@ -432,10 +432,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
             ))}
           <div style={{borderTop:'1px solid #e5e8f0',margin:'8px 0 4px',padding:'8px 8px 0'}}>
             <div style={{fontSize:9,fontWeight:700,letterSpacing:'.1em',color:'#b0b8c8',textTransform:'uppercase',padding:'0 2px 6px'}}>Ferramentas</div>
-            <a href='https://arch-vis-pro.vercel.app' target='_blank' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#3B6D11',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
-              onMouseEnter={e=>(e.currentTarget.style.background='#EAF3DE')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎨 ArchVis Pro <span style={{fontSize:9,color:'#aaa',marginLeft:'auto'}}>↗</span></a>
-            <a href='https://directorcut-xi.vercel.app' target='_blank' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
-              onMouseEnter={e=>(e.currentTarget.style.background='#F0EEFF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎬 Director Cut <span style={{fontSize:9,color:'#aaa',marginLeft:'auto'}}>↗</span></a>
+            <a href='/archvis' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#3B6D11',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#EAF3DE')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎨 ArchVis Pro</a>
+            <a href='/director-cut' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#F0EEFF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎬 Director Cut</a>
             <a href='/juridico' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
               onMouseEnter={e=>(e.currentTarget.style.background='#F0EEFF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>⚖️ Jurídico</a>
             <a href='/vendas' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#185FA5',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
