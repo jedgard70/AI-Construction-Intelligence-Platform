@@ -308,7 +308,7 @@ Responda em pt-BR. Seja direto e técnico. Máximo 3 frases. Termine com "Posso 
         <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
       </Head>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{__html:`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Geist', system-ui, sans-serif; background: #f4f5f7; color: #1a1f36; }
         ::-webkit-scrollbar { width: 4px; }
@@ -337,7 +337,7 @@ Responda em pt-BR. Seja direto e técnico. Máximo 3 frases. Termine com "Posso 
           border-radius:6px; font-size:11px; cursor:pointer; font-family:inherit; }
         .rfi-btn { padding:5px 10px; background:#EFF4FF; color:#185FA5; border:1px solid #B5D4F4;
           border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
-      `}</style>
+      `}} />
 
       <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
 

@@ -38,7 +38,7 @@ export default function LoginClient() {
 
   return (
     <>
-      <style>{`
+      <style dangerouslySetInnerHTML={{__html:`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap');
         .lp-page { min-height:100vh; display:flex; background:#0a0d12; font-family:'Sora',sans-serif; }
         .lp-left { flex:1; display:flex; flex-direction:column; justify-content:center; padding:64px;
@@ -58,7 +58,7 @@ export default function LoginClient() {
         .lp-tab { flex:1; padding:9px; border-radius:6px; border:none; font-size:13px; font-weight:600;
           cursor:pointer; font-family:inherit; transition:all .15s; }
         @media(max-width:900px){ .lp-left{display:none!important} .lp-right{width:100%!important} }
-      `}</style>
+      `}} />
 
       <div className="lp-page">
         {/* Left — marketing panel */}
