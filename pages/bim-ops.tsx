@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 
 // ─── Types ──────────────────────────────────────────────────────
-type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential'
+type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential' | 'coordination' | 'quantities' | 'feasibility'
 type ClashItem = { id:string; discipline:string; severity:'Critical'|'Major'|'Minor'; description:string; location:string; status:string }
 
 const CLASH_DATA: ClashItem[] = [
@@ -254,6 +254,60 @@ const RESIDENTIAL_SYSTEMS = [
   },
 ]
 
+// ─── Coordination Data ──────────────────────────────────────────
+const RFI_LOG = [
+  { id:'RFI-001', subject:'Footing depth at grid C-4 per geotech report', discipline:'Structural', from:'GC', to:'EOR', issued:'2026-05-01', due:'2026-05-08', status:'Open', days:18 },
+  { id:'RFI-002', subject:'HVAC duct routing alternative — Level 3 corridor 2B', discipline:'MEP', from:'GC', to:'MEC', issued:'2026-05-03', due:'2026-05-10', status:'Answered', days:16 },
+  { id:'RFI-003', subject:'Window head height at curtain wall — north facade', discipline:'Architectural', from:'GC', to:'AOR', issued:'2026-05-06', due:'2026-05-13', status:'Open', days:13 },
+  { id:'RFI-004', subject:'Fire sprinkler branch line — corridor conflict resolution', discipline:'Fire Protection', from:'Subcontractor', to:'FPE', issued:'2026-05-08', due:'2026-05-15', status:'Pending', days:11 },
+  { id:'RFI-005', subject:'Electrical panel location — mechanical room 102 clearance', discipline:'Electrical', from:'GC', to:'EE', issued:'2026-05-10', due:'2026-05-17', status:'Answered', days:9 },
+  { id:'RFI-006', subject:'Slab penetration sleeve size at sanitary stack grid A-7', discipline:'Plumbing', from:'Subcontractor', to:'PE', issued:'2026-05-12', due:'2026-05-19', status:'Open', days:7 },
+]
+
+const SUBMITTAL_LOG = [
+  { id:'SUB-001', spec:'03 30 00', title:'Cast-in-Place Concrete Mix Design', sub:'ABC Ready Mix', submitted:'2026-04-20', reviewed:'2026-04-28', status:'Approved', rev:1 },
+  { id:'SUB-002', spec:'05 12 00', title:'Structural Steel Shop Drawings', sub:'Steel Fab Inc', submitted:'2026-04-25', reviewed:'2026-05-05', status:'Approved w/ Comments', rev:2 },
+  { id:'SUB-003', spec:'07 21 00', title:'Thermal Insulation — Spray Polyurethane', sub:'Insul-Rite LLC', submitted:'2026-05-02', reviewed:'—', status:'Under Review', rev:1 },
+  { id:'SUB-004', spec:'08 11 13', title:'Hollow Metal Doors & Frames', sub:'Ceco Door', submitted:'2026-05-05', reviewed:'—', status:'Under Review', rev:1 },
+  { id:'SUB-005', spec:'22 10 00', title:'Plumbing Piping — PEX-A System', sub:'Uponor NA', submitted:'2026-05-08', reviewed:'—', status:'Pending', rev:1 },
+  { id:'SUB-006', spec:'26 24 16', title:'Panelboard — Square D 400A', sub:'Graybar Electric', submitted:'2026-04-15', reviewed:'2026-04-22', status:'Approved', rev:1 },
+]
+
+const COORD_MATRIX = [
+  { discipline:'Architecture', lead:'AOR', model:'ARCH-v3.rvt', lod:'LOD 350', clashes:4, status:'Active' },
+  { discipline:'Structural', lead:'EOR', model:'STRUCT-v2.rvt', lod:'LOD 300', clashes:7, status:'Active' },
+  { discipline:'Mechanical', lead:'MEC', model:'MECH-v2.rvt', lod:'LOD 300', clashes:12, status:'Active' },
+  { discipline:'Plumbing', lead:'PE', model:'PLBG-v1.rvt', lod:'LOD 300', clashes:3, status:'Active' },
+  { discipline:'Electrical', lead:'EE', model:'ELEC-v1.rvt', lod:'LOD 200', clashes:1, status:'In Progress' },
+  { discipline:'Fire Protection', lead:'FPE', model:'FP-v1.rvt', lod:'LOD 300', clashes:2, status:'Active' },
+]
+
+// ─── Quantities Data ─────────────────────────────────────────────
+const CSI_TAKEOFF = [
+  { div:'03', title:'Concrete', unit:'CY', qty:487, unitCost:285, notes:'3000 PSI slab + footings' },
+  { div:'04', title:'Masonry', unit:'SF', qty:3200, unitCost:22, notes:'CMU block exterior — 8" std' },
+  { div:'05', title:'Metals / Structural Steel', unit:'TON', qty:48, unitCost:4200, notes:'W-shapes + HSS columns' },
+  { div:'06', title:'Wood & Plastics (Rough Framing)', unit:'MBF', qty:124, unitCost:980, notes:'2×6 SPF #2 @ 16" OC' },
+  { div:'07', title:'Thermal & Moisture Protection', unit:'SF', qty:8400, unitCost:4.8, notes:'Spray foam R-21 + TPO roof' },
+  { div:'08', title:'Openings (Doors / Windows)', unit:'EA', qty:62, unitCost:1450, notes:'Aluminum storefront + hollow metal' },
+  { div:'09', title:'Finishes (Drywall / Flooring / Paint)', unit:'SF', qty:22000, unitCost:18, notes:'5/8" GWB, LVT, level 5 finish' },
+  { div:'22', title:'Plumbing', unit:'FIX', qty:38, unitCost:2800, notes:'PEX-A supply, PVC DWV, tankless HW' },
+  { div:'23', title:'HVAC', unit:'TON', qty:18, unitCost:3600, notes:'Split system + ductwork, Manual J' },
+  { div:'26', title:'Electrical', unit:'AMP', qty:400, unitCost:185, notes:'400A service, AFCI, EV-ready, LV' },
+  { div:'31', title:'Earthwork / Site', unit:'CY', qty:1200, unitCost:42, notes:'Cut, fill, compact, haul' },
+  { div:'32', title:'Exterior Improvements', unit:'SF', qty:6500, unitCost:14, notes:'Concrete walks, asphalt paving' },
+]
+
+// ─── Feasibility Data ────────────────────────────────────────────
+const FEASIBILITY_MARKETS = [
+  { city:'Dallas, TX', type:'Single Family', avgSF:2800, landCost:95000, hardCost:185, softCost:28, salePrice:485000, roi:22.4, capRate:6.8, daysOnMkt:18 },
+  { city:'Austin, TX', type:'Single Family', avgSF:2400, landCost:145000, hardCost:210, softCost:32, salePrice:620000, roi:18.6, capRate:5.9, daysOnMkt:22 },
+  { city:'Tampa, FL', type:'Single Family', avgSF:2600, landCost:85000, hardCost:195, softCost:29, salePrice:520000, roi:24.1, capRate:7.1, daysOnMkt:15 },
+  { city:'Orlando, FL', type:'Single Family', avgSF:2500, landCost:75000, hardCost:188, softCost:27, salePrice:465000, roi:21.8, capRate:6.5, daysOnMkt:20 },
+  { city:'Phoenix, AZ', type:'Single Family', avgSF:2700, landCost:90000, hardCost:175, softCost:26, salePrice:490000, roi:25.3, capRate:7.4, daysOnMkt:12 },
+  { city:'Charlotte, NC', type:'Single Family', avgSF:2650, landCost:72000, hardCost:168, softCost:24, salePrice:440000, roi:26.8, capRate:7.8, daysOnMkt:14 },
+]
+
 const STATUS_BG: Record<string,string> = {
   'Complete':'#EAF3DE','In Review':'#EFF4FF','Pending':'#FFF3E0',
   'Not Started':'#f4f5f7','Open':'#FCEBEB','Resolved':'#EAF3DE','Under Review':'#FFF3E0',
@@ -378,16 +432,37 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
 
   const NAV = [
     { id:'dashboard', icon:'📊', label:'Executive Dashboard' },
-    { id:'upload',    icon:'⬆️', label:'BIM Upload' },
-    { id:'clash',     icon:'⚡', label:'Clash Detection' },
-    { id:'permits',   icon:'📋', label:'Permit Documentation' },
-    { id:'codes',       icon:'📖', label:'US Building Codes' },
-    { id:'residential', icon:'🏠', label:'Residential Systems' },
-    { id:'docs',        icon:'📁', label:'Construction Docs' },
-    { id:'workflow',  icon:'🔄', label:'AI Workflow' },
-    { id:'reports',   icon:'📈', label:'AI Reports' },
+    { id:'upload',       icon:'⬆️', label:'BIM Upload' },
+    { id:'coordination', icon:'🤝', label:'Coordenação' },
+    { id:'clash',        icon:'⚡', label:'Compatibilização' },
+    { id:'quantities',   icon:'📐', label:'Quantitativos' },
+    { id:'workflow',     icon:'🏗️', label:'BIM Management' },
+    { id:'residential',  icon:'🏠', label:'Construção' },
+    { id:'feasibility',  icon:'📊', label:'Viabilidade' },
+    { id:'docs',         icon:'📁', label:'Doc. Executiva' },
+    { id:'permits',      icon:'📋', label:'Permits' },
+    { id:'codes',        icon:'📖', label:'US Codes' },
+    { id:'reports',      icon:'📈', label:'AI Reports' },
   ]
 
+  // Coordination
+  const [coordTab, setCoordTab] = useState<'rfi'|'submittal'|'matrix'|'meeting'>('rfi')
+  const [coordAI, setCoordAI] = useState('')
+  const [coordAILoading, setCoordAILoading] = useState(false)
+  // Quantities
+  const [qtyAI, setQtyAI] = useState('')
+  const [qtyAILoading, setQtyAILoading] = useState(false)
+  const [qtyMarkup, setQtyMarkup] = useState(15)
+  // Feasibility
+  const [feasCity, setFeasCity] = useState('Dallas, TX')
+  const [feasSF, setFeasSF] = useState(2800)
+  const [feasLand, setFeasLand] = useState(95000)
+  const [feasHard, setFeasHard] = useState(185)
+  const [feasSoft, setFeasSoft] = useState(28)
+  const [feasSale, setFeasSale] = useState(485000)
+  const [feasAI, setFeasAI] = useState('')
+  const [feasAILoading, setFeasAILoading] = useState(false)
+  // Residential
   const [activeResSystem, setActiveResSystem] = useState('foundation')
   const [resQuery, setResQuery] = useState('')
   const [resAI, setResAI] = useState('')
@@ -1224,6 +1299,424 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                     <div style={s.pre}>{aiResult}</div>
                   </div>
                 )}
+              </>
+            )}
+
+            {/* ── COORDENAÇÃO ── */}
+            {activeModule === 'coordination' && (
+              <>
+                <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>🤝 BIM Coordination</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:16 }}>RFI log · Submittal log · Coordination matrix · Meeting minutes · AI coordination reports</div>
+
+                {/* Sub-tabs */}
+                <div style={{ display:'flex', gap:8, marginBottom:18 }}>
+                  {([['rfi','📝 RFI Log'],['submittal','📦 Submittal Log'],['matrix','📐 Coord. Matrix'],['meeting','📅 Meetings']] as const).map(([id,label]) => (
+                    <button key={id} onClick={() => setCoordTab(id)}
+                      style={{ padding:'8px 16px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                        background: coordTab === id ? '#185FA5' : '#161b22',
+                        color: coordTab === id ? '#fff' : '#8b93a7',
+                        border: `1px solid ${coordTab === id ? '#185FA5' : '#30363d'}` }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* RFI Log */}
+                {coordTab === 'rfi' && (
+                  <div style={s.card}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                      <div style={s.secTit}>📝 RFI Log — {RFI_LOG.length} Issues</div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        <span style={{ fontSize:11, color:'#f85149' }}>● {RFI_LOG.filter(r=>r.status==='Open').length} Open</span>
+                        <span style={{ fontSize:11, color:'#3fb950' }}>● {RFI_LOG.filter(r=>r.status==='Answered').length} Answered</span>
+                        <span style={{ fontSize:11, color:'#d29922' }}>● {RFI_LOG.filter(r=>r.status==='Pending').length} Pending</span>
+                      </div>
+                    </div>
+                    <div style={{ overflowX:'auto' as const }}>
+                      <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:11 }}>
+                        <thead>
+                          <tr style={{ borderBottom:'1px solid #30363d' }}>
+                            {['RFI #','Subject','Discipline','From','To','Issued','Due','Days Open','Status'].map(h => (
+                              <th key={h} style={{ padding:'6px 10px', textAlign:'left' as const, color:'#8b93a7', fontWeight:600, whiteSpace:'nowrap' as const }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {RFI_LOG.map(r => (
+                            <tr key={r.id} style={{ borderBottom:'1px solid #21262d' }}>
+                              <td style={{ padding:'8px 10px', color:'#58a6ff', fontWeight:700 }}>{r.id}</td>
+                              <td style={{ padding:'8px 10px', color:'#e6edf3', maxWidth:260 }}>{r.subject}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>{r.discipline}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>{r.from}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>{r.to}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', whiteSpace:'nowrap' as const }}>{r.issued}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', whiteSpace:'nowrap' as const }}>{r.due}</td>
+                              <td style={{ padding:'8px 10px', color: r.days > 14 ? '#f85149' : r.days > 7 ? '#d29922' : '#3fb950', fontWeight:700 }}>{r.days}d</td>
+                              <td style={{ padding:'8px 10px' }}>
+                                <span style={{ padding:'2px 8px', borderRadius:10, fontSize:10, fontWeight:700,
+                                  background: r.status==='Open'?'#FCEBEB': r.status==='Answered'?'#EAF3DE':'#FFF3E0',
+                                  color: r.status==='Open'?'#A32D2D': r.status==='Answered'?'#3B6D11':'#BA7517' }}>
+                                  {r.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Submittal Log */}
+                {coordTab === 'submittal' && (
+                  <div style={s.card}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                      <div style={s.secTit}>📦 Submittal Log — {SUBMITTAL_LOG.length} Items</div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        <span style={{ fontSize:11, color:'#3fb950' }}>● {SUBMITTAL_LOG.filter(s=>s.status.startsWith('Approved')).length} Approved</span>
+                        <span style={{ fontSize:11, color:'#58a6ff' }}>● {SUBMITTAL_LOG.filter(s=>s.status==='Under Review').length} In Review</span>
+                      </div>
+                    </div>
+                    <div style={{ overflowX:'auto' as const }}>
+                      <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:11 }}>
+                        <thead>
+                          <tr style={{ borderBottom:'1px solid #30363d' }}>
+                            {['Sub #','Spec Section','Title','Subcontractor','Submitted','Reviewed','Rev','Status'].map(h => (
+                              <th key={h} style={{ padding:'6px 10px', textAlign:'left' as const, color:'#8b93a7', fontWeight:600, whiteSpace:'nowrap' as const }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {SUBMITTAL_LOG.map(r => (
+                            <tr key={r.id} style={{ borderBottom:'1px solid #21262d' }}>
+                              <td style={{ padding:'8px 10px', color:'#58a6ff', fontWeight:700 }}>{r.id}</td>
+                              <td style={{ padding:'8px 10px', color:'#d2a679', fontFamily:'monospace' }}>{r.spec}</td>
+                              <td style={{ padding:'8px 10px', color:'#e6edf3' }}>{r.title}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>{r.sub}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', whiteSpace:'nowrap' as const }}>{r.submitted}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', whiteSpace:'nowrap' as const }}>{r.reviewed}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', textAlign:'center' as const }}>R{r.rev}</td>
+                              <td style={{ padding:'8px 10px' }}>
+                                <span style={{ padding:'2px 8px', borderRadius:10, fontSize:10, fontWeight:700,
+                                  background: r.status.startsWith('Approved')?'#EAF3DE': r.status==='Under Review'?'#EFF4FF':'#FFF3E0',
+                                  color: r.status.startsWith('Approved')?'#3B6D11': r.status==='Under Review'?'#185FA5':'#BA7517' }}>
+                                  {r.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Coordination Matrix */}
+                {coordTab === 'matrix' && (
+                  <div style={s.card}>
+                    <div style={s.secTit}>📐 BIM Coordination Matrix</div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:16 }}>
+                      {COORD_MATRIX.map(d => (
+                        <div key={d.discipline} style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8, padding:14 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3', marginBottom:6 }}>{d.discipline}</div>
+                          <div style={{ fontSize:11, color:'#8b93a7', marginBottom:4 }}>Lead: <span style={{ color:'#58a6ff' }}>{d.lead}</span></div>
+                          <div style={{ fontSize:11, color:'#8b93a7', marginBottom:4 }}>Model: <span style={{ color:'#d2a679', fontFamily:'monospace' }}>{d.model}</span></div>
+                          <div style={{ fontSize:11, color:'#8b93a7', marginBottom:8 }}>LOD: <span style={{ color:'#3fb950' }}>{d.lod}</span></div>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                            <span style={{ fontSize:11, color: d.clashes > 5 ? '#f85149' : d.clashes > 2 ? '#d29922' : '#3fb950' }}>
+                              ⚡ {d.clashes} clashes
+                            </span>
+                            <span style={{ fontSize:10, padding:'2px 7px', borderRadius:8,
+                              background: d.status === 'Active' ? '#EAF3DE' : '#EFF4FF',
+                              color: d.status === 'Active' ? '#3B6D11' : '#185FA5' }}>{d.status}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button style={s.btn} onClick={async () => {
+                      setCoordAILoading(true)
+                      const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ messages:[{ role:'user', content:`Generate a BIM Coordination meeting agenda for a US construction project. Disciplines: ${COORD_MATRIX.map(d=>`${d.discipline} (${d.clashes} clashes, LOD ${d.lod})`).join(', ')}. Open RFIs: ${RFI_LOG.filter(r=>r.status==='Open').map(r=>r.id+': '+r.subject).join('; ')}. Include: meeting objectives, attendee list by role, agenda items with time allocation, clash resolution priorities, RFI action items, model coordination schedule, BCF issue assignments, and next meeting date. Format as a professional meeting agenda.` }] }) })
+                      const d = await r.json()
+                      setCoordAI(d.content?.[0]?.text || '')
+                      setCoordAILoading(false)
+                    }}>
+                      🤖 Generate Coordination Meeting Agenda
+                    </button>
+                  </div>
+                )}
+
+                {/* Meeting Minutes */}
+                {coordTab === 'meeting' && (
+                  <div style={s.card}>
+                    <div style={s.secTit}>📅 Coordination Meeting Log</div>
+                    {[
+                      { date:'2026-05-12', title:'BIM Coordination Meeting #8', attendees:'AOR, EOR, MEC, GC, FPE', resolved:3, open:6, action:'Resolve CLH-001 by 5/19; RFI-002 response due' },
+                      { date:'2026-04-28', title:'BIM Coordination Meeting #7', attendees:'AOR, EOR, MEC, GC, PE', resolved:5, open:4, action:'Structural model update to LOD 350 by 5/5' },
+                      { date:'2026-04-14', title:'BIM Coordination Meeting #6', attendees:'All disciplines', resolved:7, open:2, action:'Federated model re-issue; clash run complete' },
+                    ].map(m => (
+                      <div key={m.date} style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8, padding:14, marginBottom:10 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:'#e6edf3' }}>{m.title}</div>
+                          <div style={{ fontSize:11, color:'#8b93a7' }}>{m.date}</div>
+                        </div>
+                        <div style={{ fontSize:11, color:'#8b93a7', marginBottom:4 }}>👥 {m.attendees}</div>
+                        <div style={{ display:'flex', gap:16, marginBottom:6 }}>
+                          <span style={{ fontSize:11, color:'#3fb950' }}>✓ {m.resolved} resolved</span>
+                          <span style={{ fontSize:11, color:'#f85149' }}>● {m.open} open</span>
+                        </div>
+                        <div style={{ fontSize:11, color:'#d2a679' }}>▸ {m.action}</div>
+                      </div>
+                    ))}
+                    <button style={s.btn} onClick={async () => {
+                      setCoordAILoading(true)
+                      const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({ messages:[{ role:'user', content:`Generate professional BIM Coordination Meeting Minutes for a US commercial construction project. Meeting #9. Include: project info, attendees (AOR, EOR, MEC, GC, PE, FPE), open RFIs: ${RFI_LOG.filter(r=>r.status==='Open').map(r=>r.id+': '+r.subject).join('; ')}. Active clashes: ${COORD_MATRIX.reduce((a,d)=>a+d.clashes,0)} total. Format with: Date/Time/Location, Attendees, Previous Action Items Review, Current Clash Status, RFI Status, New Issues, Action Items with owner and due date, Next Meeting. Professional tone for distribution to project team.` }] }) })
+                      const d = await r.json()
+                      setCoordAI(d.content?.[0]?.text || '')
+                      setCoordAILoading(false)
+                    }}>
+                      🤖 Generate Meeting Minutes
+                    </button>
+                  </div>
+                )}
+
+                {coordAILoading && (
+                  <div style={{ ...s.card, textAlign:'center' as const }}>
+                    <div style={{ color:'#58a6ff', fontSize:13 }}>⏳ AI generating coordination document...</div>
+                  </div>
+                )}
+                {coordAI && !coordAILoading && (
+                  <div style={s.card}>
+                    <div style={s.secTit}>🤖 AI Output</div>
+                    <div style={s.pre}>{coordAI}</div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* ── QUANTITATIVOS ── */}
+            {activeModule === 'quantities' && (
+              <>
+                <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>📐 Quantitativos — Quantity Takeoff</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:16 }}>CSI MasterFormat · Unit costs USD · AI quantity survey · Cost estimate with markup</div>
+
+                {/* Markup control */}
+                <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:18, background:'#161b22',
+                  border:'1px solid #30363d', borderRadius:10, padding:'12px 16px' }}>
+                  <div style={{ fontSize:12, color:'#e6edf3', fontWeight:600 }}>GC Markup / OH&P:</div>
+                  {[10,12,15,18,20].map(pct => (
+                    <button key={pct} onClick={() => setQtyMarkup(pct)}
+                      style={{ padding:'5px 14px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer',
+                        background: qtyMarkup === pct ? '#238636' : '#0d1117',
+                        color: qtyMarkup === pct ? '#fff' : '#8b93a7',
+                        border: `1px solid ${qtyMarkup === pct ? '#238636' : '#30363d'}` }}>
+                      {pct}%
+                    </button>
+                  ))}
+                  <div style={{ marginLeft:'auto', fontSize:13, color:'#3fb950', fontWeight:700 }}>
+                    Total Direct: ${CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0).toLocaleString()} USD
+                  </div>
+                  <div style={{ fontSize:13, color:'#58a6ff', fontWeight:700 }}>
+                    With Markup: ${Math.round(CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0) * (1+qtyMarkup/100)).toLocaleString()} USD
+                  </div>
+                </div>
+
+                {/* Takeoff Table */}
+                <div style={s.card}>
+                  <div style={s.secTit}>CSI MasterFormat Takeoff</div>
+                  <div style={{ overflowX:'auto' as const }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:12 }}>
+                      <thead>
+                        <tr style={{ borderBottom:'2px solid #30363d' }}>
+                          {['Div','Title','Unit','Qty','Unit Cost (USD)','Direct Cost','w/ Markup','Notes'].map(h => (
+                            <th key={h} style={{ padding:'8px 10px', textAlign:'left' as const, color:'#8b93a7', fontWeight:600, whiteSpace:'nowrap' as const }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {CSI_TAKEOFF.map((item, i) => {
+                          const direct = item.qty * item.unitCost
+                          const withMarkup = Math.round(direct * (1 + qtyMarkup/100))
+                          return (
+                            <tr key={item.div} style={{ borderBottom:'1px solid #21262d',
+                              background: i % 2 === 0 ? 'transparent' : '#0d111733' }}>
+                              <td style={{ padding:'9px 10px', color:'#d2a679', fontWeight:700, fontFamily:'monospace' }}>Div {item.div}</td>
+                              <td style={{ padding:'9px 10px', color:'#e6edf3', fontWeight:600 }}>{item.title}</td>
+                              <td style={{ padding:'9px 10px', color:'#8b93a7', textAlign:'center' as const }}>{item.unit}</td>
+                              <td style={{ padding:'9px 10px', color:'#e6edf3', textAlign:'right' as const }}>{item.qty.toLocaleString()}</td>
+                              <td style={{ padding:'9px 10px', color:'#8b93a7', textAlign:'right' as const }}>${item.unitCost.toLocaleString()}</td>
+                              <td style={{ padding:'9px 10px', color:'#e6edf3', textAlign:'right' as const, fontWeight:600 }}>${direct.toLocaleString()}</td>
+                              <td style={{ padding:'9px 10px', color:'#3fb950', textAlign:'right' as const, fontWeight:700 }}>${withMarkup.toLocaleString()}</td>
+                              <td style={{ padding:'9px 10px', color:'#8b93a7', fontSize:11 }}>{item.notes}</td>
+                            </tr>
+                          )
+                        })}
+                        <tr style={{ borderTop:'2px solid #30363d', background:'#161b22' }}>
+                          <td colSpan={5} style={{ padding:'10px', color:'#e6edf3', fontWeight:700, textAlign:'right' as const }}>TOTAL PROJECT ESTIMATE:</td>
+                          <td style={{ padding:'10px', color:'#58a6ff', fontWeight:800, textAlign:'right' as const, fontSize:14 }}>
+                            ${CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0).toLocaleString()}
+                          </td>
+                          <td style={{ padding:'10px', color:'#3fb950', fontWeight:800, textAlign:'right' as const, fontSize:14 }}>
+                            ${Math.round(CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0) * (1+qtyMarkup/100)).toLocaleString()}
+                          </td>
+                          <td style={{ padding:'10px', color:'#8b93a7', fontSize:11 }}>incl. {qtyMarkup}% OH&P</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* AI Quantity Survey */}
+                <div style={s.card}>
+                  <div style={s.secTit}>🤖 AI Quantity Survey & Estimate</div>
+                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' as const, marginBottom:12 }}>
+                    {[
+                      { label:'Full Cost Estimate Report', prompt:`Generate a detailed construction cost estimate report for a US residential project. CSI divisions covered: ${CSI_TAKEOFF.map(i=>`Div ${i.div} ${i.title}: ${i.qty} ${i.unit} @ $${i.unitCost}/${i.unit} = $${(i.qty*i.unitCost).toLocaleString()}`).join('; ')}. Total direct cost: $${CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0).toLocaleString()}. Markup: ${qtyMarkup}%. Include: executive summary, CSI division breakdown, assumptions, exclusions, allowances, contingency recommendation (5–10%), and comparison to Sun Belt market benchmarks (TX, FL, AZ).` },
+                      { label:'Value Engineering Options', prompt:`Provide value engineering recommendations for a US residential construction project with these quantities: ${CSI_TAKEOFF.map(i=>`Div ${i.div}: $${(i.qty*i.unitCost).toLocaleString()}`).join(', ')}. Total: $${CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0).toLocaleString()}. Identify top 5 value engineering opportunities with estimated savings, quality impact, and implementation risk. Focus on concrete, steel, MEP, and finishes.` },
+                      { label:'Bid Comparison Matrix', prompt:`Generate a bid comparison matrix template for a US construction project. Scope items by CSI division: ${CSI_TAKEOFF.map(i=>`Div ${i.div} — ${i.title}`).join('; ')}. Format a professional bid tabulation with columns for Bidder 1/2/3, base bid, unit prices, alternates, qualifications, and recommended award. Include evaluation criteria and scoring methodology.` },
+                    ].map(btn => (
+                      <button key={btn.label} style={s.btn} onClick={async () => {
+                        setQtyAILoading(true)
+                        const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify({ messages:[{ role:'user', content: btn.prompt }] }) })
+                        const d = await r.json()
+                        setQtyAI(d.content?.[0]?.text || '')
+                        setQtyAILoading(false)
+                      }}>🤖 {btn.label}</button>
+                    ))}
+                  </div>
+                  {qtyAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ AI generating estimate...</div>}
+                  {qtyAI && !qtyAILoading && <div style={s.pre}>{qtyAI}</div>}
+                </div>
+              </>
+            )}
+
+            {/* ── VIABILIDADE ── */}
+            {activeModule === 'feasibility' && (
+              <>
+                <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:4 }}>📊 Viabilidade — Feasibility Analysis</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:16 }}>Pro forma · IRR / NPV · Sun Belt market comparables · Development budget · AI feasibility report</div>
+
+                {/* Market Comparables */}
+                <div style={s.card}>
+                  <div style={s.secTit}>🌎 Sun Belt Market Comparables — Single Family</div>
+                  <div style={{ overflowX:'auto' as const }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:12 }}>
+                      <thead>
+                        <tr style={{ borderBottom:'2px solid #30363d' }}>
+                          {['Market','Avg SF','Land','Hard Cost/SF','Soft Cost/SF','Sale Price','ROI %','Cap Rate','Days on Mkt'].map(h => (
+                            <th key={h} style={{ padding:'7px 10px', textAlign:'left' as const, color:'#8b93a7', fontWeight:600, whiteSpace:'nowrap' as const }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {FEASIBILITY_MARKETS.map(m => (
+                          <tr key={m.city} onClick={() => {
+                            setFeasCity(m.city); setFeasSF(m.avgSF); setFeasLand(m.landCost)
+                            setFeasHard(m.hardCost); setFeasSoft(m.softCost); setFeasSale(m.salePrice)
+                          }} style={{ borderBottom:'1px solid #21262d', cursor:'pointer',
+                            background: feasCity === m.city ? '#1a2940' : 'transparent' }}>
+                            <td style={{ padding:'9px 10px', color:'#58a6ff', fontWeight:700 }}>{m.city}</td>
+                            <td style={{ padding:'9px 10px', color:'#e6edf3' }}>{m.avgSF.toLocaleString()} SF</td>
+                            <td style={{ padding:'9px 10px', color:'#e6edf3' }}>${m.landCost.toLocaleString()}</td>
+                            <td style={{ padding:'9px 10px', color:'#e6edf3' }}>${m.hardCost}/SF</td>
+                            <td style={{ padding:'9px 10px', color:'#e6edf3' }}>${m.softCost}/SF</td>
+                            <td style={{ padding:'9px 10px', color:'#3fb950', fontWeight:700 }}>${m.salePrice.toLocaleString()}</td>
+                            <td style={{ padding:'9px 10px', color: m.roi>24?'#3fb950':m.roi>20?'#d29922':'#f85149', fontWeight:700 }}>{m.roi}%</td>
+                            <td style={{ padding:'9px 10px', color:'#8b93a7' }}>{m.capRate}%</td>
+                            <td style={{ padding:'9px 10px', color:'#8b93a7' }}>{m.daysOnMkt}d</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ fontSize:11, color:'#8b93a7', marginTop:8 }}>▸ Click a row to load market into the pro forma below</div>
+                </div>
+
+                {/* Pro Forma Calculator */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+                  {/* Inputs */}
+                  <div style={s.card}>
+                    <div style={s.secTit}>📋 Pro Forma Inputs — {feasCity}</div>
+                    {[
+                      { label:'Project Size (SF)', val:feasSF, set:setFeasSF },
+                      { label:'Land / Lot Cost ($)', val:feasLand, set:setFeasLand },
+                      { label:'Hard Cost ($/SF)', val:feasHard, set:setFeasHard },
+                      { label:'Soft Cost ($/SF)', val:feasSoft, set:setFeasSoft },
+                      { label:'Target Sale Price ($)', val:feasSale, set:setFeasSale },
+                    ].map(({ label, val, set }) => (
+                      <div key={label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center',
+                        padding:'8px 0', borderBottom:'1px solid #21262d' }}>
+                        <div style={{ fontSize:12, color:'#8b93a7' }}>{label}</div>
+                        <input type="number" value={val}
+                          onChange={e => set(Number(e.target.value))}
+                          style={{ width:120, background:'#0d1117', border:'1px solid #30363d', borderRadius:6,
+                            padding:'4px 8px', color:'#e6edf3', fontSize:12, textAlign:'right' as const }} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Results */}
+                  <div style={s.card}>
+                    {(() => {
+                      const hardTotal = feasSF * feasHard
+                      const softTotal = feasSF * feasSoft
+                      const totalCost = feasLand + hardTotal + softTotal
+                      const profit = feasSale - totalCost
+                      const roi = ((profit / totalCost) * 100).toFixed(1)
+                      const margin = ((profit / feasSale) * 100).toFixed(1)
+                      const irr = (parseFloat(roi) * 0.72).toFixed(1)  // simplified 18-month project IRR
+                      const costPerSF = (totalCost / feasSF).toFixed(0)
+                      return (
+                        <>
+                          <div style={s.secTit}>📊 Pro Forma Results</div>
+                          {[
+                            { label:'Hard Cost Total', val:`$${hardTotal.toLocaleString()}`, color:'#e6edf3' },
+                            { label:'Soft Cost Total', val:`$${softTotal.toLocaleString()}`, color:'#e6edf3' },
+                            { label:'Land Cost', val:`$${feasLand.toLocaleString()}`, color:'#e6edf3' },
+                            { label:'Total Development Cost', val:`$${totalCost.toLocaleString()}`, color:'#58a6ff' },
+                            { label:'Cost / SF', val:`$${costPerSF}/SF`, color:'#8b93a7' },
+                            { label:'Sale Price', val:`$${feasSale.toLocaleString()}`, color:'#3fb950' },
+                            { label:'Gross Profit', val:`$${profit.toLocaleString()}`, color: profit > 0 ? '#3fb950' : '#f85149' },
+                            { label:'ROI', val:`${roi}%`, color: parseFloat(roi) > 20 ? '#3fb950' : parseFloat(roi) > 12 ? '#d29922' : '#f85149' },
+                            { label:'Profit Margin', val:`${margin}%`, color:'#d2a679' },
+                            { label:'Estimated IRR (18 mo)', val:`${irr}%`, color:'#58a6ff' },
+                          ].map(row => (
+                            <div key={row.label} style={{ display:'flex', justifyContent:'space-between',
+                              padding:'7px 0', borderBottom:'1px solid #21262d' }}>
+                              <div style={{ fontSize:12, color:'#8b93a7' }}>{row.label}</div>
+                              <div style={{ fontSize:13, fontWeight:700, color:row.color }}>{row.val}</div>
+                            </div>
+                          ))}
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* AI Feasibility */}
+                <div style={s.card}>
+                  <div style={s.secTit}>🤖 AI Feasibility Report</div>
+                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' as const, marginBottom:12 }}>
+                    {[
+                      { label:'Full Feasibility Report', prompt:`Generate a professional real estate feasibility study for a US residential development in ${feasCity}. Project: ${feasSF.toLocaleString()} SF single-family home. Land: $${feasLand.toLocaleString()}. Hard cost: $${feasHard}/SF ($${(feasSF*feasHard).toLocaleString()} total). Soft cost: $${feasSoft}/SF. Total development cost: $${(feasLand+feasSF*feasHard+feasSF*feasSoft).toLocaleString()}. Target sale: $${feasSale.toLocaleString()}. Include: executive summary, market analysis, development budget, pro forma P&L, sensitivity analysis (±10% sale price, ±15% hard cost), ROI/IRR/NPV, risk factors, and go/no-go recommendation. Professional format for investor presentation.` },
+                      { label:'Market Analysis', prompt:`Generate a detailed real estate market analysis for ${feasCity} — residential development. Include: current median prices, price per SF trends (2023–2026), absorption rate, days on market, supply/demand dynamics, major employer base, population growth, permit activity, competitive landscape (tract vs custom builders), and 12-month outlook. Data-driven analysis for development decision-making.` },
+                      { label:'Investor Summary (1 page)', prompt:`Create a concise 1-page investor summary for a residential development in ${feasCity}. Project: ${feasSF.toLocaleString()} SF home, total cost $${(feasLand+feasSF*feasHard+feasSF*feasSoft).toLocaleString()}, target sale $${feasSale.toLocaleString()}, projected ROI ${(((feasSale-(feasLand+feasSF*feasHard+feasSF*feasSoft))/(feasLand+feasSF*feasHard+feasSF*feasSoft))*100).toFixed(1)}%. Format for angel investors/family offices. Include deal highlights, use of funds, timeline, exit strategy, and risk mitigation.` },
+                    ].map(btn => (
+                      <button key={btn.label} style={s.btn} onClick={async () => {
+                        setFeasAILoading(true)
+                        const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify({ messages:[{ role:'user', content: btn.prompt }] }) })
+                        const d = await r.json()
+                        setFeasAI(d.content?.[0]?.text || '')
+                        setFeasAILoading(false)
+                      }}>🤖 {btn.label}</button>
+                    ))}
+                  </div>
+                  {feasAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ AI generating feasibility report...</div>}
+                  {feasAI && !feasAILoading && <div style={s.pre}>{feasAI}</div>}
+                </div>
               </>
             )}
 
