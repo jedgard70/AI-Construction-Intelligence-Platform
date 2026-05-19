@@ -107,7 +107,8 @@ export default function JuridicoClient() {
   // ─── Upload e leitura real via Claude Vision ─────────────
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; if (!file) return
-    setUploadStatus('⏳ Analisando documento com IA...')
+    if (fileRef.current) fileRef.current.value = ''
+    setUploadStatus('⏳ Lendo documento com IA Claude Vision…')
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
@@ -115,15 +116,41 @@ export default function JuridicoClient() {
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
-      const isPDF     = file.type === 'application/pdf'
-      const mediaType = isPDF ? 'application/pdf' : file.type as any
-      const response  = await fetch('/api/ocr', {
+
+      // Valida tipo de arquivo
+      const isPDF     = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+      const isImage   = file.type.startsWith('image/') || /\.(jpe?g|png|webp|gif)$/i.test(file.name)
+      if (!isPDF && !isImage) {
+        setUploadStatus('❌ Formato não suportado. Envie PDF, JPG ou PNG.')
+        setTimeout(() => setUploadStatus(''), 4000)
+        return
+      }
+      const mediaType = isPDF ? 'application/pdf' : (file.type || 'image/jpeg')
+
+      const response = await fetch('/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base64, mediaType, isPDF }),
       })
+
       const extracted = await response.json()
-      if (extracted.error) throw new Error(extracted.error)
+
+      if (!response.ok || extracted.error) {
+        const msg = extracted.error || `Erro ${response.status}`
+        // Exibe erro detalhado para facilitar diagnóstico
+        setUploadStatus(`❌ ${msg.length > 80 ? msg.slice(0, 80) + '…' : msg} — Preencha manualmente.`)
+        setTimeout(() => setUploadStatus(''), 7000)
+        return
+      }
+
+      // Preenche apenas campos que vieram preenchidos
+      const anyFilled = Object.values(extracted).some(v => v && String(v).trim())
+      if (!anyFilled) {
+        setUploadStatus('⚠️ Documento lido, mas nenhum dado pessoal encontrado. Preencha manualmente.')
+        setTimeout(() => setUploadStatus(''), 5000)
+        return
+      }
+
       setParte(prev => ({
         ...prev,
         nome:          extracted.nome          || prev.nome,
@@ -132,14 +159,15 @@ export default function JuridicoClient() {
         nacionalidade: extracted.nacionalidade || prev.nacionalidade,
         estado_civil:  extracted.estado_civil  || prev.estado_civil,
         profissao:     extracted.profissao     || prev.profissao,
-        endereco:      [extracted.endereco, extracted.cidade, extracted.estado, extracted.cep].filter(Boolean).join(', ') || prev.endereco,
+        endereco:      [extracted.endereco, extracted.cidade, extracted.estado, extracted.cep]
+                         .filter(Boolean).join(', ') || prev.endereco,
       }))
-      setUploadStatus('✅ Dados extraídos com sucesso!')
-    } catch (err) {
+      setUploadStatus('✅ Dados extraídos e preenchidos com sucesso!')
+    } catch (err: any) {
       console.error('Erro OCR:', err)
-      setUploadStatus('❌ Erro ao ler documento. Preencha manualmente.')
+      setUploadStatus(`❌ ${err?.message || 'Falha de conexão'}. Preencha manualmente.`)
     }
-    setTimeout(() => setUploadStatus(''), 4000)
+    setTimeout(() => setUploadStatus(''), 6000)
   }, [])
 
   // ─── Análise jurídica via Claude ─────────────────────────
@@ -212,63 +240,371 @@ Por favor forneça:
     setAnalisando(false)
   }, [tipoContrato, parte, obra, financeiro, modoContratado])
 
-  // ─── Gera texto do contrato (sem bloco de assinaturas) ───
+  // ─── Gera contrato completo com 16 cláusulas ───────────────
   const gerarContrato = () => {
     const tipo  = TIPOS_CONTRATO.find(t => t.id === tipoContrato)
-    const linha = '─'.repeat(50)
-    return `CONTRATO DE ${tipo?.label.toUpperCase()}
+    const sep   = '═'.repeat(56)
+    const linha = '─'.repeat(56)
+    const hoje  = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+    const isAdm = tipoContrato === 'administracao'
+    const isEmp = tipoContrato === 'empreitada'
+
+    // Calcula saldo automaticamente se possível
+    const valTotal = parseFloat((financeiro.valor_total || '0').replace(/\D/g, '')) || 0
+    const valEntr  = parseFloat((financeiro.entrada || '0').replace(/\D/g, '')) || 0
+    const saldoCalc = valTotal > 0 && valEntr > 0 ? `R$ ${(valTotal - valEntr).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : (financeiro.saldo || '[SALDO DEVEDOR]')
+    const nParc = parseInt(financeiro.parcelas) || 10
+    const valParc = valTotal > 0 && valEntr > 0 && nParc > 0
+      ? `R$ ${((valTotal - valEntr) / nParc).toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+      : (financeiro.valor_parcela || '[VALOR DA PARCELA]')
+
+    return `${sep}
+                    CONTRATO DE ${tipo?.label.toUpperCase()}
+${sep}
+
+Pelo presente instrumento particular de contrato, as partes abaixo qualificadas
+têm entre si justo e contratado o seguinte, que mutuamente aceitam e outorgam:
+
+${linha}
+1. DAS PARTES
 ${linha}
 
-1. DAS PARTES
-
 1.1. CONTRATANTE:
-     ${parte.nome || '[NOME DO CONTRATANTE]'}, ${parte.nacionalidade}, ${parte.estado_civil}, ${parte.profissao},
-     CPF: ${parte.cpf || '[CPF]'}  |  RG: ${parte.rg || '[RG]'}
-     Endereço: ${parte.endereco || '[ENDEREÇO]'}
-     Tel: ${parte.telefone || '[TELEFONE]'}  |  E-mail: ${parte.email || '[E-MAIL]'}
+
+     ${parte.nome || '[NOME COMPLETO DO CONTRATANTE]'}, ${parte.nacionalidade || 'brasileiro(a)'},
+     ${parte.estado_civil || '[ESTADO CIVIL]'}, ${parte.profissao || '[PROFISSÃO]'},
+     CPF: ${parte.cpf || '[000.000.000-00]'}  |  RG: ${parte.rg || '[XXXXXXX-X]'}
+     Endereço: ${parte.endereco || '[LOGRADOURO, NÚMERO, BAIRRO, CIDADE, UF, CEP]'}
+     Tel/WhatsApp: ${parte.telefone || '[TELEFONE]'}  |  E-mail: ${parte.email || '[E-MAIL]'}
 
 1.2. CONTRATADO:
+
      ${nomeContratado}.
      Responsável técnico: ${ENG.nome} — CREA ${ENG.crea}
 
-${linha}
-2. DO IMÓVEL
+As partes acima identificadas são doravante denominadas simplesmente
+CONTRATANTE e CONTRATADO.
 
-     Tipo / Classificação: ${obra.tipo_obra} — ${obra.classificacao}
-     Endereço: ${obra.endereco || '[ENDEREÇO DA OBRA]'}
+${linha}
+2. DO OBJETO
+${linha}
+
+2.1. O presente contrato tem por objeto a ${tipo?.label} para execução de:
+
+     ${obra.descricao || `${obra.tipo_obra} — ${obra.classificacao}, conforme projeto arquitetônico, projetos complementares (estrutural, elétrico, hidrossanitário) e Memorial Descritivo aprovados, que integram este contrato como Anexo I.`}
+
+${isAdm ? `2.2. No regime de ADMINISTRAÇÃO A PREÇO DE CUSTO, cabe ao CONTRATANTE o
+     fornecimento de todos os materiais de construção, sendo o CONTRATADO
+     remunerado exclusivamente pela administração, mão de obra e gerenciamento.` :
+isEmp ? `2.2. No regime de EMPREITADA GLOBAL, o CONTRATADO fornece toda a mão de
+     obra, materiais e equipamentos necessários, responsabilizando-se pelo
+     resultado final da obra conforme especificações técnicas acordadas.` :
+`2.2. Os serviços serão executados conforme especificações técnicas e
+     cronograma físico aprovados pelas partes.`}
+
+${linha}
+3. DO IMÓVEL
+${linha}
+
+3.1. A obra objeto deste contrato será executada no imóvel com as seguintes
+     características:
+
+     Tipo / Classificação:   ${obra.tipo_obra} — ${obra.classificacao}
+     Endereço completo:      ${obra.endereco || '[LOGRADOURO, NÚMERO, BAIRRO, CIDADE/UF]'}
      Setor: ${obra.setor || '—'}  |  Quadra: ${obra.quadra || '—'}  |  Lote: ${obra.lote || '—'}
-     Inscrição imobiliária: ${obra.inscricao || '—'}
-     Testada: ${obra.testada || '—'} m  |  Área do terreno: ${obra.area_terreno || '—'} m²
-     Área a construir: ${obra.area_construir || '—'} m²
+     Inscrição imobiliária:  ${obra.inscricao || '—'}
+     Testada:                ${obra.testada || '—'} m
+     Área do terreno:        ${obra.area_terreno || '—'} m²
+     Área a construir:       ${obra.area_construir || '—'} m²
+
+3.2. O CONTRATANTE declara ser proprietário ou possuidor do imóvel
+     descrito acima, responsabilizando-se por eventuais restrições legais,
+     administrativas ou de vizinhança que possam afetar a execução da obra.
 
 ${linha}
-3. DO OBJETO
+4. DO PRAZO DE EXECUÇÃO
+${linha}
 
-     ${obra.descricao || `Construção de ${obra.classificacao} conforme projeto e Memorial Descritivo anexo.`}
+4.1. A execução dos serviços terá prazo de [PRAZO] dias corridos, contados
+     a partir da data de emissão da Anotação de Responsabilidade Técnica — ART/RRT
+     junto ao CREA/CAU e do depósito da primeira parcela.
+
+4.2. O cronograma físico-financeiro detalhado consta do Anexo II, podendo
+     ser reprogramado de comum acordo entre as partes, mediante aditivo escrito.
+
+4.3. O prazo ficará automaticamente suspenso em caso de:
+     a) Atraso no fornecimento de materiais imputável ao CONTRATANTE;
+     b) Paralisação por determinação de autoridade pública;
+     c) Eventos de força maior ou caso fortuito (art. 393 do Código Civil);
+     d) Chuvas que impeçam a execução por período superior a 3 (três) dias
+        consecutivos, devidamente registradas no Diário de Obra (RDO).
+
+4.4. O descumprimento injustificado do prazo pelo CONTRATADO sujeita-o à
+     multa prevista na Cláusula 12 deste instrumento.
 
 ${linha}
-4. DO PREÇO E FORMA DE PAGAMENTO
+5. DO PREÇO E FORMA DE PAGAMENTO
+${linha}
 
-     Valor total:       ${financeiro.valor_total || '[VALOR TOTAL]'}
-     Entrada:           ${financeiro.entrada || '[ENTRADA]'}
-     Saldo devedor:     ${financeiro.saldo || '[SALDO]'} em ${financeiro.parcelas} parcelas de ${financeiro.valor_parcela || '[VALOR PARCELA]'}
-     Vencimento:        Dia ${financeiro.dia_vencimento} de cada mês
+5.1. O valor total contratado é de ${financeiro.valor_total || '[R$ VALOR TOTAL]'},
+     correspondente à ${tipo?.label.toLowerCase()}, conforme planilha orçamentária
+     (Anexo III), que integra este contrato.
 
-     Pagamento via PIX ou transferência para:
-     ${APEX.nome} — CNPJ ${APEX.cnpj}
+5.2. Forma de pagamento:
+
+     Entrada (assinatura do contrato): ${financeiro.entrada || '[R$ VALOR DA ENTRADA]'}
+     Saldo devedor:  ${saldoCalc}
+     Parcelamento:   ${nParc} parcelas mensais de ${valParc}
+     Vencimento:     Dia ${financeiro.dia_vencimento || '10'} de cada mês, a partir do 1º mês de obra.
+
+5.3. Pagamentos deverão ser realizados via PIX ou transferência bancária:
+
+     Beneficiário: ${modoContratado === 'apex' ? APEX.nome + ' — CNPJ ' + APEX.cnpj : ENG.nome + ' — CPF ' + ENG.cpf}
      Banco ${PAGAMENTO.banco}  |  Agência ${PAGAMENTO.agencia}  |  C/C ${PAGAMENTO.conta}
-     PIX: ${PAGAMENTO.pix}
+     Chave PIX: ${PAGAMENTO.pix}
+
+5.4. O CONTRATANTE que atrasar o pagamento por mais de 5 (cinco) dias
+     corridos ficará sujeito a:
+     — Multa moratória de 2% (dois por cento) sobre o valor da parcela;
+     — Juros de mora de 1% (um por cento) ao mês (pro rata die);
+     — Correção monetária pelo INCC-M (FGV) ou IPCA/IBGE, o que for maior.
+
+5.5. O CONTRATADO poderá suspender os serviços após 15 (quinze) dias de
+     inadimplência, sem que tal suspensão configure descumprimento contratual.
 
 ${linha}
-5. RESPONSABILIDADE TÉCNICA
+6. DO REAJUSTE DE PREÇOS
+${linha}
 
-     Responsável técnico: ${ENG.nome} — CREA ${ENG.crea}
-     Art. 618 Código Civil: 5 (cinco) anos de responsabilidade por solidez e segurança.
+6.1. Os valores contratados serão reajustados anualmente pelo índice do
+     INCC-M (Índice Nacional de Custo da Construção — FGV), medido no
+     período entre a data de assinatura e a data de reajuste.
+
+6.2. Em caso de elevação de insumos acima de 15% (quinze por cento)
+     verificada pelo SINAPI (IBGE), as partes se comprometem a negociar
+     revisão extraordinária no prazo de 10 (dez) dias úteis.
+
+6.3. O reajuste não se aplica às parcelas já vencidas e não pagas
+     em decorrência de inadimplência do CONTRATANTE.
 
 ${linha}
-6. DO FORO
+7. DAS OBRIGAÇÕES DO CONTRATADO
+${linha}
 
-     Fica eleito o foro da Comarca de Promissão/SP.`
+7.1. Constituem obrigações do CONTRATADO:
+
+     a) Executar os serviços com boa técnica, primando pela qualidade,
+        observando as normas técnicas da ABNT, especialmente NBR 12721,
+        NBR 6118, NBR 9050 e NBR 15575 (quando aplicável);
+     b) Manter responsável técnico habilitado no local da obra;
+     c) Elaborar e manter atualizado o Diário de Obra (RDO);
+     d) Providenciar a Anotação de Responsabilidade Técnica — ART/RRT junto
+        ao CREA/CAU antes do início das obras;
+     e) Gerenciar a equipe de mão de obra e subcontratados;
+     f) Fiscalizar a qualidade dos serviços executados por terceiros;
+     g) Apresentar medições mensais detalhadas ao CONTRATANTE;
+     h) Guardar todos os documentos fiscais relativos à obra pelo prazo de
+        5 (cinco) anos;
+     i) Comunicar imediatamente o CONTRATANTE sobre qualquer fato que
+        possa afetar prazo, custo ou qualidade da obra;
+     j) Cumprir integralmente as normas de segurança do trabalho (NR-18).
+
+${isAdm ? `7.2. No regime de Administração a Preço de Custo, o CONTRATADO obriga-se
+     ainda a: (i) apresentar notas fiscais e recibos de todas as compras
+     realizadas com verbas do CONTRATANTE; (ii) não efetuar pagamentos sem
+     prévia aprovação do CONTRATANTE para valores superiores a R$ 500,00.` : ''}
+
+${linha}
+8. DAS OBRIGAÇÕES DO CONTRATANTE
+${linha}
+
+8.1. Constituem obrigações do CONTRATANTE:
+
+     a) Efetuar os pagamentos nas datas e condições pactuadas;
+     b) Fornecer a documentação do imóvel necessária ao licenciamento;
+     c) Providenciar os projetos e aprovações junto à Prefeitura e órgãos
+        competentes, salvo se expressamente incluídos no objeto deste contrato;
+     d) Garantir livre acesso ao imóvel para execução dos serviços;
+     e) Comunicar ao CONTRATADO qualquer alteração de projeto com
+        antecedência mínima de 5 (cinco) dias úteis;
+     f) Assinar o Diário de Obra quando solicitado;
+     g) Não contratar diretamente os funcionários ou subcontratados do
+        CONTRATADO durante a vigência e por 12 (doze) meses após o término.
+
+${isAdm ? `8.2. No regime de Administração a Preço de Custo, o CONTRATANTE obriga-se
+     a: (i) destinar verba separada para aquisição de materiais; (ii)
+     aprovar previamente as requisições de compra acima de R$ 500,00;
+     (iii) manter conta bancária específica para a obra.` : ''}
+
+${linha}
+9. DA RESPONSABILIDADE TÉCNICA
+${linha}
+
+9.1. O CONTRATADO assume a responsabilidade técnica pelos serviços de
+     engenharia executados, conforme:
+
+     Art. 618 do Código Civil Brasileiro (Lei 10.406/2002):
+     "Nos contratos de empreitada de edifícios ou outras construções
+     consideráveis, o empreiteiro de materiais e execução responderá,
+     durante o prazo irredutível de cinco anos, pela solidez e segurança
+     do trabalho, assim em razão dos materiais, como do solo."
+
+9.2. Responsável técnico: ${ENG.nome} — CREA ${ENG.crea}
+     ART/RRT nº: _________________________________ (a ser anotada)
+
+9.3. A responsabilidade civil do CONTRATADO por danos a terceiros, vizinhos
+     ou à via pública causados pela execução da obra é de sua exclusividade,
+     nos termos do art. 927 do Código Civil.
+
+${linha}
+10. DAS GARANTIAS DE EXECUÇÃO
+${linha}
+
+10.1. O CONTRATADO garante a qualidade dos serviços executados pelo prazo
+      mínimo de:
+      — 5 (cinco) anos: solidez estrutural e estanqueidade (art. 618 CC);
+      — 3 (três) anos: impermeabilizações, instalações hidrossanitárias
+        e elétricas (NBR 15575);
+      — 1 (um) ano: revestimentos, pinturas e acabamentos em geral.
+
+10.2. O prazo de garantia inicia-se na data do Termo de Entrega da Obra,
+      firmado por ambas as partes.
+
+10.3. A garantia não cobre danos decorrentes de mau uso, ausência de
+      manutenção preventiva, reformas não autorizadas ou eventos de
+      força maior.
+
+${linha}
+11. DO SEGURO DA OBRA
+${linha}
+
+11.1. Recomenda-se que o CONTRATANTE contrate seguro de obra (Risco de
+      Engenharia) para cobertura de danos materiais, responsabilidade
+      civil de operações e danos a terceiros durante a execução.
+
+11.2. O CONTRATADO manterá apólice de Responsabilidade Civil Profissional
+      (RC Engenheiro) vigente durante toda a execução do contrato.
+
+${linha}
+12. DAS PENALIDADES E MULTAS
+${linha}
+
+12.1. Em caso de inadimplência de qualquer das partes, aplica-se:
+
+      a) Multa compensatória: 10% (dez por cento) sobre o valor total
+         do contrato;
+      b) Multa moratória: 0,5% (zero vírgula cinco por cento) ao dia,
+         sobre o valor da obrigação descumprida, limitada a 10%;
+      c) Perdas e danos: apurados nos termos dos arts. 402 a 404 do CC.
+
+12.2. O atraso injustificado na entrega da obra superior a 30 (trinta)
+      dias corridos sujeita o CONTRATADO à multa de 0,1% ao dia sobre
+      o valor total contratado, limitada a 5% do valor total.
+
+12.3. A multa poderá ser compensada com créditos existentes ou cobrada
+      judicialmente, sem prejuízo das demais sanções contratuais e legais.
+
+${linha}
+13. DA RESCISÃO CONTRATUAL
+${linha}
+
+13.1. O contrato poderá ser rescindido por qualquer das partes, mediante
+      notificação prévia e escrita de 30 (trinta) dias corridos, nos
+      seguintes casos:
+
+      a) Descumprimento de qualquer cláusula por qualquer das partes;
+      b) Inadimplência financeira do CONTRATANTE superior a 30 (trinta)
+         dias corridos;
+      c) Paralisação injustificada da obra por mais de 15 (quinze) dias
+         consecutivos imputável ao CONTRATADO;
+      d) Insolvência, falência ou recuperação judicial de qualquer das partes;
+      e) Acordo mútuo entre as partes.
+
+13.2. Na rescisão imputada ao CONTRATANTE, este deverá pagar ao CONTRATADO:
+      — O valor dos serviços já executados e medidos;
+      — A multa compensatória de 10% sobre o saldo contratual restante;
+      — As despesas de desmobilização já incorridas.
+
+13.3. Na rescisão imputada ao CONTRATADO, este deverá:
+      — Devolver ao CONTRATANTE os materiais e equipamentos de sua propriedade;
+      — Pagar a multa compensatória de 10% sobre o saldo contratual restante;
+      — Garantir a continuidade mínima da obra por 30 dias.
+
+${linha}
+14. DA SEGURANÇA E MEDICINA DO TRABALHO
+${linha}
+
+14.1. O CONTRATADO obriga-se a cumprir integralmente as Normas
+      Regulamentadoras aplicáveis à construção civil, especialmente:
+
+      NR-18 — Segurança e Saúde no Trabalho na Indústria da Construção
+      NR-06 — Equipamentos de Proteção Individual (EPI)
+      NR-10 — Segurança em Instalações e Serviços em Eletricidade
+      NR-35 — Trabalho em Altura
+
+14.2. O CONTRATADO é o único responsável por acidentes de trabalho
+      ocorridos com seus empregados e subcontratados, respondendo perante
+      o INSS, FGTS e demais obrigações trabalhistas e previdenciárias.
+
+14.3. O CONTRATANTE poderá paralisar os serviços que apresentem risco
+      iminente à segurança de trabalhadores ou terceiros, sem que tal
+      paralisação caracterize inadimplência ou rescisão contratual.
+
+${linha}
+15. DA PROTEÇÃO DE DADOS PESSOAIS — LGPD
+${linha}
+
+15.1. As partes comprometem-se a tratar os dados pessoais compartilhados
+      neste contrato em conformidade com a Lei 13.709/2018 (LGPD),
+      utilizando-os exclusivamente para as finalidades contratuais.
+
+15.2. Os dados coletados (nome, CPF, RG, endereço, e-mail, telefone)
+      serão utilizados exclusivamente para:
+      — Execução deste contrato;
+      — Emissão de notas fiscais e documentos contábeis;
+      — Cumprimento de obrigações legais e regulatórias.
+
+15.3. Ambas as partes se comprometem a não compartilhar dados pessoais
+      com terceiros sem consentimento prévio, salvo por determinação legal.
+
+${linha}
+16. DAS DISPOSIÇÕES GERAIS
+${linha}
+
+16.1. Alterações contratuais somente serão válidas mediante Termo Aditivo
+      escrito, assinado por ambas as partes e por duas testemunhas.
+
+16.2. A tolerância de qualquer das partes quanto ao descumprimento de
+      alguma disposição contratual não importará em novação, renúncia ou
+      precedente para futuros descumprimentos.
+
+16.3. Os casos omissos neste contrato serão regulados pelo Código Civil
+      Brasileiro (Lei 10.406/2002) e demais disposições legais pertinentes.
+
+16.4. Este contrato é firmado em caráter irrevogável e irretratável,
+      exceto nas hipóteses previstas na Cláusula 13.
+
+16.5. As partes elegem o foro da Comarca de Promissão/SP para dirimir
+      quaisquer dúvidas ou litígios decorrentes deste contrato, renunciando
+      a qualquer outro, por mais privilegiado que seja.
+
+      ${sep}
+      Promissão / SP, _____ de _________________ de _________
+
+${sep}
+17. DAS ASSINATURAS
+${sep}
+
+_______________________________________________   _______________________________________________
+${(parte.nome || '[NOME DO CONTRATANTE]').toUpperCase().slice(0,45)}   ${(ENG.nome).toUpperCase().slice(0,45)}
+CPF: ${parte.cpf || '[CPF DO CONTRATANTE]'}                              CPF: ${ENG.cpf}  CREA: ${ENG.crea}
+CONTRATANTE                                       CONTRATADO
+
+
+_______________________________________________   _______________________________________________
+TESTEMUNHA 1                                      TESTEMUNHA 2
+Nome: ________________________________            Nome: ________________________________
+RG:   ________________________________            RG:   ________________________________`
   }
 
   const etapas = ['Tipo', 'Contratado', 'Partes', 'Objeto', 'Valores', 'Revisão IA', 'Contrato']
