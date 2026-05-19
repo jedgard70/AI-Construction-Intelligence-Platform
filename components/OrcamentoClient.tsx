@@ -1,11 +1,18 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
-import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine,
-} from 'recharts'
+import dynamic from 'next/dynamic'
 import { getSupabase } from '../lib/supabase'
+
+const OrcamentoCurvaSChart = dynamic(() => import('./OrcamentoCurvaSChart'), {
+  ssr: false,
+  loading: () => <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b93a7', fontSize: 12 }}>Carregando gráfico...</div>,
+})
+
+const OrcamentoBarChart = dynamic(() => import('./OrcamentoBarChart'), {
+  ssr: false,
+  loading: () => <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b93a7', fontSize: 12 }}>Carregando gráfico...</div>,
+})
 
 // ─── Tipos ───────────────────────────────────────────────────
 interface Project {
@@ -174,39 +181,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
             <div style={{fontSize:12, color:'#8b93a7', marginBottom:16}}>
               EVM consolidado · A área vermelha indica desvio acima do previsto
             </div>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={budgetData} margin={{top:4, right:8, left:8, bottom:0}}>
-                <defs>
-                  <linearGradient id="gPV" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#185FA5" stopOpacity={0.12}/>
-                    <stop offset="95%" stopColor="#185FA5" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="gEV" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B6D11" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#3B6D11" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="gAC" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#A32D2D" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#A32D2D" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f2f7"/>
-                <XAxis dataKey="period" tick={{fontSize:11, fill:'#8b93a7'}}/>
-                <YAxis tickFormatter={v => fmt(v)} tick={{fontSize:10, fill:'#8b93a7'}} width={72}/>
-                <Tooltip formatter={(v: any) => fmtFull(Number(v))}
-                  contentStyle={{fontSize:12, border:'1px solid #e5e8f0', borderRadius:8}}/>
-                <Legend iconSize={8} formatter={v => <span style={{fontSize:11, color:'#5a6282'}}>{v}</span>}/>
-                <ReferenceLine x="Mai" stroke="#BA7517" strokeDasharray="4 2"
-                  label={{value:'Hoje', fill:'#BA7517', fontSize:10}}/>
-                <Area type="monotone" dataKey="pv" name="Previsto (PV)"
-                  stroke="#185FA5" fill="url(#gPV)" strokeWidth={2} dot={false} connectNulls/>
-                <Area type="monotone" dataKey="ev" name="Agregado (EV)"
-                  stroke="#3B6D11" fill="url(#gEV)" strokeWidth={2.5} dot={false} connectNulls/>
-                <Area type="monotone" dataKey="ac" name="Realizado (AC)"
-                  stroke="#A32D2D" fill="url(#gAC)" strokeWidth={2}
-                  strokeDasharray="5 3" dot={false} connectNulls/>
-              </AreaChart>
-            </ResponsiveContainer>
+            <OrcamentoCurvaSChart data={budgetData} />
           </div>
 
           {/* Gastos por categoria */}
@@ -215,21 +190,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
               <div style={{fontSize:13, fontWeight:600, color:'#1a1f36', marginBottom:16}}>
                 📊 Gastos mensais por categoria
               </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={budgetData.filter(d => d.cost_labor > 0)}
-                  margin={{top:4, right:8, left:8, bottom:0}}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f2f7"/>
-                  <XAxis dataKey="period" tick={{fontSize:10, fill:'#8b93a7'}}/>
-                  <YAxis tickFormatter={v => fmt(v)} tick={{fontSize:9, fill:'#8b93a7'}} width={64}/>
-                  <Tooltip formatter={(v: any) => fmtFull(Number(v))}
-                    contentStyle={{fontSize:11, border:'1px solid #e5e8f0', borderRadius:8}}/>
-                  <Legend iconSize={8} formatter={v => <span style={{fontSize:10, color:'#5a6282'}}>{v}</span>}/>
-                  <Bar dataKey="cost_labor"      name="Mão de obra"   fill="#185FA5" radius={[2,2,0,0]}/>
-                  <Bar dataKey="cost_materials"  name="Materiais"     fill="#3B6D11" radius={[2,2,0,0]}/>
-                  <Bar dataKey="cost_equipment"  name="Equipamentos"  fill="#BA7517" radius={[2,2,0,0]}/>
-                  <Bar dataKey="cost_third_party" name="Subcontratados" fill="#534AB7" radius={[2,2,0,0]}/>
-                </BarChart>
-              </ResponsiveContainer>
+              <OrcamentoBarChart data={budgetData.filter((d: any) => d.cost_labor > 0)} />
             </div>
 
             {/* Tabela EVM por projeto */}
