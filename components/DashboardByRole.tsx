@@ -380,11 +380,16 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                 const routes: Record<string,string> = {
                   'Curva S / EVM': '/orcamento',
                   'Orçamento': '/orcamento',
+                  'SINAPI Realtime': '/orcamento',
+                  'Contratos': '/contratos/novo',
                   'RDO': '/rdo',
+                  'Ocorrências': '/rdo',
+                  'Checklist NR': '/qualidade',
                   'Não conformidades': '/qualidade',
                   'NCIs abertas': '/qualidade',
                   'Checklists': '/qualidade',
                   'NBR 15575': '/qualidade',
+                  'Histórico retrabalho': '/qualidade',
                   'Documentos': '/documentos',
                   'ROI / TIR': '/investimentos',
                   'NOI / Cap Rate': '/investimentos',
@@ -393,6 +398,13 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   'Investimentos': '/investimentos',
                   'Plantas': '/plantas',
                   'BIM / Clash': '/plantas',
+                  'Cronograma': '/orcamento',
+                  'Qualidade': '/qualidade',
+                  'Sales Pipeline': '/vendas',
+                  'Pipeline': '/vendas',
+                  'Captação': '/vendas',
+                  'Exec. Intelligence': '/investimentos',
+                  'Portfólio': '/investimentos',
                 }
                 if (routes[item.label]) window.location.href = routes[item.label]
               }}
