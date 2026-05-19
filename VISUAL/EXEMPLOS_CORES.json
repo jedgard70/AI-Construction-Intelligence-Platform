@@ -1,0 +1,362 @@
+{
+  "document": {
+    "title": "Exemplos Práticos - Usando Diferentes Cores",
+    "module": "Visual Lot Demarcation System",
+    "version": "1.0",
+    "status": "fully_functional",
+    "date": "2026-05-11",
+    "purpose": "Demonstrar aplicações práticas do sistema de demarcação neon com múltiplas cores, branding corporativo e cenários executivos."
+  },
+  "system_capabilities": {
+    "supported_colors": {
+      "type": "full_rgb_hex_support",
+      "estimated_total": 16777216,
+      "formats": [
+        "HEX",
+        "RGB",
+        "RGBA"
+      ],
+      "validation": "100% functional in tests"
+    },
+    "supported_effects": [
+      "border",
+      "glow",
+      "pulse",
+      "flicker",
+      "gradient"
+    ],
+    "export_formats": [
+      "SVG",
+      "PNG",
+      "JSON",
+      "GeoJSON"
+    ]
+  },
+  "examples": [
+    {
+      "id": 1,
+      "title": "Cyan Padrão",
+      "scenario": "Visualização básica",
+      "color": {
+        "name": "Cyan",
+        "hex": "#00ffff"
+      },
+      "configuration": {
+        "intensity": 1.5,
+        "blur": "15px",
+        "opacity": 0.9
+      },
+      "result": [
+        "Neon cyan brilhante",
+        "Preview em tempo real",
+        "Exportação SVG habilitada"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Rosa Profundo",
+      "scenario": "Destaque visual premium",
+      "color": {
+        "name": "Deep Pink",
+        "hex": "#ff1493"
+      },
+      "usage": [
+        "Luxury real estate",
+        "High-visibility presentation",
+        "Modern visual identity"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Verde Pastel",
+      "scenario": "Apresentações corporativas suaves",
+      "color": {
+        "name": "Pastel Green",
+        "hex": "#98ff98"
+      },
+      "configuration": {
+        "intensity": 1.0,
+        "blur": "15px",
+        "opacity": 0.85
+      },
+      "result": [
+        "Visual elegante",
+        "Baixo impacto agressivo",
+        "Adequado para relatórios executivos"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Múltiplos Lotes Coloridos",
+      "scenario": "Portfólio executivo",
+      "lots": [
+        {
+          "status": "available",
+          "color": "#00ff41",
+          "meaning": "Disponível"
+        },
+        {
+          "status": "sold",
+          "color": "#ff0000",
+          "meaning": "Vendido"
+        },
+        {
+          "status": "analysis",
+          "color": "#ffff00",
+          "meaning": "Em análise"
+        },
+        {
+          "status": "selected",
+          "color": "#0088ff",
+          "meaning": "Selecionado"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Branding Corporativo",
+      "scenario": "Identidade visual personalizada",
+      "brand_colors": [
+        {
+          "purpose": "Primary Brand",
+          "hex": "#0052CC"
+        },
+        {
+          "purpose": "Alert/CTA",
+          "hex": "#FF6B35"
+        },
+        {
+          "purpose": "Neutral",
+          "hex": "#FFFFFF"
+        }
+      ],
+      "benefits": [
+        "Brand consistency",
+        "Professional appearance",
+        "Visual differentiation"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Teste Comparativo de Cores",
+      "scenario": "Escolha de melhor visual",
+      "comparison_colors": [
+        "#00ffff",
+        "#ff00ff",
+        "#ff8c00"
+      ],
+      "recommended_process": [
+        "Generate multiple SVGs",
+        "Compare side-by-side",
+        "Evaluate visual impact",
+        "Select best contrast"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Tela vs Impressão",
+      "scenario": "Otimização por mídia",
+      "web_mode": {
+        "colors": [
+          "#00ffff",
+          "#ff00ff",
+          "#00ff41",
+          "#ffff00"
+        ],
+        "configuration": {
+          "intensity": "1.5-2.0",
+          "blur": "20px",
+          "opacity": 0.9
+        }
+      },
+      "print_mode": {
+        "colors": [
+          "#0066cc",
+          "#009688",
+          "#ff6600",
+          "#666666"
+        ],
+        "configuration": {
+          "intensity": "1.0-1.2",
+          "blur": "10px",
+          "opacity": 0.8
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Cores por Categoria de Propriedade",
+      "scenario": "Mapeamento imobiliário",
+      "categories": {
+        "residential": [
+          "#0088ff",
+          "#b3d9ff"
+        ],
+        "commercial": [
+          "#ff6600",
+          "#ffd9b3"
+        ],
+        "industrial": [
+          "#808080",
+          "#cccccc"
+        ],
+        "mixed_use": [
+          "#009688",
+          "#b3ffb3"
+        ],
+        "special": [
+          "#8800ff",
+          "#e6b3ff"
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "title": "Teste Automatizado Python",
+      "scenario": "Stress test de cores",
+      "script": "VISUAL/test_unlimited_colors.py",
+      "result": {
+        "tested_colors": 30,
+        "success_rate": "100%",
+        "status": "all_working"
+      }
+    },
+    {
+      "id": 10,
+      "title": "Edge Cases",
+      "scenario": "Branco e preto",
+      "colors": [
+        {
+          "hex": "#ffffff",
+          "result": "Brilliant white neon",
+          "recommended_use": "Dark backgrounds"
+        },
+        {
+          "hex": "#000000",
+          "result": "Nearly invisible black neon",
+          "recommended_use": "Rarely recommended"
+        }
+      ]
+    }
+  ],
+  "recommended_color_palettes": {
+    "executive": [
+      "#00ffff",
+      "#0052CC",
+      "#009688",
+      "#666666"
+    ],
+    "investor_pitch": [
+      "#ff00ff",
+      "#ff6600",
+      "#ffff00",
+      "#ffffff"
+    ],
+    "technical_analysis": [
+      "#00ff41",
+      "#0088ff",
+      "#cccccc",
+      "#333333"
+    ],
+    "luxury_real_estate": [
+      "#ff1493",
+      "#8800ff",
+      "#ffd700",
+      "#ffffff"
+    ]
+  },
+  "ui_interaction_flow": {
+    "color_selection_methods": [
+      {
+        "method": "Color Picker",
+        "description": "Selecionar visualmente"
+      },
+      {
+        "method": "HEX Input",
+        "description": "Inserir código hexadecimal"
+      },
+      {
+        "method": "Preset Buttons",
+        "description": "Cores neon sugeridas"
+      }
+    ],
+    "real_time_features": [
+      "Instant preview",
+      "Live glow adjustment",
+      "Interactive drawing",
+      "Animation preview"
+    ]
+  },
+  "technical_recommendations": {
+    "presentation_mode": {
+      "intensity": "1.5-2.0",
+      "blur": "20px",
+      "opacity": 0.9
+    },
+    "print_mode": {
+      "intensity": "1.0-1.2",
+      "blur": "10px",
+      "opacity": 0.8
+    },
+    "investor_mode": {
+      "intensity": 1.8,
+      "blur": "25px",
+      "opacity": 0.95
+    }
+  },
+  "integration": {
+    "compatible_modules": [
+      "MODE_BIM",
+      "MODE_EXECUTIVE",
+      "MODE_INVESTOR"
+    ],
+    "compatible_agents": [
+      "visual-lot-demarcation",
+      "investor-pitch",
+      "cost-engineer",
+      "bim-coordinator"
+    ]
+  },
+  "validated_colors": {
+    "tested_examples": [
+      "#00ffff",
+      "#ff00ff",
+      "#00ff41",
+      "#ffff00",
+      "#ff6600",
+      "#ff0000",
+      "#ff1493",
+      "#8800ff",
+      "#ffb3d9",
+      "#b3d9ff",
+      "#b3ffb3",
+      "#ffffb3",
+      "#ffffff",
+      "#000000",
+      "#cccccc",
+      "#333333",
+      "#0a0a4a",
+      "#009688",
+      "#3f51b5",
+      "#654321"
+    ],
+    "validation_status": "100% operational"
+  },
+  "best_practices": [
+    "Test multiple colors side-by-side",
+    "Use SVG export for comparison",
+    "Prefer high-contrast colors for presentations",
+    "Use softer palettes for print",
+    "Align colors with company branding",
+    "Map colors semantically by lot status"
+  ],
+  "conclusion": {
+    "summary": [
+      "16.7 million colors supported",
+      "Real-time neon rendering",
+      "Full SVG export compatibility",
+      "Executive and investor-ready visualizations"
+    ],
+    "recommended_next_step": "Test visual combinations directly in the HTML visualizer before final export."
+  }
+}

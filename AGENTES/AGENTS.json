@@ -1,0 +1,419 @@
+{
+  "project": {
+    "name": "AI Construction Intelligence Platform",
+    "type": "AI-Driven Construction Intelligence Ecosystem",
+    "status": "specification_phase",
+    "primary_language": "Portuguese",
+    "secondary_language": "English Technical Terms",
+    "description": "Plataforma modular de inteligência artificial para construção civil, focada em BIM, inteligência executiva, automação, visualização e comunicação com investidores."
+  },
+  "project_overview": {
+    "objective": "Transformar decisões da construção em insights inteligentes utilizando agentes especializados, workflows cognitivos e automação orientada por dados.",
+    "core_domains": [
+      "BIM Intelligence",
+      "Executive Intelligence",
+      "Construction Operations",
+      "Cost Engineering",
+      "Investor Intelligence",
+      "Workflow Automation",
+      "Visualization & Analytics"
+    ],
+    "implementation_status": {
+      "codebase": false,
+      "documentation_driven": true,
+      "schema_based_design": true,
+      "implementation_priority": [
+        "BIM Modules",
+        "Executive Modules",
+        "Automation Layer",
+        "Visualization Systems"
+      ]
+    }
+  },
+  "architecture": {
+    "core_reference": "CORE/CORE_SYSTEM.md",
+    "architecture_type": "Modular Multi-Agent AI System",
+    "design_principles": [
+      "Scalability",
+      "Interoperability",
+      "Cognitive Decision Flows",
+      "Risk-Aware Intelligence",
+      "Data-Driven Recommendations",
+      "Automation-First"
+    ],
+    "main_layers": [
+      {
+        "layer": "Interface Layer",
+        "description": "Web, mobile e dashboards executivos"
+      },
+      {
+        "layer": "AI Agent Layer",
+        "description": "Agentes especializados por domínio"
+      },
+      {
+        "layer": "Workflow Automation Layer",
+        "description": "Orquestração de workflows e eventos"
+      },
+      {
+        "layer": "Data & BIM Layer",
+        "description": "Modelos BIM, IFC, schemas e dados financeiros"
+      },
+      {
+        "layer": "Visualization Layer",
+        "description": "Dashboards, 3D viewers e analytics"
+      }
+    ]
+  },
+  "global_rules": {
+    "reference": "CORE/GLOBAL_RULES.md",
+    "mandatory_principles": [
+      "Technical validation required",
+      "Risk analysis mandatory",
+      "Executive communication standards",
+      "Financial consistency verification",
+      "Engineering feasibility validation",
+      "Construction safety prioritization"
+    ],
+    "compliance_requirements": [
+      "All outputs must follow CORE/outputs/resultados.md",
+      "All workflows require cognitive flow adherence",
+      "All financial outputs require ROI/risk validation",
+      "All BIM outputs require interoperability validation"
+    ]
+  },
+  "cognitive_flow_framework": {
+    "description": "Framework cognitivo obrigatório para todos os agentes e workflows.",
+    "steps": [
+      {
+        "step": 1,
+        "name": "Interpret Objectives",
+        "description": "Interpretar objetivos estratégicos e operacionais."
+      },
+      {
+        "step": 2,
+        "name": "Detect Risks & Opportunities",
+        "description": "Identificar riscos, oportunidades e impactos."
+      },
+      {
+        "step": 3,
+        "name": "Validate Engineering & Data",
+        "description": "Validar engenharia, consistência financeira e conformidade técnica."
+      },
+      {
+        "step": 4,
+        "name": "Optimize Solutions",
+        "description": "Otimizar soluções técnicas, financeiras e operacionais."
+      },
+      {
+        "step": 5,
+        "name": "Generate Executive Decisions",
+        "description": "Produzir recomendações e outputs executivos."
+      }
+    ]
+  },
+  "workspace_structure": {
+    "folders": [
+      {
+        "path": "CORE/",
+        "purpose": "Arquitetura central, regras globais e outputs"
+      },
+      {
+        "path": "MODULES/",
+        "purpose": "Módulos especializados por domínio"
+      },
+      {
+        "path": "AGENTS/",
+        "purpose": "Definições de agentes especializados"
+      },
+      {
+        "path": "MODES/",
+        "purpose": "Modos operacionais da plataforma"
+      },
+      {
+        "path": "OUTPUTS/",
+        "purpose": "Templates e outputs padronizados"
+      },
+      {
+        "path": "BIM/",
+        "purpose": "Schemas IFC/Revit, workflows BIM e interoperabilidade"
+      },
+      {
+        "path": "EXECUTIVE/",
+        "purpose": "KPIs, análises financeiras e workflows executivos"
+      },
+      {
+        "path": "INVESTOR/",
+        "purpose": "Pitches, viabilidade e captação"
+      },
+      {
+        "path": "AUTOMATION/",
+        "purpose": "Automação de workflows e integração multiagente"
+      }
+    ]
+  },
+  "documentation_standards": {
+    "markdown_usage": {
+      "enabled": true,
+      "extensions": [".md"],
+      "purpose": [
+        "Specifications",
+        "Workflows",
+        "Module Definitions",
+        "Agent Instructions"
+      ]
+    },
+    "json_usage": {
+      "enabled": true,
+      "extensions": [".json"],
+      "purpose": [
+        "Schemas",
+        "Metadata Structures",
+        "API Definitions",
+        "Configuration Objects"
+      ]
+    },
+    "naming_conventions": {
+      "style": "descriptive_hierarchical",
+      "examples": [
+        "bim_schema_v7.json",
+        "WORKFLOW_EXECUTIVE_ANALYSIS.md",
+        "INVESTOR_MODULE.md"
+      ],
+      "rules": [
+        "Use version suffixes when applicable",
+        "Maintain semantic hierarchy",
+        "Avoid ambiguous abbreviations"
+      ]
+    },
+    "language_policy": {
+      "primary_language": "Portuguese",
+      "technical_terms": "English allowed",
+      "requirements": [
+        "Maintain terminology consistency",
+        "Clarify ambiguous multilingual terms",
+        "Prefer Portuguese for business context",
+        "Prefer English for technical standards"
+      ]
+    }
+  },
+  "core_modes": {
+    "MODE_BIM": {
+      "focus": "BIM coordination, clash detection, constructability",
+      "key_capabilities": [
+        "IFC validation",
+        "Revit interoperability",
+        "4D/5D BIM",
+        "Digital twin"
+      ]
+    },
+    "MODE_EXECUTIVE": {
+      "focus": "Executive intelligence, KPI analysis, ROI optimization",
+      "key_capabilities": [
+        "Predictive risk analysis",
+        "Financial forecasting",
+        "Strategic dashboards",
+        "Decision support"
+      ]
+    },
+    "MODE_INVESTOR": {
+      "focus": "Investor communication and capital raising",
+      "key_capabilities": [
+        "Pitch generation",
+        "Valuation modeling",
+        "Investment feasibility",
+        "Market intelligence"
+      ]
+    }
+  },
+  "agent_ecosystem": {
+    "architecture": "Multi-Agent System",
+    "agents": [
+      {
+        "id": "bim-assistant",
+        "domain": "BIM Intelligence"
+      },
+      {
+        "id": "bim-coordinator",
+        "domain": "Multidisciplinary BIM Coordination"
+      },
+      {
+        "id": "construction-manager",
+        "domain": "Construction Operations"
+      },
+      {
+        "id": "cost-engineer",
+        "domain": "Cost Engineering & ROI"
+      },
+      {
+        "id": "investor-pitch",
+        "domain": "Investor Communication"
+      }
+    ],
+    "interaction_model": {
+      "multi_agent_collaboration": true,
+      "shared_memory": true,
+      "event_driven_communication": true
+    }
+  },
+  "automation_layer": {
+    "workflow_engine": true,
+    "event_driven_architecture": true,
+    "multi_agent_system": true,
+    "api_integrations": true,
+    "supported_tools": [
+      "n8n",
+      "Make.com"
+    ],
+    "automation_priorities": [
+      "Workflow orchestration",
+      "Real-time alerts",
+      "Predictive analytics",
+      "Cross-agent synchronization"
+    ]
+  },
+  "memory_system": {
+    "short_term_memory": {
+      "purpose": "Contexto operacional ativo"
+    },
+    "long_term_memory": {
+      "purpose": "Histórico de projetos, decisões e benchmarks"
+    },
+    "semantic_memory": {
+      "purpose": "Relacionamentos inteligentes entre conceitos"
+    }
+  },
+  "output_standards": {
+    "reference": "CORE/outputs/resultados.md",
+    "required_formats": [
+      "Executive Reports",
+      "Technical Reports",
+      "Dashboards",
+      "3D Visualizations",
+      "Financial Projections",
+      "Risk Assessments"
+    ],
+    "quality_requirements": [
+      "Executive readability",
+      "Technical validation",
+      "Visual clarity",
+      "Financial consistency",
+      "Actionable recommendations"
+    ]
+  },
+  "visualization_standards": {
+    "3d_visualization": {
+      "enabled": true,
+      "technologies": [
+        "Three.js",
+        "PBR Rendering",
+        "IFC Viewer"
+      ]
+    },
+    "dashboard_frameworks": [
+      "Chart.js",
+      "Power BI",
+      "Custom Executive Dashboards"
+    ],
+    "supported_visualizations": [
+      "ROI charts",
+      "Risk heatmaps",
+      "4D BIM simulations",
+      "Construction KPIs",
+      "Digital Twin monitoring"
+    ]
+  },
+  "implementation_notes": {
+    "frontend": [
+      "React",
+      "Vue.js",
+      "Three.js"
+    ],
+    "backend": [
+      "Node.js",
+      "Python"
+    ],
+    "deployment": [
+      "AWS",
+      "Azure",
+      "CI/CD pipelines"
+    ],
+    "testing_strategy": [
+      "UX testing with construction professionals",
+      "Manual schema validation",
+      "Workflow simulation",
+      "Risk scenario testing"
+    ]
+  },
+  "development_guidelines": {
+    "current_focus": [
+      "Specification completeness",
+      "Workflow definition",
+      "Schema validation",
+      "Agent standardization"
+    ],
+    "avoid": [
+      "Assuming executable code exists",
+      "Skipping risk analysis",
+      "Ignoring output standards",
+      "Using inconsistent terminology"
+    ],
+    "recommended_next_steps": [
+      "Populate AGENTS/ folder",
+      "Expand BIM schemas",
+      "Create workflow templates",
+      "Define API contracts",
+      "Develop visualization prototypes"
+    ]
+  },
+  "security_and_governance": {
+    "role_based_access": true,
+    "audit_logging": true,
+    "data_encryption": true,
+    "roles": [
+      "viewer",
+      "editor",
+      "analyst",
+      "executive",
+      "admin"
+    ],
+    "compliance_focus": [
+      "Financial data protection",
+      "Construction safety governance",
+      "Access control",
+      "Decision traceability"
+    ]
+  },
+  "future_vision": {
+    "roadmap": [
+      "AI autonomous construction orchestration",
+      "Digital twin real-time intelligence",
+      "Predictive executive analytics",
+      "Blockchain construction governance",
+      "Autonomous investor matchmaking"
+    ],
+    "long_term_goal": "Criar um ecossistema unificado de inteligência artificial para construção civil, capaz de automatizar análises técnicas, financeiras, operacionais e estratégicas em escala global."
+  },
+  
+  "ai_agents": {
+
+  "executive_agent": {
+    "role": "strategic decision support"
+  },
+
+  "bim_agent": {
+    "role": "BIM coordination and validation"
+  },
+
+  "engineering_agent": {
+    "role": "technical engineering analysis"
+  },
+
+  "financial_agent": {
+    "role": "cost and viability intelligence"
+  },
+
+  "automation_agent": {
+    "role": "workflow orchestration"
+  }
+}
+}

@@ -1,0 +1,34 @@
+{
+  "RESULTADOS": {
+    "analises": {
+      "descricao": "Estudos técnicos, estratégicos e financeiros para suporte à tomada de decisão."
+    },
+    "viabilidade_terrenos_irregulares": {
+      "descricao": "Avaliação de potencial construtivo, restrições técnicas e aproveitamento econômico de terrenos irregulares."
+    },
+    "gestao_preco_de_custo": {
+      "descricao": "Planilhas e controles de desembolso transparentes."
+    },
+    "relatorios": {
+      "descricao": "Relatórios executivos, técnicos e comerciais para acompanhamento e apresentação."
+    },
+    "pitches": {
+      "descricao": "Materiais de apresentação comercial e estratégica para investidores, clientes e parceiros."
+    },
+    "prospeccao_b2b": {
+      "descricao": "Focado nas 20 empresas-alvo estratégicas."
+    },
+    "render_prompts": {
+      "descricao": "Prompts estruturados para geração de renders arquitetônicos e visuais realistas."
+    },
+    "perspectivas_drone": {
+      "descricao": "Imagens e estudos visuais em perspectiva aérea com integração de drone."
+    },
+    "cinematicos_dia_noite": {
+      "descricao": "Sequências e conceitos visuais cinematográficos em cenários diurnos e noturnos."
+    },
+    "cronogramas": {
+      "descricao": "Planejamento executivo com etapas, prazos e marcos de entrega."
+    }
+  }
+}

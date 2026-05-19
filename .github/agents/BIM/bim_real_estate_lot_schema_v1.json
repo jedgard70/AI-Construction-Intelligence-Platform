@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Real Estate Lot Identifier Schema",
+  "description": "Schema para identificação e cadastro de lotes imobiliários integrado com BIM",
+  "type": "object",
+  "properties": {
+    "lot_id": {
+      "type": "string",
+      "pattern": "^LOT-[0-9]{4}-[A-Z]{2}-[0-9]{6}$",
+      "description": "ID único do lote no formato LOT-YYYY-UF-NNNNNN (ano-estado-sequencial)",
+      "example": "LOT-2026-SP-000001"
+    },
+    "cadastral_id": {
+      "type": "string",
+      "description": "Número do registro cadastral (matrícula)",
+      "example": "1234567-89.00.00.00"
+    },
+    "geographical_data": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "Endereço completo do lote"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2
+        },
+        "zip_code": {
+          "type": "string",
+          "pattern": "^[0-9]{5}-[0-9]{3}$"
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "area_m2": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Área do lote em metros quadrados"
+        }
+      },
+      "required": ["address", "city", "state"]
+    },
+    "ownership": {
+      "type": "object",
+      "properties": {
+        "owner_name": {
+          "type": "string"
+        },
+        "cpf_cnpj": {
+          "type": "string",
+          "description": "CPF ou CNPJ do proprietário"
+        },
+        "ownership_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "zoning": {
+      "type": "object",
+      "properties": {
+        "zone_type": {
+          "type": "string",
+          "enum": ["residential", "commercial", "industrial", "mixed", "agricultural"],
+          "description": "Tipo de zona de uso"
+        },
+        "max_floor_area_ratio": {
+          "type": "number",
+          "description": "Coeficiente de aproveitamento máximo"
+        },
+        "max_height_m": {
+          "type": "number",
+          "description": "Altura máxima permitida em metros"
+        }
+      }
+    },
+    "bim_integration": {
+      "type": "object",
+      "properties": {
+        "ifc_model_path": {
+          "type": "string",
+          "description": "Caminho para modelo IFC associado"
+        },
+        "revit_project_id": {
+          "type": "string",
+          "description": "ID do projeto Revit relacionado"
+        },
+        "coordinate_system": {
+          "type": "string",
+          "enum": ["WGS84", "SIRGAS2000", "local"],
+          "description": "Sistema de coordenadas usado"
+        }
+      }
+    },
+    "financial_data": {
+      "type": "object",
+      "properties": {
+        "acquisition_value": {
+          "type": "number",
+          "description": "Valor de aquisição em reais"
+        },
+        "current_market_value": {
+          "type": "number",
+          "description": "Valor atual de mercado"
+        },
+        "property_tax": {
+          "type": "number",
+          "description": "IPTU anual estimado"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["available", "under_construction", "completed", "inactive"],
+          "description": "Status atual do lote"
+        }
+      }
+    }
+  },
+  "required": ["lot_id", "cadastral_id", "geographical_data"],
+  "additionalProperties": false
+}

@@ -1,0 +1,400 @@
+{
+  "mode": {
+    "id": "MODE_BIM",
+    "name": "BIM Intelligence Mode",
+    "description": "Modo especializado em coordenação BIM, compatibilização multidisciplinar, auditoria IFC/Revit e otimização digital da construção.",
+    "status": "active"
+  },
+  "mission": {
+    "objective": "Executar inteligência BIM avançada para coordenação multidisciplinar, detecção de conflitos, construtibilidade e automação de workflows digitais.",
+    "focus_areas": [
+      "Clash Detection",
+      "IFC Validation",
+      "Revit Interoperability",
+      "Constructability Analysis",
+      "4D/5D BIM",
+      "Digital Twin"
+    ]
+  },
+  "responsibilities": {
+    "bim_coordination": {
+      "description": "Coordenação entre disciplinas de arquitetura, estrutura e MEP.",
+      "capabilities": [
+        "Model federation",
+        "Clash detection",
+        "Discipline synchronization",
+        "Issue tracking",
+        "Version comparison"
+      ],
+      "disciplines": [
+        "Architecture",
+        "Structure",
+        "HVAC",
+        "Electrical",
+        "Hydraulic",
+        "Fire Protection"
+      ]
+    },
+    "ifc_analysis": {
+      "description": "Validação de conformidade IFC e padronização BIM.",
+      "supported_versions": [
+        "IFC2x3",
+        "IFC4",
+        "IFC4.3"
+      ],
+      "validation_rules": [
+        "Schema consistency",
+        "PropertySet validation",
+        "Geometry integrity",
+        "Classification compliance",
+        "Metadata completeness"
+      ]
+    },
+    "revit_interoperability": {
+      "description": "Garantia de compatibilidade entre plataformas BIM.",
+      "features": [
+        "Revit API integration",
+        "Bidirectional synchronization",
+        "Family mapping",
+        "Parameter normalization",
+        "Coordinate alignment"
+      ]
+    },
+    "model_audit": {
+      "description": "Auditoria técnica e financeira de modelos BIM.",
+      "audit_targets": [
+        "bim_schema_v7.json",
+        "Technical metadata",
+        "Financial metadata",
+        "Classification systems",
+        "LOD compliance"
+      ],
+      "checks": [
+        "Missing parameters",
+        "Duplicate elements",
+        "Invalid geometry",
+        "Cost inconsistencies",
+        "Naming convention compliance"
+      ]
+    },
+    "automated_workflows": {
+      "description": "Execução automatizada de processos BIM.",
+      "features": [
+        "Continuous clash monitoring",
+        "Automated reporting",
+        "Issue assignment",
+        "Workflow triggers",
+        "Real-time synchronization"
+      ]
+    }
+  },
+  "priorities": {
+    "compatibilization": {
+      "priority": 1,
+      "goal": "Resolver conflitos multidisciplinares precocemente."
+    },
+    "constructability": {
+      "priority": 2,
+      "goal": "Validar viabilidade prática e sequência construtiva."
+    },
+    "digital_efficiency": {
+      "priority": 3,
+      "goal": "Reduzir retrabalho e padronizar dados."
+    },
+    "integration": {
+      "priority": 4,
+      "goal": "Facilitar colaboração entre equipes."
+    },
+    "innovation": {
+      "priority": 5,
+      "goal": "Incorporar 4D/5D BIM e Digital Twin."
+    }
+  },
+  "output_standards": {
+    "clash_reports": {
+      "format": [
+        "PDF",
+        "Excel",
+        "JSON"
+      ],
+      "fields": [
+        "Clash ID",
+        "Disciplines involved",
+        "Severity",
+        "Coordinates",
+        "Screenshot",
+        "Suggested resolution",
+        "Estimated impact"
+      ]
+    },
+    "dashboards_3d_4d": {
+      "features": [
+        "Interactive IFC Viewer",
+        "Timeline simulation",
+        "PBR rendering",
+        "Layer filtering",
+        "Construction sequencing"
+      ]
+    },
+    "technical_recommendations": {
+      "types": [
+        "Design optimization",
+        "Constructability improvement",
+        "Material coordination",
+        "Routing optimization"
+      ]
+    },
+    "financial_impact": {
+      "metrics": [
+        "Rework cost estimation",
+        "Preventive ROI",
+        "Schedule delay impact",
+        "Resource optimization"
+      ]
+    }
+  },
+  "cognitive_flow_adaptation": {
+    "objective_definition": {
+      "description": "Definição do escopo BIM e disciplinas.",
+      "inputs": [
+        "Project type",
+        "Disciplines",
+        "LOD target",
+        "Project phase"
+      ]
+    },
+    "risk_opportunity_detection": {
+      "description": "Detecção automática de riscos e oportunidades.",
+      "risks": [
+        "Clashes",
+        "Constructability issues",
+        "Data inconsistency",
+        "Coordination gaps"
+      ],
+      "opportunities": [
+        "Space optimization",
+        "Cost reduction",
+        "Schedule acceleration",
+        "Material optimization"
+      ]
+    },
+    "validation": {
+      "description": "Auditoria e simulação BIM.",
+      "checks": [
+        "IFC compliance",
+        "Constructability simulation",
+        "LOD verification",
+        "Code compliance"
+      ]
+    },
+    "optimization": {
+      "description": "Resolução automatizada e padronização.",
+      "actions": [
+        "Clash resolution suggestions",
+        "Parameter normalization",
+        "Model cleanup",
+        "Workflow optimization"
+      ]
+    },
+    "decision_outputs": {
+      "description": "Relatórios executivos e métricas.",
+      "deliverables": [
+        "Executive summary",
+        "Risk reduction metrics",
+        "Coordination score",
+        "ROI prevention analysis"
+      ]
+    }
+  },
+  "memory_integration": {
+    "short_term": {
+      "description": "Contexto temporário da sessão BIM.",
+      "stores": [
+        "Loaded models",
+        "Detected clashes",
+        "Current workflows"
+      ]
+    },
+    "long_term": {
+      "description": "Histórico persistente BIM.",
+      "stores": [
+        "Previous projects",
+        "Validated standards",
+        "Resolved issues",
+        "Lessons learned"
+      ]
+    },
+    "semantic": {
+      "description": "Relações inteligentes BIM.",
+      "examples": [
+        "Pipe crossing structural beam implies drilling risk",
+        "HVAC conflict near slab edge implies coordination issue",
+        "Missing fireproofing metadata implies compliance risk"
+      ]
+    }
+  },
+  "activation_triggers": [
+    "IFC upload",
+    "Revit synchronization",
+    "Clash detection request",
+    "Constructability audit",
+    "BIM coordination workflow",
+    "LOD validation"
+  ],
+  "workflow_engine": {
+    "supported_workflows": [
+      {
+        "name": "Continuous Clash Detection",
+        "steps": [
+          "Import models",
+          "Federate disciplines",
+          "Run clash analysis",
+          "Classify severity",
+          "Generate issues",
+          "Notify stakeholders"
+        ]
+      },
+      {
+        "name": "Constructability Audit",
+        "steps": [
+          "Validate geometry",
+          "Analyze sequencing",
+          "Detect accessibility risks",
+          "Estimate rework impact",
+          "Generate recommendations"
+        ]
+      },
+      {
+        "name": "IFC Compliance Validation",
+        "steps": [
+          "Parse IFC schema",
+          "Validate metadata",
+          "Check geometry integrity",
+          "Verify classifications",
+          "Export audit report"
+        ]
+      }
+    ]
+  },
+  "visualization_hub": {
+    "3d_viewer": {
+      "technology": "Three.js + IFC.js",
+      "features": [
+        "Model federation",
+        "Object selection",
+        "Clash highlighting",
+        "Real-time annotations",
+        "Cross-section analysis"
+      ]
+    },
+    "4d_simulation": {
+      "features": [
+        "Construction timeline",
+        "Task sequencing",
+        "Schedule comparison",
+        "Delay simulation"
+      ]
+    },
+    "5d_analysis": {
+      "features": [
+        "Cost integration",
+        "Budget tracking",
+        "Material quantity analysis",
+        "Financial forecasting"
+      ]
+    }
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/bim/upload",
+      "description": "Upload IFC/Revit files"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/bim/clash-detection",
+      "description": "Executa detecção de colisões"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/bim/constructability",
+      "description": "Executa auditoria de construtibilidade"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/bim/ifc-validation",
+      "description": "Valida conformidade IFC"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/bim/dashboard",
+      "description": "Retorna métricas BIM"
+    }
+  ],
+  "ai_agents": [
+    {
+      "name": "BIM Coordinator Agent",
+      "role": "Coordenação multidisciplinar e clash detection"
+    },
+    {
+      "name": "IFC Validator Agent",
+      "role": "Validação de conformidade IFC"
+    },
+    {
+      "name": "Constructability Advisor",
+      "role": "Análise de viabilidade construtiva"
+    },
+    {
+      "name": "Digital Twin Agent",
+      "role": "Sincronização e monitoramento digital"
+    },
+    {
+      "name": "4D/5D Planner Agent",
+      "role": "Planejamento temporal e financeiro BIM"
+    }
+  ],
+  "automation_layer": {
+    "event_triggers": [
+      "New model uploaded",
+      "Revit sync completed",
+      "Clash detected",
+      "IFC validation failed",
+      "Schedule updated"
+    ],
+    "integrations": [
+      "Revit API",
+      "Navisworks",
+      "Autodesk Construction Cloud",
+      "BIM 360",
+      "Power BI",
+      "n8n",
+      "Make.com"
+    ],
+    "real_time_processing": true
+  },
+  "kpis": [
+    {
+      "name": "Clash Reduction Rate",
+      "target": "40%"
+    },
+    {
+      "name": "Rework Cost Reduction",
+      "target": "30%"
+    },
+    {
+      "name": "Coordination Efficiency",
+      "target": "95%"
+    },
+    {
+      "name": "IFC Compliance Rate",
+      "target": "100%"
+    }
+  ],
+  "future_extensions": [
+    "AI-generated BIM corrections",
+    "AR-assisted clash visualization",
+    "IoT-connected Digital Twin",
+    "Predictive maintenance integration",
+    "Autonomous BIM optimization agents"
+  ]
+}

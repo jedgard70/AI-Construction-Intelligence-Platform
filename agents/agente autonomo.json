@@ -1,0 +1,230 @@
+{
+  "system_architecture": {
+    "domain": "AEC / BIM / Construction Intelligence",
+    "architecture_type": "Multi-Agent Autonomous Decision System",
+    "coordination_model": {
+      "type": "event-driven + orchestrator controlled",
+      "orchestrator": {
+        "enabled": true,
+        "responsibilities": [
+          "agent routing",
+          "workflow sequencing",
+          "event management",
+          "conflict resolution",
+          "decision aggregation"
+        ]
+      }
+    }
+  },
+
+  "agents": {
+    "BIM_AGENT": {
+      "role": "interpretação de modelos BIM",
+      "category": "executor_agent",
+      "inputs": [
+        "IFC",
+        "Revit data"
+      ],
+      "outputs": [
+        "quantitativos",
+        "inconsistências"
+      ],
+      "capabilities": [
+        "geometry parsing",
+        "clash detection",
+        "quantity takeoff",
+        "model validation"
+      ],
+      "execution_model": [
+        "goal_based_agents",
+        "tool_usage",
+        "multi_step_reasoning"
+      ],
+      "autonomy_level": "medium",
+      "triggers": [
+        "PROJECT_CREATED"
+      ],
+      "emits": [
+        "BIM_PROCESSED"
+      ]
+    },
+
+    "COST_AGENT": {
+      "role": "otimização de custos",
+      "category": "executor_agent",
+      "inputs": [
+        "quantities",
+        "market data"
+      ],
+      "outputs": [
+        "budget",
+        "optimization suggestions"
+      ],
+      "capabilities": [
+        "cost estimation",
+        "budget simulation",
+        "market benchmarking",
+        "value engineering"
+      ],
+      "execution_model": [
+        "goal_based_agents",
+        "tool_usage",
+        "multi_step_reasoning"
+      ],
+      "autonomy_level": "medium",
+      "triggers": [
+        "BIM_PROCESSED"
+      ],
+      "emits": [
+        "COST_CALCULATED"
+      ]
+    },
+
+    "RISK_AGENT": {
+      "role": "detecção de risco técnico e financeiro",
+      "category": "validator_agent",
+      "inputs": [
+        "project data",
+        "cost data"
+      ],
+      "outputs": [
+        "risk score",
+        "alerts"
+      ],
+      "capabilities": [
+        "financial risk analysis",
+        "technical compliance analysis",
+        "schedule risk detection",
+        "predictive anomaly detection"
+      ],
+      "execution_model": [
+        "goal_based_agents",
+        "self_reflection",
+        "multi_step_reasoning"
+      ],
+      "autonomy_level": "high",
+      "triggers": [
+        "COST_CALCULATED"
+      ],
+      "emits": [
+        "RISK_EVALUATED"
+      ]
+    },
+
+    "DECISION_AGENT": {
+      "role": "consolidação final de decisão",
+      "category": "planner_agent",
+      "inputs": [
+        "all modules outputs"
+      ],
+      "outputs": [
+        "go / no-go",
+        "recommendations"
+      ],
+      "capabilities": [
+        "decision synthesis",
+        "strategic recommendation",
+        "cross-agent validation",
+        "scenario evaluation"
+      ],
+      "execution_model": [
+        "goal_based_agents",
+        "self_reflection",
+        "multi_step_reasoning"
+      ],
+      "autonomy_level": "supervisory",
+      "triggers": [
+        "RISK_EVALUATED"
+      ],
+      "emits": [
+        "DECISION_GENERATED"
+      ]
+    }
+  },
+
+  "autonomous_agents_framework": {
+    "execution_model": [
+      "goal_based_agents",
+      "self_reflection",
+      "tool_usage",
+      "multi_step_reasoning"
+    ],
+
+    "coordination": {
+      "planner_agent": true,
+      "executor_agents": true,
+      "validator_agents": true
+    },
+
+    "agent_interaction_protocol": {
+      "communication_style": "asynchronous events",
+      "message_format": "JSON",
+      "memory_sharing": "centralized vector memory",
+      "retry_policy": {
+        "max_retries": 3,
+        "fallback_agent": "DECISION_AGENT"
+      }
+    }
+  },
+
+  "event_flow": [
+    {
+      "event": "PROJECT_CREATED",
+      "source": "external_system",
+      "target": "BIM_AGENT"
+    },
+    {
+      "event": "BIM_PROCESSED",
+      "source": "BIM_AGENT",
+      "target": "COST_AGENT"
+    },
+    {
+      "event": "COST_CALCULATED",
+      "source": "COST_AGENT",
+      "target": "RISK_AGENT"
+    },
+    {
+      "event": "RISK_EVALUATED",
+      "source": "RISK_AGENT",
+      "target": "DECISION_AGENT"
+    },
+    {
+      "event": "DECISION_GENERATED",
+      "source": "DECISION_AGENT",
+      "target": "stakeholders"
+    }
+  ],
+
+  "governance": {
+    "human_in_the_loop": true,
+    "auditability": true,
+    "decision_logging": true,
+    "explainability": {
+      "enabled": true,
+      "methods": [
+        "reasoning_trace",
+        "confidence_scores",
+        "decision_justification"
+      ]
+    }
+  },
+
+  "deployment": {
+    "architecture_style": "microservices",
+    "runtime": [
+      "Docker",
+      "Kubernetes"
+    ],
+    "integration_interfaces": [
+      "REST API",
+      "GraphQL",
+      "Event Bus"
+    ],
+    "recommended_stack": {
+      "orchestration": "LangGraph / CrewAI / AutoGen",
+      "event_streaming": "Kafka or RabbitMQ",
+      "vector_database": "Pinecone / Weaviate",
+      "llm_layer": "OpenAI API"
+    }
+  }
+}

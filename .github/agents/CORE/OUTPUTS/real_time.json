@@ -1,0 +1,15 @@
+{
+    "event_system": {
+  "event_bus": "RabbitMQ",
+  "stream_processing": "Kafka",
+  "real_time_monitoring": true,
+
+  "trigger_types": [
+    "schedule_delay",
+    "budget_overrun",
+    "clash_detection",
+    "site_incidents",
+    "material_shortage"
+  ]
+}
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Risk_Analysis_AI",
+
+  "role": "Análise preditiva de riscos",
+
+  "capabilities": [
+    "delay_prediction",
+    "budget_risk_analysis",
+    "weather_impact_analysis",
+    "resource_conflict_detection"
+  ],
+
+  "tools": [
+    "schedule_engine",
+    "cost_engine",
+    "weather_api"
+  ],
+
+  "autonomy_level": "semi_autonomous",
+
+  "decision_scope": [
+    "risk_alerts",
+    "mitigation_recommendations"
+  ]
+}

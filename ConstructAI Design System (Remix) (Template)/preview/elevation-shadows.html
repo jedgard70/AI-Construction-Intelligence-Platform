@@ -1,0 +1,24 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Shadows & borders</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:18px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .cell{background:#fff;border-radius:12px;padding:12px;height:120px;display:flex;flex-direction:column;justify-content:flex-end}
+  .label{font-size:10px;font-weight:600;color:var(--fg-1)}
+  .desc{font-family:var(--font-mono);font-size:9px;color:var(--fg-4);margin-top:2px;line-height:1.4}
+  .c1{border:1px solid var(--app-border)}
+  .c2{border:1px solid #185FA533;background:#185FA508}
+  .c3{box-shadow:0 8px 40px rgba(0,0,0,0.18);border:1px solid var(--app-border)}
+  .c4{box-shadow:0 16px 48px rgba(0,0,0,0.20);border:1px solid var(--app-border)}
+  .fab{width:42px;height:42px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 4px 16px rgba(24,95,165,0.40);margin-bottom:6px}
+</style>
+<div class="grid">
+  <div class="cell c1"><div class="label">Card (default)</div><div class="desc">1px #e5e8f0 · no shadow</div></div>
+  <div class="cell c2"><div class="label">Alert card</div><div class="desc">border ${c}33<br>bg ${c}08</div></div>
+  <div class="cell c3"><div class="label">Help panel</div><div class="desc">0 8 40 rgba(0,0,0,.18)</div></div>
+  <div class="cell c4"><div class="label">Modal</div><div class="desc">0 16 48 rgba(0,0,0,.20)</div></div>
+</div>
+<div style="display:flex;align-items:center;gap:14px;margin-top:14px;padding:12px;border:1px solid var(--app-border);background:#fff;border-radius:12px">
+  <div class="fab">?</div>
+  <div><div class="label">FAB · colored shadow</div><div class="desc">0 4 16 rgba(24,95,165,.40)</div></div>
+</div>

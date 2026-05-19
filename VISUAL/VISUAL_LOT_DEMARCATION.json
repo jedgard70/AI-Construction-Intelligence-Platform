@@ -1,0 +1,232 @@
+{
+  "project_blueprint": {
+    "name": "Visual Lot Demarcation with Neon Effects",
+    "alias": "Sistema de Demarcação Visual de Lotes com Neon",
+    "version": "1.1-conceptual-architecture",
+    "status": {
+      "documentation": "✅ Completa",
+      "python_renderer": "⏳ Em desenvolvimento",
+      "html5_visualizer": "⏳ Em desenvolvimento",
+      "map_integration": "⏳ Planejada",
+      "advanced_effects": "⏳ Planejada"
+    }
+  },
+  "mission": {
+    "objective": "Criar uma plataforma visual interativa para demarcação de lotes imobiliários com efeitos neon configuráveis.",
+    "primary_goals": [
+      "Apresentações executivas",
+      "Análise visual de viabilidade",
+      "Validação geométrica",
+      "Integração BIM",
+      "Exportação vetorial e multimídia"
+    ]
+  },
+  "system_modules": {
+    "geometry_input": {
+      "supported_formats": [
+        "GeoJSON",
+        "KML",
+        "Latitude/Longitude",
+        "Manual Canvas Drawing"
+      ],
+      "capabilities": [
+        "Validação geométrica",
+        "Correção automática de polígonos",
+        "Múltiplos lotes",
+        "Camadas sobrepostas"
+      ]
+    },
+    "neon_effect_engine": {
+      "effects": [
+        {
+          "id": "border",
+          "name": "Neon Border",
+          "description": "Contorno brilhante do lote"
+        },
+        {
+          "id": "glow",
+          "name": "Neon Glow",
+          "description": "Aura luminosa"
+        },
+        {
+          "id": "pulse",
+          "name": "Pulse Effect",
+          "description": "Animação pulsante"
+        },
+        {
+          "id": "gradient",
+          "name": "Multi-Color Gradient",
+          "description": "Gradiente dinâmico"
+        },
+        {
+          "id": "flicker",
+          "name": "Flicker Effect",
+          "description": "Tremulação estilo neon real"
+        }
+      ]
+    },
+    "customization": {
+      "supported_color_mode": "RGB ilimitado",
+      "accepted_formats": [
+        "#RRGGBB",
+        "RGB()"
+      ],
+      "parameters": [
+        "thickness",
+        "intensity",
+        "opacity",
+        "pulse_speed",
+        "blur_radius",
+        "gradient_mode"
+      ]
+    },
+    "rendering_engines": {
+      "html5_canvas": {
+        "purpose": "Renderização em tempo real",
+        "status": "⏳"
+      },
+      "svg_renderer": {
+        "purpose": "Exportação vetorial",
+        "status": "⏳"
+      },
+      "webgl_renderer": {
+        "purpose": "Visualização 3D avançada",
+        "status": "⏳"
+      },
+      "threejs_integration": {
+        "purpose": "Integração BIM/IFC",
+        "status": "⏳"
+      }
+    }
+  },
+  "technical_architecture": {
+    "backend": {
+      "language": "Python",
+      "modules": [
+        {
+          "file": "lot_neon_renderer.py",
+          "purpose": "Renderização SVG e neon"
+        },
+        {
+          "file": "geometry_processor.py",
+          "purpose": "Processamento geométrico"
+        },
+        {
+          "file": "color_utils.py",
+          "purpose": "Conversão e análise de cores"
+        }
+      ]
+    },
+    "frontend": {
+      "stack": [
+        "HTML5",
+        "Canvas API",
+        "JavaScript",
+        "CSS Neon UI"
+      ],
+      "modules": [
+        {
+          "file": "neon_canvas_renderer.html",
+          "purpose": "Interface principal"
+        },
+        {
+          "file": "neon_effects.js",
+          "purpose": "Shaders e animações"
+        },
+        {
+          "file": "lot_visualizer.js",
+          "purpose": "Controle de lotes"
+        }
+      ]
+    },
+    "integrations": [
+      "Leaflet",
+      "Mapbox",
+      "Three.js",
+      "Fabric.js",
+      "GeoJSON Pipelines",
+      "BIM IFC"
+    ]
+  },
+  "workflow": {
+    "steps": [
+      {
+        "step": 1,
+        "title": "Upload ou desenho do lote",
+        "actions": [
+          "Importar GeoJSON/KML",
+          "Desenhar no canvas",
+          "Validar geometria"
+        ]
+      },
+      {
+        "step": 2,
+        "title": "Escolha do efeito neon",
+        "actions": [
+          "Selecionar efeito",
+          "Definir cor",
+          "Ajustar intensidade"
+        ]
+      },
+      {
+        "step": 3,
+        "title": "Renderização",
+        "actions": [
+          "Preview em tempo real",
+          "Visualização multi-resolução",
+          "Simulação de glow"
+        ]
+      },
+      {
+        "step": 4,
+        "title": "Exportação",
+        "actions": [
+          "SVG",
+          "PNG",
+          "MP4",
+          "PDF"
+        ]
+      }
+    ]
+  },
+  "recommended_presets": {
+    "executive_presentation": {
+      "color": "#00ffff",
+      "effect": "border",
+      "thickness": 4,
+      "intensity": 1.8,
+      "blur": 20
+    },
+    "technical_analysis": {
+      "color": "#ffff00",
+      "effect": "glow",
+      "thickness": 2,
+      "intensity": 1.0,
+      "blur": 10
+    },
+    "critical_alert": {
+      "color": "#ff0000",
+      "effect": "pulse",
+      "thickness": 5,
+      "intensity": 2.0,
+      "blur": 25
+    }
+  },
+  "future_features": [
+    "Animated SVG export",
+    "WebAR visualization",
+    "AI-generated color themes",
+    "Automatic contrast analysis",
+    "Terrain shadow simulation",
+    "Refraction effects",
+    "Video rendering pipeline",
+    "Collaborative multi-user editing"
+  ],
+  "system_readiness": {
+    "concept_design": "✅",
+    "architecture_defined": "✅",
+    "prototype_feasible": "✅",
+    "commercial_potential": "✅ Alto",
+    "scalability": "✅ Elevada"
+  }
+}

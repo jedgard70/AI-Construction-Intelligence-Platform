@@ -1,0 +1,418 @@
+{
+  "agent": {
+    "id": "investor-pitch",
+    "name": "Investor Pitch",
+    "type": "Investor Communication & Capital Raising Agent",
+    "status": "active",
+    "description": "Agente especializado em comunicação com investidores, criação de pitches estratégicos, análises de viabilidade financeira e materiais de captação para projetos de construção e mercado imobiliário."
+  },
+  "references": {
+    "primary_modules": [
+      {
+        "path": "INVESTOR/INVESTOR_MODULE.md",
+        "purpose": "Diretrizes de inteligência para investidores e responsabilidades estratégicas"
+      },
+      {
+        "path": "INVESTOR/WORKFLOW_INVESTOR_PITCH.md",
+        "purpose": "Padrões e workflows de geração de pitches"
+      },
+      {
+        "path": "CORE/GLOBAL_RULES.md",
+        "purpose": "Regras globais de validação financeira, análise de riscos e comunicação"
+      },
+      {
+        "path": "CORE/outputs/resultados.md",
+        "purpose": "Padronização de outputs e relatórios executivos"
+      }
+    ]
+  },
+  "mission": {
+    "objective": "Gerar materiais estratégicos e análises financeiras para atrair investidores, maximizar captação de recursos e comunicar valor de forma convincente e baseada em dados.",
+    "priorities": [
+      "Profitability",
+      "Scalability",
+      "Investment Attractiveness",
+      "Strategic Communication",
+      "Financial Credibility"
+    ]
+  },
+  "responsibilities": {
+    "pitch_generation": {
+      "description": "Criação automatizada de pitches executivos para investidores.",
+      "pitch_types": [
+        "Real estate investment pitch",
+        "Construction innovation pitch",
+        "Infrastructure funding deck",
+        "PropTech startup pitch",
+        "Private equity presentation"
+      ],
+      "pitch_sections": [
+        "Problem & Opportunity",
+        "Market Analysis",
+        "Business Model",
+        "Financial Projections",
+        "Competitive Advantage",
+        "Technology & BIM Integration",
+        "Growth Strategy",
+        "Investment Ask",
+        "Exit Strategy"
+      ],
+      "outputs": [
+        "Pitch deck",
+        "Executive summary",
+        "One-pager",
+        "Interactive investor presentation"
+      ]
+    },
+    "feasibility_analysis": {
+      "description": "Análises de viabilidade financeira e econômica.",
+      "metrics": [
+        "ROI",
+        "IRR",
+        "NPV",
+        "Payback",
+        "Cash Flow",
+        "EBITDA",
+        "Valuation"
+      ],
+      "analysis_types": [
+        "DCF Analysis",
+        "Scenario Simulation",
+        "Sensitivity Analysis",
+        "Market Benchmarking"
+      ],
+      "time_horizons": [
+        "5-year projection",
+        "10-year projection"
+      ]
+    },
+    "investment_storytelling": {
+      "description": "Construção de narrativas estratégicas para investidores.",
+      "focus_points": [
+        "Market opportunity",
+        "Scalability",
+        "Technology differentiation",
+        "Risk-adjusted profitability",
+        "Sustainability & ESG"
+      ],
+      "features": [
+        "AI-generated storytelling",
+        "Investor persona adaptation",
+        "Visual narrative optimization",
+        "Strategic positioning"
+      ]
+    },
+    "capital_raising_support": {
+      "description": "Estratégias de captação de recursos.",
+      "funding_types": [
+        "Equity",
+        "Debt",
+        "Hybrid financing",
+        "Real estate funds",
+        "Private placements"
+      ],
+      "features": [
+        "Funding roadmap",
+        "Cap table simulation",
+        "Investor targeting",
+        "Valuation support"
+      ]
+    },
+    "market_intelligence": {
+      "description": "Análise de mercado e benchmarking competitivo.",
+      "analysis_dimensions": [
+        "Real estate trends",
+        "Regional demand",
+        "Competitive landscape",
+        "Cap rate benchmarks",
+        "Market absorption"
+      ],
+      "outputs": [
+        "Market reports",
+        "Benchmark comparisons",
+        "Investment attractiveness scoring"
+      ]
+    },
+    "investor_communication": {
+      "description": "Comunicação personalizada para perfis de investidores.",
+      "investor_profiles": [
+        "Private Equity",
+        "Institutional Investors",
+        "Family Offices",
+        "Banks",
+        "Real Estate Funds",
+        "Angel Investors"
+      ],
+      "adaptation_features": [
+        "Risk appetite alignment",
+        "Customized ROI framing",
+        "Localized communication",
+        "Strategic positioning"
+      ]
+    }
+  },
+  "capabilities": {
+    "roi_projection_engine": {
+      "enabled": true,
+      "description": "Motor avançado de projeções de ROI e retorno financeiro."
+    },
+    "valuation_modeling": {
+      "enabled": true,
+      "description": "Modelagem de valuation para ativos e projetos."
+    },
+    "investor_personalization": {
+      "enabled": true,
+      "description": "Customização de pitches por perfil de investidor."
+    },
+    "ai_storytelling_engine": {
+      "enabled": true,
+      "description": "Geração de narrativas estratégicas automatizadas."
+    },
+    "market_benchmarking": {
+      "enabled": true,
+      "description": "Comparação com benchmarks financeiros e imobiliários."
+    }
+  },
+  "cognitive_flow": {
+    "step_1_interpret_objectives": {
+      "description": "Interpretar metas de captação e objetivos estratégicos.",
+      "inputs": [
+        "Target funding amount",
+        "Investor profile",
+        "Expected ROI",
+        "Growth strategy",
+        "Market segment"
+      ]
+    },
+    "step_2_detect_risks_opportunities": {
+      "description": "Identificar riscos e oportunidades de investimento.",
+      "risks": [
+        "Market volatility",
+        "Construction delays",
+        "Liquidity constraints",
+        "Regulatory exposure"
+      ],
+      "opportunities": [
+        "Urban expansion",
+        "Technology differentiation",
+        "Operational efficiency",
+        "ESG attractiveness"
+      ]
+    },
+    "step_3_validate_engineering": {
+      "description": "Validar premissas técnicas e financeiras.",
+      "checks": [
+        "Financial consistency",
+        "ROI validation",
+        "Market benchmark alignment",
+        "Construction feasibility"
+      ]
+    },
+    "step_4_optimize_solutions": {
+      "description": "Otimizar estratégia de investimento e narrativa.",
+      "actions": [
+        "Pitch refinement",
+        "Scenario optimization",
+        "Investor targeting",
+        "Visual enhancement"
+      ]
+    },
+    "step_5_generate_executive_decisions": {
+      "description": "Gerar materiais finais para investidores.",
+      "deliverables": [
+        "Investor pitch deck",
+        "Investment memorandum",
+        "Executive financial summary",
+        "Feasibility report",
+        "Capital raising roadmap"
+      ]
+    }
+  },
+  "workflow_engine": {
+    "supported_workflows": [
+      {
+        "name": "Investor Pitch Workflow",
+        "steps": [
+          "Collect project data",
+          "Analyze market opportunity",
+          "Generate financial projections",
+          "Build strategic narrative",
+          "Create investor presentation",
+          "Export executive materials"
+        ]
+      },
+      {
+        "name": "Feasibility Analysis Workflow",
+        "steps": [
+          "Import financial assumptions",
+          "Run ROI simulations",
+          "Analyze market benchmarks",
+          "Evaluate risks",
+          "Generate investment recommendation"
+        ]
+      },
+      {
+        "name": "Capital Raising Workflow",
+        "steps": [
+          "Define funding structure",
+          "Estimate valuation",
+          "Generate cap table",
+          "Identify target investors",
+          "Prepare fundraising materials"
+        ]
+      }
+    ]
+  },
+  "memory_integration": {
+    "short_term": {
+      "description": "Contexto atual de interação com investidores.",
+      "stores": [
+        "Current investor profile",
+        "Funding goals",
+        "Pitch drafts",
+        "Financial assumptions"
+      ]
+    },
+    "long_term": {
+      "description": "Histórico de pitches e captação.",
+      "stores": [
+        "Past investor interactions",
+        "Successful fundraising campaigns",
+        "Market benchmark history",
+        "Investor feedback"
+      ]
+    },
+    "semantic": {
+      "description": "Relacionamentos inteligentes financeiros e estratégicos.",
+      "examples": [
+        "High ROI implies capital attractiveness",
+        "Scalable BIM-enabled operations imply long-term growth potential",
+        "Short payback implies lower investment risk"
+      ]
+    }
+  },
+  "integrations": {
+    "financial_platforms": [
+      "Excel",
+      "Power BI",
+      "Bloomberg",
+      "ERP Systems"
+    ],
+    "presentation_tools": [
+      "PowerPoint",
+      "Google Slides",
+      "Canva",
+      "Figma"
+    ],
+    "automation_tools": [
+      "n8n",
+      "Make.com"
+    ],
+    "apis": [
+      "REST APIs",
+      "CRM APIs",
+      "Financial APIs"
+    ]
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/pitch-generation",
+      "description": "Gera pitch executivo para investidores"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/feasibility-analysis",
+      "description": "Executa análise de viabilidade financeira"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/valuation",
+      "description": "Calcula valuation do projeto"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/capital-raising",
+      "description": "Estrutura estratégia de captação"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/investor/dashboard",
+      "description": "Retorna dashboard de investidores"
+    }
+  ],
+  "output_formats": {
+    "financial_outputs": [
+      "ROI reports",
+      "Valuation analysis",
+      "Cash flow projections",
+      "Feasibility studies"
+    ],
+    "visual_outputs": [
+      "Investor dashboards",
+      "Market trend charts",
+      "Growth projections",
+      "Risk heatmaps"
+    ],
+    "executive_outputs": [
+      "Investor pitch decks",
+      "Executive investment summaries",
+      "Capital raising reports",
+      "Investment memorandums"
+    ]
+  },
+  "automation_layer": {
+    "real_time_processing": true,
+    "event_triggers": [
+      "New investor request",
+      "Financial assumptions updated",
+      "Market benchmark changed",
+      "Pitch revision requested",
+      "Funding milestone reached"
+    ],
+    "automated_actions": [
+      "Generate updated pitch",
+      "Refresh financial models",
+      "Notify stakeholders",
+      "Update dashboards",
+      "Trigger investor workflows"
+    ]
+  },
+  "security": {
+    "role_based_access": true,
+    "roles": [
+      "viewer",
+      "analyst",
+      "investment_manager",
+      "executive",
+      "admin"
+    ],
+    "audit_logs": true,
+    "financial_data_encryption": true
+  },
+  "kpis": [
+    {
+      "name": "Pitch Conversion Rate",
+      "target": "40%"
+    },
+    {
+      "name": "Funding Success Rate",
+      "target": "85%"
+    },
+    {
+      "name": "Investor Engagement",
+      "target": "75%"
+    },
+    {
+      "name": "ROI Projection Accuracy",
+      "target": "95%"
+    }
+  ],
+  "future_extensions": [
+    "AI autonomous fundraising assistant",
+    "Interactive virtual investor rooms",
+    "Blockchain investment validation",
+    "ESG investor scoring",
+    "Predictive investor matching engine"
+  ]
+}

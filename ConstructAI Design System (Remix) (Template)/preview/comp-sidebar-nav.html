@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Sidebar nav row</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#fff;font-family:var(--font-sans-app);padding:14px}
+  .col{display:flex;flex-direction:column;gap:2px;width:204px;padding:8px;background:#fff;border:1px solid var(--app-border);border-radius:10px}
+  .section{font-size:9px;color:#a0a8bb;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:8px 8px 4px}
+  .nav{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:#5a6282;border:none;background:none;font-family:inherit;text-align:left}
+  .nav.active{background:#EFF4FF;color:#185FA5;font-weight:500}
+  .nav:hover:not(.active){background:#f8f9fc;color:#185FA5}
+  .b{font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px}
+  .layout{display:flex;gap:18px;align-items:flex-start}
+  .right{font-size:11px;color:var(--fg-4);max-width:280px;padding-top:8px;line-height:1.5}
+  .right code{font-family:var(--font-mono);background:var(--app-surface-2);padding:1px 5px;border-radius:4px;font-size:10px}
+</style>
+<div class="layout">
+  <div class="col">
+    <div class="section">Principal</div>
+    <button class="nav active">Dashboard</button>
+    <button class="nav">Cronograma</button>
+    <button class="nav">Documentos</button>
+    <button class="nav">BIM / Clash<span class="b" style="background:#FCEBEB;color:#A32D2D">!</span></button>
+    <button class="nav">Qualidade</button>
+    <button class="nav" style="color:#3B6D11">🎨 ArchVis Pro</button>
+    <button class="nav" style="color:#534AB7">🎬 Director Cut</button>
+    <button class="nav" style="color:#534AB7">⚖️ Jurídico</button>
+  </div>
+  <div class="right">
+    Active: <code>#EFF4FF</code> bg + <code>#185FA5</code> fg, weight 500.
+    Default fg <code>#5a6282</code>. Numeric badge uses semantic soft bg/text.
+    Cross-product links inherit role accent and use emoji + label.
+  </div>
+</div>

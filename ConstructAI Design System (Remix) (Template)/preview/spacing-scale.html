@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Spacing scale</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#fff;font-family:var(--font-sans-app);padding:14px 18px}
+  .row{display:flex;flex-direction:column;gap:8px}
+  .item{display:grid;grid-template-columns:48px 1fr 160px;align-items:center;gap:14px;font-size:11px;color:var(--fg-3)}
+  .px{font-family:var(--font-mono);font-size:11px;color:var(--fg-1);font-weight:600}
+  .bar{height:10px;background:var(--brand-blue);border-radius:2px}
+  .use{color:var(--fg-4);font-size:10px;text-align:right}
+</style>
+<div class="row">
+  <div class="item"><span class="px">4</span><div class="bar" style="width:4px"></div><span class="use">tight inline</span></div>
+  <div class="item"><span class="px">8</span><div class="bar" style="width:8px"></div><span class="use">field row gap</span></div>
+  <div class="item"><span class="px">12</span><div class="bar" style="width:12px"></div><span class="use">KPI grid gap · row gap</span></div>
+  <div class="item"><span class="px">16</span><div class="bar" style="width:16px"></div><span class="use">card padding · section gap</span></div>
+  <div class="item"><span class="px">20</span><div class="bar" style="width:20px"></div><span class="use">card section title</span></div>
+  <div class="item"><span class="px">24</span><div class="bar" style="width:24px"></div><span class="use">topbar h-padding · modal pad</span></div>
+  <div class="item"><span class="px">32</span><div class="bar" style="width:32px"></div><span class="use">contract block top</span></div>
+  <div class="item"><span class="px">48</span><div class="bar" style="width:48px"></div><span class="use">login right pad · sig gap</span></div>
+  <div class="item"><span class="px">64</span><div class="bar" style="width:64px"></div><span class="use">login left pad</span></div>
+</div>

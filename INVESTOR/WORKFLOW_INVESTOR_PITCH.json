@@ -1,0 +1,254 @@
+{
+  "automation_layer": {
+    "enabled": true,
+    "objective": "Automatizar workflows financeiros, BIM e executivos através de arquitetura orientada a eventos e sistemas multiagentes integrados.",
+    "capabilities": {
+      "workflow_engine": {
+        "enabled": true,
+        "description": "Motor central para orquestração de workflows AI e processos de negócio.",
+        "features": [
+          "Workflow orchestration",
+          "Conditional logic",
+          "Parallel execution",
+          "Retry policies",
+          "Human-in-the-loop approvals",
+          "Scheduled automations",
+          "State persistence"
+        ],
+        "supported_workflows": [
+          "BIM Analysis",
+          "ROI Analysis",
+          "Valuation Processing",
+          "Investor Pitch Generation",
+          "Risk Assessment",
+          "Project Monitoring"
+        ]
+      },
+      "api_integrations": {
+        "enabled": true,
+        "description": "Integração com APIs externas e plataformas corporativas.",
+        "supported_integrations": [
+          {
+            "name": "Revit API",
+            "purpose": "Importação e sincronização BIM"
+          },
+          {
+            "name": "Excel/Office 365",
+            "purpose": "Financial spreadsheets and reporting"
+          },
+          {
+            "name": "Power BI",
+            "purpose": "Dashboards e analytics"
+          },
+          {
+            "name": "ERP Systems",
+            "purpose": "Custos, compras e contratos"
+          },
+          {
+            "name": "CRM Platforms",
+            "purpose": "Relacionamento com investidores"
+          },
+          {
+            "name": "Cloud Storage",
+            "purpose": "Documentos e modelos IFC"
+          }
+        ],
+        "api_gateway": {
+          "authentication": [
+            "OAuth2",
+            "JWT",
+            "API Keys"
+          ],
+          "rate_limiting": true,
+          "monitoring": true,
+          "webhook_support": true
+        }
+      },
+      "event_driven_architecture": {
+        "enabled": true,
+        "description": "Arquitetura baseada em eventos para automações em tempo real.",
+        "event_bus": {
+          "technology": [
+            "Kafka",
+            "RabbitMQ",
+            "AWS EventBridge"
+          ]
+        },
+        "event_types": [
+          "ProjectUploaded",
+          "WorkflowStarted",
+          "WorkflowCompleted",
+          "RiskDetected",
+          "ROIThresholdReached",
+          "ValuationUpdated",
+          "InvestorPitchGenerated",
+          "ApprovalRequested"
+        ],
+        "features": [
+          "Real-time triggers",
+          "Async processing",
+          "Distributed execution",
+          "Event replay",
+          "Scalable microservices communication"
+        ]
+      },
+      "multi_agent_system": {
+        "enabled": true,
+        "description": "Sistema de agentes especializados colaborando autonomamente.",
+        "coordination_model": "Hierarchical + Collaborative",
+        "agent_types": [
+          {
+            "name": "BIM Coordinator Agent",
+            "responsibilities": [
+              "Model validation",
+              "Clash detection",
+              "Constructability analysis"
+            ]
+          },
+          {
+            "name": "ROI Analyst Agent",
+            "responsibilities": [
+              "Financial modeling",
+              "ROI simulation",
+              "Sensitivity analysis"
+            ]
+          },
+          {
+            "name": "Valuation Agent",
+            "responsibilities": [
+              "Asset valuation",
+              "Market comparison",
+              "DCF analysis"
+            ]
+          },
+          {
+            "name": "Executive Advisor Agent",
+            "responsibilities": [
+              "Executive summaries",
+              "Decision support",
+              "Strategic insights"
+            ]
+          },
+          {
+            "name": "Investor Pitch Agent",
+            "responsibilities": [
+              "Pitch generation",
+              "Narrative construction",
+              "Presentation automation"
+            ]
+          }
+        ],
+        "communication": {
+          "protocol": "Agent-to-Agent Messaging",
+          "memory_sharing": true,
+          "context_sync": true,
+          "task_delegation": true
+        }
+      },
+      "n8n_support": {
+        "enabled": true,
+        "description": "Integração com n8n para automações low-code/no-code.",
+        "features": [
+          "Webhook triggers",
+          "Workflow orchestration",
+          "External integrations",
+          "Database automation",
+          "Slack/Email notifications"
+        ],
+        "example_workflows": [
+          {
+            "name": "Investor Report Automation",
+            "flow": [
+              "Upload financial data",
+              "Run ROI analysis",
+              "Generate PDF",
+              "Send to stakeholders"
+            ]
+          },
+          {
+            "name": "BIM Monitoring Pipeline",
+            "flow": [
+              "Detect IFC upload",
+              "Run AI validation",
+              "Generate alerts",
+              "Update dashboard"
+            ]
+          }
+        ]
+      },
+      "make_support": {
+        "enabled": true,
+        "description": "Integração com Make.com para automações visuais.",
+        "features": [
+          "Visual scenario builder",
+          "Cross-platform automation",
+          "Investor CRM sync",
+          "Automated notifications",
+          "Document generation"
+        ],
+        "supported_modules": [
+          "Google Sheets",
+          "Notion",
+          "Slack",
+          "HubSpot",
+          "Airtable",
+          "Dropbox"
+        ]
+      }
+    },
+    "automation_flows": [
+      {
+        "name": "Automatic ROI Pipeline",
+        "trigger": "Financial model upload",
+        "steps": [
+          "Parse spreadsheet",
+          "Run financial analysis",
+          "Calculate ROI/TIR/VPL",
+          "Generate dashboard",
+          "Notify stakeholders"
+        ]
+      },
+      {
+        "name": "Investor Pitch Automation",
+        "trigger": "Valuation completed",
+        "steps": [
+          "Generate executive narrative",
+          "Build charts",
+          "Create PowerPoint",
+          "Export PDF",
+          "Upload to investor portal"
+        ]
+      },
+      {
+        "name": "BIM Risk Detection",
+        "trigger": "New IFC/Revit upload",
+        "steps": [
+          "Analyze constructability",
+          "Detect clashes",
+          "Estimate cost impact",
+          "Generate alerts",
+          "Assign responsible teams"
+        ]
+      }
+    ],
+    "observability": {
+      "logging": true,
+      "metrics": true,
+      "tracing": true,
+      "dashboard_monitoring": true,
+      "alerting": true
+    },
+    "security": {
+      "encrypted_workflows": true,
+      "role_based_execution": true,
+      "audit_logs": true,
+      "secret_management": true
+    },
+    "scalability": {
+      "microservices": true,
+      "containerized_execution": true,
+      "kubernetes_support": true,
+      "horizontal_scaling": true
+    }
+  }
+}

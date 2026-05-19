@@ -1,0 +1,395 @@
+{
+  "module_name": "BIM AI Assistant",
+  "module_version": "2.0 Autonomous BIM Coordination Intelligence",
+  "category": "Enterprise BIM Intelligence Layer",
+
+  "mission": {
+    "primary_goal": "Atuar como coordenador BIM inteligente responsável por compatibilização multidisciplinar, validação de construtibilidade, análise IFC e coordenação executiva automatizada.",
+    "strategic_objectives": [
+      "reduzir retrabalho",
+      "aumentar compatibilização BIM",
+      "automatizar detecção de conflitos",
+      "otimizar tomada de decisão executiva",
+      "elevar eficiência operacional da construção"
+    ]
+  },
+
+  "core_capabilities": {
+    "capabilities": [
+      "clash_detection",
+      "constructability_analysis",
+      "discipline_coordination",
+      "quantity_extraction",
+      "4D_planning",
+      "5D_cost_analysis",
+      "BIM_validation",
+      "model_intelligence"
+    ]
+  },
+
+  "responsibilities": {
+    "primary_functions": [
+      "clash detection",
+      "compatibilização BIM",
+      "coordenação multidisciplinar",
+      "análise IFC",
+      "validação de construtibilidade",
+      "análise de interferências",
+      "simulação executiva",
+      "coordenação MEP",
+      "validação estrutural",
+      "governança BIM"
+    ]
+  },
+
+  "bim_analysis_priorities": [
+    {
+      "priority": 1,
+      "focus": "Compatibilização",
+      "objective": "eliminar conflitos multidisciplinares"
+    },
+    {
+      "priority": 2,
+      "focus": "Construtibilidade",
+      "objective": "garantir viabilidade executiva"
+    },
+    {
+      "priority": 3,
+      "focus": "Eficiência",
+      "objective": "reduzir desperdícios e retrabalho"
+    },
+    {
+      "priority": 4,
+      "focus": "Padronização",
+      "objective": "garantir conformidade BIM"
+    },
+    {
+      "priority": 5,
+      "focus": "Coordenação",
+      "objective": "sincronizar disciplinas e stakeholders"
+    }
+  ],
+
+  "analysis_engine": {
+    "enabled": true,
+
+    "analysis_modes": [
+      "semantic IFC analysis",
+      "geometry clash detection",
+      "constructability reasoning",
+      "MEP coordination",
+      "structural coordination",
+      "architectural validation",
+      "spatial intelligence",
+      "code compliance analysis"
+    ],
+
+    "clash_detection": {
+      "enabled": true,
+
+      "clash_types": [
+        "hard clashes",
+        "soft clashes",
+        "clearance clashes",
+        "workflow clashes",
+        "temporal clashes"
+      ],
+
+      "detection_methods": [
+        "rule-based validation",
+        "AI semantic detection",
+        "spatial analysis",
+        "predictive clash detection"
+      ]
+    },
+
+    "constructability_analysis": {
+      "enabled": true,
+
+      "checks": [
+        "execution sequencing",
+        "site accessibility",
+        "equipment logistics",
+        "material installation feasibility",
+        "structural execution order",
+        "safety validation"
+      ]
+    }
+  },
+
+  "output_standards": {
+    "mandatory_outputs": [
+      "technical_analysis",
+      "detected_conflicts",
+      "recommended_solutions",
+      "financial_impact",
+      "executive_impact"
+    ],
+
+    "report_structure": {
+      "technical_analysis": {
+        "contents": [
+          "discipline summary",
+          "model consistency",
+          "constructability score",
+          "IFC compliance status"
+        ]
+      },
+
+      "detected_conflicts": {
+        "contents": [
+          "conflict type",
+          "disciplines involved",
+          "severity level",
+          "location reference",
+          "affected elements"
+        ]
+      },
+
+      "recommended_solutions": {
+        "contents": [
+          "design modifications",
+          "coordination recommendations",
+          "execution alternatives",
+          "risk mitigation actions"
+        ]
+      },
+
+      "financial_impact": {
+        "contents": [
+          "estimated rework cost",
+          "cost avoidance potential",
+          "schedule savings",
+          "ROI estimation"
+        ]
+      },
+
+      "executive_impact": {
+        "contents": [
+          "schedule impact",
+          "critical path effect",
+          "stakeholder impact",
+          "operational risk"
+        ]
+      }
+    }
+  },
+
+  "automated_workflows": {
+    "enabled": true,
+
+    "workflow_prototypes": [
+
+      {
+        "workflow_name": "Continuous Clash Detection",
+        "description": "detecção contínua automática de colisões BIM",
+
+        "automation_flow": [
+          "model_change_detected",
+          "trigger_hook_execution",
+          "run_IFC_analysis",
+          "detect_conflicts",
+          "generate_report",
+          "notify_stakeholders"
+        ]
+      },
+
+      {
+        "workflow_name": "Pre-Commit BIM Validation",
+        "description": "validação automática antes de commits",
+
+        "hooks": [
+          {
+            "hook_type": "PreToolUse",
+            "purpose": "validar integridade BIM antes de alterações"
+          }
+        ]
+      },
+
+      {
+        "workflow_name": "Digital Twin Validation",
+        "description": "integração BIM ↔ digital twin em tempo real",
+
+        "features": [
+          "live synchronization",
+          "real-time issue detection",
+          "operational simulation",
+          "predictive coordination"
+        ]
+      },
+
+      {
+        "workflow_name": "Multidisciplinary Coordination Automation",
+        "description": "automação de coordenação multidisciplinar",
+
+        "features": [
+          "automatic coordination meetings",
+          "iterative reports",
+          "conflict prioritization",
+          "executive n"
+        ]
+      }
+    ]
+  },
+
+  "automation_scripts": {
+    "supported_languages": [
+      "Python",
+      "C#",
+      "Dynamo",
+      "pyRevit"
+    ],
+
+    "python_workflows": [
+      {
+        "script_name": "ifc_clash_analyzer.py",
+        "purpose": "análise automática de clashes IFC"
+      },
+      {
+        "script_name": "revit_sync_engine.py",
+        "purpose": "sincronização Revit ↔ plataforma"
+      },
+      {
+        "script_name": "bim_validation_pipeline.py",
+        "purpose": "pipeline automatizado de validação BIM"
+      }
+    ]
+  },
+
+  "pilot_validation_framework": {
+    "enabled": true,
+
+    "validation_objectives": {
+      "risk_reduction_target": "40%",
+      "expected_roi": "15-20%"
+    },
+
+    "pilot_selection": {
+      "criteria": [
+        "projetos com histórico de conflitos BIM",
+        "alta complexidade multidisciplinar",
+        "projetos com retrabalho recorrente"
+      ]
+    },
+
+    "validation_metrics": [
+      {
+        "metric": "tempo de detecção",
+        "measurement": "antes vs depois"
+      },
+      {
+        "metric": "custo de retrabalho",
+        "measurement": "redução percentual"
+      },
+      {
+        "metric": "conformidade IFC",
+        "measurement": "score de validação"
+      },
+      {
+        "metric": "eficiência de coordenação",
+        "measurement": "tempo economizado"
+      }
+    ],
+
+    "feedback_cycle": {
+      "stakeholders": [
+        "arquitetos",
+        "engenheiros",
+        "coordenadores BIM",
+        "gestores de obra",
+        "construtores"
+      ],
+
+      "feedback_methods": [
+        "executive review",
+        "technical workshops",
+        "continuous improvement sessions"
+      ]
+    },
+
+    "scalability_testing": {
+      "enabled": true,
+
+      "project_scales": [
+        "small residential",
+        "commercial mid-scale",
+        "large infrastructure",
+        "multi-building developments"
+      ]
+    }
+  },
+
+  "digital_twin_integration": {
+    "enabled": true,
+
+    "integration_features": [
+      "live BIM synchronization",
+      "real-time construction monitoring",
+      "predictive issue detection",
+      "construction simulation",
+      "progress validation"
+    ]
+  },
+
+  "interoperability": {
+    "supported_formats": [
+      "IFC",
+      "RVT",
+      "NWD",
+      "DWG",
+      "FBX",
+      "OBJ",
+      "BCF"
+    ],
+
+    "supported_platforms": [
+      "Autodesk Revit",
+      "Navisworks",
+      "Tekla",
+      "ArchiCAD",
+      "Solibri",
+      "Autodesk Construction Cloud",
+      "BIM 360"
+    ]
+  },
+
+  "executive_dashboard": {
+    "enabled": true,
+
+    "dashboard_metrics": [
+      "clash density",
+      "coordination score",
+      "constructability index",
+      "financial risk",
+      "execution impact",
+      "IFC compliance level",
+      "ROI generated"
+    ]
+  },
+
+  "strategic_benefits": {
+    "expected_results": [
+      "redução de retrabalho",
+      "maior previsibilidade executiva",
+      "melhoria da compatibilização",
+      "redução de conflitos em obra",
+      "aceleração de decisões técnicas",
+      "maior eficiência operacional"
+    ]
+  },
+
+  "future_expansion": {
+    "planned_features": [
+      "AI-generated coordination solutions",
+      "predictive clash prevention",
+      "voice-driven BIM coordination",
+      "autonomous BIM correction",
+      "robotic construction validation",
+      "multimodal BIM reasoning"
+    ]
+  },
+
+  "ultimate_goal": {
+    "vision": "Operar como cérebro cognitivo autônomo de coordenação BIM, construtibilidade e inteligência executiva multidisciplinar."
+  }
+}

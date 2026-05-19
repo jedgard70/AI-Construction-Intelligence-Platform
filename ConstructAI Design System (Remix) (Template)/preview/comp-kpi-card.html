@@ -1,0 +1,32 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>KPI card</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .k{background:#fff;border:1px solid var(--app-border);border-radius:12px;padding:14px 16px}
+  .lab{font-size:11px;color:#8b93a7;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+  .val{font-size:22px;font-weight:600;color:#1a1f36;margin-bottom:3px;letter-spacing:-.01em}
+  .delta{font-size:11px;display:flex;align-items:center;gap:3px}
+</style>
+<div class="grid">
+  <div class="k">
+    <div class="lab"><span>🏢</span> Projetos ativos</div>
+    <div class="val">4</div>
+    <div class="delta" style="color:#8b93a7">2 em andamento</div>
+  </div>
+  <div class="k">
+    <div class="lab"><span>💰</span> Orçamento total</div>
+    <div class="val">R$ 48,3 mi</div>
+    <div class="delta" style="color:#8b93a7">Base contratual</div>
+  </div>
+  <div class="k">
+    <div class="lab"><span>📊</span> CPI médio</div>
+    <div class="val">0,93</div>
+    <div class="delta" style="color:#854F0B">⚠ Atenção: projetos abaixo de 0,90</div>
+  </div>
+  <div class="k">
+    <div class="lab"><span>🌱</span> ESG médio</div>
+    <div class="val">75,0</div>
+    <div class="delta" style="color:#3B6D11">↑ /100 — meta ≥ 70</div>
+  </div>
+</div>

@@ -1,0 +1,10 @@
+{
+  "agent_registry": {
+  "BIM_Coordinator_AI": {},
+  "Executive_AI": {},
+  "Risk_AI": {},
+  "Planning_AI": {},
+  "Commercial_AI": {},
+  "Investor_AI": {}
+}
+}

@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Semantic colors</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .cell{background:#fff;border:1px solid var(--app-border);border-radius:10px;overflow:hidden}
+  .top{height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;color:#fff}
+  .name{font-size:12px;font-weight:600}
+  .hex{font-family:var(--font-mono);font-size:10px;opacity:.85}
+  .bottom{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--app-border)}
+  .pill{font-size:9px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:20px;text-transform:uppercase}
+  .ex{font-size:11px;color:var(--fg-3)}
+</style>
+<div class="row">
+  <div class="cell"><div class="top" style="background:#3B6D11"><span class="name">success</span><span class="hex">#3B6D11</span></div>
+    <div class="bottom"><span class="pill" style="background:#EAF3DE;color:#3B6D11">Concluído</span><span class="ex">CPI ≥ meta · EV line</span></div></div>
+  <div class="cell"><div class="top" style="background:#185FA5"><span class="name">info</span><span class="hex">#185FA5</span></div>
+    <div class="bottom"><span class="pill" style="background:#E6F1FB;color:#185FA5">Em andamento</span><span class="ex">primary · PV line</span></div></div>
+  <div class="cell"><div class="top" style="background:#BA7517"><span class="name">warning</span><span class="hex">#BA7517</span></div>
+    <div class="bottom"><span class="pill" style="background:#FAEEDA;color:#854F0B">Pausado</span><span class="ex">ochre · "Hoje" ref</span></div></div>
+  <div class="cell"><div class="top" style="background:#A32D2D"><span class="name">danger</span><span class="hex">#A32D2D</span></div>
+    <div class="bottom"><span class="pill" style="background:#FCEBEB;color:#A32D2D">Atrasado</span><span class="ex">brick · AC line</span></div></div>
+</div>

@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Dark neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .sw{border-radius:10px;overflow:hidden;border:1px solid var(--app-border)}
+  .chip{height:74px;display:flex;align-items:flex-end;padding:10px}
+  .meta{padding:8px 10px 10px;background:#fff}
+  .name{font-size:12px;font-weight:600;color:var(--fg-1)}
+  .hex{font-family:var(--font-mono);font-size:11px;color:var(--fg-4);margin-top:2px}
+  .tag{font-size:9px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em}
+  .dark .tag{color:rgba(232,236,245,.65)}
+</style>
+<div class="grid">
+  <div class="sw dark"><div class="chip" style="background:#0a0d12"><span class="tag">page</span></div><div class="meta"><div class="name">Dark BG</div><div class="hex">#0a0d12</div></div></div>
+  <div class="sw dark"><div class="chip" style="background:#111520"><span class="tag">card · input</span></div><div class="meta"><div class="name">Dark BG 2</div><div class="hex">#111520</div></div></div>
+  <div class="sw dark"><div class="chip" style="background:#0f1a2e"><span class="tag">gradient stop</span></div><div class="meta"><div class="name">Dark BG 3</div><div class="hex">#0f1a2e</div></div></div>
+  <div class="sw dark"><div class="chip" style="background:#1e2535"><span class="tag">border</span></div><div class="meta"><div class="name">Dark Border</div><div class="hex">#1e2535</div></div></div>
+  <div class="sw"><div class="chip" style="background:#e8ecf5;color:#0a0d12"><span class="tag" style="color:#0a0d12">fg-1</span></div><div class="meta"><div class="name">Dark FG 1</div><div class="hex">#e8ecf5</div></div></div>
+  <div class="sw"><div class="chip" style="background:#9ca3c4;color:#0a0d12"><span class="tag" style="color:#0a0d12">fg-2 · label</span></div><div class="meta"><div class="name">Dark FG 2</div><div class="hex">#9ca3c4</div></div></div>
+  <div class="sw"><div class="chip" style="background:#6b7a99;color:#fff"><span class="tag">fg-3 · body</span></div><div class="meta"><div class="name">Dark FG 3</div><div class="hex">#6b7a99</div></div></div>
+  <div class="sw dark"><div class="chip" style="background:linear-gradient(160deg,#0a0d12 0%,#111520 60%,#0f1a2e 100%)"><span class="tag">login stage</span></div><div class="meta"><div class="name">Login Gradient</div><div class="hex">160° · 3 stops</div></div></div>
+</div>

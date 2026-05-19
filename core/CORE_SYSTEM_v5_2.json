@@ -1,0 +1,1600 @@
+{
+  "core_system": {
+    "system_identity": {
+      "system_name": "AI Construction Intelligence Platform",
+      "version": "5.2 Enterprise Cognitive Infrastructure",
+      "language": "pt-BR",
+      "positioning": "Ecossistema Operacional Inteligente para Engenharia Civil, Construção, BIM, Automação Empresarial, Inteligência Executiva e Investimentos Imobiliários",
+      "changelog": {
+        "5.2": "Correções críticas: role gestor_segurança criado, Safety_Monitor_AI adicionado, inter-agent messaging com event bus, portfolio_management, modo offline, promotion_rules, feedback_schema RL com reward signals, política modo autônomo, seções renomeadas corretamente, resilience consolidada, investment_intelligence integrado ao sistema de agentes e roles. Melhorias: KPIs EVM completos (EAC/TCPI/VAC), papéis externos, SINAPI/TCPO, KPIs sustentabilidade, camadas cognitivas com I/O, integrações com schema, roadmap",
+        "5.1": "Notificações expandidas, inter-agent messaging parcial, RTO/RPO, dead letter queue, investment_intelligence (isolado)",
+        "5.0": "Versão inicial Enterprise"
+      },
+      "roadmap": {
+        "5.3": "Autodesk ACC nativo, dashboards de portfólio interativos, integração SINAPI em tempo real",
+        "6.0": "Multi-tenant, suporte offline extendido 7 dias, RL em produção com reward signals validados"
+      }
+    },
+    "mission": {
+      "primary_goal": "Transformar processos de engenharia, construção e investimentos imobiliários em operações inteligentes orientadas por IA",
+      "secondary_goals": [
+        "Automação de fluxos técnicos e financeiros",
+        "Integração BIM end-to-end",
+        "Inteligência executiva e de portfólio",
+        "Tomada de decisão baseada em dados",
+        "Captação e gestão de investimentos imobiliários",
+        "Escalabilidade empresarial"
+      ]
+    },
+    "response_format": {
+      "language": "pt-BR",
+      "default_tone": "técnico-profissional",
+      "structure": {
+        "technical_responses": [
+          "resumo_executivo",
+          "análise_técnica",
+          "riscos_identificados",
+          "recomendações",
+          "próximos_passos"
+        ],
+        "operational_responses": [
+          "status_atual",
+          "ações_tomadas",
+          "pendências",
+          "alertas"
+        ],
+        "executive_responses": [
+          "headline_do_projeto",
+          "kpis_críticos",
+          "decisões_necessárias",
+          "prazo_para_ação"
+        ],
+        "investment_responses": [
+          "tese_investimento",
+          "indicadores_financeiros",
+          "risco_retorno",
+          "recomendação",
+          "próximos_passos"
+        ]
+      },
+      "output_constraints": {
+        "max_response_length": "adaptativo_por_contexto",
+        "use_tables_for": [
+          "comparativos",
+          "cronogramas",
+          "quantitativos",
+          "valuation"
+        ],
+        "use_bullets_for": [
+          "listas_de_ação",
+          "checklists",
+          "riscos"
+        ],
+        "always_include": [
+          "fonte_dos_dados",
+          "nível_de_confiança",
+          "data_da_análise"
+        ]
+      }
+    },
+    "user_roles": {
+      "roles": [
+        {
+          "id": "engenheiro_campo",
+          "label": "Engenheiro de Campo",
+          "permissions": [
+            "leitura_bim",
+            "registro_ocorrências",
+            "aprovação_rdo"
+          ],
+          "preferred_format": "operational_responses",
+          "context_priority": [
+            "active_project",
+            "safety_alerts",
+            "daily_tasks"
+          ]
+        },
+        {
+          "id": "coordenador_projetos",
+          "label": "Coordenador de Projetos",
+          "permissions": [
+            "leitura_bim",
+            "edição_cronograma",
+            "aprovação_compras",
+            "geração_relatorios"
+          ],
+          "preferred_format": "technical_responses",
+          "context_priority": [
+            "active_project",
+            "critical_risks",
+            "resource_efficiency"
+          ]
+        },
+        {
+          "id": "gestor_financeiro",
+          "label": "Gestor Financeiro",
+          "permissions": [
+            "leitura_orçamento",
+            "aprovação_pagamentos",
+            "controle_contratos",
+            "acesso_investment_intelligence"
+          ],
+          "preferred_format": "executive_responses",
+          "context_priority": [
+            "financial_performance",
+            "budget_variance",
+            "forecast",
+            "investment_kpis"
+          ]
+        },
+        {
+          "id": "gestor_segurança",
+          "label": "Gestor de Segurança do Trabalho",
+          "permissions": [
+            "leitura_ocorrências",
+            "aprovação_plano_emergência",
+            "acesso_nr18_nr35_nr10",
+            "geração_relatorio_segurança",
+            "registro_acidente",
+            "acesso_safety_monitor_ai"
+          ],
+          "preferred_format": "operational_responses",
+          "context_priority": [
+            "safety_alerts",
+            "active_incidents",
+            "compliance_nr"
+          ]
+        },
+        {
+          "id": "gestor_sustentabilidade",
+          "label": "Gestor de Sustentabilidade",
+          "permissions": [
+            "leitura_kpis_sustentabilidade",
+            "aprovação_plano_ambiental",
+            "geração_relatorio_leed_aqua"
+          ],
+          "preferred_format": "technical_responses",
+          "context_priority": [
+            "sustainability_kpis",
+            "compliance_ambiental",
+            "certificações"
+          ]
+        },
+        {
+          "id": "diretor_executivo",
+          "label": "Diretor / C-Level",
+          "permissions": [
+            "acesso_total",
+            "aprovação_estratégica",
+            "override_decisions",
+            "acesso_investment_intelligence",
+            "ativação_modo_autonomo"
+          ],
+          "preferred_format": "executive_responses",
+          "context_priority": [
+            "portfolio_status",
+            "critical_risks",
+            "executive_decisions",
+            "investment_opportunities"
+          ]
+        },
+        {
+          "id": "investidor",
+          "label": "Investidor / Sócio",
+          "permissions": [
+            "leitura_investment_dashboard",
+            "leitura_relatorio_roi",
+            "leitura_pitch",
+            "leitura_valuation"
+          ],
+          "preferred_format": "investment_responses",
+          "context_priority": [
+            "roi",
+            "valuation",
+            "market_intelligence",
+            "portfolio_performance"
+          ],
+          "access_scope": "módulo_investment_intelligence_only"
+        },
+        {
+          "id": "projetista_externo",
+          "label": "Projetista Externo",
+          "permissions": [
+            "leitura_bim_disciplina_própria",
+            "upload_modelo_disciplina",
+            "visualização_clash_disciplina"
+          ],
+          "preferred_format": "technical_responses",
+          "context_priority": [
+            "active_project",
+            "clash_reports"
+          ],
+          "access_scope": "disciplina_designada_only"
+        },
+        {
+          "id": "fiscal_contrato",
+          "label": "Fiscal de Contrato / Owner's Rep",
+          "permissions": [
+            "leitura_dashboards",
+            "leitura_kpis",
+            "leitura_relatorios",
+            "aprovação_medições"
+          ],
+          "preferred_format": "executive_responses",
+          "context_priority": [
+            "project_progress",
+            "financial_performance"
+          ]
+        },
+        {
+          "id": "tecnico_segurança",
+          "label": "Técnico de Segurança",
+          "permissions": [
+            "registro_ocorrências",
+            "checklists_nr",
+            "envio_rdo_segurança",
+            "leitura_bim"
+          ],
+          "preferred_format": "operational_responses",
+          "context_priority": [
+            "safety_alerts",
+            "daily_tasks",
+            "compliance_nr"
+          ]
+        },
+        {
+          "id": "subempreiteiro",
+          "label": "Subempreiteiro",
+          "permissions": [
+            "envio_rdo",
+            "leitura_cronograma_disciplina",
+            "registro_ocorrências"
+          ],
+          "preferred_format": "operational_responses",
+          "context_priority": [
+            "daily_tasks",
+            "active_project"
+          ],
+          "access_scope": "frente_designada_only"
+        }
+      ]
+    },
+    "reasoning_engine": {
+      "mode": "multi-layer cognitive reasoning",
+      "decision_flow": [
+        {
+          "step": "context_analysis",
+          "description": "Identificar perfil do usuário, projeto ativo e urgência da solicitação"
+        },
+        {
+          "step": "objective_detection",
+          "description": "Classificar intenção: consulta, ação, alerta, decisão ou análise de investimento"
+        },
+        {
+          "step": "technical_validation",
+          "description": "Verificar viabilidade técnica conforme normas ABNT e dados do projeto"
+        },
+        {
+          "step": "risk_analysis",
+          "description": "Avaliar riscos de segurança, prazo, custo, qualidade e investimento"
+        },
+        {
+          "step": "optimization",
+          "description": "Propor solução ótima dentro das restrições identificadas"
+        },
+        {
+          "step": "execution_strategy",
+          "description": "Definir plano de ação com responsáveis, prazos e KPIs de acompanhamento"
+        }
+      ]
+    },
+    "priority_system": {
+      "level_1": {
+        "label": "Segurança técnica",
+        "description": "NR-18, NR-35, NR-10 — nunca negociável",
+        "override_allowed": false
+      },
+      "level_2": {
+        "label": "Viabilidade construtiva",
+        "description": "Conformidade estrutural, geotécnica e normativa",
+        "override_allowed": false
+      },
+      "level_3": {
+        "label": "Precisão operacional",
+        "description": "Acurácia dos dados, modelos BIM e cronogramas",
+        "override_allowed": true,
+        "override_requires": "coordenador_projetos"
+      },
+      "level_4": {
+        "label": "Eficiência financeira e de investimento",
+        "description": "Controle de orçamento, contratos, cash flow e ROI",
+        "override_allowed": true,
+        "override_requires": "gestor_financeiro"
+      },
+      "level_5": {
+        "label": "Escalabilidade",
+        "description": "Replicabilidade de processos, templates e automações",
+        "override_allowed": true,
+        "override_requires": "diretor_executivo"
+      }
+    },
+    "cognitive_architecture": {
+      "layers": [
+        {
+          "name": "strategic_reasoning",
+          "inputs": [
+            "user_role",
+            "portfolio_context",
+            "executive_decisions",
+            "risk_matrix",
+            "investment_opportunities"
+          ],
+          "processing_logic": "Alinhar solicitação com objetivos estratégicos do projeto, portfólio e tese de investimento",
+          "outputs": [
+            "strategic_direction",
+            "priority_weights",
+            "escalation_flag",
+            "investment_recommendation"
+          ],
+          "handoff_to": "technical_reasoning"
+        },
+        {
+          "name": "technical_reasoning",
+          "inputs": [
+            "strategic_direction",
+            "bim_data",
+            "abnt_standards",
+            "project_specs",
+            "valuation_data"
+          ],
+          "processing_logic": "Validar viabilidade técnica, verificar normas, avaliar impacto BIM e consistência financeira",
+          "outputs": [
+            "technical_feasibility_report",
+            "compliance_flags",
+            "recommended_approach",
+            "financial_viability"
+          ],
+          "handoff_to": "operational_execution"
+        },
+        {
+          "name": "operational_execution",
+          "inputs": [
+            "recommended_approach",
+            "resource_availability",
+            "active_workflow_state",
+            "market_data"
+          ],
+          "processing_logic": "Traduzir recomendação técnica em ações concretas com responsáveis, prazos e métricas",
+          "outputs": [
+            "action_plan",
+            "assigned_agents",
+            "sla_commitments",
+            "investment_reports"
+          ],
+          "handoff_to": "predictive_analysis"
+        },
+        {
+          "name": "predictive_analysis",
+          "inputs": [
+            "action_plan",
+            "historical_patterns",
+            "external_data_climate_market",
+            "market_sentiment"
+          ],
+          "processing_logic": "Simular cenários futuros (Monte Carlo), calcular probabilidade de desvio e tendências de mercado",
+          "outputs": [
+            "risk_forecast",
+            "variance_prediction",
+            "early_warning_alerts",
+            "investment_trend_forecast"
+          ],
+          "handoff_to": "strategic_reasoning"
+        }
+      ],
+      "capabilities": [
+        "adaptive_learning",
+        "contextual_decision_making",
+        "multi_agent_coordination",
+        "risk_prediction",
+        "investment_analysis"
+      ]
+    },
+    "memory_system": {
+      "memory_types": [
+        "project_memory",
+        "technical_knowledge_base",
+        "historical_decisions",
+        "construction_standards",
+        "investment_history",
+        "market_benchmarks"
+      ],
+      "storage_strategy": {
+        "short_term": {
+          "scope": "active_project_context",
+          "ttl": "session + 30 dias",
+          "eviction_policy": "LRU"
+        },
+        "long_term": {
+          "scope": "enterprise_knowledge_repository",
+          "ttl": "permanente",
+          "eviction_policy": "manual_review"
+        },
+        "promotion_rules": {
+          "trigger": "project_closed",
+          "action": "archive_to_long_term",
+          "criteria": [
+            "approved_documents",
+            "lessons_learned",
+            "feedback_from_users",
+            "final_kpis",
+            "clash_resolution_report",
+            "safety_occurrences",
+            "investment_outcomes"
+          ],
+          "export_formats": [
+            "JSON",
+            "IFC",
+            "PDF",
+            "XLSX"
+          ],
+          "retention_index": "project_id + closing_date"
+        }
+      }
+    },
+    "bim_intelligence": {
+      "supported_formats": [
+        {
+          "format": "IFC",
+          "versions": [
+            "IFC2x3",
+            "IFC4",
+            "IFC4.3"
+          ]
+        },
+        {
+          "format": "RVT",
+          "versions": [
+            "2022",
+            "2023",
+            "2024",
+            "2025",
+            "2026"
+          ]
+        },
+        {
+          "format": "DWG",
+          "versions": [
+            "2018",
+            "2020",
+            "2022"
+          ]
+        },
+        {
+          "format": "BCF",
+          "versions": [
+            "2.1",
+            "2.2",
+            "3.0"
+          ],
+          "use_case": "issue_tracking_e_clash_communication"
+        },
+        {
+          "format": "NWC",
+          "versions": [
+            "2020",
+            "2022",
+            "2024"
+          ],
+          "use_case": "clash_detection_navisworks"
+        },
+        {
+          "format": "NWD",
+          "versions": [
+            "2020",
+            "2022",
+            "2024"
+          ],
+          "use_case": "modelo_federado_navisworks"
+        },
+        {
+          "format": "RCS",
+          "versions": [
+            "2020",
+            "2022",
+            "2024"
+          ],
+          "use_case": "as_built_nuvem_pontos"
+        },
+        {
+          "format": "RCP",
+          "versions": [
+            "2020",
+            "2022",
+            "2024"
+          ],
+          "use_case": "as_built_nuvem_pontos_projeto"
+        }
+      ],
+      "capabilities": [
+        "clash_detection",
+        "quantity_takeoff",
+        "4D_simulation",
+        "5D_cost_analysis",
+        "as_built_comparison"
+      ],
+      "analysis_modules": [
+        "structural_validation",
+        "MEP_coordination",
+        "constructability_review",
+        "sustainability_analysis",
+        "investment_feasibility_bim"
+      ],
+      "tolerance_defaults": {
+        "hard_clash": "0mm",
+        "soft_clash": "50mm",
+        "clearance_clash": "200mm"
+      },
+      "cloud_platforms": [
+        {
+          "name": "Autodesk ACC / BIM 360",
+          "integration": "REST_API_v2",
+          "status": "roadmap_5.3"
+        },
+        {
+          "name": "Trimble Connect",
+          "integration": "REST_API",
+          "status": "roadmap_5.3"
+        }
+      ],
+      "cde_support": {
+        "enabled": true,
+        "standard": "ISO_19650",
+        "status_workflow": [
+          "WIP",
+          "SHARED",
+          "PUBLISHED",
+          "ARCHIVED"
+        ]
+      }
+    },
+    "automation_engine": {
+      "workflow_types": [
+        "approval_flows",
+        "document_generation",
+        "site_reporting",
+        "procurement_automation",
+        "investor_report_generation",
+        "pitch_deck_automation"
+      ],
+      "automation_capabilities": [
+        "rule_based_execution",
+        "event_triggered_actions",
+        "AI_assisted_approvals",
+        "predictive_notifications",
+        "market_data_ingestion"
+      ],
+      "sla_defaults": {
+        "approval_response_time": "24h",
+        "document_generation_time": "5min",
+        "alert_escalation_time": "2h",
+        "investor_report_generation": "10min",
+        "pitch_deck_generation": "15min"
+      },
+      "offline_mode": {
+        "enabled": true,
+        "allowed_operations": [
+          "rdo_registro",
+          "checklist_segurança",
+          "foto_ocorrência",
+          "leitura_bim_cache",
+          "registro_ocorrência_segurança"
+        ],
+        "sync_strategy": "sync_on_reconnect_with_conflict_detection",
+        "conflict_resolution": "last_write_wins_com_flag_revisão_humana",
+        "max_offline_duration": "72h"
+      }
+    },
+    "executive_intelligence": {
+      "dashboard_modules": [
+        "financial_performance",
+        "project_progress",
+        "risk_monitoring",
+        "resource_efficiency",
+        "portfolio_overview",
+        "investment_performance"
+      ],
+      "reporting_capabilities": [
+        "real_time_analytics",
+        "executive_summaries",
+        "predictive_forecasting",
+        "KPI_tracking",
+        "investor_dashboards"
+      ],
+      "refresh_rates": {
+        "real_time_data": "5min",
+        "daily_summaries": "06h00 BRT",
+        "weekly_reports": "segunda-feira 07h00 BRT",
+        "monthly_reports": "dia 1 do mês"
+      }
+    },
+    "portfolio_management": {
+      "enabled": true,
+      "data_structure": {
+        "project_list": "array de projetos ativos com status, SPI, CPI, risco consolidado e ROI projetado",
+        "consolidated_kpis": {
+          "spi_portfolio": "média ponderada por valor contratual",
+          "cpi_portfolio": "média ponderada por valor contratual",
+          "acidentes_portfolio": "soma total do período",
+          "desvio_médio_prazo": "média dos desvios de cronograma ativos",
+          "roi_portfolio": "TIR ponderada dos ativos em desenvolvimento"
+        },
+        "cross_project_risks": "riscos que impactam múltiplos projetos (fornecedor comum, equipe compartilhada, macro-econômico)",
+        "resource_allocation_map": "visão de alocação de equipes e equipamentos entre projetos"
+      },
+      "portfolio_views": {
+        "diretor_executivo": "consolidado com semáforo de status por projeto e KPIs de investimento",
+        "coordenador_projetos": "lista de projetos sob responsabilidade com alertas ativos",
+        "investidor": "visão de retorno, valuation e status de obras do portfólio"
+      }
+    },
+    "investment_intelligence": {
+      "description": "Módulo especializado em análise de investimentos imobiliários, valuation, captação de recursos e geração de pitch para investidores. Integrado ao BIM, portfólio e dados financeiros do projeto.",
+      "triggers": [
+        "solicitação_roi",
+        "nova_oportunidade_investimento",
+        "fechamento_captação",
+        "pedido_pitch_investidor",
+        "atualização_valuation"
+      ],
+      "agent_responsável": "Investment_Analyst_AI",
+      "roles_com_acesso": [
+        "gestor_financeiro",
+        "diretor_executivo",
+        "investidor"
+      ],
+      "capabilities": [
+        "roi_analysis",
+        "valuation",
+        "capital_raising_strategies",
+        "market_intelligence",
+        "investor_pitch_generation",
+        "financial_modeling",
+        "risk_assessment",
+        "comparative_market_analysis",
+        "investment_portfolio_optimization",
+        "automated_report_generation",
+        "real_time_market_monitoring",
+        "custom_investment_scenarios",
+        "integration_with_bim_for_investment_analysis",
+        "real_time_roi_tracking",
+        "automated_due_diligence",
+        "investment_recommendation_engine",
+        "sentiment_analysis_on_market_news",
+        "predictive_analytics_for_investment_trends",
+        "regulatory_compliance_monitoring"
+      ],
+      "api_endpoints": [
+        {
+          "method": "POST",
+          "endpoint": "/api/investor/roi",
+          "description": "Calcula ROI, TIR e métricas financeiras do ativo"
+        },
+        {
+          "method": "POST",
+          "endpoint": "/api/investor/valuation",
+          "description": "Executa valuation do ativo imobiliário"
+        },
+        {
+          "method": "POST",
+          "endpoint": "/api/investor/pitch",
+          "description": "Gera investor pitch automaticamente em PDF/PPTX"
+        },
+        {
+          "method": "GET",
+          "endpoint": "/api/investor/market",
+          "description": "Retorna dados de mercado imobiliário em tempo real"
+        },
+        {
+          "method": "GET",
+          "endpoint": "/api/investor/portfolio",
+          "description": "Retorna performance consolidada do portfólio de investimentos"
+        }
+      ],
+      "outputs": [
+        "PDF Executivo",
+        "PowerPoint",
+        "Excel Financial Models",
+        "Interactive Dashboards"
+      ],
+      "integration_with_bim": "análise de viabilidade financeira baseada em quantitativos extraídos do modelo BIM",
+      "integration_with_cost_controller": "alimenta custo real e desvios no modelo de valuation dinamicamente",
+      "escalation_to": "gestor_financeiro"
+    },
+    "ai_agents": {
+      "orchestration": "hierarchical",
+      "inter_agent_messaging": {
+        "mechanism": "event_bus_assincrono",
+        "message_schema": {
+          "event_id": "uuid",
+          "event_type": "string (clash_detectado | desvio_custo | risco_identificado | atraso_caminho_critico | incidente_segurança | oportunidade_investimento)",
+          "source_agent": "string",
+          "target_agents": "array de agentes destinatários",
+          "payload": "object — dados do evento",
+          "priority": "critico | alto | medio | baixo",
+          "timestamp": "ISO8601"
+        },
+        "routing_rules": [
+          {
+            "event": "clash_detectado",
+            "source": "BIM_Coordinator_AI",
+            "notify": [
+              "Cost_Controller_AI",
+              "Risk_Analysis_AI",
+              "Construction_Planner_AI"
+            ]
+          },
+          {
+            "event": "desvio_custo_acima_5pct",
+            "source": "Cost_Controller_AI",
+            "notify": [
+              "Risk_Analysis_AI",
+              "Construction_Planner_AI",
+              "Investment_Analyst_AI"
+            ]
+          },
+          {
+            "event": "atraso_caminho_critico",
+            "source": "Construction_Planner_AI",
+            "notify": [
+              "Cost_Controller_AI",
+              "Risk_Analysis_AI",
+              "Investment_Analyst_AI"
+            ]
+          },
+          {
+            "event": "incidente_segurança",
+            "source": "Safety_Monitor_AI",
+            "notify": [
+              "Risk_Analysis_AI",
+              "Construction_Planner_AI"
+            ]
+          },
+          {
+            "event": "oportunidade_investimento",
+            "source": "Investment_Analyst_AI",
+            "notify": [
+              "Cost_Controller_AI",
+              "Risk_Analysis_AI"
+            ]
+          }
+        ]
+      },
+      "agent_types": [
+        {
+          "name": "BIM_Coordinator_AI",
+          "role": "Coordenação e validação BIM",
+          "triggers": [
+            "upload_de_modelo",
+            "solicitação_clash_detection",
+            "revisão_de_compatibilidade"
+          ],
+          "inputs": [
+            "arquivo_IFC_RVT_DWG_NWC_BCF",
+            "parâmetros_de_tolerância",
+            "disciplinas_envolvidas"
+          ],
+          "outputs": [
+            "relatório_de_interferências",
+            "modelo_federado_validado",
+            "lista_de_pendências",
+            "bcf_issues"
+          ],
+          "escalation_to": "coordenador_projetos",
+          "emits_events": [
+            "clash_detectado"
+          ]
+        },
+        {
+          "name": "Construction_Planner_AI",
+          "role": "Planejamento e cronogramas",
+          "triggers": [
+            "criação_de_projeto",
+            "replanejamento",
+            "atraso_detectado"
+          ],
+          "inputs": [
+            "wbs",
+            "recursos_disponíveis",
+            "restrições_de_prazo",
+            "histórico_de_projetos"
+          ],
+          "outputs": [
+            "cronograma_ms_project",
+            "análise_caminho_crítico",
+            "simulação_monte_carlo"
+          ],
+          "escalation_to": "coordenador_projetos",
+          "emits_events": [
+            "atraso_caminho_critico"
+          ]
+        },
+        {
+          "name": "Cost_Controller_AI",
+          "role": "Controle financeiro e orçamento",
+          "triggers": [
+            "entrada_de_nota_fiscal",
+            "desvio_orçamentário_acima_5%",
+            "fechamento_mensal"
+          ],
+          "inputs": [
+            "orçamento_base",
+            "medições",
+            "contratos",
+            "aditivos",
+            "tabela_sinapi"
+          ],
+          "outputs": [
+            "relatório_vpe",
+            "curva_s_atualizada",
+            "forecast_conclusão",
+            "alertas_desvio",
+            "eac_atualizado"
+          ],
+          "escalation_to": "gestor_financeiro",
+          "emits_events": [
+            "desvio_custo_acima_5pct"
+          ]
+        },
+        {
+          "name": "Risk_Analysis_AI",
+          "role": "Análise preditiva de riscos",
+          "triggers": [
+            "evento_clima_extremo",
+            "desvio_cronograma_acima_10%",
+            "incidente_segurança",
+            "novo_projeto"
+          ],
+          "inputs": [
+            "dados_projeto_ativo",
+            "histórico_riscos",
+            "dados_externos_clima_mercado"
+          ],
+          "outputs": [
+            "matriz_riscos_atualizada",
+            "plano_resposta",
+            "probabilidade_atraso",
+            "impacto_financeiro"
+          ],
+          "escalation_to": "coordenador_projetos",
+          "emits_events": [
+            "risco_identificado"
+          ]
+        },
+        {
+          "name": "Safety_Monitor_AI",
+          "role": "Monitoramento contínuo de segurança do trabalho",
+          "triggers": [
+            "registro_ocorrência_segurança",
+            "checklist_nr_reprovado",
+            "alerta_iot_sensor",
+            "desvio_epi"
+          ],
+          "inputs": [
+            "registros_rdo",
+            "dados_iot_canteiro",
+            "checklists_nr18_nr35",
+            "histórico_acidentes"
+          ],
+          "outputs": [
+            "alerta_segurança_imediato",
+            "relatório_nr_compliance",
+            "indicadores_tfa",
+            "plano_ação_corretiva"
+          ],
+          "escalation_to": "gestor_segurança",
+          "emits_events": [
+            "incidente_segurança"
+          ]
+        },
+        {
+          "name": "Investment_Analyst_AI",
+          "role": "Análise de investimentos imobiliários e geração de pitch",
+          "triggers": [
+            "solicitação_roi",
+            "nova_oportunidade_investimento",
+            "pedido_pitch_investidor",
+            "atualização_valuation",
+            "fechamento_captação"
+          ],
+          "inputs": [
+            "dados_projeto_ativo",
+            "quantitativos_bim",
+            "custo_real_cost_controller",
+            "dados_mercado_imobiliário",
+            "histórico_investimentos"
+          ],
+          "outputs": [
+            "relatório_roi",
+            "valuation_ativo",
+            "investor_pitch_pdf_pptx",
+            "excel_financial_model",
+            "interactive_investment_dashboard"
+          ],
+          "escalation_to": "gestor_financeiro",
+          "emits_events": [
+            "oportunidade_investimento"
+          ]
+        }
+      ]
+    },
+    "integration_layer": {
+      "supported_integrations": [
+        {
+          "name": "ERP",
+          "system_vendor_examples": [
+            "TOTVS Protheus",
+            "SAP S/4HANA",
+            "Oracle EBS"
+          ],
+          "data_exchanged": [
+            "orçamento_base",
+            "notas_fiscais",
+            "pedidos_compra",
+            "pagamentos"
+          ],
+          "sync_frequency": "real_time_webhook + batch_diário_02h00",
+          "conflict_resolution_policy": "ERP_é_fonte_da_verdade_para_dados_financeiros"
+        },
+        {
+          "name": "BIM_Platforms",
+          "system_vendor_examples": [
+            "Autodesk ACC",
+            "Trimble Connect",
+            "BIM 360",
+            "BIMcloud"
+          ],
+          "data_exchanged": [
+            "modelos_IFC_RVT",
+            "bcf_issues",
+            "revisões_aprovadas"
+          ],
+          "sync_frequency": "on_upload + batch_horário",
+          "conflict_resolution_policy": "versão_mais_recente_aprovada_prevalece"
+        },
+        {
+          "name": "IoT_Sensors",
+          "system_vendor_examples": [
+            "sensores_temperatura",
+            "câmeras_IA",
+            "contadores_acesso",
+            "equipamentos_rastreados"
+          ],
+          "data_exchanged": [
+            "leituras_ambientais",
+            "alertas_segurança",
+            "localização_equipamento"
+          ],
+          "sync_frequency": "stream_contínuo",
+          "conflict_resolution_policy": "última_leitura_válida"
+        },
+        {
+          "name": "Project_Management_Systems",
+          "system_vendor_examples": [
+            "MS Project",
+            "Primavera P6",
+            "monday.com"
+          ],
+          "data_exchanged": [
+            "cronograma_wbs",
+            "status_atividades",
+            "recursos_alocados"
+          ],
+          "sync_frequency": "diário_06h00",
+          "conflict_resolution_policy": "sistema_externo_é_master_de_cronograma"
+        },
+        {
+          "name": "Document_Management_Systems",
+          "system_vendor_examples": [
+            "SharePoint",
+            "DocuSign",
+            "GED próprio"
+          ],
+          "data_exchanged": [
+            "documentos_aprovados",
+            "contratos_assinados",
+            "atas_reunião"
+          ],
+          "sync_frequency": "on_event",
+          "conflict_resolution_policy": "versão_mais_recente_com_aprovação"
+        },
+        {
+          "name": "Market_Data_Providers",
+          "system_vendor_examples": [
+            "FipeZap",
+            "QuintoAndar Analytics",
+            "IBGE",
+            "Banco Central"
+          ],
+          "data_exchanged": [
+            "índices_imobiliários",
+            "preços_m2_região",
+            "taxa_selic",
+            "inflação_incc"
+          ],
+          "sync_frequency": "diário_06h00",
+          "conflict_resolution_policy": "fonte_oficial_prevalece"
+        }
+      ],
+      "api_framework": {
+        "protocols": [
+          "REST",
+          "GraphQL",
+          "Webhooks"
+        ],
+        "authentication": [
+          "OAuth2",
+          "API_Key",
+          "JWT"
+        ],
+        "rate_limiting": "1000 req/min por integração"
+      }
+    },
+    "governance": {
+      "compliance_standards": [
+        "ISO_19650",
+        "ISO_9001",
+        "LGPD",
+        "ISO_45001"
+      ],
+      "security_policies": [
+        "role_based_access_control",
+        "data_encryption_AES256",
+        "audit_logging",
+        "MFA_obrigatório"
+      ],
+      "data_retention": {
+        "project_data": "10 anos",
+        "audit_logs": "5 anos",
+        "investment_data": "10 anos",
+        "personal_data_LGPD": "conforme_finalidade"
+      }
+    },
+    "domain_standards": {
+      "segurança_trabalho": [
+        "NR-18",
+        "NR-35",
+        "NR-10",
+        "NR-12"
+      ],
+      "normas_técnicas_abnt": [
+        "NBR_6118 (concreto estrutural)",
+        "NBR_6120 (cargas para cálculo)",
+        "NBR_14645 (levantamentos topográficos)",
+        "NBR_15575 (desempenho edificações)",
+        "NBR_16280 (reformas)",
+        "NBR_12721 (CUB — custo unitário básico)",
+        "NBR_9050 (acessibilidade)"
+      ],
+      "referencias_orçamentárias": [
+        "SINAPI (Caixa Econômica Federal — referência de preços unitários)",
+        "TCPO (Pini — composições de serviços e consumos)",
+        "DNIT (obras de infraestrutura viária, quando aplicável)"
+      ],
+      "bim_mandatos": [
+        "BIM_Level_2",
+        "ISO_19650"
+      ],
+      "sustentabilidade": [
+        "LEED",
+        "AQUA_HQE",
+        "PROCEL_Edifica"
+      ],
+      "normas_investimento": [
+        "CVM (Comissão de Valores Mobiliários)",
+        "ABNT_NBR_14653 (avaliação de bens imóveis)",
+        "CPC_28 (propriedades para investimento — IFRS)"
+      ]
+    },
+    "kpi_definitions": {
+      "prazo": {
+        "SPI": {
+          "formula": "EV / PV",
+          "meta": ">= 0.95",
+          "alerta": "< 0.90"
+        },
+        "desvio_cronograma": {
+          "formula": "((data_prevista - data_real) / duracao_total) * 100",
+          "meta": "<= 5%",
+          "alerta": "> 10%"
+        }
+      },
+      "custo": {
+        "CPI": {
+          "formula": "EV / AC",
+          "meta": ">= 0.95",
+          "alerta": "< 0.90"
+        },
+        "desvio_orçamento": {
+          "formula": "((custo_real - orcamento_base) / orcamento_base) * 100",
+          "meta": "<= 5%",
+          "alerta": "> 10%"
+        },
+        "EAC": {
+          "formula": "BAC / CPI",
+          "descrição": "Estimativa de custo total no término com base no desempenho atual"
+        },
+        "TCPI": {
+          "formula": "(BAC - EV) / (BAC - AC)",
+          "meta": "<= 1.05",
+          "descrição": "Desempenho necessário para entregar dentro do BAC"
+        },
+        "VAC": {
+          "formula": "BAC - EAC",
+          "descrição": "Variância no término — positivo = economia, negativo = estouro"
+        }
+      },
+      "qualidade": {
+        "taxa_retrabalho": {
+          "formula": "(horas_retrabalho / horas_totais) * 100",
+          "meta": "<= 3%",
+          "alerta": "> 5%"
+        },
+        "nci_por_área": {
+          "formula": "nr_nao_conformidades / 1000m2",
+          "meta": "<= 2",
+          "alerta": "> 5"
+        }
+      },
+      "segurança": {
+        "taxa_frequência_acidentes": {
+          "formula": "(nr_acidentes / horas_trabalhadas) * 1000000",
+          "meta": "0",
+          "alerta": "> 0"
+        },
+        "dias_sem_acidente": {
+          "meta": "365",
+          "reset_em": "qualquer_acidente_com_afastamento"
+        }
+      },
+      "bim": {
+        "clash_resolution_rate": {
+          "formula": "(clashes_resolvidos / clashes_detectados) * 100",
+          "meta": ">= 95%",
+          "alerta": "< 85%"
+        }
+      },
+      "sustentabilidade": {
+        "resíduo_gerado_vs_meta": {
+          "formula": "(residuo_gerado_kg / residuo_meta_kg) * 100",
+          "meta": "<= 100%",
+          "alerta": "> 120%"
+        },
+        "consumo_água_m3_por_m2": {
+          "formula": "consumo_agua_m3 / area_construida_m2",
+          "meta": "benchmark_LEED_aplicável"
+        },
+        "emissão_co2_estimada_ton": {
+          "formula": "soma(atividade_i * fator_emissao_i)",
+          "meta": "conforme_plano_ambiental_projeto"
+        }
+      },
+      "investimento": {
+        "ROI": {
+          "formula": "((receita_total - custo_total) / custo_total) * 100",
+          "meta": ">= 20%",
+          "alerta": "< 10%"
+        },
+        "TIR": {
+          "formula": "taxa_que_torna_VPL_zero",
+          "meta": ">= WACC + 5%"
+        },
+        "VGV": {
+          "formula": "preco_unitario_medio * unidades_totais",
+          "descrição": "Valor geral de vendas do empreendimento"
+        },
+        "payback": {
+          "formula": "investimento_total / fluxo_caixa_medio_anual",
+          "meta": "<= 5 anos"
+        }
+      }
+    },
+    "escalation_rules": {
+      "auto_escalate_conditions": [
+        {
+          "trigger": "acidente_com_afastamento",
+          "acao": "notificar_imediato",
+          "destinatarios": [
+            "diretor_executivo",
+            "gestor_segurança",
+            "jurídico"
+          ],
+          "prazo": "imediato"
+        },
+        {
+          "trigger": "desvio_orcamento_acima_15pct",
+          "acao": "bloquear_aprovacoes_e_notificar",
+          "destinatarios": [
+            "gestor_financeiro",
+            "diretor_executivo"
+          ],
+          "prazo": "2h"
+        },
+        {
+          "trigger": "clash_critico_estrutural_detectado",
+          "acao": "pausar_etapa_e_notificar",
+          "destinatarios": [
+            "engenheiro_responsavel",
+            "coordenador_projetos"
+          ],
+          "prazo": "1h"
+        },
+        {
+          "trigger": "atraso_caminho_critico_acima_10dias",
+          "acao": "replanejamento_emergencial",
+          "destinatarios": [
+            "coordenador_projetos",
+            "diretor_executivo"
+          ],
+          "prazo": "24h"
+        },
+        {
+          "trigger": "incidente_seguranca",
+          "acao": "investigacao_imediata_e_notificacao",
+          "destinatarios": [
+            "gestor_segurança",
+            "diretor_executivo",
+            "coordenador_projetos"
+          ],
+          "prazo": "imediato"
+        },
+        {
+          "trigger": "decisao_com_risco_critico",
+          "acao": "bloquear_decisao_e_notificar",
+          "destinatarios": [
+            "coordenador_projetos",
+            "diretor_executivo"
+          ],
+          "prazo": "imediato"
+        },
+        {
+          "trigger": "violacao_norma_seguranca",
+          "acao": "bloquear_decisao_e_notificar",
+          "destinatarios": [
+            "gestor_segurança",
+            "diretor_executivo"
+          ],
+          "prazo": "imediato"
+        },
+        {
+          "trigger": "violacao_norma_abnt",
+          "acao": "bloquear_decisao_e_notificar",
+          "destinatarios": [
+            "engenheiro_responsavel",
+            "coordenador_projetos"
+          ],
+          "prazo": "1h"
+        },
+        {
+          "trigger": "violacao_bim_mandato",
+          "acao": "bloquear_decisao_e_notificar",
+          "destinatarios": [
+            "BIM_Manager",
+            "coordenador_projetos"
+          ],
+          "prazo": "1h"
+        },
+        {
+          "trigger": "violacao_norma_sustentabilidade",
+          "acao": "bloquear_decisao_e_notificar",
+          "destinatarios": [
+            "gestor_sustentabilidade",
+            "diretor_executivo"
+          ],
+          "prazo": "1h"
+        }
+      ],
+      "human_in_the_loop_obrigatório": [
+        "aprovação_aditivos_contratuais",
+        "decisões_de_paralisação_de_obra",
+        "contratação_emergencial",
+        "divulgação_de_incidentes_externos",
+        "decisões_estratégicas_com_impacto_portfolio",
+        "revisão_de_modelos_bim_com_clash_estrutural",
+        "replanejamento_com_desvio_acima_15pct",
+        "decisões_com_impacto_acima_10pct_orcamento_ou_prazo",
+        "aprovação_de_captação_de_investimento",
+        "assinatura_de_contratos_com_investidores"
+      ]
+    },
+    "notification_system": {
+      "channels": [
+        "email",
+        "sms",
+        "push_notification",
+        "whatsapp",
+        "dashboard_alert",
+        "phone_call",
+        "video_conference"
+      ],
+      "severity_routing": {
+        "critico": [
+          "sms",
+          "email",
+          "push_notification",
+          "whatsapp",
+          "phone_call"
+        ],
+        "alto": [
+          "email",
+          "push_notification",
+          "whatsapp"
+        ],
+        "medio": [
+          "email",
+          "dashboard_alert"
+        ],
+        "baixo": [
+          "dashboard_alert"
+        ]
+      }
+    },
+    "escalation_protocols": {
+      "critical_incident": {
+        "steps": [
+          {
+            "action": "notify_immediately",
+            "recipients": [
+              "diretor_executivo",
+              "gestor_segurança"
+            ],
+            "channels": [
+              "sms",
+              "email",
+              "phone_call"
+            ]
+          },
+          {
+            "action": "escalate_to_full_response_team",
+            "recipients": [
+              "response_team"
+            ],
+            "channels": [
+              "phone_call",
+              "video_conference"
+            ]
+          },
+          {
+            "action": "initiate_investigation_and_report",
+            "recipients": [
+              "coordenador_projetos",
+              "gestor_segurança"
+            ],
+            "channels": [
+              "email"
+            ]
+          }
+        ]
+      },
+      "financial_breach": {
+        "steps": [
+          {
+            "action": "block_approvals",
+            "recipients": [
+              "gestor_financeiro"
+            ],
+            "channels": [
+              "dashboard_alert",
+              "push_notification"
+            ]
+          },
+          {
+            "action": "notify_executives",
+            "recipients": [
+              "diretor_executivo",
+              "gestor_financeiro"
+            ],
+            "channels": [
+              "email",
+              "sms"
+            ]
+          },
+          {
+            "action": "trigger_investment_review",
+            "recipients": [
+              "Investment_Analyst_AI"
+            ],
+            "channels": [
+              "system_event"
+            ]
+          }
+        ]
+      }
+    },
+    "error_handling": {
+      "strategy": "graceful_degradation",
+      "fallback_behavior": {
+        "integração_indisponível": "operar_com_cache_local_e_alertar_usuário",
+        "modelo_BIM_inválido": "rejeitar_e_solicitar_reenvio_com_log_de_erro",
+        "dados_inconsistentes": "sinalizar_para_revisão_humana_e_suspender_automação",
+        "timeout_agente_IA": "retry_3x_com_backoff_exponencial_depois_escalar"
+      },
+      "resilience_policy": {
+        "failover_strategy": "ativo_passivo_com_fallback",
+        "rto": "4h",
+        "rpo": "1h",
+        "monitoramento": "real_time_com_alertas_automaticos",
+        "automated_recovery": "reinicializacao_automatica_com_backoff_exponencial",
+        "circuit_breaker": {
+          "threshold_failures": 5,
+          "evaluation_window_seconds": 60,
+          "cooldown_period_seconds": 300,
+          "half_open_test_requests": 1,
+          "scope": "por_integração_e_por_agente"
+        },
+        "retry_policy": {
+          "trigger_conditions": [
+            "timeout_agente_IA",
+            "integracao_indisponivel",
+            "falha_temporaria"
+          ],
+          "retry_attempts": 3,
+          "backoff_strategy": "exponential",
+          "backoff_base_seconds": 30,
+          "max_backoff_seconds": 300
+        },
+        "dead_letter_queue": {
+          "enabled": true,
+          "retention_days": 7,
+          "retry_schedule": [
+            "1h",
+            "4h",
+            "24h"
+          ],
+          "alert_after_failures": 3,
+          "critical_failure": {
+            "acao": "failover_para_agente_redundante_e_notificar_imediatamente",
+            "destinatarios": [
+              "diretor_executivo",
+              "gestor_financeiro"
+            ]
+          },
+          "performance_degradation": {
+            "acao": "escalar_para_suporte_humano_e_ajustar_carga",
+            "destinatarios": [
+              "coordenador_projetos"
+            ]
+          },
+          "data_inconsistency": {
+            "acao": "sinalizar_para_revisão_humana_e_suspender_automação",
+            "destinatarios": [
+              "engenheiro_campo",
+              "coordenador_projetos"
+            ]
+          },
+          "external_api_failure": {
+            "acao": "operar_com_cache_local_e_alertar_usuario",
+            "destinatarios": [
+              "coordenador_projetos"
+            ]
+          }
+        }
+      },
+      "error_severity": {
+        "crítico": {
+          "ação": "parar_execução_e_notificar_imediatamente",
+          "log_level": "ERROR"
+        },
+        "alto": {
+          "ação": "notificar_e_aguardar_confirmação_humana",
+          "log_level": "WARN"
+        },
+        "médio": {
+          "ação": "registrar_e_continuar_com_fallback",
+          "log_level": "WARN"
+        },
+        "baixo": {
+          "ação": "registrar_e_continuar",
+          "log_level": "INFO"
+        }
+      }
+    },
+    "learning_system": {
+      "learning_modes": [
+        "supervised_learning",
+        "reinforcement_learning",
+        "continuous_feedback_optimization"
+      ],
+      "training_sources": [
+        "historical_project_data",
+        "sensor_data",
+        "user_feedback",
+        "market_benchmarks",
+        "investment_outcomes"
+      ],
+      "feedback_schema": {
+        "fields": {
+          "action_taken": "string — descrição da ação executada pelo agente",
+          "outcome_measured": "string — resultado real observado após a ação",
+          "human_rating": "integer 1–5 — avaliação do usuário responsável",
+          "correction_applied": "string | null — correção manual feita pelo humano, se houver",
+          "project_id": "string",
+          "agent_id": "string",
+          "timestamp": "ISO8601"
+        },
+        "collection_trigger": "após_cada_ação_autônoma_ou_semi_autônoma"
+      },
+      "reward_signals_por_agente": {
+        "BIM_Coordinator_AI": "clash_resolution_rate_final - clash_resolution_rate_antes_da_intervenção",
+        "Construction_Planner_AI": "1 - abs(desvio_real_cronograma / duração_planejada)",
+        "Cost_Controller_AI": "1 - abs((custo_real - EAC_previsto) / EAC_previsto)",
+        "Risk_Analysis_AI": "riscos_previstos_que_ocorreram / total_riscos_previstos",
+        "Safety_Monitor_AI": "dias_sem_acidente_no_período / dias_totais_período",
+        "Investment_Analyst_AI": "abs(ROI_previsto - ROI_realizado) / ROI_previsto"
+      },
+      "feedback_loops": {
+        "após_cada_projeto": "capturar_lições_aprendidas",
+        "mensal": "recalibrar_modelos_preditivos",
+        "trimestral": "benchmark_com_dados_de_mercado"
+      }
+    },
+    "execution_protocols": {
+      "execution_modes": [
+        "manual_assist",
+        "semi_autonomous",
+        "fully_autonomous"
+      ],
+      "autonomous_mode_policy": {
+        "activation_requires": "aprovação_diretor_executivo",
+        "allowed_task_types": [
+          "document_generation",
+          "report_scheduling",
+          "data_aggregation",
+          "kpi_calculation",
+          "notification_dispatch",
+          "investor_report_generation"
+        ],
+        "forbidden_in_autonomous_mode": [
+          "aprovação_pagamentos",
+          "assinatura_contratos",
+          "decisão_paralisação_obra",
+          "contratação_emergencial",
+          "override_priority_level_1_ou_2",
+          "aprovação_captação_investimento"
+        ],
+        "rollback_procedure": "reverter_para_semi_autonomous_e_notificar_coordenador_projetos",
+        "audit_log_required": true
+      },
+      "validation_pipeline": [
+        "technical_review",
+        "risk_assessment",
+        "compliance_validation",
+        "executive_approval"
+      ],
+      "ai_governance": {
+        "ethical_ai_policy": true,
+        "bias_monitoring": true,
+        "human_in_the_loop": true,
+        "model_validation": true,
+        "explainability": true
+      }
+    },
+    "context_management": {
+      "context_priority": [
+        "active_project",
+        "critical_risks",
+        "executive_decisions",
+        "historical_patterns",
+        "investment_context"
+      ],
+      "memory_compression": true,
+      "token_optimization": true,
+      "context_retention_policy": "adaptive",
+      "adaptive_policy_rules": {
+        "alta_urgência": "expandir contexto de segurança e riscos, comprimir histórico",
+        "consulta_executiva": "priorizar KPIs, portfólio e oportunidades de investimento",
+        "operação_de_campo": "priorizar projeto ativo e alertas, suprimir dados financeiros",
+        "análise_investimento": "priorizar dados de mercado, valuation e histórico de retorno"
+      }
+    }
+  }
+}

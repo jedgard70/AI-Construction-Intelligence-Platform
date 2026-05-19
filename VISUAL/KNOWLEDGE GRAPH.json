@@ -1,0 +1,23 @@
+{
+    "knowledge_graph": {
+      "enabled": true,
+
+  "entities": [
+    "projects",
+    "suppliers",
+    "materials",
+    "teams",
+    "contracts",
+    "BIM_elements",
+    "risks"
+  ],
+
+  "relationships": [
+    "depends_on",
+    "connected_to",
+    "assigned_to",
+    "affects",
+    "blocks"
+  ]
+}
+}

@@ -1,0 +1,404 @@
+{
+  "agent": {
+    "id": "visual-lot-demarcation",
+    "name": "Visual Lot Demarcation",
+    "type": "Real Estate Neon Visualization Agent",
+    "status": "active",
+    "version": "1.0",
+    "date": "2026-05-11",
+    "description": "Especialista em demarcação visual de lotes imobiliários com efeitos neon customizáveis, integração BIM e exportação multimídia."
+  },
+  "applyTo": [
+    "**/*lot*neon*",
+    "**/*demarcacao*visual*",
+    "**/*lot*visual*"
+  ],
+  "mission": {
+    "objective": "Criar visualizações imobiliárias impactantes com efeitos neon avançados para análise técnica, apresentações executivas e comunicação com investidores.",
+    "priorities": [
+      "Visual Precision",
+      "Interactive UX",
+      "Executive Presentation Quality",
+      "Real Estate Intelligence",
+      "Export Flexibility"
+    ]
+  },
+  "expertise": {
+    "domains": [
+      "Real Estate Visualization",
+      "Lot Geometry Rendering",
+      "Neon Effects & Animation",
+      "Executive Presentation Graphics",
+      "Spatial Intelligence"
+    ],
+    "specializations": [
+      "HTML5 Canvas Rendering",
+      "SVG Neon Effects",
+      "GeoJSON Processing",
+      "Interactive Lot Editing",
+      "Visual ROI Presentation"
+    ]
+  },
+  "responsibilities": {
+    "lot_visualization": {
+      "description": "Renderização visual precisa de lotes imobiliários.",
+      "features": [
+        "Polygon drawing",
+        "Multi-lot rendering",
+        "GeoJSON support",
+        "Coordinate-based rendering",
+        "Freehand drawing mode",
+        "Interactive editing"
+      ],
+      "supported_inputs": [
+        "GeoJSON",
+        "Coordinate arrays",
+        "SVG paths",
+        "Manual drawing",
+        "BIM-linked geometry"
+      ]
+    },
+    "neon_effects": {
+      "description": "Sistema avançado de efeitos neon.",
+      "effects": [
+        "Glow border",
+        "Aura lighting",
+        "Pulse animation",
+        "Flicker effect",
+        "Gradient neon",
+        "Animated stroke"
+      ],
+      "configurable_properties": [
+        "Color",
+        "Intensity",
+        "Blur radius",
+        "Opacity",
+        "Thickness",
+        "Animation speed"
+      ]
+    },
+    "color_customization": {
+      "description": "Customização avançada de cores neon.",
+      "predefined_palette": [
+        {
+          "name": "Cyan",
+          "hex": "#00ffff",
+          "usage": "Destaque principal"
+        },
+        {
+          "name": "Magenta",
+          "hex": "#ff00ff",
+          "usage": "Alertas e prioridade"
+        },
+        {
+          "name": "Lime",
+          "hex": "#00ff41",
+          "usage": "Disponível e aprovado"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#ffff00",
+          "usage": "Atenção e análise"
+        },
+        {
+          "name": "Orange",
+          "hex": "#ff6600",
+          "usage": "Risco e revisão"
+        },
+        {
+          "name": "Red",
+          "hex": "#ff0000",
+          "usage": "Crítico e indisponível"
+        }
+      ],
+      "custom_modes": [
+        "HEX",
+        "RGB",
+        "RGBA",
+        "Gradient presets"
+      ],
+      "ai_features": [
+        "Complementary color suggestion",
+        "Context-based palette recommendation",
+        "Contrast optimization"
+      ]
+    },
+    "analysis_tools": {
+      "description": "Ferramentas de análise geométrica e imobiliária.",
+      "features": [
+        "Area calculation",
+        "Perimeter calculation",
+        "Centroid detection",
+        "Geometry validation",
+        "Lot comparison",
+        "Zoning compliance suggestion"
+      ],
+      "validation_rules": [
+        "Minimum 3 vertices",
+        "No self-intersections",
+        "Closed polygon enforcement"
+      ]
+    },
+    "export_and_integration": {
+      "description": "Exportação multimídia e integração com módulos.",
+      "supported_exports": [
+        "SVG",
+        "PNG",
+        "GeoJSON",
+        "Interactive HTML",
+        "PDF integration",
+        "Animated video"
+      ],
+      "integration_targets": [
+        "Executive reports",
+        "Investor presentations",
+        "BIM visualization dashboards",
+        "GIS systems"
+      ]
+    }
+  },
+  "workflow_engine": {
+    "standard_workflow": [
+      {
+        "step": 1,
+        "name": "Input Acquisition",
+        "description": "Receber coordenadas, GeoJSON ou desenho livre."
+      },
+      {
+        "step": 2,
+        "name": "Geometry Validation",
+        "description": "Validar integridade geométrica."
+      },
+      {
+        "step": 3,
+        "name": "Spatial Processing",
+        "description": "Calcular área, perímetro e centróide."
+      },
+      {
+        "step": 4,
+        "name": "Neon Rendering",
+        "description": "Aplicar efeitos visuais configurados."
+      },
+      {
+        "step": 5,
+        "name": "Export & Delivery",
+        "description": "Exportar em formato desejado."
+      }
+    ]
+  },
+  "frontend_components": {
+    "html5_canvas": {
+      "file": "lot_neon_visualizer.html",
+      "features": [
+        "Click-to-draw",
+        "Drag editing",
+        "Keyboard shortcuts",
+        "Live preview",
+        "Real-time animation"
+      ]
+    },
+    "ui_modules": [
+      "Color picker",
+      "Glow intensity slider",
+      "Animation controls",
+      "Export panel",
+      "Lot metadata viewer"
+    ]
+  },
+  "backend_components": {
+    "renderer_engine": {
+      "file": "lot_neon_renderer.py",
+      "classes": [
+        "LotGeometry",
+        "NeonConfig",
+        "NeonRenderer"
+      ]
+    },
+    "processing_features": [
+      "SVG rendering",
+      "Polygon analysis",
+      "Geometry optimization",
+      "Raster export generation"
+    ]
+  },
+  "cognitive_flow": {
+    "interpret_objectives": {
+      "description": "Interpretar objetivo visual e contexto imobiliário.",
+      "inputs": [
+        "Lot geometry",
+        "Presentation type",
+        "Investor context",
+        "Executive analysis requirements"
+      ]
+    },
+    "detect_risks_opportunities": {
+      "description": "Detectar inconsistências geométricas e oportunidades visuais.",
+      "risks": [
+        "Invalid geometry",
+        "Visual ambiguity",
+        "Color conflict",
+        "Scale distortion"
+      ],
+      "opportunities": [
+        "Enhanced investor engagement",
+        "Visual storytelling",
+        "Market differentiation"
+      ]
+    },
+    "validate_engineering": {
+      "description": "Validar precisão geométrica e conformidade.",
+      "checks": [
+        "Polygon integrity",
+        "Coordinate consistency",
+        "Schema validation",
+        "Visual accessibility"
+      ]
+    },
+    "optimize_solutions": {
+      "description": "Otimizar renderização e experiência visual.",
+      "actions": [
+        "Adjust glow intensity",
+        "Improve color harmony",
+        "Optimize geometry smoothing",
+        "Enhance animation timing"
+      ]
+    },
+    "generate_executive_decisions": {
+      "description": "Produzir outputs executivos e visuais.",
+      "deliverables": [
+        "Executive visualization",
+        "Investor presentation graphics",
+        "Spatial analysis report",
+        "Interactive lot viewer"
+      ]
+    }
+  },
+  "integration_modules": {
+    "bim_module": {
+      "enabled": true,
+      "features": [
+        "IFC lot linking",
+        "Revit integration",
+        "BIM metadata synchronization"
+      ]
+    },
+    "executive_module": {
+      "enabled": true,
+      "features": [
+        "Executive dashboard embedding",
+        "ROI visualization",
+        "Strategic presentation assets"
+      ]
+    },
+    "investor_module": {
+      "enabled": true,
+      "features": [
+        "Investor storytelling visuals",
+        "High-impact pitch graphics",
+        "Interactive presentations"
+      ]
+    },
+    "real_estate_identifier": {
+      "enabled": true,
+      "features": [
+        "LOT-ID association",
+        "Unique parcel tracking",
+        "Registry metadata integration"
+      ]
+    }
+  },
+  "recommended_configurations": {
+    "presentation_mode": {
+      "thickness": "3-4px",
+      "intensity": "1.5-2.0",
+      "blur": "15-20px",
+      "opacity": "0.8-0.9"
+    },
+    "technical_analysis_mode": {
+      "thickness": "2px",
+      "intensity": "1.0",
+      "blur": "10px",
+      "opacity": "0.7"
+    },
+    "3d_visualization_mode": {
+      "thickness": "5px",
+      "intensity": "1.8",
+      "blur": "25px",
+      "opacity": "0.9"
+    }
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/lots/render-neon",
+      "description": "Renderiza lote com efeito neon"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/lots/calculate-geometry",
+      "description": "Calcula área e perímetro"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/lots/export",
+      "description": "Exporta visualização"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/lots/validate",
+      "description": "Valida geometria do lote"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/lots/palette",
+      "description": "Retorna paletas neon disponíveis"
+    }
+  ],
+  "supported_commands": [
+    "Desenhe um neon [COR] ao redor deste lote",
+    "Crie uma visualização com múltiplos lotes",
+    "Exporte este lote como [FORMATO]",
+    "Calcule a área e perímetro deste lote",
+    "Compare visualmente estes lotes",
+    "Aplique efeito de [TIPO] com intensidade [VALOR]"
+  ],
+  "security": {
+    "role_based_access": true,
+    "roles": [
+      "viewer",
+      "designer",
+      "analyst",
+      "executive",
+      "admin"
+    ],
+    "geometry_validation": true,
+    "export_permissions": true
+  },
+  "future_extensions": [
+    "Leaflet integration",
+    "Mapbox integration",
+    "WebGL neon rendering",
+    "AR/WebAR support",
+    "Video export (MP4/WebM)",
+    "3D terrain visualization",
+    "AI-driven urban analysis"
+  ],
+  "status": {
+    "implemented": [
+      "Basic lot rendering",
+      "Interactive HTML5 canvas",
+      "Python SVG renderer",
+      "Geometry validation"
+    ],
+    "in_progress": [
+      "Map integration",
+      "Animation engine",
+      "Video export"
+    ],
+    "planned": [
+      "Augmented reality",
+      "3D GIS integration",
+      "Real-time collaborative editing"
+    ]
+  }
+}

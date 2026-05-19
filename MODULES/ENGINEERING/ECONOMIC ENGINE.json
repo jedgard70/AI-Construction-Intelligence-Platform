@@ -1,0 +1,18 @@
+{
+  "economic_engine": {
+  "financial_capabilities": [
+    "ROI_simulation",
+    "cashflow_prediction",
+    "CAPEX_analysis",
+    "OPEX_optimization",
+    "investment_feasibility",
+    "market_comparison"
+  ],
+
+  "forecasting_models": [
+    "construction_cost_prediction",
+    "inflation_impact_analysis",
+    "risk_adjusted_profitability"
+  ]
+}
+}

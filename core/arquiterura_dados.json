@@ -1,0 +1,16 @@
+{
+    "data_architecture": {
+  "storage_layers": [
+    "structured_database",
+    "vector_database",
+    "document_repository",
+    "real_time_streams"
+  ],
+
+  "retrieval_system": {
+    "mode": "RAG",
+    "embedding_model": "text-embedding-3-large",
+    "semantic_search": true
+  }
+}
+}

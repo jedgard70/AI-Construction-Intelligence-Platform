@@ -1,0 +1,261 @@
+{
+  "system_name": "Visual Intelligence Engine",
+  "version": "1.0",
+  "status": "Active",
+  "domain": [
+    "Real Estate Visualization",
+    "BIM Intelligence",
+    "Cinematic Rendering",
+    "AI Prompt Engineering",
+    "Visual Storytelling"
+  ],
+  "mission": {
+    "primary": "Integrar renderização avançada com Autodesk Revit, BIM metadata e engines de AI visual para geração de visualizações cinematográficas de alta valorização imobiliária.",
+    "secondary": [
+      "Automatizar workflows de render premium",
+      "Gerar prompts cinematográficos para AI",
+      "Conectar BIM + storytelling visual",
+      "Criar apresentações executivas de alto impacto"
+    ]
+  },
+  "core_modules": {
+    "visual_lot_demarcation": {
+      "description": "Sistema de demarcação visual de lotes com neon effects.",
+      "features": [
+        "Neon border",
+        "Glow effects",
+        "Pulse animation",
+        "Gradient effects",
+        "Interactive HTML5 canvas",
+        "SVG export",
+        "GeoJSON support",
+        "Multi-lot rendering"
+      ],
+      "supported_colors": {
+        "mode": "Unlimited RGB",
+        "format": "#RRGGBB",
+        "examples": [
+          "#00ffff",
+          "#ff00ff",
+          "#00ff41",
+          "#ff6600",
+          "#ffffff",
+          "#000000"
+        ]
+      },
+      "render_outputs": [
+        "SVG",
+        "PNG",
+        "JSON",
+        "HTML Interactive"
+      ]
+    },
+    "cinematic_rendering_engine": {
+      "description": "Pipeline de renderização cinematográfica integrada com Revit e BIM.",
+      "responsibilities": [
+        "PBR material mapping",
+        "Lighting setup",
+        "Camera positioning",
+        "Photorealistic rendering",
+        "Post-processing",
+        "Animation generation"
+      ],
+      "supported_render_engines": [
+        "Autodesk Revit Renderer",
+        "Enscape",
+        "V-Ray",
+        "Lumion",
+        "Twinmotion",
+        "Blender Cycles"
+      ],
+      "output_quality": {
+        "images": "4K/8K photorealistic",
+        "animations": "Cinematic walkthroughs",
+        "formats": [
+          "PNG",
+          "JPG",
+          "EXR",
+          "MP4",
+          "WebM"
+        ]
+      }
+    },
+    "ai_prompt_generation": {
+      "description": "Gerador de prompts cinematográficos para IA visual.",
+      "supported_platforms": [
+        "Midjourney",
+        "Flux",
+        "Leonardo AI",
+        "Stable Diffusion",
+        "DALL-E"
+      ],
+      "prompt_categories": [
+        "Luxury real estate",
+        "Architectural visualization",
+        "Cinematic interiors",
+        "Urban storytelling",
+        "Investor presentation renders",
+        "Night neon scenes",
+        "Modern tropical architecture",
+        "Executive pitch visuals"
+      ],
+      "prompt_structure": {
+        "scene_description": true,
+        "camera_lens": true,
+        "lighting_conditions": true,
+        "materials": true,
+        "mood": true,
+        "render_engine_style": true,
+        "post_processing": true
+      }
+    }
+  },
+  "cinematic_visual_strategy": {
+    "visual_goals": [
+      "Valorização imobiliária",
+      "Impacto emocional",
+      "Storytelling visual",
+      "Apresentações premium",
+      "Conversão comercial"
+    ],
+    "cinematic_styles": [
+      "Luxury Modern",
+      "Neo Futurism",
+      "Minimalist Premium",
+      "Cyber Real Estate",
+      "Architectural Editorial",
+      "Ultra Photorealistic",
+      "Golden Hour Luxury",
+      "Night Neon Atmosphere"
+    ],
+    "camera_presets": [
+      {
+        "name": "Investor Hero Shot",
+        "lens": "24mm",
+        "style": "Wide cinematic aerial"
+      },
+      {
+        "name": "Luxury Interior",
+        "lens": "35mm",
+        "style": "Warm editorial realism"
+      },
+      {
+        "name": "Architectural Detail",
+        "lens": "85mm",
+        "style": "Shallow depth premium"
+      },
+      {
+        "name": "Urban Night Neon",
+        "lens": "50mm",
+        "style": "Cyberpunk real estate"
+      }
+    ]
+  },
+  "revit_integration": {
+    "schema_source": "bim_schema_v7.json",
+    "metadata_mapping": {
+      "materials": "PBR materials",
+      "lighting": "Intensity, direction, color temperature",
+      "cameras": "Saved cinematic views",
+      "geometry": "BIM element extraction"
+    },
+    "automation_features": [
+      "Automatic material assignment",
+      "Auto lighting optimization",
+      "Scene presets",
+      "Camera path generation",
+      "Render queue automation"
+    ]
+  },
+  "real_estate_visualization": {
+    "property_highlight_features": [
+      "Luxury material emphasis",
+      "Natural light enhancement",
+      "Spatial perception optimization",
+      "Premium landscaping visualization",
+      "Night luxury mood",
+      "Architectural glow accents"
+    ],
+    "status_color_mapping": {
+      "available": "#00ff41",
+      "analysis": "#ffff00",
+      "sold": "#ff0000",
+      "premium": "#00ffff",
+      "vip": "#ff00ff"
+    }
+  },
+  "prompt_examples": {
+    "midjourney": {
+      "luxury_exterior": "/imagine ultra realistic luxury residential tower, cinematic golden hour lighting, premium glass facade, wet reflective pavement, volumetric light, aerial drone perspective, architectural photography, unreal engine quality, 8k, hyper detailed --ar 16:9 --stylize 250",
+      "neon_lot": "/imagine futuristic real estate lot demarcation with cyan neon borders, dark urban environment, glowing architectural lines, cinematic atmosphere, premium investor presentation style, cyber-real-estate aesthetic --ar 16:9"
+    },
+    "flux": {
+      "executive_render": "Photorealistic executive architectural render of a premium mixed-use development, luxury materials, dramatic cinematic lighting, realistic reflections, modern landscaping, investor presentation quality, ultra detailed"
+    },
+    "leonardo": {
+      "urban_storytelling": "Modern luxury urban development at night with neon accents, cinematic camera angle, high-end architectural storytelling, photorealistic materials, volumetric fog, premium real estate branding aesthetic"
+    }
+  },
+  "workflow": [
+    {
+      "step": 1,
+      "name": "BIM Import",
+      "description": "Importar modelo Revit/IFC e metadados visuais."
+    },
+    {
+      "step": 2,
+      "name": "Scene Preparation",
+      "description": "Aplicar materiais, iluminação e presets."
+    },
+    {
+      "step": 3,
+      "name": "Cinematic Composition",
+      "description": "Configurar câmeras e storytelling visual."
+    },
+    {
+      "step": 4,
+      "name": "Rendering",
+      "description": "Executar render em engine escolhida."
+    },
+    {
+      "step": 5,
+      "name": "AI Prompt Generation",
+      "description": "Gerar prompts automáticos para Midjourney/Flux."
+    },
+    {
+      "step": 6,
+      "name": "Export",
+      "description": "Exportar imagens, vídeos e assets executivos."
+    }
+  ],
+  "integration_targets": [
+    "Autodesk Revit",
+    "IFC BIM Models",
+    "Leaflet",
+    "Mapbox",
+    "Three.js",
+    "Blender",
+    "Power BI",
+    "Executive Dashboards",
+    "Investor Presentation Systems"
+  ],
+  "future_roadmap": [
+    "AI cinematic storyboard generation",
+    "Automatic luxury scene enhancement",
+    "WebAR property visualization",
+    "Interactive investor walkthroughs",
+    "Procedural environmental storytelling",
+    "Real-time Unreal Engine sync",
+    "Voice-controlled render orchestration"
+  ],
+  "system_status": {
+    "neon_visualization": true,
+    "cinematic_rendering": true,
+    "ai_prompt_generation": true,
+    "revit_integration": true,
+    "svg_export": true,
+    "4k_render_support": true,
+    "multi_engine_support": true,
+    "interactive_visualization": true
+  }
+}

@@ -1,0 +1,274 @@
+{
+  "mode": "MODE_INVESTOR",
+  "module": "Investor Intelligence",
+  "objective": "Fornecer análises financeiras, valuation imobiliário, indicadores de retorno e geração de narrativas executivas para investidores e captação de recursos.",
+  "target_users": [
+    "Investidores Imobiliários",
+    "Fundos de Investimento",
+    "Executivos",
+    "Desenvolvedores Imobiliários",
+    "Family Offices",
+    "Instituições Financeiras"
+  ],
+  "core_capabilities": {
+    "roi_analysis": {
+      "description": "Análise de retorno financeiro e viabilidade do empreendimento.",
+      "metrics": [
+        "ROI",
+        "TIR",
+        "VPL",
+        "Payback",
+        "Margem EBITDA",
+        "Fluxo de Caixa Descontado"
+      ],
+      "features": [
+        "Simulação de cenários",
+        "Análise de sensibilidade",
+        "Comparação entre alternativas",
+        "Stress test financeiro",
+        "Benchmark de mercado"
+      ],
+      "inputs": [
+        "CAPEX",
+        "OPEX",
+        "Receita Projetada",
+        "Taxa de Desconto",
+        "Cronograma",
+        "Taxa de Vacância",
+        "Inflação",
+        "Custos Financeiros"
+      ],
+      "outputs": [
+        "Dashboard ROI",
+        "Indicadores financeiros",
+        "Gráficos comparativos",
+        "Relatório executivo PDF"
+      ]
+    },
+    "valuation": {
+      "description": "Cálculo do valuation imobiliário e corporativo.",
+      "methods": [
+        "DCF (Discounted Cash Flow)",
+        "Comparable Market Analysis",
+        "Replacement Cost",
+        "Income Capitalization"
+      ],
+      "features": [
+        "Valuation automático",
+        "Comparação com mercado",
+        "Cenários otimista/base/pessimista",
+        "Análise de risco"
+      ],
+      "market_data_sources": [
+        "Mercado Imobiliário",
+        "Índices Econômicos",
+        "Dados de Venda",
+        "Benchmark Setorial"
+      ],
+      "outputs": [
+        "Enterprise Value",
+        "Asset Valuation",
+        "Market Positioning",
+        "Investment Grade"
+      ]
+    },
+    "investor_narrative": {
+      "description": "Geração automática de storytelling para investidores e captação.",
+      "features": [
+        "Investor Pitch Generator",
+        "Executive Summary",
+        "Narrativa baseada em KPIs",
+        "Apresentação para fundos",
+        "Investment Highlights"
+      ],
+      "sections": [
+        "Visão Geral do Projeto",
+        "Oportunidade de Mercado",
+        "Diferenciais Competitivos",
+        "Indicadores Financeiros",
+        "Riscos e Mitigações",
+        "Plano de Expansão",
+        "Estratégia de Saída"
+      ],
+      "output_formats": [
+        "Pitch Deck",
+        "PDF Executivo",
+        "PowerPoint",
+        "Resumo para investidores"
+      ]
+    },
+    "capital_raising": {
+      "description": "Ferramentas para captação de recursos e estruturação financeira.",
+      "features": [
+        "Simulação de captação",
+        "Estruturação de equity/debt",
+        "Cap table",
+        "Modelagem financeira",
+        "Análise de diluição"
+      ],
+      "funding_sources": [
+        "Private Equity",
+        "Fundos Imobiliários",
+        "Bancos",
+        "Investidores Anjo",
+        "Family Offices"
+      ]
+    },
+    "real_estate_market_intelligence": {
+      "description": "Análise estratégica do mercado imobiliário.",
+      "features": [
+        "Heatmaps de demanda",
+        "Análise regional",
+        "Comparativos de preço/m²",
+        "Tendências de mercado",
+        "Análise macroeconômica"
+      ],
+      "indicators": [
+        "Vacância",
+        "Absorção",
+        "Cap Rate",
+        "Liquidez",
+        "Oferta vs Demanda"
+      ]
+    }
+  },
+  "ui_components": {
+    "investor_dashboard": {
+      "widgets": [
+        "ROI Overview",
+        "Valuation Summary",
+        "Cash Flow Timeline",
+        "Risk Indicators",
+        "Market Trends",
+        "Funding Progress"
+      ]
+    },
+    "financial_simulator": {
+      "features": [
+        "Editable assumptions",
+        "Scenario comparison",
+        "Dynamic recalculation",
+        "Monte Carlo simulation"
+      ]
+    },
+    "pitch_builder": {
+      "features": [
+        "AI-generated slides",
+        "Automatic charts",
+        "Brand customization",
+        "Export to PowerPoint/PDF"
+      ]
+    },
+    "market_visualization": {
+      "features": [
+        "Interactive maps",
+        "ROI heatmaps",
+        "Market benchmarks",
+        "Regional insights"
+      ]
+    }
+  },
+  "workflow_engine": {
+    "investor_analysis_workflow": [
+      {
+        "step": 1,
+        "name": "Data Collection",
+        "description": "Importação de dados financeiros e imobiliários."
+      },
+      {
+        "step": 2,
+        "name": "Financial Modeling",
+        "description": "Construção automática do modelo financeiro."
+      },
+      {
+        "step": 3,
+        "name": "ROI & Valuation",
+        "description": "Cálculo de indicadores financeiros."
+      },
+      {
+        "step": 4,
+        "name": "Risk Analysis",
+        "description": "Análise de riscos e sensibilidade."
+      },
+      {
+        "step": 5,
+        "name": "Investor Narrative",
+        "description": "Geração de pitch e narrativa executiva."
+      },
+      {
+        "step": 6,
+        "name": "Export & Presentation",
+        "description": "Exportação de relatórios e apresentações."
+      }
+    ]
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/roi",
+      "description": "Calcula ROI e métricas financeiras."
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/valuation",
+      "description": "Executa valuation do ativo."
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/investor/pitch",
+      "description": "Gera investor pitch automaticamente."
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/investor/market",
+      "description": "Retorna dados do mercado imobiliário."
+    }
+  ],
+  "ai_agents": [
+    {
+      "name": "ROI Analyst",
+      "role": "Especialista em retorno financeiro."
+    },
+    {
+      "name": "Valuation Advisor",
+      "role": "Especialista em valuation imobiliário."
+    },
+    {
+      "name": "Capital Raising Strategist",
+      "role": "Especialista em captação de recursos."
+    },
+    {
+      "name": "Market Intelligence Agent",
+      "role": "Analista de mercado imobiliário."
+    },
+    {
+      "name": "Investor Pitch Assistant",
+      "role": "Geração de narrativa e apresentações."
+    }
+  ],
+  "exports": [
+    "PDF Executivo",
+    "PowerPoint",
+    "Excel Financeiro",
+    "JSON Estruturado",
+    "IFC",
+    "bim colaboration format (BCF)",
+    "DWG",
+    "RVT",
+    "Relatorio de Analise de Risco",
+    "Relatorio de Valuation",
+    "Relatorio de Roi",
+    "Pitch Deck",
+    "Resumo Executivo",
+    "PDF",
+    "Apresentaçao para investidores",
+    "Dashboard Compartilhável"
+  ],
+  "future_extensions": [
+    "Integração com Bloomberg",
+    "Análise ESG para investidores",
+    "Predição de valorização imobiliária via AI",
+    "Digital Twin financeiro",
+    "Marketplace de investidores"
+  ]
+}

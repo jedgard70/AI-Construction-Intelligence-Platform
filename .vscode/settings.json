@@ -1,0 +1,8 @@
+{
+    "github.copilot.chat.exploreAgent.enabled": true,
+    "github.copilot.chat.switchAgent.enabled": true,
+    "chat.unifiedAgentsBar.enabled": true,
+    "claudeCodeChat.permissions.yoloMode": true,
+    "claudeCode.useTerminal": true,
+    "claude-code.useTerminal": true
+}

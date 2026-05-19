@@ -1,0 +1,39 @@
+{
+  "enhancement_patch_v7_1": {
+    "marketing_and_sales_automation": {
+      "module_name": "Autonomous Sales Pipeline Engine",
+      "triggers": [
+        "cinematic_render_approved",
+        "roi_report_generated",
+        "milestone_reached"
+      ],
+      "workflow": {
+        "step_1": "Visual_Intelligence_Layer gera pacote de assets premium (Renders + Vídeos Sora)",
+        "step_2": "Investment_Analyst_AI consolida Cap Rate, VGV e ESG Score",
+        "step_3": "Sales_Agent compila dados em copy de alta conversão",
+        "step_4": "Disparo via Webhook JSON para plataformas de Ads (Meta/Google)"
+      },
+      "lead_handling": "Ingestão via JSON para qualificação usando IA preditiva"
+    },
+    "agent_conflict_resolution": {
+      "mechanism": "Weighted Consensus Protocol",
+      "arbiter_agent": "Executive_Board_AI",
+      "resolution_matrix": {
+        "safety_vs_cost": "override_to_safety_always",
+        "quality_vs_schedule": "evaluate_risk_penalty_matrix",
+        "design_vs_budget": "escalate_to_investor_agent_for_roi_impact"
+      }
+    },
+    "infrastructure_enhancements": {
+      "edge_computing_layer": {
+        "purpose": "Processamento local de dados pesados no canteiro para mitigar baixa conectividade",
+        "workloads": [
+          "drone_point_cloud_compilation",
+          "real_time_iot_filtering",
+          "local_clash_detection_cache"
+        ],
+        "sync_protocol": "compressão sem perdas + envio assíncrono do JSON processado para o Cloud Core"
+      }
+    }
+  }
+}

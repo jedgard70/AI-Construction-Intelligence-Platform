@@ -1,0 +1,11 @@
+{
+    "financial_intelligence": {
+  "modules": [
+    "cash_flow_prediction",
+    "construction_feasibility",
+    "ROI_analysis",
+    "budget_deviation_detection",
+    "cost_overrun_prediction"
+  ]
+}
+}
