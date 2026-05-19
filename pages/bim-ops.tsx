@@ -961,7 +961,7 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                 </div>
 
                 {/* Active system detail */}
-                {RESIDENTIAL_SYSTEMS.filter(s => s.id === activeResSystem).map(sys => (
+                {RESIDENTIAL_SYSTEMS.filter(rs => rs.id === activeResSystem).map(sys => (
                   <div key={sys.id}>
                     {/* System cards */}
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:18 }}>
