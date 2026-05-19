@@ -271,6 +271,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [activePlanta, setActivePlanta] = useState(0)
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
+  const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
+  const [agentRunning, setAgentRunning] = useState(false)
+  const [agentResult, setAgentResult]   = useState('')
 
   const cfg = ROLE_CONFIG[profile.role] ?? DEFAULT_ROLE_CONFIG
 
@@ -559,6 +562,34 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               ))}
             </div>
 
+            {/* ── 4 Cards Agentes IA ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
+              {[
+                { id:'bim',    icon:'🏢', label:'BIM Intelligence',    sub:'Clash detection · 3D/4D/5D/6D/7D',   color:'#185FA5', bg:'#EFF4FF',
+                  prompt:'Você é o BIM_Intelligence_AI. Analise o portfólio de obras e simule uma detecção de clashes BIM. Retorne: 1) Número de interferências detectadas por disciplina (Estrutural, Hidráulica, Elétrica, HVAC); 2) Nível de severidade (Crítico/Médio/Baixo); 3) Top 3 conflitos prioritários com descrição técnica; 4) Índice 4D de cronograma e 5D de custo vinculados; 5) Recomendações de resolução. Use dados fictícios realistas de obras brasileiras.' },
+                { id:'evm',    icon:'📊', label:'EVM Analytics',        sub:'CPI, SPI, EAC, VAC, TCPI em tempo real', color:'#534AB7', bg:'#F0EEFF',
+                  prompt:'Você é o EVM_Analytics_AI. Calcule e analise os indicadores de Earned Value Management do portfólio. Forneça: 1) CPI (Cost Performance Index) por projeto; 2) SPI (Schedule Performance Index); 3) EAC (Estimate at Completion); 4) VAC (Variance at Completion); 5) TCPI (To-Complete Performance Index); 6) Análise da Curva S; 7) Previsão de encerramento e custo final. Use os projetos do portfólio e mostre cálculos detalhados.' },
+                { id:'nr',     icon:'🛡', label:'Conformidade NR',      sub:'NR-6, NR-10, NR-18, NR-33, NR-35',  color:'#3B6D11', bg:'#EAF3DE',
+                  prompt:'Você é o NR_Compliance_AI. Faça uma auditoria completa de conformidade com Normas Regulamentadoras no portfólio de obras. Analise: 1) NR-18 (Segurança na Construção Civil) — itens críticos; 2) NR-6 (EPIs) — cobertura e adequação; 3) NR-10 (Eletricidade) — pontos de risco; 4) NR-33 (Espaços Confinados); 5) NR-35 (Trabalho em Altura). Para cada NR: status de conformidade, pendências, prazo para regularização e risco de multa (valor estimado). Emita score geral de segurança.' },
+                { id:'multi',  icon:'🤖', label:'Multi-Agent AI',       sub:'8 especialistas cognitivos simultâneos', color:'#A32D2D', bg:'#FCEBEB',
+                  prompt:'Você é o MultiAgent_Coordinator. Coordene 8 agentes especializados e produza uma análise estratégica completa do portfólio: [Cost_Controller_AI] Desvios de custo e alertas SINAPI; [Construction_Planner_AI] Caminho crítico e reprogramações; [BIM_Intelligence_AI] Detecção de clashes e compatibilização; [Legal_Compliance_AI] Conformidade contratual e regulatória; [ESG_Monitor_AI] Score de sustentabilidade; [Risk_Assessment_AI] Matriz de riscos atualizada; [Market_Intelligence_AI] Benchmarking setorial; [Finance_Optimizer_AI] Fluxo de caixa e otimização. Consolide em relatório executivo com score geral 0-100 e top 5 ações prioritárias.' },
+              ].map(ag => (
+                <div key={ag.id}
+                  onClick={() => { setAiAgentModal(ag.id); setAgentResult('') }}
+                  style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12,
+                    padding:'14px 16px', cursor:'pointer', transition:'all .15s',
+                    borderLeftWidth:3, borderLeftColor:ag.color }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background=ag.bg; (e.currentTarget as HTMLElement).style.borderColor=ag.color }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='#fff'; (e.currentTarget as HTMLElement).style.borderLeftColor=ag.color; (e.currentTarget as HTMLElement).style.borderTopColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderRightColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderBottomColor='#e5e8f0' }}>
+                  <div style={{ fontSize:22, marginBottom:6 }}>{ag.icon}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:3 }}>{ag.label}</div>
+                  <div style={{ fontSize:10, color:'#8b93a7', lineHeight:1.4 }}>{ag.sub}</div>
+                  <div style={{ marginTop:10, fontSize:10, fontWeight:600, color:ag.color,
+                    display:'flex', alignItems:'center', gap:4 }}>▶ Executar agente</div>
+                </div>
+              ))}
+            </div>
+
             {/* Linha central */}
             <div style={{ display:'grid',
               gridTemplateColumns: cfg.showCurvaS ? '1.6fr 1fr' : '1fr',
@@ -743,6 +774,116 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
           </div>
         </main>
       </div>
+
+      {/* ── MODAL AGENTE IA ── */}
+      {aiAgentModal && (() => {
+        const AGENTS: Record<string,{icon:string,label:string,color:string,prompt:string}> = {
+          bim:   { icon:'🏢', label:'BIM Intelligence', color:'#185FA5',
+            prompt:'Você é o BIM_Intelligence_AI. Analise o portfólio de obras e simule uma detecção de clashes BIM. Retorne: 1) Interferências detectadas por disciplina (Estrutural, Hidráulica, Elétrica, HVAC) com quantidades; 2) Severidade (Crítico/Médio/Baixo); 3) Top 3 conflitos prioritários com descrição técnica detalhada; 4) Índice 4D de cronograma e 5D de custo vinculados; 5) Recomendações de resolução. Use dados fictícios realistas de obras brasileiras de médio porte.' },
+          evm:   { icon:'📊', label:'EVM Analytics', color:'#534AB7',
+            prompt:'Você é o EVM_Analytics_AI. Calcule e analise indicadores de Earned Value Management do portfólio. Mostre: 1) CPI por projeto com interpretação; 2) SPI por projeto; 3) EAC e VAC calculados; 4) TCPI necessário para cumprir budget; 5) Análise da Curva S com pontos de inflexão; 6) Previsão de encerramento. Inclua tabela resumo e análise executiva. Dados reais: projetos com CPI médio 0.94 e SPI 0.91.' },
+          nr:    { icon:'🛡', label:'Conformidade NR', color:'#3B6D11',
+            prompt:'Você é o NR_Compliance_AI. Realize auditoria de conformidade NR no portfólio. Avalie: 1) NR-18 — itens críticos e status; 2) NR-6 (EPIs) — cobertura por função; 3) NR-10 (Eletricidade) — pontos de risco elétrico; 4) NR-33 (Espaços Confinados); 5) NR-35 (Altura). Para cada: status (Conforme/Parcial/Não conforme), pendências, prazo de regularização e multa estimada. Emita score geral 0-100 e plano de ação.' },
+          multi: { icon:'🤖', label:'Multi-Agent AI', color:'#A32D2D',
+            prompt:'Você é o MultiAgent_Coordinator. Coordene 8 agentes especializados e produza análise estratégica completa: [Cost_Controller_AI] Desvios de custo e alertas SINAPI; [Construction_Planner_AI] Caminho crítico; [BIM_Intelligence_AI] Clashes; [Legal_Compliance_AI] Conformidade contratual; [ESG_Monitor_AI] Score sustentabilidade; [Risk_Assessment_AI] Matriz de riscos; [Market_Intelligence_AI] Benchmarking; [Finance_Optimizer_AI] Fluxo de caixa. Consolide em relatório executivo com score geral 0-100 e top 5 ações prioritárias.' },
+        }
+        const ag = AGENTS[aiAgentModal]
+
+        async function runAgent() {
+          setAgentRunning(true); setAgentResult('')
+          try {
+            const res = await fetch('/api/chat', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:2000,
+                system: ag.prompt,
+                messages:[{ role:'user', content:`Execute análise completa agora para o portfólio de ${projects.length} projetos ativos. Data: ${new Date().toLocaleDateString('pt-BR')}.` }]
+              })
+            })
+            const data = await res.json()
+            setAgentResult(data?.content?.[0]?.text || 'Análise concluída.')
+          } catch { setAgentResult('Erro ao conectar com o agente.') }
+          setAgentRunning(false)
+        }
+
+        return (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9999,
+            display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Geist',system-ui,sans-serif" }}
+            onClick={e => e.target === e.currentTarget && setAiAgentModal(null)}>
+            <div style={{ background:'#fff', borderRadius:16, width:700, maxHeight:'88vh',
+              display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.25)',
+              border:'1px solid #e5e8f0', overflow:'hidden' }}>
+              {/* header */}
+              <div style={{ padding:'16px 22px', borderBottom:'1px solid #e5e8f0',
+                display:'flex', alignItems:'center', justifyContent:'space-between',
+                background:`${ag.color}08` }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ fontSize:24 }}>{ag.icon}</div>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36' }}>{ag.label}</div>
+                    <div style={{ fontSize:11, color:'#8b93a7' }}>Agente especializado · AI Construction Platform</div>
+                  </div>
+                </div>
+                <button onClick={() => setAiAgentModal(null)}
+                  style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'#8b93a7' }}>✕</button>
+              </div>
+              {/* body */}
+              <div style={{ flex:1, overflowY:'auto', padding:'20px 22px' }}>
+                {!agentResult && !agentRunning && (
+                  <div style={{ textAlign:'center', padding:'32px 0' }}>
+                    <div style={{ fontSize:40, marginBottom:12 }}>{ag.icon}</div>
+                    <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>
+                      {ag.label} pronto para executar
+                    </div>
+                    <div style={{ fontSize:12, color:'#8b93a7', marginBottom:24, maxWidth:400, margin:'0 auto 24px' }}>
+                      O agente irá analisar seu portfólio de {projects.length} projetos e gerar relatório completo com recomendações.
+                    </div>
+                    <button onClick={runAgent}
+                      style={{ padding:'12px 28px', background:ag.color, color:'#fff', border:'none',
+                        borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+                      ▶ Executar {ag.label}
+                    </button>
+                  </div>
+                )}
+                {agentRunning && (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'40px 0', gap:16 }}>
+                    <div style={{ width:48, height:48, borderRadius:'50%', border:`3px solid ${ag.color}`,
+                      borderTopColor:'transparent', animation:'spin 0.8s linear infinite' }} />
+                    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                    <div style={{ fontSize:13, color:ag.color, fontWeight:600 }}>
+                      {ag.label} analisando portfólio...
+                    </div>
+                    <div style={{ fontSize:11, color:'#8b93a7' }}>Processando {projects.length} projetos com IA Claude</div>
+                  </div>
+                )}
+                {agentResult && (
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#3B6D11' }}>✅ Análise concluída</div>
+                      <div style={{ display:'flex', gap:8 }}>
+                        <button onClick={() => { printDocument(ag.label, `<h1>${ag.icon} ${ag.label}</h1><pre style="white-space:pre-wrap;font-family:inherit">${agentResult}</pre>`) }}
+                          style={{ padding:'5px 12px', border:'1px solid #e5e8f0', borderRadius:6, background:'#fff',
+                            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                          🖨️ Imprimir
+                        </button>
+                        <button onClick={runAgent}
+                          style={{ padding:'5px 12px', border:`1px solid ${ag.color}`, borderRadius:6, background:'#fff',
+                            fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', color:ag.color }}>
+                          🔄 Reanalisar
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ background:'#f8f9fc', borderLeft:`3px solid ${ag.color}`, borderRadius:'0 8px 8px 0',
+                      padding:'14px 16px', fontSize:12, lineHeight:1.8, color:'#1a1f36',
+                      whiteSpace:'pre-wrap', fontFamily:'monospace' }}>
+                      {agentResult}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── VISUALIZADOR DE PLANTAS ── */}
       {showPlantasViewer && (() => {
