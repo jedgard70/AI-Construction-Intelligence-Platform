@@ -1,0 +1,12 @@
+{
+    "visual_operating_system": {
+  "interface_mode": "mission_control",
+
+  "dashboards": [
+    "executive_dashboard",
+    "BIM_control_center",
+    "construction_site_monitor",
+    "financial_command_center"
+  ]
+}
+}

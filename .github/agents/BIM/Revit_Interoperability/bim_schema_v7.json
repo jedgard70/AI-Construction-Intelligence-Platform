@@ -1,0 +1,36 @@
+{
+  "project_id": "APEX_GLOBAL_001",
+  "element_data": {
+    "bim_id": "REVT-STR-2025-04-X1",
+    "category": "Fundação / Estaca Escavada",
+    "technical_specs": {
+      "diameter_mm": 400,
+      "depth_m": 12,
+      "concrete_volume_m3": 1.5,
+      "steel_weight_kg": 45.2,
+      "execution_method": "Mecanizada"
+    },
+    "financial_metadata": {
+      "cost_model": "Administração_Preço_Custo",
+      "estimated_unit_price": 450.00,
+      "transparency_index": "High"
+    },
+    "visual_rendering_metadata": {
+      "material_pbr": {
+        "base_texture": "Concrete_Exposed_Rough",
+        "roughness": 0.8,
+        "normal_map_intensity": 1.2
+      },
+      "lighting_setup": {
+        "ies_profile": "Standard_Daylight_Exterior",
+        "color_temp_k": 5500,
+        "shadow_softness": 0.5
+      },
+      "camera_view": {
+        "angle": "Drone_Perspective_High",
+        "focal_length": "24mm",
+        "coordinates": {"x": 10.5, "y": 25.0, "z": 15.0}
+      }
+    }
+  }
+}

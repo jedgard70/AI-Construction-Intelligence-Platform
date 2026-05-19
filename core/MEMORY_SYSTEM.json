@@ -1,0 +1,29 @@
+{
+  "memory_system": {
+    "short_term": "contexto da sessão",
+    "long_term": "projetos e padrões recorrentes",
+
+    "project_memory": true,
+    "decision_memory": true,
+    "client_profile_memory": true,
+    "short_term_memory": true,
+    "long_term_memory": true,
+
+    "memory_categories": [
+      "projects",
+      "clients",
+      "construction_standards",
+      "engineering_rules",
+      "executive_decisions",
+      "BIM_models",
+
+      "memory_architecture", {
+  "episodic_memory": "project_history",
+  "semantic_memory": "construction_knowledge_graph",
+  "vector_memory": "embeddings_repository",
+  "operational_memory": "active_workflows",
+  "decision_memory": "executive_decision_logs"
+}
+    ]
+  }
+}

@@ -1,0 +1,56 @@
+{
+    "tooling_system": {
+  "bim_tools": [
+    "IfcOpenShell",
+    "Revit_API",
+    "BlenderBIM"
+  ],
+
+  "automation_tools": [
+    "n8n",
+    "Make",
+    "Zapier"
+  ],
+
+  "ai_stack": [
+    "OpenAI",
+    "LangChain",
+    "CrewAI",
+    "AutoGen"
+  ],
+
+  "tooling_layer": {
+  "ai_frameworks": [
+    "LangChain",
+    "CrewAI",
+    "AutoGen",
+    "LangGraph"
+  ],
+
+  "automation_stack": [
+    "n8n",
+    "FastAPI",
+    "RabbitMQ",
+    "Redis"
+  ],
+
+  "bim_stack": [
+    "IfcOpenShell",
+    "Revit_API",
+    "BlenderBIM"
+  ],
+
+  "data_stack": [
+    "PostgreSQL",
+    "Vector_DB",
+    "Neo4j"
+  ]
+},
+
+  "data_tools": [
+    "PostgreSQL",
+    "Vector_DB",
+    "Redis"
+  ]
+}
+}

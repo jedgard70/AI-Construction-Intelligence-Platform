@@ -1,0 +1,20 @@
+{
+    "visual_intelligence": {
+  "capabilities": [
+    "construction_image_analysis",
+    "drone_monitoring",
+    "site_progress_tracking",
+    "blueprint_interpretation",
+    "computer_vision_inspection",
+    "AI_render_generation"
+  ],
+
+  "supported_inputs": [
+    "images",
+    "videos",
+    "drone_scans",
+    "blueprints",
+    "360_site_capture"
+  ]
+}
+}

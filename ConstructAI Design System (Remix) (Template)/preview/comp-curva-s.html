@@ -1,0 +1,60 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Curva S chart</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .card{background:#fff;border:1px solid var(--app-border);border-radius:12px;padding:14px 16px}
+  .title{font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:2px}
+  .sub{font-size:11px;color:#8b93a7;margin-bottom:10px}
+  .legend{display:flex;gap:14px;font-size:11px;color:#5a6282;margin-top:6px;flex-wrap:wrap}
+  .dot{display:inline-block;width:10px;height:2px;vertical-align:middle;margin-right:5px}
+  svg{width:100%;height:170px;display:block}
+  .ax{fill:#8b93a7;font-size:9px;font-family:var(--font-sans-app)}
+  .grid{stroke:#f0f2f7;stroke-dasharray:3 3}
+  .today{stroke:#BA7517;stroke-dasharray:4 2}
+  .today-lbl{fill:#BA7517;font-size:9px;font-family:var(--font-sans-app)}
+</style>
+<div class="card">
+  <div class="title">📈 Curva S — Previsto × Realizado × Projeção</div>
+  <div class="sub">EVM consolidado do portfólio</div>
+  <svg viewBox="0 0 520 170" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="gPV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#185FA5" stop-opacity=".15"/><stop offset="100%" stop-color="#185FA5" stop-opacity="0"/></linearGradient>
+      <linearGradient id="gEV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3B6D11" stop-opacity=".22"/><stop offset="100%" stop-color="#3B6D11" stop-opacity="0"/></linearGradient>
+      <linearGradient id="gAC" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#A32D2D" stop-opacity=".18"/><stop offset="100%" stop-color="#A32D2D" stop-opacity="0"/></linearGradient>
+    </defs>
+    <!-- grid -->
+    <line class="grid" x1="50" y1="20" x2="510" y2="20"/>
+    <line class="grid" x1="50" y1="60" x2="510" y2="60"/>
+    <line class="grid" x1="50" y1="100" x2="510" y2="100"/>
+    <line class="grid" x1="50" y1="140" x2="510" y2="140"/>
+    <!-- Y -->
+    <text class="ax" x="44" y="24" text-anchor="end">R$ 48 mi</text>
+    <text class="ax" x="44" y="62" text-anchor="end">R$ 32 mi</text>
+    <text class="ax" x="44" y="102" text-anchor="end">R$ 16 mi</text>
+    <text class="ax" x="44" y="142" text-anchor="end">R$ 0</text>
+    <!-- X -->
+    <text class="ax" x="80"  y="158" text-anchor="middle">Jan</text>
+    <text class="ax" x="160" y="158" text-anchor="middle">Fev</text>
+    <text class="ax" x="240" y="158" text-anchor="middle">Mar</text>
+    <text class="ax" x="320" y="158" text-anchor="middle">Abr</text>
+    <text class="ax" x="400" y="158" text-anchor="middle">Mai</text>
+    <text class="ax" x="480" y="158" text-anchor="middle">Jun</text>
+    <!-- PV -->
+    <path d="M 80 132 L 160 119 L 240 100 L 320 76 L 400 50 L 480 26 L 480 140 L 80 140 Z" fill="url(#gPV)"/>
+    <path d="M 80 132 L 160 119 L 240 100 L 320 76 L 400 50 L 480 26" stroke="#185FA5" stroke-width="2" fill="none"/>
+    <!-- EV -->
+    <path d="M 80 133 L 160 122 L 240 105 L 320 82 L 400 60 L 400 140 L 80 140 Z" fill="url(#gEV)"/>
+    <path d="M 80 133 L 160 122 L 240 105 L 320 82 L 400 60" stroke="#3B6D11" stroke-width="2.5" fill="none"/>
+    <!-- AC -->
+    <path d="M 80 132 L 160 118 L 240 98 L 320 70 L 400 42 L 400 140 L 80 140 Z" fill="url(#gAC)"/>
+    <path d="M 80 132 L 160 118 L 240 98 L 320 70 L 400 42" stroke="#A32D2D" stroke-width="2" fill="none" stroke-dasharray="5 3"/>
+    <!-- today -->
+    <line class="today" x1="400" y1="20" x2="400" y2="140"/>
+    <text class="today-lbl" x="404" y="28">Hoje</text>
+  </svg>
+  <div class="legend">
+    <span><span class="dot" style="background:#185FA5"></span>Previsto (PV)</span>
+    <span><span class="dot" style="background:#3B6D11;height:3px"></span>Agregado (EV)</span>
+    <span><span class="dot" style="background:#A32D2D;border-top:2px dashed #A32D2D;height:0"></span>Realizado (AC) · dashed</span>
+  </div>
+</div>

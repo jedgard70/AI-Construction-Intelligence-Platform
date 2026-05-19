@@ -1,0 +1,13 @@
+{
+    "operational_kpis": {
+  "cost_variance_threshold": "5%",
+  "schedule_variance_threshold": "7%",
+  "risk_alert_levels": [
+    "low",
+    "medium",
+    "high",
+    "critical"
+  ],
+  "productivity_index_tracking": true
+}
+}

@@ -1,0 +1,17 @@
+{
+  "integration_layer": {
+  "api_support": [
+    "REST",
+    "Webhook",
+    "GraphQL"
+  ],
+
+  "external_integrations": [
+    "Revit",
+    "PowerBI",
+    "ERP",
+    "CRM",
+    "GoogleDrive"
+  ]
+}
+}

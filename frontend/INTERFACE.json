@@ -1,0 +1,367 @@
+{
+  "project": {
+    "name": "AI Construction Intelligence Platform Interface",
+    "type": "Enterprise SaaS Platform",
+    "primary_users": [
+      "Engenheiros",
+      "Executivos",
+      "Investidores",
+      "BIM Coordinators",
+      "Cost Engineers"
+    ],
+    "goals": [
+      "Interface intuitiva para workflows de construção",
+      "Execução de análises BIM e executivas",
+      "Visualização interativa de KPIs e modelos 3D",
+      "Integração com ferramentas BIM/Revit",
+      "Acesso multiplataforma e seguro"
+    ]
+  },
+  "architecture": {
+    "frontend": {
+      "framework": "React",
+      "alternatives": ["Vue.js"],
+      "libraries": {
+        "3d_visualization": "Three.js",
+        "charts": "Chart.js",
+        "state_management": "Redux Toolkit",
+        "routing": "React Router",
+        "ui_framework": "Material UI",
+        "real_time": "Socket.IO"
+      },
+      "platforms": [
+        "Web Responsive",
+        "Desktop PWA",
+        "Mobile Hybrid"
+      ]
+    },
+    "backend": {
+      "runtime": "Node.js + Python",
+      "api_style": "REST + WebSocket",
+      "services": [
+        "Workflow Engine",
+        "AI Agent Gateway",
+        "Revit Integration Service",
+        "Authentication Service",
+        "Memory Management Service",
+        "File Processing Service"
+      ]
+    },
+    "database": {
+      "primary": "PostgreSQL",
+      "cache": "Redis",
+      "vector_db": "Pinecone/Weaviate",
+      "file_storage": "AWS S3 / Azure Blob"
+    },
+    "deployment": {
+      "cloud": ["AWS", "Azure"],
+      "ci_cd": ["GitHub Actions", "Docker", "Kubernetes"],
+      "monitoring": ["Prometheus", "Grafana"]
+    }
+  },
+  "ui_structure": {
+    "layout": {
+      "navigation": {
+        "type": "Sidebar + Topbar",
+        "sections": [
+          "Dashboard",
+          "Agents",
+          "Workflows",
+          "Projects",
+          "Visualization Hub",
+          "Reports",
+          "Admin"
+        ]
+      },
+      "responsive_behavior": {
+        "desktop": "Full workspace with side panels",
+        "tablet": "Collapsible panels",
+        "mobile": "Bottom navigation + stacked components"
+      }
+    }
+  },
+  "components": {
+    "dashboard_principal": {
+      "description": "Painel central de acesso rápido",
+      "widgets": [
+        {
+          "name": "Mode Selector",
+          "type": "Card Buttons",
+          "modes": [
+            {
+              "id": "MODE_BIM",
+              "label": "BIM Intelligence",
+              "description": "Análise técnica e construtibilidade"
+            },
+            {
+              "id": "MODE_EXECUTIVE",
+              "label": "Executive Intelligence",
+              "description": "KPIs, riscos e estratégia"
+            },
+            {
+              "id": "MODE_INVESTOR",
+              "label": "Investor Intelligence",
+              "description": "ROI, viabilidade e valuation"
+            }
+          ]
+        },
+        {
+          "name": "Agent Launcher",
+          "type": "Interactive Grid",
+          "agents": [
+            "BIM Coordinator",
+            "Cost Engineer",
+            "Schedule Analyst",
+            "Risk Advisor",
+            "Executive Advisor"
+          ]
+        },
+        {
+          "name": "Project Context",
+          "features": [
+            "Upload IFC/Revit",
+            "Excel Import",
+            "Parameter Configuration",
+            "Project Metadata"
+          ]
+        }
+      ]
+    },
+    "conversational_interface": {
+      "description": "Interface de interação com agentes AI",
+      "features": [
+        {
+          "name": "Chat Window",
+          "capabilities": [
+            "Texto",
+            "Voz",
+            "Streaming Responses",
+            "Markdown Support"
+          ]
+        },
+        {
+          "name": "Memory Display",
+          "memory_types": [
+            "Short-Term Memory",
+            "Long-Term Memory",
+            "Semantic Memory"
+          ]
+        },
+        {
+          "name": "Smart Suggestions",
+          "examples": [
+            "Executar análise de construtibilidade",
+            "Gerar ROI executivo",
+            "Detectar conflitos BIM"
+          ]
+        }
+      ]
+    },
+    "workflow_runner": {
+      "description": "Execução guiada de workflows",
+      "workflow_types": [
+        "BIM Analysis",
+        "Executive Analysis",
+        "Investor Due Diligence"
+      ],
+      "features": [
+        "Wizard Navigation",
+        "Step Validation",
+        "Progress Tracking",
+        "Retry Mechanism",
+        "Real-Time Logs"
+      ]
+    },
+    "visualization_hub": {
+      "description": "Central de visualização de dados e modelos",
+      "modules": [
+        {
+          "name": "3D Viewer",
+          "features": [
+            "IFC Rendering",
+            "Revit Integration",
+            "Layer Control",
+            "Collision Highlighting"
+          ]
+        },
+        {
+          "name": "Analytics Dashboard",
+          "charts": [
+            "ROI",
+            "Cost Breakdown",
+            "Schedule Performance",
+            "Risk Heatmaps"
+          ]
+        },
+        {
+          "name": "Export Center",
+          "formats": [
+            "PDF",
+            "Excel",
+            "PNG",
+            "JSON"
+          ]
+        }
+      ]
+    },
+    "admin_panel": {
+      "description": "Painel administrativo e operacional",
+      "modules": [
+        {
+          "name": "User Management",
+          "roles": [
+            "viewer",
+            "editor",
+            "admin"
+          ]
+        },
+        {
+          "name": "System Monitoring",
+          "features": [
+            "Usage Logs",
+            "Performance Metrics",
+            "Workflow Analytics"
+          ]
+        },
+        {
+          "name": "Customization",
+          "features": [
+            "Agent Configuration",
+            "Mode Settings",
+            "Feature Toggles"
+          ]
+        }
+      ]
+    }
+  },
+  "cognitive_flow_integration": {
+    "stages": [
+      {
+        "stage": "Objective Definition",
+        "ui_pattern": "Guided Wizard",
+        "features": [
+          "Goal Templates",
+          "Project Scope Selection"
+        ]
+      },
+      {
+        "stage": "Risk & Opportunity Detection",
+        "ui_pattern": "Visual Alerts",
+        "features": [
+          "AI Insights",
+          "Heatmaps",
+          "Anomaly Detection"
+        ]
+      },
+      {
+        "stage": "Validation & Optimization",
+        "ui_pattern": "Interactive Simulation",
+        "features": [
+          "Scenario Comparison",
+          "Optimization Suggestions"
+        ]
+      },
+      {
+        "stage": "Decision Outputs",
+        "ui_pattern": "Action Panel",
+        "features": [
+          "Generate Reports",
+          "Executive Summaries",
+          "Approval Actions"
+        ]
+      }
+    ]
+  },
+  "memory_integration": {
+    "short_term": {
+      "purpose": "Sessões ativas",
+      "storage": "Redis"
+    },
+    "long_term": {
+      "purpose": "Histórico persistente",
+      "storage": "PostgreSQL"
+    },
+    "semantic": {
+      "purpose": "Sugestões inteligentes",
+      "storage": "Vector Database"
+    }
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/projects/upload",
+      "description": "Upload de arquivos IFC/Revit"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/workflows/run",
+      "description": "Executa workflows AI"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/agents/list",
+      "description": "Lista agentes disponíveis"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/chat/message",
+      "description": "Interação conversacional"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/analytics/kpis",
+      "description": "Retorna KPIs executivos"
+    }
+  ],
+  "security": {
+    "authentication": [
+      "OAuth2",
+      "SSO",
+      "JWT"
+    ],
+    "authorization": {
+      "roles": [
+        "viewer",
+        "editor",
+        "admin"
+      ]
+    },
+    "compliance": [
+      "LGPD",
+      "SOC2"
+    ]
+  },
+  "mobile_app": {
+    "platforms": [
+      "iOS",
+      "Android"
+    ],
+    "features": [
+      "Field Access",
+      "Offline Sync",
+      "Photo Upload",
+      "Voice Commands",
+      "Push Notifications"
+    ]
+  },
+  "testing_strategy": {
+    "types": [
+      "UX Testing",
+      "Integration Testing",
+      "Performance Testing",
+      "Accessibility Testing"
+    ],
+    "target_users": [
+      "Construction Engineers",
+      "Project Managers",
+      "Executives"
+    ]
+  },
+  "future_extensions": [
+    "AR/VR BIM Visualization",
+    "IoT Construction Monitoring",
+    "AI Predictive Scheduling",
+    "Drone Data Integration",
+    "Digital Twin Synchronization"
+  ]
+}

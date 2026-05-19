@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Agent alert card</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .panel{background:#fff;border:1px solid var(--app-border);border-radius:12px;padding:16px}
+  .head{font-size:13px;font-weight:600;color:#1a1f36;margin-bottom:12px}
+  .alert{padding:10px 12px;border-radius:8px;margin-bottom:8px}
+  .alert:last-child{margin-bottom:0}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+  .prio{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .time{font-size:10px;color:#a0a8bb;font-family:var(--font-mono)}
+  .body{font-size:11px;color:#3a4166;line-height:1.5}
+</style>
+<div class="panel">
+  <div class="head">🤖 Alertas dos Agentes IA</div>
+  <div class="alert" style="border:1px solid #A32D2D33;background:#A32D2D08">
+    <div class="meta"><span class="prio" style="color:#A32D2D">critico · Cost_Controller</span><span class="time">14:23</span></div>
+    <div class="body">Torre B: aço A572 +22% acima do SINAPI. Substituto sugerido: HEA.</div>
+  </div>
+  <div class="alert" style="border:1px solid #BA751733;background:#BA751708">
+    <div class="meta"><span class="prio" style="color:#BA7517">alto · Construction_Planner</span><span class="time">13:48</span></div>
+    <div class="body">Usina Paraná: 18 dias de atraso acumulado. Replanejamento necessário.</div>
+  </div>
+  <div class="alert" style="border:1px solid #185FA533;background:#185FA508">
+    <div class="meta"><span class="prio" style="color:#185FA5">medio · Document_Intelligence</span><span class="time">11:02</span></div>
+    <div class="body">Memorial Torre B: 3 inconsistências de armadura identificadas (págs 47, 89, 112).</div>
+  </div>
+</div>

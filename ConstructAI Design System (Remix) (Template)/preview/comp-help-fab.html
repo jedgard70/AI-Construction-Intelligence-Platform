@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Help FAB + panel</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px;height:100%}
+  .stage{position:relative;height:180px;background:#fff;border:1px solid var(--app-border);border-radius:12px;overflow:hidden}
+  .fab{position:absolute;bottom:14px;right:14px;width:50px;height:50px;border-radius:50%;background:#185FA5;color:#fff;font-size:22px;font-weight:700;border:none;box-shadow:0 4px 16px rgba(24,95,165,.4);display:flex;align-items:center;justify-content:center}
+  .panel{position:absolute;bottom:74px;right:14px;width:240px;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.18);border:1px solid var(--app-border);overflow:hidden}
+  .head{padding:12px 14px;background:#185FA5;color:#fff;display:flex;align-items:center;gap:9px}
+  .av{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:14px}
+  .title{font-size:12px;font-weight:600}
+  .sub{font-size:9px;color:rgba(255,255,255,.7)}
+  .body{padding:12px 14px;font-size:11px;color:#3a4166}
+  .msg{padding:8px 10px;background:#f8f9fc;border:1px solid var(--app-border);border-radius:4px 12px 12px 12px;display:inline-block;max-width:90%}
+  .right{position:absolute;left:16px;top:16px;font-size:11px;color:var(--fg-4);max-width:280px;line-height:1.55}
+  .right code{font-family:var(--font-mono);background:var(--app-surface-2);padding:1px 5px;border-radius:4px;font-size:10px}
+</style>
+<div class="stage">
+  <div class="right">
+    Floating Manual_Assistant_AI<br>
+    <code>#185FA5</code> head + <code>0 4 16 .4</code> colored FAB shadow + <code>0 8 40 .18</code> panel shadow. Always bottom-right, 24 px offset.
+  </div>
+  <div class="panel">
+    <div class="head"><div class="av">📖</div><div><div class="title">Manual da Plataforma</div><div class="sub">ConstructAI v5.3 · Assistente</div></div></div>
+    <div class="body"><div class="msg">👋 Olá! Sou o assistente da plataforma. Como posso ajudar você hoje?</div></div>
+  </div>
+  <button class="fab">?</button>
+</div>

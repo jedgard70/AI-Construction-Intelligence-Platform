@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Radius</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:14px}
+  .row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+  .cell{background:#fff;border:1px solid var(--app-border);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .demo{width:54px;height:54px;background:var(--brand-blue-tint);border:1px solid var(--brand-blue-mid)}
+  .px{font-family:var(--font-mono);font-size:10px;color:var(--fg-3);font-weight:600}
+  .name{font-size:10px;color:var(--fg-4);text-align:center;line-height:1.2}
+</style>
+<div class="row">
+  <div class="cell"><div class="demo" style="border-radius:4px"></div><div class="px">4 px</div><div class="name">xs · tag corner</div></div>
+  <div class="cell"><div class="demo" style="border-radius:6px"></div><div class="px">6 px</div><div class="name">sm · chip</div></div>
+  <div class="cell"><div class="demo" style="border-radius:8px"></div><div class="px">8 px</div><div class="name">md · input · btn</div></div>
+  <div class="cell"><div class="demo" style="border-radius:10px"></div><div class="px">10 px</div><div class="name">lg · logo box</div></div>
+  <div class="cell"><div class="demo" style="border-radius:12px"></div><div class="px">12 px</div><div class="name">xl · card</div></div>
+  <div class="cell"><div class="demo" style="border-radius:16px"></div><div class="px">16 px</div><div class="name">2xl · modal</div></div>
+  <div class="cell"><div class="demo" style="border-radius:50%"></div><div class="px">full</div><div class="name">avatar · FAB</div></div>
+</div>

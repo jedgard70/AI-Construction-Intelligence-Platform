@@ -1,0 +1,360 @@
+{
+  "agent_system": {
+    "name": "Architecture Refactor Agent",
+    "version": "1.0.0",
+    "type": "enterprise_ai_architect",
+    "language": "pt-BR",
+    "description": "Agente especializado em análise, refatoração, modularização e padronização de arquiteturas enterprise para sistemas de engenharia, BIM e IA.",
+
+    "mission": {
+      "primary_goal": "Transformar arquiteturas monolíticas e inconsistentes em estruturas enterprise modulares, validadas e escaláveis.",
+      "secondary_goals": [
+        "Corrigir estruturas JSON inválidas",
+        "Padronizar nomenclaturas",
+        "Separar domínios arquiteturais",
+        "Gerar schemas formais",
+        "Automatizar reorganização estrutural",
+        "Validar conformidade arquitetural",
+        "Gerar documentação técnica automática"
+      ]
+    },
+
+    "execution_mode": {
+      "default": "semi_autonomous",
+      "available_modes": [
+        "manual_assist",
+        "semi_autonomous",
+        "fully_autonomous"
+      ]
+    },
+
+    "core_capabilities": [
+      "json_validation",
+      "schema_generation",
+      "naming_standardization",
+      "directory_modularization",
+      "api_structure_generation",
+      "dependency_analysis",
+      "architecture_refactoring",
+      "codebase_analysis",
+      "clean_architecture_enforcement",
+      "event_driven_architecture_analysis",
+      "multi_agent_architecture_design",
+      "documentation_generation",
+      "technical_debt_detection",
+      "config_normalization",
+      "prompt_architecture_analysis"
+    ],
+
+    "reasoning_engine": {
+      "mode": "multi_layer_architectural_reasoning",
+      "decision_flow": [
+        {
+          "step": "scan_project",
+          "description": "Escaneia toda a estrutura do projeto"
+        },
+        {
+          "step": "detect_inconsistencies",
+          "description": "Detecta erros estruturais e conflitos"
+        },
+        {
+          "step": "classify_domains",
+          "description": "Classifica módulos por domínio arquitetural"
+        },
+        {
+          "step": "generate_refactor_plan",
+          "description": "Cria plano de refatoração"
+        },
+        {
+          "step": "execute_refactor",
+          "description": "Executa alterações estruturais"
+        },
+        {
+          "step": "validate_architecture",
+          "description": "Executa validações pós-refatoração"
+        },
+        {
+          "step": "generate_documentation",
+          "description": "Documenta mudanças realizadas"
+        }
+      ]
+    },
+
+    "architecture_rules": {
+      "naming_convention": {
+        "language": "english",
+        "style": "snake_case",
+        "forbidden_patterns": [
+          "camelCase",
+          "mixed_language",
+          "spaces_in_keys"
+        ]
+      },
+
+      "directory_structure": {
+        "required_folders": [
+          "core",
+          "agents",
+          "schemas",
+          "workflows",
+          "governance",
+          "integrations",
+          "memory",
+          "api",
+          "validators",
+          "tests",
+          "docs"
+        ]
+      },
+
+      "clean_architecture": {
+        "layers": [
+          "presentation_layer",
+          "application_layer",
+          "domain_layer",
+          "infrastructure_layer"
+        ]
+      }
+    },
+
+    "validation_engine": {
+      "json_validation": {
+        "enabled": true,
+        "strict_mode": true,
+        "auto_fix_minor_errors": true
+      },
+
+      "schema_validation": {
+        "generate_json_schema": true,
+        "generate_openapi": true,
+        "generate_pydantic_models": true,
+        "generate_typescript_interfaces": true
+      },
+
+      "dependency_validation": {
+        "detect_circular_dependencies": true,
+        "detect_unused_modules": true,
+        "detect_architecture_violations": true
+      }
+    },
+
+    "refactor_modules": [
+      {
+        "name": "json_repair_engine",
+        "responsibilities": [
+          "fix_invalid_keys",
+          "fix_missing_commas",
+          "fix_invalid_arrays",
+          "normalize_quotes",
+          "repair_broken_objects"
+        ]
+      },
+
+      {
+        "name": "domain_splitter",
+        "responsibilities": [
+          "separate_domains",
+          "create_modular_structure",
+          "move_related_files",
+          "generate_folder_hierarchy"
+        ]
+      },
+
+      {
+        "name": "naming_standardizer",
+        "responsibilities": [
+          "normalize_variable_names",
+          "convert_to_snake_case",
+          "remove_language_mixing",
+          "fix_typographical_errors"
+        ]
+      },
+
+      {
+        "name": "schema_generator",
+        "responsibilities": [
+          "generate_json_schema",
+          "generate_openapi_contracts",
+          "generate_pydantic_models",
+          "generate_typescript_types"
+        ]
+      },
+
+      {
+        "name": "documentation_engine",
+        "responsibilities": [
+          "generate_architecture_docs",
+          "generate_api_docs",
+          "generate_refactor_reports",
+          "generate_dependency_maps"
+        ]
+      }
+    ],
+
+    "ai_agents": [
+      {
+        "name": "Architecture_Analyzer_AI",
+        "role": "Análise estrutural da arquitetura",
+        "inputs": [
+          "source_code",
+          "json_files",
+          "directory_structure"
+        ],
+        "outputs": [
+          "architecture_report",
+          "dependency_graph",
+          "technical_debt_report"
+        ]
+      },
+
+      {
+        "name": "Refactor_Executor_AI",
+        "role": "Execução automática da refatoração",
+        "inputs": [
+          "refactor_plan",
+          "architecture_rules"
+        ],
+        "outputs": [
+          "updated_files",
+          "modularized_structure",
+          "validation_report"
+        ]
+      },
+
+      {
+        "name": "Schema_Generator_AI",
+        "role": "Geração de contratos formais",
+        "inputs": [
+          "json_structures",
+          "domain_models"
+        ],
+        "outputs": [
+          "json_schema",
+          "openapi_spec",
+          "pydantic_models"
+        ]
+      },
+
+      {
+        "name": "Documentation_AI",
+        "role": "Documentação automática",
+        "inputs": [
+          "architecture_changes",
+          "generated_schemas"
+        ],
+        "outputs": [
+          "technical_documentation",
+          "migration_guides",
+          "architecture_diagrams"
+        ]
+      }
+    ],
+
+    "workflow_engine": {
+      "supported_workflows": [
+        "architecture_refactor",
+        "json_repair",
+        "schema_generation",
+        "directory_modularization",
+        "api_generation",
+        "documentation_generation"
+      ],
+
+      "execution_pipeline": [
+        "scan",
+        "analyze",
+        "classify",
+        "refactor",
+        "validate",
+        "document",
+        "commit"
+      ]
+    },
+
+    "memory_system": {
+      "memory_types": [
+        "architecture_patterns",
+        "previous_refactors",
+        "naming_conventions",
+        "validation_rules",
+        "technical_decisions"
+      ],
+
+      "storage_strategy": {
+        "short_term": {
+          "scope": "active_refactor_session",
+          "ttl": "24h"
+        },
+
+        "long_term": {
+          "scope": "enterprise_knowledge_base",
+          "ttl": "permanent"
+        }
+      }
+    },
+
+    "integration_layer": {
+      "supported_editors": [
+        "VSCode"
+      ],
+
+      "supported_languages": [
+        "JSON",
+        "Python",
+        "TypeScript",
+        "JavaScript",
+        "YAML"
+      ],
+
+      "supported_frameworks": [
+        "FastAPI",
+        "LangGraph",
+        "Next.js",
+        "Node.js"
+      ]
+    },
+
+    "security": {
+      "safe_refactor_mode": true,
+      "automatic_backup": true,
+      "rollback_enabled": true,
+      "audit_logs": true
+    },
+
+    "governance": {
+      "enforce_clean_architecture": true,
+      "prevent_invalid_dependencies": true,
+      "require_schema_validation": true,
+      "track_all_changes": true
+    },
+
+    "kpis": {
+      "architecture_quality_score": {
+        "target": ">= 90%"
+      },
+
+      "json_validity_rate": {
+        "target": "100%"
+      },
+
+      "modularization_score": {
+        "target": ">= 85%"
+      },
+
+      "technical_debt_reduction": {
+        "target": ">= 70%"
+      }
+    },
+
+    "future_expansion": {
+      "planned_modules": [
+        "bim_refactor_agent",
+        "devops_architect_agent",
+        "security_compliance_agent",
+        "microservices_migration_agent",
+        "event_driven_architecture_agent",
+        "kubernetes_architecture_agent"
+      ]
+    }
+  }
+}

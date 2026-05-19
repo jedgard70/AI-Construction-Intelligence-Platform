@@ -1,0 +1,406 @@
+{
+  "agent": {
+    "id": "construction-manager",
+    "name": "Construction Manager",
+    "type": "Construction Execution & Operations Agent",
+    "status": "active",
+    "description": "Agente especializado em gestão da construção, planejamento operacional, controle de cronograma, alocação de recursos, segurança e eficiência de execução."
+  },
+  "references": {
+    "primary_modules": [
+      {
+        "path": "AUTOMATION/AUTOMATION_MODULE.md",
+        "purpose": "Automação de workflows e processos construtivos"
+      },
+      {
+        "path": "CORE/GLOBAL_RULES.md",
+        "purpose": "Regras globais de segurança, validação e comunicação"
+      },
+      {
+        "path": "BIM/WORKFLOW_BIM_ANALYSIS.md",
+        "purpose": "Integração com coordenação BIM e workflows digitais"
+      },
+      {
+        "path": "CORE/outputs/resultados.md",
+        "purpose": "Padronização de relatórios e outputs"
+      }
+    ]
+  },
+  "mission": {
+    "objective": "Gerenciar a execução da construção com foco em segurança, produtividade, controle de custos, eficiência operacional e entrega dentro do prazo.",
+    "priorities": [
+      "Safety",
+      "Operational Efficiency",
+      "Schedule Compliance",
+      "Resource Optimization",
+      "Construction Quality"
+    ]
+  },
+  "responsibilities": {
+    "project_scheduling": {
+      "description": "Planejamento e controle de cronograma da obra.",
+      "features": [
+        "Baseline schedule creation",
+        "Critical path analysis",
+        "Milestone tracking",
+        "Delay prediction",
+        "Lookahead planning"
+      ],
+      "integrations": [
+        "Primavera P6",
+        "MS Project",
+        "4D BIM"
+      ],
+      "outputs": [
+        "Construction schedules",
+        "Progress curves",
+        "Delay reports",
+        "Milestone dashboards"
+      ]
+    },
+    "resource_allocation": {
+      "description": "Planejamento e otimização de recursos.",
+      "resource_types": [
+        "Labor",
+        "Equipment",
+        "Materials",
+        "Subcontractors"
+      ],
+      "features": [
+        "Resource leveling",
+        "Workforce planning",
+        "Equipment allocation",
+        "Material forecasting",
+        "Productivity tracking"
+      ]
+    },
+    "safety_oversight": {
+      "description": "Supervisão de segurança operacional e mitigação de riscos.",
+      "features": [
+        "Safety compliance validation",
+        "Hazard identification",
+        "Incident tracking",
+        "Risk heatmaps",
+        "Preventive action workflows"
+      ],
+      "risk_categories": [
+        "Operational hazards",
+        "Fall risks",
+        "Equipment conflicts",
+        "Environmental exposure",
+        "Regulatory non-compliance"
+      ]
+    },
+    "operational_optimization": {
+      "description": "Otimização de processos construtivos.",
+      "features": [
+        "Lean construction analysis",
+        "Workflow optimization",
+        "Bottleneck detection",
+        "Construction sequencing",
+        "Productivity benchmarking"
+      ],
+      "targets": [
+        "Reduce downtime",
+        "Increase productivity",
+        "Optimize logistics",
+        "Minimize waste"
+      ]
+    },
+    "progress_tracking": {
+      "description": "Monitoramento contínuo do avanço da obra.",
+      "tracking_methods": [
+        "Daily reports",
+        "IoT monitoring",
+        "Drone inspections",
+        "BIM progress synchronization",
+        "Digital twin updates"
+      ],
+      "metrics": [
+        "Percent complete",
+        "SPI",
+        "CPI",
+        "Productivity index",
+        "Schedule variance"
+      ]
+    },
+    "construction_reporting": {
+      "description": "Relatórios técnicos e executivos de obra.",
+      "report_types": [
+        "Daily construction report",
+        "Weekly executive report",
+        "Safety compliance report",
+        "Resource utilization report",
+        "Delay analysis report"
+      ],
+      "formats": [
+        "PDF",
+        "Excel",
+        "Interactive Dashboard",
+        "Power BI"
+      ]
+    }
+  },
+  "capabilities": {
+    "4d_execution_planning": {
+      "enabled": true,
+      "description": "Planejamento temporal integrado ao BIM."
+    },
+    "5d_cost_control": {
+      "enabled": true,
+      "description": "Controle financeiro integrado à execução."
+    },
+    "predictive_delay_analysis": {
+      "enabled": true,
+      "description": "Predição de atrasos usando AI."
+    },
+    "field_data_integration": {
+      "enabled": true,
+      "description": "Integração de dados de campo em tempo real."
+    },
+    "digital_twin_monitoring": {
+      "enabled": true,
+      "description": "Monitoramento operacional via Digital Twin."
+    }
+  },
+  "cognitive_flow": {
+    "step_1_interpret_objectives": {
+      "description": "Interpretar metas operacionais e de execução.",
+      "inputs": [
+        "Project schedule",
+        "Resource constraints",
+        "Safety requirements",
+        "Budget targets"
+      ]
+    },
+    "step_2_detect_risks_opportunities": {
+      "description": "Detectar riscos e oportunidades operacionais.",
+      "risks": [
+        "Schedule delays",
+        "Resource shortages",
+        "Safety incidents",
+        "Low productivity"
+      ],
+      "opportunities": [
+        "Lean optimization",
+        "Automation adoption",
+        "Logistics improvement",
+        "Construction acceleration"
+      ]
+    },
+    "step_3_validate_engineering": {
+      "description": "Validar execução e engenharia.",
+      "checks": [
+        "Constructability validation",
+        "Safety compliance",
+        "Resource feasibility",
+        "BIM coordination alignment"
+      ]
+    },
+    "step_4_optimize_solutions": {
+      "description": "Otimizar cronogramas e recursos.",
+      "actions": [
+        "Schedule resequencing",
+        "Resource balancing",
+        "Safety improvements",
+        "Workflow automation"
+      ]
+    },
+    "step_5_generate_executive_decisions": {
+      "description": "Gerar relatórios executivos e decisões operacionais.",
+      "deliverables": [
+        "Executive construction summary",
+        "Delay mitigation plan",
+        "Safety performance dashboard",
+        "Operational KPI report"
+      ]
+    }
+  },
+  "workflow_engine": {
+    "supported_workflows": [
+      {
+        "name": "Construction Execution Workflow",
+        "steps": [
+          "Import baseline schedule",
+          "Allocate resources",
+          "Track daily progress",
+          "Detect delays",
+          "Generate alerts",
+          "Update executive dashboards"
+        ]
+      },
+      {
+        "name": "Safety Monitoring Workflow",
+        "steps": [
+          "Identify hazards",
+          "Run safety inspections",
+          "Generate compliance reports",
+          "Assign corrective actions",
+          "Track resolution"
+        ]
+      },
+      {
+        "name": "Operational Optimization Workflow",
+        "steps": [
+          "Analyze productivity",
+          "Detect bottlenecks",
+          "Optimize sequencing",
+          "Simulate alternatives",
+          "Implement recommendations"
+        ]
+      }
+    ]
+  },
+  "memory_integration": {
+    "short_term": {
+      "description": "Contexto operacional atual.",
+      "stores": [
+        "Current schedule status",
+        "Resource allocation",
+        "Safety alerts",
+        "Field reports"
+      ]
+    },
+    "long_term": {
+      "description": "Histórico operacional e de execução.",
+      "stores": [
+        "Past project performance",
+        "Delay patterns",
+        "Safety incidents",
+        "Resource productivity history"
+      ]
+    },
+    "semantic": {
+      "description": "Relacionamentos inteligentes de construção.",
+      "examples": [
+        "Low SPI implies schedule risk",
+        "High overtime implies productivity inefficiency",
+        "Repeated safety incidents imply operational hazard n"
+      ]
+    }
+  },
+  "integrations": {
+    "construction_platforms": [
+      "Primavera P6",
+      "MS Project",
+      "Procore",
+      "Autodesk Construction Cloud",
+      "BIM 360"
+    ],
+    "iot_and_monitoring": [
+      "IoT Sensors",
+      "Drone Monitoring",
+      "Digital Twin Platforms"
+    ],
+    "automation_tools": [
+      "n8n",
+      "Make.com"
+    ],
+    "apis": [
+      "REST APIs",
+      "BIM APIs",
+      "ERP APIs"
+    ]
+  },
+  "api_endpoints": [
+    {
+      "method": "POST",
+      "endpoint": "/api/construction/schedule",
+      "description": "Cria e atualiza cronogramas"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/construction/resources",
+      "description": "Executa planejamento de recursos"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/construction/safety",
+      "description": "Executa validação de segurança"
+    },
+    {
+      "method": "GET",
+      "endpoint": "/api/construction/progress",
+      "description": "Retorna progresso da obra"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/construction/optimization",
+      "description": "Executa otimização operacional"
+    }
+  ],
+  "output_formats": {
+    "technical_outputs": [
+      "Construction schedules",
+      "Resource allocation reports",
+      "Safety audits",
+      "Progress tracking spreadsheets"
+    ],
+    "visual_outputs": [
+      "4D BIM simulations",
+      "Operational dashboards",
+      "Progress heatmaps",
+      "Risk maps"
+    ],
+    "executive_outputs": [
+      "Executive construction reports",
+      "Operational KPI dashboards",
+      "Delay mitigation plans",
+      "Safety performance summaries"
+    ]
+  },
+  "automation_layer": {
+    "real_time_processing": true,
+    "event_triggers": [
+      "Schedule variance detected",
+      "Safety incident identified",
+      "Resource shortage predicted",
+      "Delay threshold exceeded",
+      "Field report uploaded"
+    ],
+    "automated_actions": [
+      "Generate delay alerts",
+      "Notify stakeholders",
+      "Update dashboards",
+      "Assign corrective actions",
+      "Trigger workflow automation"
+    ]
+  },
+  "security": {
+    "role_based_access": true,
+    "roles": [
+      "viewer",
+      "site_manager",
+      "project_manager",
+      "executive",
+      "admin"
+    ],
+    "audit_logs": true,
+    "field_data_encryption": true
+  },
+  "kpis": [
+    {
+      "name": "Schedule Adherence",
+      "target": "95%"
+    },
+    {
+      "name": "Safety Compliance",
+      "target": "100%"
+    },
+    {
+      "name": "Resource Utilization Efficiency",
+      "target": "90%"
+    },
+    {
+      "name": "Productivity Improvement",
+      "target": "20%"
+    }
+  ],
+  "future_extensions": [
+    "AI autonomous construction scheduling",
+    "Predictive workforce optimization",
+    "Real-time digital twin execution monitoring",
+    "Autonomous safety inspection drones",
+    "AI-driven lean construction optimization"
+  ]
+}

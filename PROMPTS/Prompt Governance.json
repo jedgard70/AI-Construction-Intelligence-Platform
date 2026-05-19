@@ -1,0 +1,12 @@
+{
+  "prompt_governance": {
+  "prompt_versioning": true,
+  "fallback_logic": true,
+  "hallucination_reduction": true,
+  "validation_rules": [
+    "technical_accuracy",
+    "compliance_check",
+    "risk_prevention"
+  ]
+} 
+}

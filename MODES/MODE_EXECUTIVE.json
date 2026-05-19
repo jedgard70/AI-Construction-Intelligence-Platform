@@ -1,0 +1,430 @@
+{
+  "mode": {
+    "id": "MODE_EXECUTIVE",
+    "name": "Executive Intelligence Mode",
+    "description": "Modo especializado em inteligência executiva para monitoramento de KPIs, análise de riscos, otimização de ROI e suporte estratégico à tomada de decisões.",
+    "status": "active"
+  },
+  "mission": {
+    "objective": "Executar análises executivas orientadas por dados para maximizar rentabilidade, reduzir riscos e apoiar decisões estratégicas em projetos de construção e investimentos.",
+    "focus_areas": [
+      "Executive KPIs",
+      "Risk Intelligence",
+      "ROI Optimization",
+      "Strategic Planning",
+      "Financial Forecasting",
+      "Executive Decision Support"
+    ]
+  },
+  "responsibilities": {
+    "kpi_analysis": {
+      "description": "Monitoramento e interpretação de indicadores executivos.",
+      "tracked_kpis": [
+        "CAPEX",
+        "OPEX",
+        "ROI",
+        "TIR",
+        "VPL",
+        "Payback",
+        "CPI",
+        "SPI",
+        "Cash Flow",
+        "EBITDA",
+        "Margem Operacional"
+      ],
+      "features": [
+        "Trend analysis",
+        "Benchmark comparison",
+        "Predictive analytics",
+        "Real-time dashboards",
+        "Anomaly detection"
+      ]
+    },
+    "risk_assessment": {
+      "description": "Identificação e avaliação de riscos financeiros, operacionais e técnicos.",
+      "risk_categories": [
+        "Financial Risks",
+        "Operational Risks",
+        "Technical Risks",
+        "Regulatory Risks",
+        "Market Risks",
+        "Supply Chain Risks"
+      ],
+      "analysis_methods": [
+        "Probability/Impact Matrix",
+        "Monte Carlo Simulation",
+        "Sensitivity Analysis",
+        "Scenario Planning"
+      ],
+      "outputs": [
+        "Risk heatmaps",
+        "Mitigation plans",
+        "Executive alerts",
+        "Contingency recommendations"
+      ]
+    },
+    "roi_optimization": {
+      "description": "Simulação e otimização de retorno sobre investimento.",
+      "capabilities": [
+        "Investment scenario modeling",
+        "Cost reduction analysis",
+        "Capital allocation optimization",
+        "Cash flow forecasting",
+        "Portfolio comparison"
+      ],
+      "optimization_targets": [
+        "Maximize ROI",
+        "Reduce payback period",
+        "Improve capital efficiency",
+        "Minimize financial exposure"
+      ]
+    },
+    "decision_support": {
+      "description": "Geração de recomendações executivas estratégicas.",
+      "features": [
+        "AI-driven recommendations",
+        "Strategic prioritization",
+        "Impact simulation",
+        "Decision scoring",
+        "Executive summaries"
+      ],
+      "decision_dimensions": [
+        "Financial",
+        "Operational",
+        "Strategic",
+        "Regulatory",
+        "Market Positioning"
+      ]
+    },
+    "strategic_reporting": {
+      "description": "Produção de relatórios executivos e apresentações estratégicas.",
+      "formats": [
+        "Executive Dashboard",
+        "Board Report",
+        "Investor Summary",
+        "PowerPoint",
+        "PDF Executive Report"
+      ],
+      "audiences": [
+        "C-Level Executives",
+        "Investors",
+        "Project Directors",
+        "Board Members"
+      ]
+    }
+  },
+  "priorities": {
+    "profitability": {
+      "priority": 1,
+      "goal": "Maximizar ROI e eficiência financeira."
+    },
+    "efficiency": {
+      "priority": 2,
+      "goal": "Otimizar processos, cronogramas e recursos."
+    },
+    "risk_management": {
+      "priority": 3,
+      "goal": "Mitigar ameaças e antecipar impactos."
+    },
+    "strategy": {
+      "priority": 4,
+      "goal": "Alinhar decisões aos objetivos corporativos."
+    },
+    "transparency": {
+      "priority": 5,
+      "goal": "Fornecer dados claros e acionáveis."
+    }
+  },
+  "output_standards": {
+    "executive_dashboards": {
+      "features": [
+        "Interactive KPI charts",
+        "Benchmark indicators",
+        "Forecast visualizations",
+        "Real-time updates",
+        "Drill-down analytics"
+      ],
+      "technologies": [
+        "Chart.js",
+        "Power BI",
+        "D3.js"
+      ]
+    },
+    "risk_reports": {
+      "fields": [
+        "Risk category",
+        "Probability",
+        "Impact",
+        "Mitigation strategy",
+        "Financial exposure",
+        "Executive priority"
+      ]
+    },
+    "roi_projections": {
+      "metrics": [
+        "ROI",
+        "TIR",
+        "VPL",
+        "Payback",
+        "Cash Flow",
+        "NPV Sensitivity"
+      ],
+      "scenarios": [
+        "Optimistic",
+        "Base",
+        "Pessimistic"
+      ]
+    },
+    "strategic_recommendations": {
+      "outputs": [
+        "Prioritized decisions",
+        "Investment recommendations",
+        "Risk mitigation actions",
+        "Operational improvements"
+      ]
+    }
+  },
+  "cognitive_flow_adaptation": {
+    "objective_definition": {
+      "description": "Definição de metas executivas e financeiras.",
+      "inputs": [
+        "ROI target",
+        "Budget constraints",
+        "Strategic priorities",
+        "Timeline goals"
+      ]
+    },
+    "risk_opportunity_analysis": {
+      "description": "Avaliação de riscos e oportunidades estratégicas.",
+      "risk_types": [
+        "Cost overruns",
+        "Market fluctuations",
+        "Operational delays",
+        "Regulatory changes"
+      ],
+      "opportunities": [
+        "Cost optimization",
+        "Market expansion",
+        "Technology adoption",
+        "Strategic partnerships"
+      ]
+    },
+    "validation": {
+      "description": "Verificação de dados e benchmarks.",
+      "checks": [
+        "Historical comparison",
+        "Financial consistency",
+        "Market validation",
+        "Data quality audit"
+      ]
+    },
+    "optimization": {
+      "description": "Simulação e ajuste de estratégias.",
+      "actions": [
+        "Scenario simulation",
+        "Budget optimization",
+        "Resource balancing",
+        "Risk-adjusted planning"
+      ]
+    },
+    "decision_outputs": {
+      "description": "Planos executivos acionáveis.",
+      "deliverables": [
+        "Executive action plan",
+        "Strategic roadmap",
+        "Financial forecast",
+        "Board-ready presentation"
+      ]
+    }
+  },
+  "memory_integration": {
+    "short_term": {
+      "description": "Contexto executivo atual.",
+      "stores": [
+        "Current KPIs",
+        "Financial simulations",
+        "Risk assessments"
+      ]
+    },
+    "long_term": {
+      "description": "Histórico estratégico e financeiro.",
+      "stores": [
+        "Past project ROI",
+        "Historical risks",
+        "Executive decisions",
+        "Benchmark datasets"
+      ]
+    },
+    "semantic": {
+      "description": "Relações conceituais financeiras e estratégicas.",
+      "examples": [
+        "Low ROI implies inefficient capital allocation",
+        "Schedule delays imply operational risk n",
+        "High CAPEX with low absorption implies liquidity exposure"
+      ]
+    }
+  },
+  "activation_triggers": [
+    "Executive KPI request",
+    "ROI analysis",
+    "Risk evaluation",
+    "Financial viability study",
+    "Executive report generation",
+    "Strategic planning request"
+  ],
+  "workflow_engine": {
+    "supported_workflows": [
+      {
+        "name": "Executive KPI Monitoring",
+        "steps": [
+          "Collect project data",
+          "Calculate KPIs",
+          "Compare benchmarks",
+          "Detect anomalies",
+          "Generate dashboard"
+        ]
+      },
+      {
+        "name": "Risk Intelligence Workflow",
+        "steps": [
+          "Identify risks",
+          "Calculate impact",
+          "Simulate scenarios",
+          "Prioritize mitigation",
+          "Generate executive report"
+        ]
+      },
+      {
+        "name": "ROI Optimization Workflow",
+        "steps": [
+          "Import financial model",
+          "Run ROI simulations",
+          "Optimize investments",
+          "Compare scenarios",
+          "Generate recommendations"
+        ]
+      }
+    ]
+  },
+  "visualization_hub": {
+    "executive_dashboard": {
+      "widgets": [
+        "ROI Trends",
+        "Risk Heatmaps",
+        "Budget Performance",
+        "Cash Flow Forecast",
+        "Portfolio Comparison",
+        "Strategic KPI Scorecard"
+      ]
+    },
+    "financial_simulator": {
+      "features": [
+        "Dynamic assumptions",
+        "Monte Carlo simulation",
+        "Scenario comparison",
+        "Sensitivity analysis"
+      ]
+    },
+    "market_intelligence": {
+      "features": [
+        "Benchmark comparison",
+        "Economic indicators",
+        "Construction market trends",
+        "Investment attractiveness"
+      ]
+    }
+  },
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "endpoint": "/api/executive/kpis",
+      "description": "Retorna KPIs executivos"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/executive/roi",
+      "description": "Executa análise de ROI"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/executive/risk-analysis",
+      "description": "Executa avaliação de riscos"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/executive/forecast",
+      "description": "Gera projeções financeiras"
+    },
+    {
+      "method": "POST",
+      "endpoint": "/api/executive/report",
+      "description": "Gera relatório executivo"
+    }
+  ],
+  "ai_agents": [
+    {
+      "name": "Executive Advisor Agent",
+      "role": "Recomendações estratégicas executivas"
+    },
+    {
+      "name": "ROI Optimization Agent",
+      "role": "Otimização financeira e investimentos"
+    },
+    {
+      "name": "Risk Intelligence Agent",
+      "role": "Análise de riscos e mitigação"
+    },
+    {
+      "name": "Financial Forecast Agent",
+      "role": "Projeções financeiras e cenários"
+    },
+    {
+      "name": "Strategic Reporting Agent",
+      "role": "Relatórios executivos automatizados"
+    }
+  ],
+  "automation_layer": {
+    "event_triggers": [
+      "KPI threshold exceeded",
+      "Budget variance detected",
+      "Risk n identified",
+      "ROI recalculated",
+      "Forecast updated"
+    ],
+    "integrations": [
+      "ERP Systems",
+      "Power BI",
+      "Excel",
+      "SAP",
+      "Oracle",
+      "n8n",
+      "Make.com"
+    ],
+    "real_time_processing": true
+  },
+  "kpis": [
+    {
+      "name": "ROI Improvement",
+      "target": "20%"
+    },
+    {
+      "name": "Risk Reduction",
+      "target": "35%"
+    },
+    {
+      "name": "Operational Efficiency",
+      "target": "25%"
+    },
+    {
+      "name": "Forecast Accuracy",
+      "target": "95%"
+    }
+  ],
+  "future_extensions": [
+    "AI predictive strategy engine",
+    "Autonomous executive reporting",
+    "ESG scoring integration",
+    "Digital Twin financial analytics",
+    "Real-time investor intelligence"
+  ]
+}

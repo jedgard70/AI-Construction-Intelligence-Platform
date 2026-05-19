@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#fff;font-family:var(--font-sans-app);padding:16px 20px}
+  .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .row + .row{margin-top:14px}
+  .lbl{font-size:9px;font-weight:600;color:var(--fg-4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  /* APP */
+  .b-primary{background:#185FA5;color:#fff;border:none;border-radius:8px;padding:7px 14px;font:600 12px var(--font-sans-app);cursor:pointer}
+  .b-primary:hover{background:#0C447C}
+  .b-secondary{background:#fff;color:var(--fg-3);border:1px solid var(--app-border);border-radius:8px;padding:7px 14px;font:500 12px var(--font-sans-app);cursor:pointer}
+  .b-secondary:hover{background:var(--app-surface-2)}
+  .b-ghost{background:transparent;color:var(--brand-blue);border:none;padding:7px 14px;font:500 12px var(--font-sans-app);cursor:pointer}
+  .b-danger{background:#FCEBEB;color:#A32D2D;border:none;border-radius:8px;padding:7px 14px;font:600 12px var(--font-sans-app);cursor:pointer}
+  /* DARK */
+  .b-gold{background:#f0a500;color:#0a0d12;border:none;border-radius:8px;padding:13px 22px;font:700 14px var(--font-sans-display);cursor:pointer}
+  .b-darkghost{background:transparent;color:#9ca3c4;border:1px solid #1e2535;border-radius:8px;padding:11px 18px;font:500 13px var(--font-sans-display);cursor:pointer}
+</style>
+<div>
+  <div class="lbl">App · primary actions</div>
+  <div class="row">
+    <button class="b-primary">+ Novo projeto</button>
+    <button class="b-primary">Salvar</button>
+    <button class="b-secondary">🔄 Atualizar</button>
+    <button class="b-secondary">Cancelar</button>
+    <button class="b-ghost">Ver tudo →</button>
+    <button class="b-danger">Excluir projeto</button>
+  </div>
+</div>
+<div>
+  <div class="lbl" style="margin-top:18px">Login · marketing CTA (dark surface)</div>
+  <div class="row" style="background:#0a0d12;padding:14px;border-radius:10px">
+    <button class="b-gold">Entrar →</button>
+    <button class="b-darkghost">📧 Reenviar confirmação</button>
+  </div>
+</div>

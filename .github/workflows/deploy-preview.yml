@@ -1,0 +1,74 @@
+name: Deploy Preview (Vercel)
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Vercel Preview
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/claude/')) &&
+      vars.VERCEL_CONFIGURED == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Pull Vercel environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build project
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to preview
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$URL" >> $GITHUB_OUTPUT
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Comment preview URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview deploy:** ${{ steps.deploy.outputs.preview_url }}`
+            })
+
+  skip-notice:
+    name: Deploy to Vercel Preview
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/claude/')) &&
+      vars.VERCEL_CONFIGURED != 'true'
+    steps:
+      - name: Vercel não configurado
+        run: |
+          echo "⏭️ Deploy Vercel ignorado — secrets não configurados."
+          echo "Para ativar, adicione VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID nos secrets"
+          echo "e crie a variável VERCEL_CONFIGURED=true no repositório."

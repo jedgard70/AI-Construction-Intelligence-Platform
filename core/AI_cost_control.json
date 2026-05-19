@@ -1,0 +1,17 @@
+{
+    "ai_resource_management": {
+  "token_usage_monitoring": true,
+  "compute_optimization": true,
+  "cost_prediction": true,
+  "resource_scaling": "dynamic"
+},
+"generative_ai": {
+  "enabled": true,
+  "capabilities": [
+    "technical_report_generation",
+    "executive_summary_generation",
+    "contract_drafting",
+    "BIM_annotation_generation"
+  ]
+}
+}

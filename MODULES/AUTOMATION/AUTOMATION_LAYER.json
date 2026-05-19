@@ -1,0 +1,11 @@
+{
+"automation_layer": {
+
+  "workflow_engine": true,
+  "api_integrations": true,
+  "event_driven_architecture": true,
+  "multi_agent_system": true,
+  "n8n_support": true,
+  "make_support": true
+ }
+}

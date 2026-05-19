@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Light neutrals</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:var(--app-bg);font-family:var(--font-sans-app);padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .sw{border-radius:10px;overflow:hidden;border:1px solid var(--app-border)}
+  .chip{height:60px;display:flex;align-items:flex-end;padding:10px}
+  .meta{padding:7px 10px 9px;background:#fff}
+  .name{font-size:11px;font-weight:600;color:var(--fg-1)}
+  .hex{font-family:var(--font-mono);font-size:10px;color:var(--fg-4);margin-top:2px}
+  .tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-4)}
+  .dark{color:#fff}
+  .grid + .grid{margin-top:10px}
+</style>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:#f4f5f7"><span class="tag">page</span></div><div class="meta"><div class="name">App BG</div><div class="hex">#f4f5f7</div></div></div>
+  <div class="sw"><div class="chip" style="background:#ffffff"><span class="tag">card</span></div><div class="meta"><div class="name">Surface</div><div class="hex">#ffffff</div></div></div>
+  <div class="sw"><div class="chip" style="background:#f8f9fc"><span class="tag">input · zebra</span></div><div class="meta"><div class="name">Surface 2</div><div class="hex">#f8f9fc</div></div></div>
+  <div class="sw"><div class="chip" style="background:#fafbfd"><span class="tag">row alt</span></div><div class="meta"><div class="name">Surface 3</div><div class="hex">#fafbfd</div></div></div>
+  <div class="sw"><div class="chip" style="background:#f0f2f7"><span class="tag">locked</span></div><div class="meta"><div class="name">Surface 4</div><div class="hex">#f0f2f7</div></div></div>
+</div>
+<div class="grid">
+  <div class="sw"><div class="chip dark" style="background:#1a1f36"><span class="tag" style="color:#fff">heading</span></div><div class="meta"><div class="name">FG 1</div><div class="hex">#1a1f36</div></div></div>
+  <div class="sw"><div class="chip dark" style="background:#3a4166"><span class="tag" style="color:#fff">body</span></div><div class="meta"><div class="name">FG 2</div><div class="hex">#3a4166</div></div></div>
+  <div class="sw"><div class="chip dark" style="background:#5a6282"><span class="tag" style="color:#fff">secondary</span></div><div class="meta"><div class="name">FG 3</div><div class="hex">#5a6282</div></div></div>
+  <div class="sw"><div class="chip dark" style="background:#8b93a7"><span class="tag" style="color:#fff">label · hint</span></div><div class="meta"><div class="name">FG 4</div><div class="hex">#8b93a7</div></div></div>
+  <div class="sw"><div class="chip" style="background:#a0a8bb;color:#fff"><span class="tag" style="color:#fff">disabled</span></div><div class="meta"><div class="name">FG 5</div><div class="hex">#a0a8bb</div></div></div>
+</div>

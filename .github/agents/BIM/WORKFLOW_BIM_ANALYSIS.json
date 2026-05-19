@@ -1,0 +1,352 @@
+{
+  "workflow_name": "BIM_Analysis_and_Coordination_Workflow",
+  "version": "1.0",
+  "language": "pt-BR",
+  "platform_alignment": {
+    "ecosystem": "AI Construction Intelligence Platform V7",
+    "integrated_modules": [
+      "BIM AI Assistant",
+      "Construction Intelligence Engine",
+      "Digital Twin Engine",
+      "Construction Simulation Engine",
+      "Visual Intelligence Engine",
+      "Decision Intelligence Engine",
+      "Executive Dashboard Engine",
+      "Revit Interoperability Layer",
+      "IFC Validation Engine",
+      "Clash Detection Engine",
+      "Constructability Analysis Engine",
+      "4D/5D Analysis Engine",
+      "BIM Data Management Engine",
+      "BIM Automation Engine",
+      "BIM Reporting Engine",
+      "BIM Collaboration Engine",
+      "BIM Optimization Engine",
+      "BIM Predictive Analysis Engine",
+      "BIM Compliance Engine",
+      "BIM Quality Assurance Engine",
+      "BIM Coordination Engine",
+      "BIM Visualization Engine",
+      "BIM Executive Intelligence Engine"
+      
+    ]
+  },
+  "mission": {
+    "primary_goal": "Implementar coordenação BIM proativa para reduzir riscos operacionais em até 40% e aumentar ROI entre 15-20% através de automação, auditoria técnica e inteligência executiva.",
+    "strategic_objectives": [
+      "redução de retrabalho",
+      "detecção precoce de colisões",
+      "padronização BIM",
+      "melhoria da construtibilidade",
+      "otimização financeira",
+      "coordenação multidisciplinar"
+    ]
+  },
+  "workflow_phases": [
+    {
+      "phase": "01_interpretacao_objetivos",
+      "description": "Definição estratégica do escopo BIM e metas executivas.",
+      "actions": [
+        "identificar disciplinas envolvidas",
+        "definir marcos executivos",
+        "mapear entregáveis BIM",
+        "validar objetivos financeiros",
+        "definir KPIs operacionais"
+      ],
+      "inputs": [
+        "RVT",
+        "IFC",
+        "cronograma",
+        "orçamento",
+        "briefing executivo"
+      ],
+      "outputs": [
+        "escopo BIM validado",
+        "matriz de disciplinas",
+        "KPIs executivos"
+      ]
+    },
+    {
+      "phase": "02_deteccao_riscos_oportunidades",
+      "description": "Análise preditiva de conflitos e oportunidades de otimização.",
+      "risk_detection": {
+        "checks": [
+          "clashes estruturais",
+          "interferências MEP",
+          "inconsistências IFC",
+          "falhas de modelagem",
+          "problemas de acessibilidade",
+          "incompatibilidades de níveis",
+          "restrições espaciais"
+        ]
+      },
+      "opportunity_analysis": {
+        "targets": [
+          "redução de retrabalho",
+          "otimização logística",
+          "redução de custos",
+          "compressão de cronograma",
+          "melhoria operacional"
+        ]
+      },
+      "automation": {
+        "enabled": true,
+        "engines": [
+          "clash_detection_engine",
+          "predictive_ai_engine",
+          "semantic_bim_analysis"
+        ]
+      }
+    },
+    {
+      "phase": "03_validacao_engenharia",
+      "description": "Auditoria multidisciplinar automatizada.",
+      "validation_scope": {
+        "ifc_validation": [
+          "consistência semântica",
+          "estrutura hierárquica",
+          "classificação IFC",
+          "parâmetros obrigatórios"
+        ],
+        "revit_validation": [
+          "famílias inconsistentes",
+          "shared coordinates",
+          "níveis duplicados",
+          "elementos órfãos"
+        ],
+        "constructability_analysis": [
+          "sequenciamento executivo",
+          "acessibilidade manutenção",
+          "viabilidade construtiva",
+          "restrições operacionais"
+        ]
+      },
+      "disciplines": [
+        "arquitetura",
+        "estrutura",
+        "MEP",
+        "infraestrutura",
+        "paisagismo"
+      ],
+      "4D_analysis": {
+        "enabled": true,
+        "features": [
+          "simulação temporal",
+          "detecção de gargalos",
+          "análise logística",
+          "sequenciamento inteligente"
+        ]
+      },
+      "5D_analysis": {
+        "enabled": true,
+        "features": [
+          "impacto financeiro de clashes",
+          "simulação de custos",
+          "cenários executivos",
+          "estimativa de ROI"
+        ]
+      }
+    },
+    {
+      "phase": "04_otimizacao_solucoes",
+      "description": "Correção inteligente e automação preventiva.",
+      "optimization_actions": [
+        "reprojeto multidisciplinar",
+        "ajuste paramétrico",
+        "padronização IFC",
+        "normalização de famílias Revit",
+        "otimização espacial",
+        "automação de validações"
+      ],
+      "continuous_workflows": {
+        "enabled": true,
+        "hooks": [
+          {
+            "trigger": "before_model_commit",
+            "action": "executar clash detection"
+          },
+          {
+            "trigger": "ifc_export",
+            "action": "validar conformidade IFC"
+          },
+          {
+            "trigger": "revit_sync",
+            "action": "comparar versões e inconsistências"
+          }
+        ]
+      },
+      "preventive_strategy": {
+        "actions": [
+          "treinamento BIM",
+          "guidelines de modelagem",
+          "coordenação contínua",
+          "auditoria recorrente",
+          "dashboards live"
+        ]
+      }
+    },
+    {
+      "phase": "05_decisoes_executivas",
+      "description": "Transformação dos dados BIM em inteligência executiva.",
+      "executive_outputs": [
+        "relatório executivo BIM",
+        "dashboard 3D/4D/5D",
+        "heatmap de riscos",
+        "análise financeira",
+        "projeção ROI",
+        "roadmap corretivo"
+      ],
+      "executive_metrics": {
+        "risk_reduction_target": "40%",
+        "roi_target": "15-20%",
+        "rework_reduction": "15-25%",
+        "clash_resolution_rate": ">90%"
+      },
+      "recommendations": [
+        "integrar digital twin",
+        "automatizar coordenação contínua",
+        "expandir BIM governance",
+        "adotar workflows event-driven"
+      ]
+    }
+  ],
+  "bim_ai_assistant": {
+    "enabled": true,
+    "capabilities": [
+      "clash_detection",
+      "constructability_analysis",
+      "discipline_coordination",
+      "quantity_extraction",
+      "4D_planning",
+      "5D_cost_analysis",
+      "BIM_validation",
+      "IFC_analysis",
+      "semantic_reasoning",
+      "predictive_detection"
+    ],
+    "decision_rules": {
+      "prioritize": [
+        "compatibility",
+        "constructability",
+        "risk_reduction",
+        "financial_efficiency",
+        "executive_visibility"
+      ],
+      "never_ignore": [
+        "critical clashes",
+        "MEP conflicts",
+        "structural inconsistencies",
+        "IFC corruption",
+        "invalid metadata"
+      ]
+    }
+  },
+  "automated_workflows": {
+    "continuous_clash_detection": {
+      "enabled": true,
+      "frequency": "real_time",
+      "triggers": [
+        "new_commit",
+        "IFC_upload",
+        "Revit_sync"
+      ]
+    },
+    "digital_twin_validation": {
+      "enabled": true,
+      "features": [
+        "live BIM comparison",
+        "field validation",
+        "IoT synchronization",
+        "progress verification"
+      ]
+    },
+    "executive_alert_system": {
+      "enabled": true,
+      "alert_levels": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    }
+  },
+  "integration_ecosystem": {
+    "supported_platforms": [
+      "Autodesk Revit",
+      "Navisworks",
+      "BIM 360",
+      "Autodesk Construction Cloud",
+      "Solibri",
+      "Tekla",
+      "ArchiCAD",
+      "Procore"
+    ],
+    "supported_formats": [
+      "IFC",
+      "RVT",
+      "NWD",
+      "DWG",
+      "BCF",
+      "FBX"
+    ]
+  },
+  "visual_intelligence": {
+    "enabled": true,
+    "features": [
+      "cinematic rendering",
+      "PBR materials",
+      "executive dashboards",
+      "3D clash visualization",
+      "heatmaps",
+      "digital twin overlays"
+    ],
+    "render_integrations": [
+      "Enscape",
+      "V-Ray",
+      "Twinmotion",
+      "Unreal Engine"
+    ]
+  },
+  "pilot_validation_framework": {
+    "pilot_projects": {
+      "selection_criteria": [
+        "alto índice de retrabalho",
+        "complexidade multidisciplinar",
+        "grande volume MEP",
+        "histórico de conflitos"
+      ]
+    },
+    "validation_metrics": [
+      "tempo médio de detecção",
+      "tempo médio de resolução",
+      "redução de retrabalho",
+      "ROI operacional",
+      "eficiência de coordenação",
+      "compliance IFC"
+    ],
+    "feedback_loop": {
+      "stakeholders": [
+        "arquitetos",
+        "engenheiros",
+        "gerentes de obra",
+        "BIM managers",
+        "investidores"
+      ]
+    }
+  },
+  "strategic_outputs": {
+    "deliverables": [
+      "auditoria BIM executiva",
+      "relatório de clashes",
+      "análise construtiva",
+      "dashboard 4D/5D",
+      "matriz de riscos",
+      "roadmap executivo",
+      "análise ROI",
+      "digital twin coordination"
+    ]
+  },
+  "ultimate_objective": {
+    "goal": "Transformar coordenação BIM em um sistema cognitivo preditivo capaz de antecipar conflitos, otimizar decisões executivas e operar como inteligência operacional da construção."
+  }
+}

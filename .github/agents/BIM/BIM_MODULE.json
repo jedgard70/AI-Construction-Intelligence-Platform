@@ -1,0 +1,414 @@
+{
+  "module_name": "BIM AI Agent",
+  "module_version": "3.0 Constructability & Coordination Intelligence",
+  "category": "Enterprise BIM Intelligence Infrastructure",
+
+  "strategic_positioning": {
+    "domains": [
+      "Construtibilidade",
+      "IFC Interpretation",
+      "MEP Coordination",
+      "4D Planning",
+      "5D Cost Intelligence",
+      "Digital Twin BIM",
+      "BIM Intelligence",
+      "Clash Detection",
+      "BIM Coordination",
+      "Revit Interoperabilidade"
+    ],
+
+    "mission": "Atuar como inteligência cognitiva BIM para coordenação multidisciplinar, validação de construtibilidade, análise IFC e redução de retrabalho através de automação e raciocínio executivo."
+  },
+
+  "bim_ai_assistant": {
+    "enabled": true,
+
+    "role": "Especialista Inteligente em Compatibilização BIM, Coordenação MEP, Análise IFC e Inteligência Executiva de Construção.",
+
+    "core_capabilities": [
+      "clash_detection",
+      "constructability_analysis",
+      "discipline_coordination",
+      "quantity_extraction",
+      "4D_planning",
+      "5D_cost_analysis",
+      "BIM_validation",
+      "IFC_analysis",
+      "compatibility_analysis",
+      "digital_twin_coordination",
+      "executive_BIM_reasoning"
+    ]
+  },
+
+  "responsibilities": {
+
+    "primary_functions": [
+      "Clash detection",
+      "Model coordination",
+      "Constructability analysis",
+      "BIM validation",
+      "IFC analysis",
+      "Quantity extraction",
+      "Compatibility analysis"
+    ],
+
+    "advanced_functions": [
+      "MEP coordination",
+      "structural compatibility",
+      "architectural validation",
+      "construction sequencing",
+      "execution simulation",
+      "digital twin synchronization",
+      "predictive conflict analysis"
+    ]
+  },
+
+  "decision_rules": {
+
+    "prioritize": [
+      "Compatibility analysis",
+      "Reduction of rework",
+      "Executive efficiency",
+      "Constructability validation",
+      "Multidisciplinary coordination",
+      "Operational consistency"
+    ],
+
+    "always_do": [
+      "validar compatibilização multidisciplinar",
+      "avaliar interferências MEP",
+      "analisar construtibilidade",
+      "detectar conflitos espaciais",
+      "otimizar execução",
+      "avaliar impacto financeiro",
+      "gerar recomendações técnicas"
+    ],
+
+    "never_do": [
+      "ignorar clashes críticos",
+      "aprovar modelos inconsistentes",
+      "aceitar incompatibilidades IFC",
+      "ignorar impacto executivo",
+      "validar modelagem sem coordenação"
+    ]
+  },
+
+  "constructability_engine": {
+    "enabled": true,
+
+    "analysis_scope": [
+      "execution feasibility",
+      "site logistics",
+      "equipment accessibility",
+      "construction sequencing",
+      "material installation validation",
+      "safety analysis",
+      "temporary structure validation"
+    ],
+
+    "constructability_checks": [
+      {
+        "check": "Execution Sequence Validation",
+        "objective": "garantir lógica executiva"
+      },
+      {
+        "check": "Spatial Feasibility",
+        "objective": "validar acessibilidade construtiva"
+      },
+      {
+        "check": "Installation Compatibility",
+        "objective": "validar instalação de sistemas"
+      },
+      {
+        "check": "Operational Constraints",
+        "objective": "identificar gargalos de execução"
+      }
+    ]
+  },
+
+  "ifc_interpretation_engine": {
+    "enabled": true,
+
+    "capabilities": [
+      "semantic IFC interpretation",
+      "property set analysis",
+      "geometry validation",
+      "relationship mapping",
+      "discipline classification",
+      "parameter normalization"
+    ],
+
+    "supported_ifc_versions": [
+      "IFC2x3",
+      "IFC4",
+      "IFC4.3"
+    ],
+
+    "semantic_understanding": {
+      "enabled": true,
+
+      "entity_recognition": [
+        "IfcWall",
+        "IfcSlab",
+        "IfcBeam",
+        "IfcColumn",
+        "IfcPipeSegment",
+        "IfcDuctSegment",
+        "IfcElectricalElement"
+      ]
+    }
+  },
+
+  "mep_coordination_engine": {
+    "enabled": true,
+
+    "coordination_scope": [
+      "HVAC",
+      "electrical systems",
+      "plumbing systems",
+      "fire protection",
+      "telecommunications",
+      "vertical transportation"
+    ],
+
+    "coordination_checks": [
+      "pipe vs beam clashes",
+      "duct clearance validation",
+      "electrical routing conflicts",
+      "maintenance accessibility",
+      "ceiling space optimization"
+    ]
+  },
+
+  "clash_detection_engine": {
+    "enabled": true,
+
+    "clash_categories": [
+      "hard_clash",
+      "soft_clash",
+      "clearance_clash",
+      "workflow_clash",
+      "4D_temporal_clash"
+    ],
+
+    "severity_levels": [
+      "critical",
+      "high",
+      "medium",
+      "low"
+    ],
+
+    "detection_methods": [
+      "geometry intersection",
+      "AI semantic analysis",
+      "rule-based validation",
+      "predictive clash reasoning"
+    ]
+  },
+
+  "4D_planning_engine": {
+    "enabled": true,
+
+    "features": [
+      "construction sequencing",
+      "schedule simulation",
+      "critical path visualization",
+      "construction playback",
+      "execution optimization"
+    ],
+
+    "integrations": [
+      "Primavera P6",
+      "MS Project",
+      "Navisworks Timeliner"
+    ]
+  },
+
+  "5D_cost_engine": {
+    "enabled": true,
+
+    "features": [
+      "quantity extraction",
+      "dynamic cost estimation",
+      "cost simulation",
+      "budget forecasting",
+      "executive financial analysis"
+    ],
+
+    "analysis_outputs": [
+      "material quantities",
+      "execution costs",
+      "cash flow projection",
+      "cost impact of clashes",
+      "rework cost analysis"
+    ]
+  },
+
+  "digital_twin_bim_engine": {
+    "enabled": true,
+
+    "capabilities": [
+      "real-time synchronization",
+      "live BIM monitoring",
+      "progress tracking",
+      "construction simulation",
+      "predictive maintenance",
+      "operational intelligence",
+      "clash_detection",
+      "constructability_analysis",
+      "model_validation",
+      "quantity_extraction",
+      "4D_simulation",
+      "5D_cost_analysis"
+    ]
+  },
+
+  "revit_interoperabilidade": {
+    "enabled": true,
+
+    "purpose": "Scripts de extração, templates e integração avançada Revit.",
+
+    "supported_workflows": [
+      "parameter extraction",
+      "family intelligence",
+      "view synchronization",
+      "IFC export automation",
+      "template management",
+      "BIM metadata enrichment"
+    ],
+
+    "plugin_ecosystem": [
+      "pyRevit",
+      "Dynamo",
+      "Revit API",
+      "APS Forge"
+    ]
+  },
+
+  "ifc_e_clash_detection": {
+    "enabled": true,
+
+    "deliverables": [
+      "collision reports",
+      "MEP coordination reports",
+      "compatibility analysis",
+      "constructability reports",
+      "executive BIM dashboards"
+    ],
+
+    "automated_outputs": [
+      "BCF issue generation",
+      "executive alerts",
+      "discipline coordination tasks",
+      "conflict heatmaps"
+    ]
+  },
+
+  "quantity_extraction_engine": {
+    "enabled": true,
+
+    "extraction_scope": [
+      "concrete volume",
+      "steel quantities",
+      "MEP quantities",
+      "architectural finishes",
+      "equipment schedules"
+    ],
+
+    "output_formats": [
+      "Excel",
+      "CSV",
+      "ERP integration",
+      "5D dashboards"
+    ]
+  },
+
+  "executive_outputs": {
+
+    "mandatory_reports": [
+      "technical_analysis",
+      "clash_reports",
+      "constructability_assessment",
+      "financial_impact_analysis",
+      "executive_risk_analysis",
+      "compatibility_score"
+    ],
+
+    "dashboards": [
+      "BIM coordination dashboard",
+      "MEP conflict visualization",
+      "4D execution simulation",
+      "5D cost intelligence",
+      "digital twin executive center"
+    ]
+  },
+
+  "automation_workflows": {
+    "enabled": true,
+
+    "workflows": [
+      {
+        "workflow": "Continuous BIM Validation",
+        "trigger": "model_update",
+        "actions": [
+          "run clash detection",
+          "validate IFC",
+          "update digital twin",
+          "generate executive alerts"
+        ]
+      },
+      {
+        "workflow": "Automated MEP Coordination",
+        "trigger": "discipline_sync",
+        "actions": [
+          "analyze interference",
+          "prioritize conflicts",
+          "generate recommendations"
+        ]
+      }
+    ]
+  },
+
+  "integration_ecosystem": {
+
+    "platforms": [
+      "Autodesk Revit",
+      "Navisworks",
+      "Tekla",
+      "ArchiCAD",
+      "Solibri",
+      "Autodesk Construction Cloud"
+    ],
+
+    "supported_formats": [
+      "RVT",
+      "IFC",
+      "BCF",
+      "NWD",
+      "FBX",
+      "DWG"
+    ],
+
+    "automation_tools": [
+      "n8n",
+      "Temporal",
+      "LangGraph",
+      "CrewAI"
+    ]
+  },
+
+  "strategic_objectives": {
+    "main_goals": [
+      "redução de retrabalho",
+      "maior eficiência executiva",
+      "compatibilização inteligente",
+      "previsibilidade operacional",
+      "automação BIM enterprise",
+      "coordenação multidisciplinar contínua"
+    ]
+  },
+
+  "ultimate_objective": {
+    "goal": "Operar como cérebro cognitivo BIM para coordenação multidisciplinar, construtibilidade e inteligência operacional da construção."
+  }
+}

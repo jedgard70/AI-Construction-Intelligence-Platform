@@ -1,0 +1,41 @@
+{
+  "system_modes": {
+    "design_mode": true,
+    "construction_mode": true,
+    "executive_mode": true,
+    "emergency_mode": true
+  },
+  "event_system": {
+    "architecture": "event_driven",
+    "message_broker": "RabbitMQ",
+    "event_types": [
+      "clash_detected",
+      "budget_exceeded",
+      "schedule_delay",
+      "risk_alert"
+    ]
+  },
+  "agent_communication": {
+    "protocol": "async_message_bus",
+    "shared_memory": true,
+    "priority_routing": true
+  },
+  "kpi_engine": {
+    "metrics": [
+      "SPI",
+      "CPI",
+      "cash_flow",
+      "productivity",
+      "rework_rate"
+    ]
+  },
+  "ai_runtime": {
+    "primary_model": "GPT-5.5",
+    "fallback_models": [
+      "Claude",
+      "Gemini"
+    ],
+    "reasoning_mode": "multi-step",
+    "tool_use": true
+  }
+}

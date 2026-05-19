@@ -1,0 +1,55 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Inputs</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#fff;font-family:var(--font-sans-app);padding:14px 18px}
+  .grid{display:grid;gap:10px 12px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g-addr{grid-template-columns:2.4fr .7fr 1.2fr .6fr 1fr}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .label{font-size:10px;font-weight:600;color:var(--fg-3);text-transform:uppercase;letter-spacing:.05em}
+  .input,.select{padding:8px 11px;border:1px solid var(--app-border);border-radius:8px;font:13px var(--font-sans-app);color:var(--fg-1);background:var(--app-surface-2);outline:none;width:100%;box-sizing:border-box}
+  .select{cursor:pointer}
+  .input.focused{border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.18)}
+  .lock{padding:8px 11px;border:1px solid var(--app-border);border-radius:8px;font:13px var(--font-sans-app);color:var(--fg-3);background:#f0f2f7;width:100%;box-sizing:border-box;display:flex;align-items:center;gap:6px}
+  .auto{font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px;background:#EAF3DE;color:#3B6D11;letter-spacing:.04em;text-transform:none}
+  .group{margin-bottom:14px}
+  .gtitle{font-size:10px;font-weight:700;color:var(--fg-4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .gtitle::after{content:'';flex:1;height:1px;background:var(--app-border)}
+</style>
+
+<div class="group">
+  <div class="gtitle">Identificação · pessoa física</div>
+  <div class="grid g3">
+    <div class="field"><label class="label">Nome completo</label>
+      <input class="input focused" value="José Edgard de Oliveira"></div>
+    <div class="field"><label class="label">CPF</label>
+      <input class="input" value="153.882.388-81"></div>
+    <div class="field"><label class="label">RG</label>
+      <input class="input" value="19.972.729-SP"></div>
+  </div>
+  <div class="grid g3" style="margin-top:10px">
+    <div class="field"><label class="label">Estado civil</label>
+      <select class="select"><option>divorciado(a)</option><option>solteiro(a)</option><option>casado(a)</option><option>viúvo(a)</option><option>união estável</option></select></div>
+    <div class="field"><label class="label">Profissão</label>
+      <input class="input" value="Engenheiro Civil"></div>
+    <div class="field"><label class="label">Nacionalidade</label>
+      <input class="input" value="brasileiro(a)"></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="gtitle">Endereço · CEP <span class="auto">auto-preenchido via CEP</span></div>
+  <div class="grid g-addr">
+    <div class="field"><label class="label">Rua</label>
+      <input class="input" value="Rua Anna Martins Barbosa"></div>
+    <div class="field"><label class="label">Número</label>
+      <input class="input" value="112"></div>
+    <div class="field"><label class="label">Cidade</label>
+      <div class="lock">🔒 Promissão</div></div>
+    <div class="field"><label class="label">Estado</label>
+      <div class="lock">🔒 SP</div></div>
+    <div class="field"><label class="label">CEP</label>
+      <input class="input" value="16370-000"></div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+{
+  "autonomous_sales_pipeline": {
+    "module_name": "Sales & Investment Captation Engine",
+    "agent_in_charge": "sales_agent",
+    "collaboration_agents": [
+      "visual_intelligence_layer",
+      "market_agent",
+      "investor_agent"
+    ],
+    "trigger_events": [
+      "cinematic_assets_approved",
+      "roi_and_valuation_locked",
+      "esg_score_published"
+    ],
+    "workflow": {
+      "step_1_asset_compilation": "Coletar imagens 4K, vídeos e o escore financeiro/ESG do projeto",
+      "step_2_copywriting_generation": "Gerar variações de texto persuasivo (A/B testing) com base nos gatilhos da tese de investimento",
+      "step_3_audience_targeting": "Definir parâmetros do público-alvo (ex: investidores imobiliários, renda alta, interesse em sustentabilidade)",
+      "step_4_payload_dispatch": "Empacotar criativos e parâmetros em JSON e enviar via Webhook/API para plataformas externas"
+    },
+    "webhook_payload_standard": {
+      "campaign_objective": "lead_generation",
+      "daily_budget_allocation": "definido_pelo_budget_agent",
+      "creative_assets_urls": [
+        "link_render_fachada_v1.jpg",
+        "link_video_drone_sora.mp4"
+      ],
+      "ad_copy_variations": [
+        "A infraestrutura do futuro, agora disponível para investimento. ESG Score: 92.",
+        "Rentabilidade previsível com engenharia autônoma. Conheça o novo padrão de construção."
+      ],
+      "target_audience_parameters": {
+        "interests": ["Real Estate Investing", "Smart Homes", "BIM"],
+        "locations": ["São Paulo", "Paraná", "Global"]
+      }
+    }
+  }
+}

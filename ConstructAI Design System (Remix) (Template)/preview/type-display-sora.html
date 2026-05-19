@@ -1,0 +1,72 @@
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Type — Sora display</title>
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html,body{margin:0;background:#0a0d12;color:#e8ecf5;font-family:var(--font-sans-display);padding:18px 22px}
+  .meta{font-family:var(--font-mono);font-size:10px;color:#9ca3c4;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px}
+  .brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .mark{width:48px;height:48px;border-radius:11px;box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 6px 18px rgba(240,165,0,.18);display:block}
+  .wordmark{font-family:var(--font-sans-display);font-size:15px;font-weight:600;color:#e8ecf5;letter-spacing:-.005em}
+  .wordmark .ai{color:#f0a500;font-weight:700}
+  .v{font-family:var(--font-mono);font-size:10px;font-weight:600;color:#f0a500;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+  .h{font-size:36px;font-weight:700;line-height:1.15;letter-spacing:-.01em;color:#e8ecf5;margin:0}
+  .h2{font-size:26px;font-weight:700;color:#e8ecf5;margin:14px 0 6px}
+  .p{font-size:15px;line-height:1.75;color:#6b7a99;margin:0;max-width:520px}
+</style>
+<div class="meta">Sora · marketing / login</div>
+
+<div class="brand">
+  <!-- Brand mark: structural "A" rising from a baseline grid,
+       AI spark crowning the apex. Reads as: architecture + intelligence. -->
+  <svg class="mark" viewBox="0 0 48 48" width="48" height="48">
+    <defs>
+      <linearGradient id="bm-tile" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="#f0a500"/>
+        <stop offset="100%" stop-color="#cf8b00"/>
+      </linearGradient>
+      <linearGradient id="bm-spark" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#ffe6a8"/>
+      </linearGradient>
+    </defs>
+    <!-- tile -->
+    <rect width="48" height="48" rx="11" fill="url(#bm-tile)"/>
+
+    <!-- baseline grid: blueprint ground line + tick marks -->
+    <g stroke="#0a0d12" stroke-opacity=".25" stroke-width="1" stroke-linecap="square">
+      <line x1="6"  y1="40" x2="42" y2="40"/>
+      <line x1="12" y1="40" x2="12" y2="42"/>
+      <line x1="24" y1="40" x2="24" y2="42"/>
+      <line x1="36" y1="40" x2="36" y2="42"/>
+    </g>
+
+    <!-- stylized "A" / scaffolding -->
+    <g fill="none" stroke="#0a0d12" stroke-linejoin="miter" stroke-linecap="square" stroke-miterlimit="8">
+      <!-- left leg -->
+      <path d="M 9 40 L 24 10" stroke-width="3.4"/>
+      <!-- right leg -->
+      <path d="M 39 40 L 24 10" stroke-width="3.4"/>
+      <!-- crossbeam (the "A" bar) -->
+      <path d="M 15.5 27 L 32.5 27" stroke-width="2.4"/>
+      <!-- inner truss diagonals -->
+      <path d="M 17 24 L 24 33 L 31 24" stroke-width="1.6" stroke-opacity=".55"/>
+    </g>
+
+    <!-- AI node spark crowning the apex -->
+    <circle cx="24" cy="10" r="5.2" fill="#A32D2D" fill-opacity=".18"/>
+    <circle cx="24" cy="10" r="3"   fill="#A32D2D"/>
+    <circle cx="24" cy="10" r="1.2" fill="url(#bm-spark)"/>
+    <!-- orbit ticks -->
+    <g fill="#A32D2D" fill-opacity=".55">
+      <circle cx="14"  cy="7"  r="1"/>
+      <circle cx="34"  cy="7"  r="1"/>
+    </g>
+  </svg>
+  <div>
+    <div class="wordmark">Construction Intelligence Platform <span class="ai">AI</span></div>
+    <div class="v">v5.3 · Enterprise Cognitive Infrastructure</div>
+  </div>
+</div>
+
+<h1 class="h">IA Especializada em<br>Construção Civil</h1>
+<h2 class="h2">Entrar na plataforma</h2>
+<p class="p">8 agentes cognitivos com análise BIM 6D/7D, gestão EVM e conformidade ABNT/NR em tempo real.</p>

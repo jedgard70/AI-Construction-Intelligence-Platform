@@ -1,0 +1,338 @@
+{
+  "document": {
+    "title": "Guia de Cores - Como Usar QUALQUER Cor",
+    "module": "Visual Lot Demarcation System",
+    "version": "1.0",
+    "status": "fully_operational",
+    "date": "2026-05-11",
+    "objective": "Demonstrar suporte completo a cores RGB ilimitadas no sistema de neon para lotes imobiliários."
+  },
+  "core_capability": {
+    "unlimited_rgb_support": true,
+    "estimated_supported_colors": 16777216,
+    "accepted_formats": [
+      "HEX"
+    ],
+    "real_time_preview": true,
+    "svg_export_compatible": true
+  },
+  "color_selection_methods": [
+    {
+      "id": 1,
+      "method": "Color Picker",
+      "difficulty": "easy",
+      "recommended": true,
+      "description": "Selecionar qualquer cor visualmente via paleta RGB.",
+      "workflow": [
+        "Abrir VISUAL/lot_neon_visualizer.html",
+        "Clicar na caixa de cor",
+        "Escolher qualquer cor da paleta",
+        "Visualizar preview instantâneo"
+      ],
+      "benefits": [
+        "16.7 milhões de cores",
+        "Preview imediato",
+        "Interface intuitiva"
+      ]
+    },
+    {
+      "id": 2,
+      "method": "Preset Buttons",
+      "difficulty": "very_easy",
+      "description": "Selecionar cores neon pré-configuradas e validadas.",
+      "preset_colors": [
+        {
+          "name": "Cyan",
+          "hex": "#00ffff"
+        },
+        {
+          "name": "Magenta",
+          "hex": "#ff00ff"
+        },
+        {
+          "name": "Lime",
+          "hex": "#00ff41"
+        },
+        {
+          "name": "Yellow",
+          "hex": "#ffff00"
+        },
+        {
+          "name": "Orange",
+          "hex": "#ff6600"
+        },
+        {
+          "name": "Red",
+          "hex": "#ff0000"
+        },
+        {
+          "name": "Green",
+          "hex": "#00ff88"
+        },
+        {
+          "name": "Blue",
+          "hex": "#0088ff"
+        }
+      ],
+      "benefits": [
+        "Cores já testadas",
+        "Resultados garantidos",
+        "Configuração instantânea"
+      ]
+    },
+    {
+      "id": 3,
+      "method": "HEX Input",
+      "difficulty": "advanced",
+      "description": "Inserir códigos hexadecimais manualmente.",
+      "examples": [
+        "#00ffff",
+        "#ffffff",
+        "#000000",
+        "#ff1493",
+        "#009688",
+        "#123abc"
+      ],
+      "benefits": [
+        "Controle total",
+        "Precisão de branding",
+        "Integração com identidade visual"
+      ]
+    }
+  ],
+  "validation_rules": {
+    "valid_formats": [
+      "#00ffff",
+      "#ABCDEF",
+      "#abcdef",
+      "#ffffff"
+    ],
+    "invalid_formats": [
+      "#12345",
+      "00ffff",
+      "red",
+      "#gggggg"
+    ],
+    "validation_engine": {
+      "hex_required": true,
+      "six_digit_format": true,
+      "rgb_hex_only": true
+    }
+  },
+  "recommended_colors": {
+    "high_impact": [
+      {
+        "name": "Cyan Bright",
+        "hex": "#00ffff",
+        "rating": 5
+      },
+      {
+        "name": "Magenta Intense",
+        "hex": "#ff00ff",
+        "rating": 5
+      },
+      {
+        "name": "Lime Neon",
+        "hex": "#00ff41",
+        "rating": 5
+      },
+      {
+        "name": "Yellow Vibrant",
+        "hex": "#ffff00",
+        "rating": 4
+      },
+      {
+        "name": "Pure Red",
+        "hex": "#ff0000",
+        "rating": 4
+      }
+    ],
+    "elegant_soft": [
+      {
+        "name": "Pastel Pink",
+        "hex": "#ffb3d9"
+      },
+      {
+        "name": "Pastel Blue",
+        "hex": "#b3d9ff"
+      },
+      {
+        "name": "Pastel Green",
+        "hex": "#b3ffb3"
+      },
+      {
+        "name": "Light Gray",
+        "hex": "#cccccc"
+      },
+      {
+        "name": "Pastel Purple",
+        "hex": "#e6b3ff"
+      }
+    ],
+    "professional": [
+      {
+        "name": "Corporate Blue",
+        "hex": "#0088ff"
+      },
+      {
+        "name": "Modern Teal",
+        "hex": "#009688"
+      },
+      {
+        "name": "Creative Orange",
+        "hex": "#ff6600"
+      },
+      {
+        "name": "Indigo",
+        "hex": "#3f51b5"
+      },
+      {
+        "name": "Classic Brown",
+        "hex": "#654321"
+      }
+    ]
+  },
+  "recommended_usage_by_context": {
+    "lot_status": [
+      {
+        "status": "available",
+        "color": "#00ff41",
+        "intensity": 1.5
+      },
+      {
+        "status": "analysis",
+        "color": "#ffff00",
+        "intensity": 1.4
+      },
+      {
+        "status": "sold",
+        "color": "#ff0000",
+        "intensity": 1.6
+      },
+      {
+        "status": "selected",
+        "color": "#00ffff",
+        "intensity": 1.8
+      },
+      {
+        "status": "alert",
+        "color": "#ff00ff",
+        "intensity": 2.0
+      },
+      {
+        "status": "premium",
+        "color": "#ffd700",
+        "intensity": 1.3
+      }
+    ],
+    "property_types": [
+      {
+        "type": "residential",
+        "color": "#0088ff"
+      },
+      {
+        "type": "commercial",
+        "color": "#ff6600"
+      },
+      {
+        "type": "industrial",
+        "color": "#808080"
+      },
+      {
+        "type": "mixed_use",
+        "color": "#009688"
+      },
+      {
+        "type": "special",
+        "color": "#8800ff"
+      }
+    ]
+  },
+  "code_examples": {
+    "html": {
+      "default": "<input type=\"color\" id=\"neonColor\" value=\"#00ffff\">",
+      "custom": "<input type=\"color\" id=\"neonColor\" value=\"#ff00ff\">"
+    },
+    "javascript": {
+      "description": "Teste automático de múltiplas cores",
+      "snippet": "const cores = ['#00ffff', '#ff00ff', '#00ff41', '#ff0000'];"
+    },
+    "python": {
+      "description": "Uso no NeonRenderer",
+      "snippet": [
+        "NeonConfig(color=\"#00ffff\", intensity=1.5)",
+        "NeonConfig(color=\"#ff1493\", intensity=1.4)",
+        "NeonConfig(color=\"#ffffff\", intensity=1.2)"
+      ]
+    }
+  },
+  "ui_features": {
+    "real_time_preview": true,
+    "instant_color_update": true,
+    "multi_lot_support": true,
+    "live_neon_adjustment": true,
+    "svg_export": true
+  },
+  "integration": {
+    "compatible_modules": [
+      "MODE_BIM",
+      "MODE_EXECUTIVE",
+      "MODE_INVESTOR"
+    ],
+    "compatible_agents": [
+      "visual-lot-demarcation",
+      "investor-pitch",
+      "bim-coordinator"
+    ]
+  },
+  "advanced_recommendations": {
+    "contrast_pairs": [
+      {
+        "primary": "#00ffff",
+        "secondary": "#ff00ff",
+        "effect": "maximum contrast"
+      },
+      {
+        "primary": "#00ff41",
+        "secondary": "#ff0000",
+        "effect": "success vs failure"
+      }
+    ],
+    "text_visibility": {
+      "light_backgrounds": "Use dark text",
+      "dark_backgrounds": "Use light text"
+    },
+    "future_feature": {
+      "gradient_support": "planned"
+    }
+  },
+  "external_tools": [
+    {
+      "name": "coolors.co",
+      "purpose": "Palette generation"
+    },
+    {
+      "name": "color-hex.com",
+      "purpose": "HEX color exploration"
+    },
+    {
+      "name": "htmlcolorcodes.com",
+      "purpose": "Visual color picker"
+    },
+    {
+      "name": "Chrome DevTools",
+      "purpose": "Native browser color picker"
+    }
+  ],
+  "conclusion": {
+    "summary": [
+      "Unlimited RGB color support",
+      "HEX-based precision",
+      "Real-time rendering",
+      "Executive presentation ready",
+      "Investor visualization compatible"
+    ],
+    "status": "production_ready",
+    "final_message": "QUALQUER cor RGB funciona perfeitamente no sistema de neon."
+  }
+}
