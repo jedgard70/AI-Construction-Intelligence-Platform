@@ -2,28 +2,12 @@
  * POST /api/juridico/contratos/analisar
  *
  * Document_Intelligence_AI — análise jurídica de contratos de construção/investimento.
- *
- * Extrai via IA:
- *   - cláusulas críticas (penalidades, rescisão, reajuste, garantias)
- *   - riscos jurídicos classificados por severidade
- *   - alertas de vencimento contratual
- *   - inconsistências e pontos de atenção
- *   - resumo executivo
- *
- * Inputs aceitos:
- *   - texto do contrato (campo "contract_text")
- *   - URL do documento (campo "document_url") — para PDFs hospedados
  */
 
 const CONTRACT_TYPES = [
-  'empreitada',
-  'fornecimento',
-  'prestacao_servicos',
-  'compra_venda_imovel',
-  'investimento_imobiliario',
-  'locacao',
-  'parceria',
-  'outro',
+  'empreitada','fornecimento','prestacao_servicos','compra_venda_imovel',
+  'investimento_imobiliario','locacao','parceria','administracao_obra',
+  'empreitada_global','empreitada_mao_obra','outro',
 ]
 
 function validate(body) {
@@ -47,11 +31,12 @@ function buildPrompt(body) {
     ? `TEXTO DO CONTRATO:\n${body.contract_text}`
     : `URL DO DOCUMENTO: ${body.document_url}`
 
-  return `Você é o Document_Intelligence_AI, especialista em análise jurídica de contratos de construção civil e investimento imobiliário no Brasil.
+  return `Você é o Document_Intelligence_AI, especialista em análise jurídica de contratos de construção civil, engenharia e investimento imobiliário no Brasil.
 
-Analise o contrato abaixo e retorne um JSON com a estrutura exata:
+Analise o contrato abaixo com rigor técnico e retorne um JSON com a estrutura exata a seguir. Não inclua texto fora do JSON.
+
 {
-  "resumo_executivo": "string — visão geral do contrato em 2-3 frases",
+  "resumo_executivo": "string — visão geral em 2-3 frases: objeto, partes, valor estimado, prazo",
   "partes_identificadas": {
     "contratante": "string ou null",
     "contratado": "string ou null",
@@ -59,10 +44,10 @@ Analise o contrato abaixo e retorne um JSON com a estrutura exata:
   },
   "clausulas_criticas": [
     {
-      "tipo": "penalidade|rescisao|reajuste|garantia|prazo|pagamento|responsabilidade|outro",
-      "descricao": "string",
+      "tipo": "penalidade|rescisao|reajuste|garantia|prazo|pagamento|responsabilidade|subcontratacao|ambiental|nr18_seguranca|fiscal_tributario|seguro|arbitragem|lgpd|propriedade_intelectual|outro",
+      "descricao": "string — descrição objetiva da cláusula",
       "risco": "alto|medio|baixo",
-      "recomendacao": "string"
+      "recomendacao": "string — ação recomendada ao contratante/contratado"
     }
   ],
   "alertas_vencimento": [
@@ -72,19 +57,41 @@ Analise o contrato abaixo e retorne um JSON com a estrutura exata:
       "urgencia": "critico|atencao|informativo"
     }
   ],
-  "inconsistencias": ["string"],
+  "inconsistencias": ["string — descrição da inconsistência ou lacuna encontrada"],
   "riscos_juridicos": [
     {
-      "risco": "string",
+      "risco": "string — descrição do risco",
       "severidade": "alto|medio|baixo",
-      "base_legal": "string"
+      "base_legal": "string — lei, artigo ou norma aplicável",
+      "categoria": "contratual|trabalhista|fiscal_tributario|ambiental|responsabilidade_civil|penal|regulatorio|outro"
     }
+  ],
+  "checklist_conformidade": {
+    "tem_objeto_definido": true,
+    "tem_prazo_definido": true,
+    "tem_valor_definido": true,
+    "tem_clausula_rescisao": true,
+    "tem_clausula_reajuste": true,
+    "tem_clausula_garantia": true,
+    "tem_foro_definido": true,
+    "tem_assinaturas_previstas": true,
+    "menciona_art_rrt": true,
+    "menciona_nr18": true,
+    "menciona_seguro_obra": false,
+    "menciona_subcontratacao": false
+  },
+  "pontos_de_atencao": [
+    "string — observação importante não coberta pelos riscos acima"
   ],
   "score_risco_geral": 0,
   "recomendacao_final": "aprovar|revisar_clausulas|rejeitar"
 }
 
-score_risco_geral: número de 0 (sem risco) a 100 (risco máximo).
+Instruções de scoring:
+- score_risco_geral: 0 (sem risco) a 100 (risco máximo)
+- Penalize fortemente: ausência de foro, cláusulas de rescisão unilateral sem multa, valores indefinidos, ausência de ART/RRT, violação da NR-18
+- Penalize moderadamente: ausência de reajuste definido, prazo de pagamento muito longo, ausência de garantia de execução
+- recomendacao_final: "aprovar" se score < 35, "revisar_clausulas" se 35–65, "rejeitar" se > 65
 
 Tipo de contrato: ${body.contract_type}
 Projeto: ${body.project_id}
@@ -106,7 +113,7 @@ async function analyzeWithAI(body) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{ role: 'user', content: buildPrompt(body) }],
       }),
     })
@@ -122,26 +129,29 @@ async function analyzeWithAI(body) {
 
 function fallbackAnalysis(body) {
   return {
-    resumo_executivo: `Contrato do tipo ${body.contract_type} recebido para análise. ANTHROPIC_API_KEY não configurada — análise IA indisponível.`,
+    resumo_executivo: `Contrato do tipo ${body.contract_type} recebido. ANTHROPIC_API_KEY não configurada — análise IA indisponível.`,
     partes_identificadas: { contratante: null, contratado: null, intervenientes: [] },
     clausulas_criticas: [],
     alertas_vencimento: [],
     inconsistencias: ['Análise automática indisponível — configure ANTHROPIC_API_KEY'],
     riscos_juridicos: [],
+    checklist_conformidade: {
+      tem_objeto_definido: false, tem_prazo_definido: false, tem_valor_definido: false,
+      tem_clausula_rescisao: false, tem_clausula_reajuste: false, tem_clausula_garantia: false,
+      tem_foro_definido: false, tem_assinaturas_previstas: false,
+      menciona_art_rrt: false, menciona_nr18: false, menciona_seguro_obra: false, menciona_subcontratacao: false,
+    },
+    pontos_de_atencao: [],
     score_risco_geral: 0,
     recomendacao_final: 'revisar_clausulas',
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const errors = validate(req.body)
-  if (errors.length > 0) {
-    return res.status(400).json({ status: 'validation_error', errors })
-  }
+  if (errors.length > 0) return res.status(400).json({ status: 'validation_error', errors })
 
   const analysis = (await analyzeWithAI(req.body)) ?? fallbackAnalysis(req.body)
 

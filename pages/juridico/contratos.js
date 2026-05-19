@@ -114,10 +114,63 @@ export default function AnalisarContrato() {
                     {result.analysis.riscos_juridicos.map((r, i) => (
                       <div key={i} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f0f2f7' }}>
                         <Chip color={SEV_COLOR[r.severidade]}>{r.severidade?.toUpperCase()}</Chip>
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '12px', color: '#1a1f36', fontWeight: 600 }}>{r.risco}</div>
-                          {r.base_legal && <div style={{ fontSize: '11px', color: '#6b7490' }}>{r.base_legal}</div>}
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '3px', flexWrap: 'wrap' }}>
+                            {r.base_legal && <span style={{ fontSize: '10px', color: '#6b7490' }}>{r.base_legal}</span>}
+                            {r.categoria && <Chip color="#185FA5">{r.categoria.replace(/_/g, ' ')}</Chip>}
+                          </div>
                         </div>
+                      </div>
+                    ))}
+                  </Card>
+                )}
+
+                {result.analysis?.checklist_conformidade && (
+                  <Card title="Checklist de Conformidade">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                      {Object.entries(result.analysis.checklist_conformidade).map(([key, val]) => (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: val ? '#3B6D11' : '#A32D2D' }}>
+                          <span style={{ fontSize: '13px' }}>{val ? '✓' : '✗'}</span>
+                          <span>{key.replace(/^tem_|^menciona_/, '').replace(/_/g, ' ')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+
+                {result.analysis?.alertas_vencimento?.length > 0 && (
+                  <Card title={`Alertas de Prazo (${result.analysis.alertas_vencimento.length})`}>
+                    {result.analysis.alertas_vencimento.map((a, i) => {
+                      const urgColor = { critico: '#A32D2D', atencao: '#BA7517', informativo: '#185FA5' }
+                      return (
+                        <div key={i} style={{ display: 'flex', gap: '8px', padding: '7px 0', borderBottom: '1px solid #f0f2f7', alignItems: 'flex-start' }}>
+                          <Chip color={urgColor[a.urgencia] || '#6b7490'}>{a.urgencia?.toUpperCase()}</Chip>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#1a1f36' }}>{a.item}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7490' }}>{a.prazo_descrito}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </Card>
+                )}
+
+                {result.analysis?.pontos_de_atencao?.length > 0 && (
+                  <Card title="Pontos de Atenção">
+                    {result.analysis.pontos_de_atencao.map((p, i) => (
+                      <div key={i} style={{ fontSize: '12px', color: '#1a1f36', padding: '5px 0', borderBottom: '1px solid #f0f2f7', lineHeight: 1.5 }}>
+                        · {p}
+                      </div>
+                    ))}
+                  </Card>
+                )}
+
+                {result.analysis?.inconsistencias?.length > 0 && (
+                  <Card title="Inconsistências">
+                    {result.analysis.inconsistencias.map((inc, i) => (
+                      <div key={i} style={{ fontSize: '12px', color: '#A32D2D', padding: '5px 0', borderBottom: '1px solid #f0f2f7' }}>
+                        ⚠ {inc}
                       </div>
                     ))}
                   </Card>
