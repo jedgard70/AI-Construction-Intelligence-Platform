@@ -1,22 +1,16 @@
-const path = require('path')
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
   transpilePackages: ['recharts', 'victory-vendor', 'es-toolkit'],
-  webpack(config) {
-    // Webpack cannot resolve es-toolkit's wildcard exports map (./compat/*)
-    // at build time, so we alias each subpath directly to its CJS file.
-    const esToolkitSubpaths = [
-      'get', 'isPlainObject', 'last', 'maxBy', 'minBy',
-      'omit', 'range', 'sortBy', 'sumBy', 'throttle', 'uniqBy',
-    ]
-    esToolkitSubpaths.forEach(fn => {
-      config.resolve.alias[`es-toolkit/compat/${fn}`] =
-        path.resolve(__dirname, `node_modules/es-toolkit/compat/${fn}.js`)
-    })
-    return config
+  turbopack: {
+    // Turbopack cannot resolve es-toolkit's wildcard exports map (./compat/*)
+    // so we alias each subpath directly to its CJS file.
+    resolveAlias: Object.fromEntries(
+      ['get', 'isPlainObject', 'last', 'maxBy', 'minBy',
+       'omit', 'range', 'sortBy', 'sumBy', 'throttle', 'uniqBy']
+        .map(fn => [`es-toolkit/compat/${fn}`, `./node_modules/es-toolkit/compat/${fn}.js`])
+    ),
   },
   async redirects() {
     return [
