@@ -1,6 +1,7 @@
 'use client'
 import HelpButton from './HelpButton'
 import NewProjectModal from './NewProjectModal'
+import NewClientModal from './NewClientModal'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import {
@@ -257,6 +258,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [events, setEvents]           = useState<AgentEvent[]>([])
   const [loading, setLoading]         = useState(true)
   const [showNewProject, setShowNewProject] = useState(false)
+  const [showNewClient, setShowNewClient] = useState(false)
   const [showPlantasViewer, setShowPlantasViewer] = useState(false)
   const [activeNav, setActiveNav]     = useState(0)
   const [activePlanta, setActivePlanta] = useState(0)
@@ -305,21 +307,26 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
     }
 
     // Dados reais do Supabase
-    const [projRes, budgetRes, eventsRes] = await Promise.all([
-      sb.from('projects').select('*').order('created_at', { ascending: false }),
-      sb.from('budget_items').select('*').order('period', { ascending: true }).limit(12),
-      sb.from('agent_events').select('*').order('created_at', { ascending: false }).limit(10),
-    ])
+    try {
+      const [projRes, budgetRes, eventsRes] = await Promise.all([
+        sb.from('projects').select('*').order('created_at', { ascending: false }),
+        sb.from('budget_items').select('*').order('period', { ascending: true }).limit(12),
+        sb.from('agent_events').select('*').order('created_at', { ascending: false }).limit(10),
+      ])
 
-    if (projRes.data)   setProjects(projRes.data as Project[])
-    if (budgetRes.data) setBudgetData(
-      budgetRes.data.map((b: any) => ({
-        period: new Date(b.period).toLocaleDateString('pt-BR', { month: 'short' }),
-        pv: b.pv, ev: b.ev, ac: b.ac,
-      }))
-    )
-    if (eventsRes.data) setEvents(eventsRes.data as AgentEvent[])
-    setLoading(false)
+      if (projRes.data)   setProjects(projRes.data as Project[])
+      if (budgetRes.data) setBudgetData(
+        budgetRes.data.map((b: any) => ({
+          period: new Date(b.period).toLocaleDateString('pt-BR', { month: 'short' }),
+          pv: b.pv, ev: b.ev, ac: b.ac,
+        }))
+      )
+      if (eventsRes.data) setEvents(eventsRes.data as AgentEvent[])
+    } catch {
+      // tabelas ainda não criadas — dashboard abre vazio sem travar
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
@@ -499,12 +506,19 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   fontFamily:'inherit' }}>
                 🏗️ Plantas
               </button>
+              <button onClick={() => setShowNewClient(true)}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
+                  border:'1px solid #534AB7', borderRadius:8, background:'#F0EEFF',
+                  fontSize:12, fontWeight:600, color:'#534AB7', cursor:'pointer',
+                  fontFamily:'inherit' }}>
+                👤 Novo Cliente
+              </button>
               <button onClick={() => setShowNewProject(true)}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
                   border:'none', borderRadius:8, background:'#185FA5',
                   fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer',
                   fontFamily:'inherit' }}>
-                + Novo projeto
+                + Novo Projeto
               </button>
             </div>
           </div>
@@ -870,7 +884,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         </div>
       )}
 
-      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onSave={loadData} />}
+      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadData} />}
+      {showNewClient && <NewClientModal onClose={() => setShowNewClient(false)} onCreated={loadData} />}
+      <HelpButton />
     </>
   )
 }
