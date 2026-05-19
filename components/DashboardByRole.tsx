@@ -105,6 +105,8 @@ const ROLE_CONFIG: Record<string, {
       { icon: '▪', label: 'Exec. Intelligence' },
       { icon: '▪', label: 'Investimentos' },
       { icon: '▪', label: 'ESG Score' },
+      { icon: '▪', label: 'Sales Pipeline' },
+      { icon: '▪', label: 'Documentos' },
     ],
     kpis: (ps) => [
       { icon: '🏢', label: 'Projetos ativos', value: String(ps.length),
@@ -428,7 +430,17 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                 )}
               </button>
             ))}
-          <a href='https://arch-vis-pro.vercel.app' target='_blank' style={{display:'flex',gap:8,padding:'8px 10px',color:'#3B6D11',fontSize:13,textDecoration:'none',margin:'4px 8px'}}>🎨 ArchVis Pro</a><a href='https://directorcut-xi.vercel.app' target='_blank' style={{display:'flex',gap:8,padding:'8px 10px',color:'#534AB7',fontSize:13,textDecoration:'none',margin:'4px 8px'}}>🎬 Director Cut</a><a href='/juridico' style={{display:'flex',gap:8,padding:'8px 10px',color:'#534AB7',fontSize:13,textDecoration:'none',margin:'4px 8px'}}>⚖️ Jurídico</a></nav>
+          <div style={{borderTop:'1px solid #e5e8f0',margin:'8px 0 4px',padding:'8px 8px 0'}}>
+            <div style={{fontSize:9,fontWeight:700,letterSpacing:'.1em',color:'#b0b8c8',textTransform:'uppercase',padding:'0 2px 6px'}}>Ferramentas</div>
+            <a href='https://arch-vis-pro.vercel.app' target='_blank' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#3B6D11',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#EAF3DE')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎨 ArchVis Pro <span style={{fontSize:9,color:'#aaa',marginLeft:'auto'}}>↗</span></a>
+            <a href='https://directorcut-xi.vercel.app' target='_blank' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#F0EEFF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>🎬 Director Cut <span style={{fontSize:9,color:'#aaa',marginLeft:'auto'}}>↗</span></a>
+            <a href='/juridico' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#534AB7',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#F0EEFF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>⚖️ Jurídico</a>
+            <a href='/vendas' style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',color:'#185FA5',fontSize:12,fontWeight:500,textDecoration:'none',borderRadius:8,transition:'background .15s'}}
+              onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')} onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>📊 Sales Pipeline</a>
+          </div></nav>
 
           {/* User box */}
           <div style={{ padding: '12px', borderTop: '1px solid #e5e8f0',
