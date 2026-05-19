@@ -255,7 +255,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [events, setEvents]           = useState<AgentEvent[]>([])
   const [loading, setLoading]         = useState(true)
   const [showNewProject, setShowNewProject] = useState(false)
+  const [showPlantasViewer, setShowPlantasViewer] = useState(false)
   const [activeNav, setActiveNav]     = useState(0)
+  const [activePlanta, setActivePlanta] = useState(0)
 
   const cfg = ROLE_CONFIG[profile.role] ?? DEFAULT_ROLE_CONFIG
 
@@ -466,7 +468,14 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   fontFamily:'inherit' }}>
                 🔄 Atualizar
               </button>
-              <button
+              <button onClick={() => setShowPlantasViewer(true)}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
+                  border:'1px solid #3B6D11', borderRadius:8, background:'#EAF3DE',
+                  fontSize:12, fontWeight:600, color:'#3B6D11', cursor:'pointer',
+                  fontFamily:'inherit' }}>
+                🏗️ Plantas
+              </button>
+              <button onClick={() => setShowNewProject(true)}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
                   border:'none', borderRadius:8, background:'#185FA5',
                   fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer',
@@ -686,6 +695,158 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
           </div>
         </main>
       </div>
+
+      {/* ── VISUALIZADOR DE PLANTAS ── */}
+      {showPlantasViewer && (
+        <div onClick={e => { if (e.target === e.currentTarget) setShowPlantasViewer(false) }}
+          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.7)', zIndex:300,
+            display:'flex', alignItems:'flex-start', justifyContent:'center',
+            padding:20, overflowY:'auto' }}>
+          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:960,
+            margin:'auto', overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,.3)' }}>
+
+            {/* Header */}
+            <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
+              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color:'#1a1f36' }}>
+                  🏗️ Visualizador de Plantas Arquitetônicas
+                </div>
+                <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>
+                  José Edgard de Oliveira · Lote 255,12 m² · Área construída 280 m²
+                </div>
+              </div>
+              <button onClick={() => setShowPlantasViewer(false)}
+                style={{ background:'none', border:'none', fontSize:20, cursor:'pointer',
+                  color:'#8890a0', lineHeight:1 }}>✕</button>
+            </div>
+
+            <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', minHeight:520 }}>
+
+              {/* Índice de Plantas */}
+              <div style={{ borderRight:'1px solid #e5e8f0', padding:'16px 12px',
+                background:'#fafafa', display:'flex', flexDirection:'column', gap:4 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
+                  letterSpacing:'.1em', marginBottom:8, paddingLeft:8 }}>Índice de Plantas</div>
+                {[
+                  { icon:'🏠', label:'Planta Baixa', sub:'Pavimento Térreo' },
+                  { icon:'⬜', label:'Planta de Forro', sub:'Modulação de gesso' },
+                  { icon:'🔺', label:'Planta de Telhado', sub:'Cobertura e caimentos' },
+                  { icon:'✂️', label:'Cortes', sub:'Corte AA / BB' },
+                  { icon:'📐', label:'Elevações', sub:'4 fachadas' },
+                  { icon:'🏛️', label:'Fachada Principal', sub:'Vista frontal' },
+                ].map((p, i) => (
+                  <button key={i} onClick={() => setActivePlanta(i)}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px',
+                      borderRadius:8, border:'none', cursor:'pointer', fontFamily:'inherit',
+                      textAlign:'left', width:'100%', transition:'all .15s',
+                      background: activePlanta===i ? '#EFF4FF' : 'transparent',
+                      borderLeft: activePlanta===i ? '3px solid #185FA5' : '3px solid transparent' }}>
+                    <span style={{ fontSize:18, flexShrink:0 }}>{p.icon}</span>
+                    <div>
+                      <div style={{ fontSize:12, fontWeight:600,
+                        color: activePlanta===i ? '#185FA5' : '#1a1f36' }}>{p.label}</div>
+                      <div style={{ fontSize:10, color:'#8890a0' }}>{p.sub}</div>
+                    </div>
+                  </button>
+                ))}
+
+                {/* Quadro de Áreas */}
+                <div style={{ marginTop:'auto', padding:'12px', background:'#fff',
+                  border:'1px solid #e5e8f0', borderRadius:10 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase',
+                    letterSpacing:'.08em', marginBottom:8 }}>Quadro de Áreas</div>
+                  {[
+                    { label:'Lote', val:'255,12 m²' },
+                    { label:'Área construída', val:'280,00 m²' },
+                    { label:'Taxa de ocupação', val:'55%' },
+                    { label:'Coeficiente', val:'1,10' },
+                    { label:'Área livre', val:'115,12 m²' },
+                  ].map(r => (
+                    <div key={r.label} style={{ display:'flex', justifyContent:'space-between',
+                      fontSize:11, padding:'3px 0', borderBottom:'1px solid #f0f0f0' }}>
+                      <span style={{ color:'#5a6282' }}>{r.label}</span>
+                      <span style={{ fontWeight:600, color:'#1a1f36', fontFamily:'monospace' }}>{r.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Área de visualização */}
+              <div style={{ display:'flex', flexDirection:'column' }}>
+                {/* Toolbar */}
+                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0',
+                  display:'flex', alignItems:'center', gap:8 }}>
+                  {['🔍 Zoom +','🔍 Zoom -','↔ Ajustar','📏 Medidas','🖨️ Imprimir'].map(a => (
+                    <button key={a} style={{ padding:'5px 10px', border:'1px solid #e5e8f0',
+                      borderRadius:6, background:'#fff', fontSize:11, cursor:'pointer',
+                      fontFamily:'inherit', color:'#5a6282' }}>{a}</button>
+                  ))}
+                </div>
+
+                {/* Canvas da planta */}
+                <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center',
+                  background:'#f0f2f5', padding:24, minHeight:380 }}>
+                  <div style={{ background:'#fff', borderRadius:8, padding:32,
+                    boxShadow:'0 2px 12px rgba(0,0,0,.1)', width:'100%', maxWidth:560, aspectRatio:'4/3',
+                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
+                    border:'2px solid #e5e8f0' }}>
+                    {[
+                      { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
+                      { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
+                      { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
+                      { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
+                      { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
+                      { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
+                    ][activePlanta] && (() => {
+                      const p = [
+                        { icon:'🏠', msg:'Planta Baixa — Pavimento Térreo', detail:'Sala, 3 quartos, 2 banheiros, cozinha, área de serviço' },
+                        { icon:'⬜', msg:'Planta de Forro', detail:'Modulação 60x60 cm · Sancas perimetrais · Spots embutidos' },
+                        { icon:'🔺', msg:'Planta de Telhado', detail:'Estrutura em madeira · Telha cerâmica · Caimento 30%' },
+                        { icon:'✂️', msg:'Corte AA / BB', detail:'Pé-direito 2,80m · Laje 12cm · Fundação em sapata corrida' },
+                        { icon:'📐', msg:'Elevações', detail:'4 fachadas · Revestimento argamassado · Pintura texturizada' },
+                        { icon:'🏛️', msg:'Fachada Principal', detail:'Portão ferro · Jardineira · Garagem para 2 veículos' },
+                      ][activePlanta]
+                      return (
+                        <>
+                          <div style={{ fontSize:56, marginBottom:16 }}>{p.icon}</div>
+                          <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36', marginBottom:8, textAlign:'center' }}>{p.msg}</div>
+                          <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>{p.detail}</div>
+                          <div style={{ marginTop:20, padding:'8px 16px', background:'#EFF4FF',
+                            borderRadius:6, fontSize:11, color:'#185FA5', fontWeight:600 }}>
+                            📎 Arquivo: {['PB-01','PF-01','PT-01','CR-01','EL-01','FA-01'][activePlanta]}.dwg
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </div>
+
+                {/* Metadados */}
+                <div style={{ padding:'12px 16px', borderTop:'1px solid #e5e8f0',
+                  background:'#fafafa', display:'flex', gap:24, flexWrap:'wrap' }}>
+                  {[
+                    { label:'Proprietário', val:'José Edgard de Oliveira' },
+                    { label:'CREA', val:'5071162007' },
+                    { label:'Endereço', val:'Promissão / SP' },
+                    { label:'Revisão', val:'Rev.02 — Mai/2026' },
+                    { label:'Escala', val:'1:50' },
+                    { label:'Norma', val:'ABNT NBR 6492' },
+                  ].map(m => (
+                    <div key={m.label}>
+                      <div style={{ fontSize:9, fontWeight:700, color:'#8890a0',
+                        textTransform:'uppercase', letterSpacing:'.07em' }}>{m.label}</div>
+                      <div style={{ fontSize:11, fontWeight:600, color:'#1a1f36' }}>{m.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onSave={loadData} />}
     </>
   )
 }
