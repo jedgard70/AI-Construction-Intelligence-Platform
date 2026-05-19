@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { getSupabase } from '../lib/supabase'
 
 const PROJECT_TYPES = [
   { value: 'edificacao_residencial',  label: 'Edificação Residencial' },
@@ -101,38 +100,27 @@ export default function NewProjectModal({ onClose, onCreated }) {
     if (!form.name.trim()) { setError('Nome do projeto é obrigatório.'); return }
     setLoading(true); setError(''); setSuccess('')
 
-    const sb = getSupabase()
-    if (!sb) {
-      // Modo demo — simula criação
-      setSuccess(`Projeto "${form.name}" criado com sucesso! (modo demo)`)
+    try {
+      const res = await fetch('/api/projects/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const json = await res.json()
+
+      if (!res.ok || json.error) {
+        setError('Erro ao criar projeto: ' + (json.error || res.status))
+        setLoading(false)
+        return
+      }
+
+      setSuccess(`Projeto "${form.name}" criado com sucesso!`)
       setLoading(false)
       setTimeout(() => { onCreated?.(); onClose() }, 1500)
-      return
-    }
-
-    const { error: err } = await sb.from('projects').insert({
-      name:             form.name.trim(),
-      code:             form.code.trim() || null,
-      type:             form.type,
-      city:             form.city.trim() || null,
-      state:            form.state || null,
-      start_date:       form.start_date || null,
-      end_date_planned: form.end_date_planned || null,
-      status:           'planejamento',
-      budget_planned:   0,
-      budget_actual:    0,
-      completion_pct:   0,
-    })
-
-    if (err) {
-      setError('Erro ao criar projeto: ' + err.message)
+    } catch (err) {
+      setError('Erro de conexão: ' + err.message)
       setLoading(false)
-      return
     }
-
-    setSuccess(`Projeto "${form.name}" criado com sucesso!`)
-    setLoading(false)
-    setTimeout(() => { onCreated?.(); onClose() }, 1500)
   }
 
   return (

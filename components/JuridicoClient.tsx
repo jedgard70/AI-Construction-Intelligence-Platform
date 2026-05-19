@@ -77,9 +77,11 @@ export default function JuridicoClient() {
   const [etapa, setEtapa]               = useState(1)
   const [tipoContrato, setTipoContrato] = useState('administracao')
   const [modoContratado, setModo]       = useState<'apex' | 'engenheiro'>('apex')
-  const [analisando, setAnalisando]     = useState(false)
-  const [analiseIA, setAnaliseIA]       = useState('')
-  const [uploadStatus, setUploadStatus] = useState('')
+  const [analisando, setAnalisando]       = useState(false)
+  const [analiseIA, setAnaliseIA]         = useState('')
+  const [uploadStatus, setUploadStatus]   = useState('')
+  const [memorial, setMemorial]           = useState('')
+  const [gerandoMemorial, setGerandoMem]  = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [parte, setParte] = useState<Parte>({
@@ -240,23 +242,261 @@ Por favor forneça:
     setAnalisando(false)
   }, [tipoContrato, parte, obra, financeiro, modoContratado])
 
-  // ─── Gera contrato completo com 16 cláusulas ───────────────
+  // ─── Helpers financeiros compartilhados ───────────────────────
+  const _contratoCalc = () => {
+    const tipo    = TIPOS_CONTRATO.find(t => t.id === tipoContrato)
+    const isAdm   = tipoContrato === 'administracao'
+    const isEmp   = tipoContrato === 'empreitada'
+    const isMao   = tipoContrato === 'mao_de_obra'
+    const isProj  = tipoContrato === 'projetos'
+    const valTotal = parseFloat((financeiro.valor_total || '0').replace(/\D/g,'')) || 0
+    const valEntr  = parseFloat((financeiro.entrada    || '0').replace(/\D/g,'')) || 0
+    const nParc    = parseInt(financeiro.parcelas) || 10
+    const saldoCalc = valTotal > 0 && valEntr > 0
+      ? `R$ ${(valTotal - valEntr).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+      : (financeiro.saldo || '[SALDO DEVEDOR]')
+    const valParc = valTotal > 0 && valEntr > 0 && nParc > 0
+      ? `R$ ${((valTotal - valEntr)/nParc).toLocaleString('pt-BR',{minimumFractionDigits:2})}`
+      : (financeiro.valor_parcela || '[VALOR DA PARCELA]')
+    const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})
+    return { tipo, isAdm, isEmp, isMao, isProj, valTotal, valEntr, nParc, saldoCalc, valParc, hoje }
+  }
+
+  // ─── HTML para impressão / DOC ─────────────────────────────────
+  const buildContratoHtml = () => {
+    const c = _contratoCalc()
+    const nomeCtd = modoContratado === 'apex'
+      ? `${APEX.nome}, CNPJ ${APEX.cnpj}, rep. por ${APEX.representante} (${APEX.cargo})`
+      : `${ENG.nome}, Eng. Civil, CREA ${ENG.crea}, CPF ${ENG.cpf}`
+
+    const cl = (n: number, t: string) =>
+      `<h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#185FA5;margin:20px 0 6px;border-bottom:1px solid #e5e8f0;padding-bottom:4px">${n}. ${t}</h2>`
+    const p  = (txt: string) => `<p style="margin:4px 0 8px;line-height:1.7">${txt}</p>`
+    const li = (items: string[]) => `<ul style="margin:6px 0 10px;padding-left:20px">${items.map(i=>`<li style="margin:3px 0;line-height:1.6">${i}</li>`).join('')}</ul>`
+
+    return `
+<div style="font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1f36;max-width:800px;margin:0 auto">
+<div style="text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #185FA5">
+  <div style="font-size:18px;font-weight:700;color:#185FA5;margin-bottom:4px">CONTRATO DE ${c.tipo?.label.toUpperCase()}</div>
+  <div style="font-size:11px;color:#8b93a7">Promissão/SP · ${c.hoje}</div>
+</div>
+${p('Pelo presente instrumento particular, as partes abaixo qualificadas têm entre si justo e contratado o seguinte:')}
+
+${cl(1,'DAS PARTES')}
+${p('<strong>CONTRATANTE:</strong> '+(parte.nome||'[NOME]')+', '+parte.nacionalidade+', '+parte.estado_civil+', '+parte.profissao+', CPF '+parte.cpf+', RG '+parte.rg+', residente em '+parte.endereco+', tel. '+parte.telefone+'.')}
+${p('<strong>CONTRATADO:</strong> '+nomeCtd+'. Responsável técnico: '+ENG.nome+' — CREA '+ENG.crea+'.')}
+
+${cl(2,'DO OBJETO')}
+${p('O presente contrato tem por objeto a <strong>'+c.tipo?.label+'</strong> para execução de:')}
+${p(obra.descricao || (obra.tipo_obra+' — '+obra.classificacao+', conforme projeto arquitetônico, projetos complementares e Memorial Descritivo aprovados, que integram este contrato como Anexo I.'))}
+${c.isAdm ? p('No regime de <strong>Administração a Preço de Custo</strong>, o CONTRATANTE fornece todos os materiais; o CONTRATADO é remunerado exclusivamente pela administração, mão de obra e gerenciamento.') : ''}
+${c.isEmp ? p('No regime de <strong>Empreitada Global</strong>, o CONTRATADO fornece toda mão de obra, materiais e equipamentos, responsabilizando-se pelo resultado final conforme especificações acordadas.') : ''}
+${c.isMao ? p('No regime de <strong>Mão de Obra</strong>, os materiais são fornecidos exclusivamente pelo CONTRATANTE; o CONTRATADO responde apenas pela execução dos serviços.') : ''}
+${c.isProj ? p('O objeto compreende a elaboração de <strong>projetos técnicos e laudos</strong>, conforme escopo detalhado no Anexo I.') : ''}
+
+${cl(3,'DOS SERVIÇOS NÃO INCLUSOS')}
+${p('NÃO estão inclusos no presente contrato, salvo aditivo escrito expressamente assinado pelas partes:')}
+${li([
+  'Projetos complementares (estrutural, elétrico, hidrossanitário, SPDA, AVCB), salvo se expressamente listados no objeto',
+  'Aprovações e taxas junto à Prefeitura, CREA, CAU, Corpo de Bombeiros e demais órgãos públicos',
+  'Laudos, vistorias, análises de solo e sondagens',
+  'Demolições totais ou remoção de entulho fora do canteiro de obras, salvo se previsto em planilha',
+  'Fornecimento de materiais pelo CONTRATADO (exceto em contratos de Empreitada Global)',
+  'ARTs ou RRTs adicionais não previstas no escopo original',
+  'Administração financeira de fornecedores ou subcontratados contratados diretamente pelo CONTRATANTE',
+  'Mudanças de projeto, upgrades de acabamentos e alterações de escopo solicitadas após a assinatura',
+  'Obras de infraestrutura externa ao terreno (ligações de água, esgoto, energia, calçada pública)',
+  'Instalação de equipamentos especiais (ar-condicionado, elevadores, automação) salvo previsão expressa',
+])}
+
+${cl(4,'DO IMÓVEL')}
+${p('A obra será executada no imóvel: <strong>'+(obra.tipo_obra||'')+'</strong> — '+obra.classificacao+
+  '<br>Endereço: '+(obra.endereco||'[ENDEREÇO]')+
+  (obra.setor?' | Setor: '+obra.setor:'')+
+  (obra.quadra?' | Quadra: '+obra.quadra:'')+
+  (obra.lote?' | Lote: '+obra.lote:'')+
+  '<br>Inscrição: '+(obra.inscricao||'—')+' | Testada: '+(obra.testada||'—')+' m | Terreno: '+(obra.area_terreno||'—')+' m² | A construir: '+(obra.area_construir||'—')+' m²'
+)}
+${p('O CONTRATANTE declara ser proprietário ou possuidor do imóvel, responsabilizando-se por restrições legais, administrativas ou de vizinhança.')}
+
+${cl(5,'DO PRAZO DE EXECUÇÃO')}
+${p('A execução terá prazo de <strong>[PRAZO]</strong> dias corridos, contados da emissão da ART/RRT junto ao CREA e do depósito da primeira parcela.')}
+${p('O prazo ficará automaticamente suspenso em caso de: (a) atraso no fornecimento de materiais pelo CONTRATANTE; (b) paralisação por autoridade pública; (c) força maior ou caso fortuito (art. 393 CC); (d) chuvas que impeçam a execução por mais de 3 dias consecutivos, registradas no RDO; (e) inadimplência financeira do CONTRATANTE por mais de 5 dias corridos.')}
+
+${cl(6,'DO PREÇO E FORMA DE PAGAMENTO')}
+${p('Valor total contratado: <strong>'+(financeiro.valor_total||'[R$ VALOR TOTAL]')+'</strong>, correspondente a '+c.tipo?.label.toLowerCase()+', conforme planilha orçamentária (Anexo II).')}
+${p('Forma de pagamento:<br>• Entrada (assinatura): <strong>'+(financeiro.entrada||'[R$ ENTRADA]')+'</strong><br>• Saldo devedor: '+c.saldoCalc+'<br>• Parcelamento: '+c.nParc+' parcelas mensais de '+c.valParc+'<br>• Vencimento: dia '+(financeiro.dia_vencimento||'10')+' de cada mês a partir do 1º mês de obra.')}
+${p('Pagamentos via PIX ou transferência:<br>Beneficiário: '+APEX.nome+' | CNPJ '+APEX.cnpj+'<br>Banco '+PAGAMENTO.banco+' | Ag. '+PAGAMENTO.agencia+' | C/C '+PAGAMENTO.conta+' | PIX: '+PAGAMENTO.pix)}
+${p('<strong>6.4.</strong> O atraso no pagamento superior a 5 (cinco) dias corridos autoriza o CONTRATADO a <strong>suspender imediatamente</strong> todos os serviços, sem qualquer penalidade, até a regularização do débito acrescido de multa de 2%, juros de 1%/mês e correção pelo INCC-M/IPCA.')}
+${p('<strong>6.5.</strong> A entrada/sinal pago na assinatura é <strong>não reembolsável</strong> em caso de desistência injustificada do CONTRATANTE, servindo como indenização mínima pelos custos de mobilização, projeto e reserva de agenda do CONTRATADO.')}
+
+${cl(7,'DO REAJUSTE DE PREÇOS')}
+${p('Os valores serão reajustados anualmente pelo INCC-M (FGV). Em caso de elevação de insumos acima de 15% verificada pelo SINAPI/IBGE, as partes negociarão revisão extraordinária em 10 dias úteis.')}
+
+${cl(8,'DOS SERVIÇOS EXTRAS E ADITIVOS')}
+${p('Quaisquer serviços não previstos no objeto original somente serão executados mediante:')}
+${li([
+  'Solicitação <strong>escrita</strong> do CONTRATANTE (e-mail, WhatsApp ou Termo Aditivo)',
+  'Aprovação <strong>prévia e escrita</strong> do orçamento pelo CONTRATANTE, com valor e prazo definidos',
+  'Assinatura de Termo Aditivo antes do início da execução',
+])}
+${p('<strong>8.2.</strong> Autorizações verbais NÃO são vinculantes. O CONTRATADO reserva-se o direito de não executar serviços extras sem autorização escrita e prévia.')}
+${p('<strong>8.3.</strong> Alterações de projeto solicitadas pelo CONTRATANTE após o início da obra poderão implicar em revisão do prazo e do valor total, formalizadas por Termo Aditivo.')}
+
+${cl(9,'DA MEDIÇÃO E APROVAÇÃO DOS SERVIÇOS')}
+${p('O CONTRATADO realizará medições mensais dos serviços executados, apresentando relatório discriminado ao CONTRATANTE.')}
+${p('<strong>9.2.</strong> O CONTRATANTE terá prazo de <strong>5 (cinco) dias úteis</strong> para aprovar, contestar ou solicitar complementação das medições. Decorrido este prazo sem manifestação, a medição será considerada <strong>tacitamente aprovada</strong> e o pagamento torna-se exigível.')}
+${p('<strong>9.3.</strong> Contestações parciais não suspendem o pagamento da parte não contestada.')}
+
+${cl(10,'DAS OBRIGAÇÕES DO CONTRATADO')}
+${li([
+  'Executar os serviços com boa técnica, observando ABNT NBR 12721, 6118, 9050 e 15575',
+  'Manter responsável técnico habilitado no local da obra',
+  'Elaborar e manter atualizado o Diário de Obra (RDO)',
+  'Providenciar ART/RRT junto ao CREA antes do início das obras',
+  'Gerenciar equipe de mão de obra e subcontratados',
+  'Apresentar medições mensais detalhadas ao CONTRATANTE',
+  'Guardar documentos fiscais relativos à obra pelo prazo de 5 anos',
+  'Comunicar imediatamente ao CONTRATANTE fatos que afetem prazo, custo ou qualidade',
+  'Cumprir integralmente as NRs de segurança do trabalho (NR-18, NR-06, NR-10, NR-35)',
+  c.isAdm ? 'Apresentar notas fiscais de todas as compras realizadas com verbas do CONTRATANTE' : '',
+].filter(Boolean))}
+
+${cl(11,'DAS OBRIGAÇÕES DO CONTRATANTE')}
+${li([
+  'Efetuar os pagamentos nas datas e condições pactuadas',
+  'Fornecer documentação do imóvel necessária ao licenciamento',
+  'Providenciar aprovações junto à Prefeitura e órgãos competentes, salvo se incluídos no objeto',
+  'Garantir livre acesso ao imóvel para execução dos serviços',
+  'Comunicar alterações de projeto com antecedência mínima de 5 dias úteis por escrito',
+  'Assinar o Diário de Obra quando solicitado',
+  'Não contratar diretamente funcionários ou subcontratados do CONTRATADO durante a vigência e por 12 meses após o término',
+  'Designar um representante com poderes para aprovar medições, aditivos e alterações',
+  c.isAdm ? 'Manter conta bancária específica para a obra e aprovar previamente compras acima de R$ 500,00' : '',
+].filter(Boolean))}
+
+${cl(12,'DA RESPONSABILIDADE TÉCNICA')}
+${p('O CONTRATADO assume responsabilidade técnica pelos serviços conforme o <strong>Art. 618 do Código Civil</strong> (Lei 10.406/2002): <em>"Nos contratos de empreitada de edifícios ou outras construções consideráveis, o empreiteiro de materiais e execução responderá, durante o prazo irredutível de cinco anos, pela solidez e segurança do trabalho, assim em razão dos materiais, como do solo."</em>')}
+${p('Responsável técnico: '+ENG.nome+' — CREA '+ENG.crea+' | ART/RRT nº: ___________________________ (a ser anotada)')}
+
+${cl(13,'DOS VÍCIOS OCULTOS E CONDIÇÕES PREEXISTENTES')}
+${p('Em obras de <strong>reforma, ampliação ou adaptação</strong>, o CONTRATADO <strong>não responde</strong> por:')}
+${li([
+  'Vícios ocultos da construção preexistente não detectáveis por inspeção visual (infiltrações latentes, fissuras estruturais ocultas, instalações fora de norma embutidas, fundações subdimensionadas)',
+  'Danos decorrentes de estrutura, solo ou fundação preexistentes não declarados pelo CONTRATANTE',
+  'Inadequações de projeto não elaborado pelo CONTRATADO',
+  'Problemas oriundos de materiais fornecidos pelo CONTRATANTE ou por ele especificados',
+])}
+${p('<strong>13.2.</strong> Constatada condição preexistente que afete a execução ou a segurança, o CONTRATADO notificará o CONTRATANTE por escrito e os serviços serão suspensos até solução, sem penalidade ao CONTRATADO.')}
+${p('<strong>13.3.</strong> Reformas são regidas pela <strong>NBR 16280:2015</strong> (Reforma em edificações). O CONTRATANTE é responsável por obter todas as aprovações condominiais ou municipais exigidas.')}
+
+${cl(14,'DA LIMITAÇÃO DE RESPONSABILIDADE')}
+${p('O CONTRATADO <strong>não se responsabiliza</strong> por:')}
+${li([
+  'Qualidade, resistência ou adequação de materiais escolhidos, comprados ou fornecidos pelo CONTRATANTE',
+  'Serviços executados por terceiros contratados diretamente pelo CONTRATANTE, sem supervisão do CONTRATADO',
+  'Danos causados por uso inadequado, falta de manutenção preventiva ou reformas não autorizadas após a entrega',
+  'Perdas indiretas, lucros cessantes ou danos imateriais do CONTRATANTE',
+  'Atrasos causados por greves, desabastecimento do mercado, pandemia ou eventos de força maior (art. 393 CC)',
+])}
+${p('<strong>14.2.</strong> A propriedade intelectual de projetos, memoriais e especificações elaborados pelo CONTRATADO permanece com o CONTRATADO até o pagamento integral do contrato. O CONTRATANTE recebe licença de uso para execução da obra objeto deste instrumento.')}
+
+${cl(15,'DAS GARANTIAS DE EXECUÇÃO')}
+${p('O CONTRATADO garante os serviços executados pelo prazo mínimo de:')}
+${li([
+  '<strong>5 anos:</strong> solidez estrutural e estanqueidade (art. 618 CC)',
+  '<strong>3 anos:</strong> impermeabilizações, instalações hidrossanitárias e elétricas (NBR 15575)',
+  '<strong>1 ano:</strong> revestimentos, pinturas e acabamentos em geral',
+])}
+${p('O prazo de garantia inicia-se na data do Termo de Entrega da Obra. A garantia não cobre danos por mau uso, falta de manutenção, reformas não autorizadas ou força maior.')}
+
+${cl(16,'DO SEGURO DA OBRA')}
+${p('Recomenda-se que o CONTRATANTE contrate seguro de obra (Risco de Engenharia) para cobertura de danos materiais e responsabilidade civil durante a execução. O CONTRATADO manterá apólice de RC Profissional vigente durante toda a execução.')}
+
+${cl(17,'DAS PENALIDADES E MULTAS')}
+${p('Em caso de inadimplência:')}
+${li([
+  'Multa compensatória: 10% sobre o valor total do contrato',
+  'Multa moratória: 0,5% ao dia sobre o valor da obrigação descumprida, limitada a 10%',
+  'Perdas e danos: nos termos dos arts. 402-404 CC',
+])}
+${p('Atraso injustificado na entrega superior a 30 dias corridos: multa de 0,1%/dia sobre o valor total, limitada a 5%.')}
+
+${cl(18,'DA RESCISÃO CONTRATUAL')}
+${p('O contrato poderá ser rescindido mediante notificação escrita com <strong>15 (quinze) dias corridos</strong> de antecedência nas seguintes hipóteses: descumprimento de cláusula; inadimplência superior a 30 dias; paralisação injustificada superior a 15 dias; insolvência ou falência; acordo mútuo.')}
+${p('<strong>18.2. Rescisão pelo CONTRATANTE sem justa causa:</strong> O CONTRATANTE pagará ao CONTRATADO o valor dos serviços executados e medidos, <strong>a entrada/sinal é retida integralmente pelo CONTRATADO</strong> como indenização mínima, acrescida de multa compensatória de 10% sobre o saldo contratual restante e despesas de desmobilização comprovadas.')}
+${p('<strong>18.3. Rescisão pelo CONTRATADO sem justa causa:</strong> O CONTRATADO devolverá materiais e equipamentos do CONTRATANTE, pagará multa compensatória de 10% sobre o saldo contratual e garantirá continuidade mínima da obra por 30 dias para contratação de substituto.')}
+${p('<strong>18.4.</strong> Todos os documentos técnicos (projetos, RDO, planilhas, ARTs) serão entregues ao CONTRATANTE somente após quitação integral de todas as obrigações financeiras.')}
+
+${cl(19,'DA SEGURANÇA E MEDICINA DO TRABALHO')}
+${p('O CONTRATADO cumpre integralmente: <strong>NR-18</strong> (Construção Civil), <strong>NR-06</strong> (EPIs), <strong>NR-10</strong> (Eletricidade), <strong>NR-35</strong> (Trabalho em Altura). O CONTRATADO é único responsável por acidentes com seus empregados e subcontratados, respondendo perante o INSS, FGTS e demais obrigações trabalhistas.')}
+
+${cl(20,'DA PROTEÇÃO DE DADOS PESSOAIS — LGPD')}
+${p('As partes tratam dados pessoais em conformidade com a <strong>Lei 13.709/2018</strong> (LGPD), exclusivamente para execução deste contrato, emissão de documentos fiscais e cumprimento de obrigações legais. Nenhuma das partes compartilhará dados pessoais com terceiros sem consentimento prévio, salvo por determinação legal.')}
+
+${cl(21,'DAS DISPOSIÇÕES GERAIS')}
+${p('21.1. Alterações somente por Termo Aditivo escrito, assinado pelas partes e por duas testemunhas.')}
+${p('21.2. A tolerância de qualquer descumprimento não importa em novação ou renúncia.')}
+${p('21.3. Casos omissos regidos pelo Código Civil Brasileiro (Lei 10.406/2002).')}
+${p('21.4. As partes elegem o foro da <strong>Comarca de Promissão/SP</strong> para dirimir litígios, renunciando a qualquer outro.')}
+</div>`
+  }
+
+  // ─── Gera memorial descritivo via IA ──────────────────────────
+  const gerarMemorial = async () => {
+    setGerandoMem(true); setMemorial('')
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 3000,
+          system: `Você é um engenheiro civil sênior especialista em elaboração de memoriais descritivos para obras no Brasil. Gere memoriais técnicos completos, claros e padronizados conforme NBR 12721 e boas práticas da ABNT. Use linguagem técnica precisa. Formate com seções numeradas e sub-itens.`,
+          messages: [{ role: 'user', content: `Gere um Memorial Descritivo completo para a seguinte obra:
+
+TIPO: ${obra.tipo_obra} — ${obra.classificacao}
+ENDEREÇO: ${obra.endereco || 'Promissão/SP'}
+ÁREA CONSTRUÍDA: ${obra.area_construir || '[não informado]'} m²
+ÁREA TERRENO: ${obra.area_terreno || '[não informado]'} m²
+DESCRIÇÃO: ${obra.descricao || 'Construção residencial unifamiliar'}
+REGIME: ${TIPOS_CONTRATO.find(t=>t.id===tipoContrato)?.label}
+CONTRATANTE: ${parte.nome || '[CONTRATANTE]'}
+RESPONSÁVEL TÉCNICO: ${ENG.nome} — CREA ${ENG.crea}
+
+O memorial deve conter:
+1. Identificação da obra e das partes
+2. Descrição geral do projeto
+3. Fundações e movimentação de terra
+4. Estrutura (tipo, materiais, normas)
+5. Alvenaria e vedações
+6. Cobertura e telhamento
+7. Revestimentos internos e externos
+8. Esquadrias (portas e janelas)
+9. Pisos e pavimentações
+10. Instalações elétricas e de comunicações (normas ABNT)
+11. Instalações hidrossanitárias (normas ABNT)
+12. Pintura e acabamentos
+13. Instalações especiais (se aplicável)
+14. Disposições gerais, normas aplicáveis e responsabilidades
+15. Assinatura e ART
+
+Seja específico, técnico e completo. Use as normas ABNT aplicáveis em cada seção.` }],
+        }),
+      })
+      const data = await res.json()
+      setMemorial(data?.content?.[0]?.text || data.response || 'Erro ao gerar memorial.')
+    } catch { setMemorial('Erro ao conectar ao agente. Verifique a conexão.') }
+    setGerandoMem(false)
+  }
+
+  // ─── Gera contrato completo (texto — usado na preview etapa 6) ─
   const gerarContrato = () => {
-    const tipo  = TIPOS_CONTRATO.find(t => t.id === tipoContrato)
+    const c = _contratoCalc()
+    const { tipo, isAdm, isEmp, saldoCalc, valParc, nParc } = c
+
     const sep   = '═'.repeat(56)
     const linha = '─'.repeat(56)
-    const hoje  = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
-    const isAdm = tipoContrato === 'administracao'
-    const isEmp = tipoContrato === 'empreitada'
-
-    // Calcula saldo automaticamente se possível
-    const valTotal = parseFloat((financeiro.valor_total || '0').replace(/\D/g, '')) || 0
-    const valEntr  = parseFloat((financeiro.entrada || '0').replace(/\D/g, '')) || 0
-    const saldoCalc = valTotal > 0 && valEntr > 0 ? `R$ ${(valTotal - valEntr).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : (financeiro.saldo || '[SALDO DEVEDOR]')
-    const nParc = parseInt(financeiro.parcelas) || 10
-    const valParc = valTotal > 0 && valEntr > 0 && nParc > 0
-      ? `R$ ${((valTotal - valEntr) / nParc).toLocaleString('pt-BR', {minimumFractionDigits:2})}`
-      : (financeiro.valor_parcela || '[VALOR DA PARCELA]')
 
     return `${sep}
                     CONTRATO DE ${tipo?.label.toUpperCase()}
@@ -290,314 +530,320 @@ ${linha}
 ${linha}
 
 2.1. O presente contrato tem por objeto a ${tipo?.label} para execução de:
+     ${obra.descricao || `${obra.tipo_obra} — ${obra.classificacao}, conforme projeto arquitetônico, projetos complementares e Memorial Descritivo aprovados (Anexo I).`}
 
-     ${obra.descricao || `${obra.tipo_obra} — ${obra.classificacao}, conforme projeto arquitetônico, projetos complementares (estrutural, elétrico, hidrossanitário) e Memorial Descritivo aprovados, que integram este contrato como Anexo I.`}
-
-${isAdm ? `2.2. No regime de ADMINISTRAÇÃO A PREÇO DE CUSTO, cabe ao CONTRATANTE o
-     fornecimento de todos os materiais de construção, sendo o CONTRATADO
-     remunerado exclusivamente pela administração, mão de obra e gerenciamento.` :
-isEmp ? `2.2. No regime de EMPREITADA GLOBAL, o CONTRATADO fornece toda a mão de
-     obra, materiais e equipamentos necessários, responsabilizando-se pelo
-     resultado final da obra conforme especificações técnicas acordadas.` :
-`2.2. Os serviços serão executados conforme especificações técnicas e
-     cronograma físico aprovados pelas partes.`}
+${isAdm ? `2.2. REGIME: ADMINISTRAÇÃO A PREÇO DE CUSTO — o CONTRATANTE fornece todos
+     os materiais; o CONTRATADO é remunerado pela administração e mão de obra.` :
+isEmp ? `2.2. REGIME: EMPREITADA GLOBAL — o CONTRATADO fornece toda mão de obra,
+     materiais e equipamentos, responsabilizando-se pelo resultado final.` :
+c.isMao ? `2.2. REGIME: MÃO DE OBRA — materiais fornecidos exclusivamente pelo CONTRATANTE;
+     o CONTRATADO responde apenas pela execução dos serviços.` :
+`2.2. REGIME: PROJETOS E LAUDOS — elaboração de projetos técnicos conforme Anexo I.`}
 
 ${linha}
-3. DO IMÓVEL
+3. DOS SERVIÇOS NÃO INCLUSOS
 ${linha}
 
-3.1. A obra objeto deste contrato será executada no imóvel com as seguintes
-     características:
-
-     Tipo / Classificação:   ${obra.tipo_obra} — ${obra.classificacao}
-     Endereço completo:      ${obra.endereco || '[LOGRADOURO, NÚMERO, BAIRRO, CIDADE/UF]'}
-     Setor: ${obra.setor || '—'}  |  Quadra: ${obra.quadra || '—'}  |  Lote: ${obra.lote || '—'}
-     Inscrição imobiliária:  ${obra.inscricao || '—'}
-     Testada:                ${obra.testada || '—'} m
-     Área do terreno:        ${obra.area_terreno || '—'} m²
-     Área a construir:       ${obra.area_construir || '—'} m²
-
-3.2. O CONTRATANTE declara ser proprietário ou possuidor do imóvel
-     descrito acima, responsabilizando-se por eventuais restrições legais,
-     administrativas ou de vizinhança que possam afetar a execução da obra.
+3.1. NÃO estão inclusos neste contrato, salvo Termo Aditivo escrito:
+     a) Projetos complementares (estrutural, elétrico, hidro, SPDA, AVCB)
+        não listados expressamente no objeto;
+     b) Aprovações e taxas junto à Prefeitura, CREA, CAU, Bombeiros;
+     c) Laudos, vistorias, análises de solo e sondagens;
+     d) Remoção de entulho fora do canteiro, salvo se previsto em planilha;
+     e) Fornecimento de materiais pelo CONTRATADO (exceto Empreitada Global);
+     f) ARTs ou RRTs adicionais não previstas no escopo original;
+     g) Administração financeira de terceiros contratados diretamente pelo
+        CONTRATANTE sem supervisão do CONTRATADO;
+     h) Alterações de projeto e upgrades de acabamento após a assinatura;
+     i) Obras de infraestrutura externa ao terreno (ligações de água, esgoto,
+        energia elétrica, calçada pública);
+     j) Instalação de equipamentos especiais (ar-condicionado, elevadores,
+        automação residencial) salvo previsão expressa.
 
 ${linha}
-4. DO PRAZO DE EXECUÇÃO
+4. DO IMÓVEL
 ${linha}
 
-4.1. A execução dos serviços terá prazo de [PRAZO] dias corridos, contados
-     a partir da data de emissão da Anotação de Responsabilidade Técnica — ART/RRT
-     junto ao CREA/CAU e do depósito da primeira parcela.
+4.1. A obra será executada no imóvel abaixo identificado:
 
-4.2. O cronograma físico-financeiro detalhado consta do Anexo II, podendo
-     ser reprogramado de comum acordo entre as partes, mediante aditivo escrito.
+     Tipo / Classificação: ${obra.tipo_obra} — ${obra.classificacao}
+     Endereço:             ${obra.endereco || '[LOGRADOURO, NÚMERO, BAIRRO, CIDADE/UF]'}
+     Setor: ${obra.setor||'—'} | Quadra: ${obra.quadra||'—'} | Lote: ${obra.lote||'—'}
+     Inscrição imobiliária: ${obra.inscricao||'—'}
+     Testada: ${obra.testada||'—'} m | Terreno: ${obra.area_terreno||'—'} m² | A construir: ${obra.area_construir||'—'} m²
 
-4.3. O prazo ficará automaticamente suspenso em caso de:
+4.2. O CONTRATANTE declara ser proprietário ou possuidor do imóvel,
+     responsabilizando-se por restrições legais, administrativas ou de vizinhança.
+
+${linha}
+5. DO PRAZO DE EXECUÇÃO
+${linha}
+
+5.1. A execução terá prazo de [PRAZO] dias corridos, contados da emissão da
+     ART/RRT junto ao CREA e do depósito da primeira parcela.
+
+5.2. O prazo ficará automaticamente suspenso em caso de:
      a) Atraso no fornecimento de materiais imputável ao CONTRATANTE;
-     b) Paralisação por determinação de autoridade pública;
-     c) Eventos de força maior ou caso fortuito (art. 393 do Código Civil);
-     d) Chuvas que impeçam a execução por período superior a 3 (três) dias
-        consecutivos, devidamente registradas no Diário de Obra (RDO).
-
-4.4. O descumprimento injustificado do prazo pelo CONTRATADO sujeita-o à
-     multa prevista na Cláusula 12 deste instrumento.
+     b) Paralisação por autoridade pública;
+     c) Força maior ou caso fortuito (art. 393 CC);
+     d) Chuvas que impeçam a execução por mais de 3 dias consecutivos (RDO);
+     e) Inadimplência financeira do CONTRATANTE por mais de 5 dias corridos.
 
 ${linha}
-5. DO PREÇO E FORMA DE PAGAMENTO
+6. DO PREÇO E FORMA DE PAGAMENTO
 ${linha}
 
-5.1. O valor total contratado é de ${financeiro.valor_total || '[R$ VALOR TOTAL]'},
-     correspondente à ${tipo?.label.toLowerCase()}, conforme planilha orçamentária
-     (Anexo III), que integra este contrato.
+6.1. Valor total: ${financeiro.valor_total || '[R$ VALOR TOTAL]'} — ${tipo?.label.toLowerCase()},
+     conforme planilha orçamentária (Anexo II).
 
-5.2. Forma de pagamento:
+6.2. Forma de pagamento:
+     Entrada (assinatura): ${financeiro.entrada || '[R$ ENTRADA]'}
+     Saldo devedor:        ${saldoCalc}
+     Parcelamento:         ${nParc} parcelas mensais de ${valParc}
+     Vencimento:           Dia ${financeiro.dia_vencimento||'10'} de cada mês (1º mês de obra)
 
-     Entrada (assinatura do contrato): ${financeiro.entrada || '[R$ VALOR DA ENTRADA]'}
-     Saldo devedor:  ${saldoCalc}
-     Parcelamento:   ${nParc} parcelas mensais de ${valParc}
-     Vencimento:     Dia ${financeiro.dia_vencimento || '10'} de cada mês, a partir do 1º mês de obra.
-
-5.3. Pagamentos deverão ser realizados via PIX ou transferência bancária:
-
-     Beneficiário: ${modoContratado === 'apex' ? APEX.nome + ' — CNPJ ' + APEX.cnpj : ENG.nome + ' — CPF ' + ENG.cpf}
-     Banco ${PAGAMENTO.banco}  |  Agência ${PAGAMENTO.agencia}  |  C/C ${PAGAMENTO.conta}
+6.3. Pagamentos via PIX/transferência:
+     Beneficiário: ${APEX.nome} | CNPJ ${APEX.cnpj}
+     Banco ${PAGAMENTO.banco} | Ag. ${PAGAMENTO.agencia} | C/C ${PAGAMENTO.conta}
      Chave PIX: ${PAGAMENTO.pix}
 
-5.4. O CONTRATANTE que atrasar o pagamento por mais de 5 (cinco) dias
-     corridos ficará sujeito a:
-     — Multa moratória de 2% (dois por cento) sobre o valor da parcela;
-     — Juros de mora de 1% (um por cento) ao mês (pro rata die);
-     — Correção monetária pelo INCC-M (FGV) ou IPCA/IBGE, o que for maior.
+6.4. Atraso no pagamento gera: multa de 2% + juros de 1%/mês + INCC-M/IPCA.
+     Após 5 (cinco) dias corridos de inadimplência, o CONTRATADO poderá
+     SUSPENDER IMEDIATAMENTE os serviços, sem penalidade.
 
-5.5. O CONTRATADO poderá suspender os serviços após 15 (quinze) dias de
-     inadimplência, sem que tal suspensão configure descumprimento contratual.
-
-${linha}
-6. DO REAJUSTE DE PREÇOS
-${linha}
-
-6.1. Os valores contratados serão reajustados anualmente pelo índice do
-     INCC-M (Índice Nacional de Custo da Construção — FGV), medido no
-     período entre a data de assinatura e a data de reajuste.
-
-6.2. Em caso de elevação de insumos acima de 15% (quinze por cento)
-     verificada pelo SINAPI (IBGE), as partes se comprometem a negociar
-     revisão extraordinária no prazo de 10 (dez) dias úteis.
-
-6.3. O reajuste não se aplica às parcelas já vencidas e não pagas
-     em decorrência de inadimplência do CONTRATANTE.
+6.5. A entrada/sinal pago na assinatura é NÃO REEMBOLSÁVEL em caso de
+     desistência injustificada do CONTRATANTE, servindo como indenização
+     mínima pelos custos de mobilização e reserva de agenda do CONTRATADO.
 
 ${linha}
-7. DAS OBRIGAÇÕES DO CONTRATADO
+7. DO REAJUSTE DE PREÇOS
 ${linha}
 
-7.1. Constituem obrigações do CONTRATADO:
+7.1. Os valores serão reajustados anualmente pelo INCC-M (FGV).
+7.2. Elevação de insumos acima de 15% (SINAPI/IBGE): revisão extraordinária
+     negociada em 10 dias úteis.
 
-     a) Executar os serviços com boa técnica, primando pela qualidade,
-        observando as normas técnicas da ABNT, especialmente NBR 12721,
-        NBR 6118, NBR 9050 e NBR 15575 (quando aplicável);
+${linha}
+8. DOS SERVIÇOS EXTRAS E ADITIVOS
+${linha}
+
+8.1. Serviços não previstos no objeto original somente serão executados
+     mediante:
+     a) Solicitação ESCRITA do CONTRATANTE (e-mail, WhatsApp ou Termo Aditivo);
+     b) Aprovação PRÉVIA E ESCRITA do orçamento, com valor e prazo definidos;
+     c) Assinatura de Termo Aditivo antes do início da execução.
+
+8.2. Autorizações VERBAIS NÃO são vinculantes. O CONTRATADO reserva-se o
+     direito de não executar serviços extras sem autorização escrita prévia.
+
+8.3. Alterações de projeto após o início da obra poderão implicar em revisão
+     do prazo e do valor total, formalizadas por Termo Aditivo.
+
+${linha}
+9. DA MEDIÇÃO E APROVAÇÃO DOS SERVIÇOS
+${linha}
+
+9.1. O CONTRATADO realizará medições mensais dos serviços executados,
+     apresentando relatório discriminado ao CONTRATANTE.
+
+9.2. O CONTRATANTE terá prazo de 5 (cinco) dias úteis para aprovar,
+     contestar ou solicitar complementação. Decorrido este prazo sem
+     manifestação, a medição será TACITAMENTE APROVADA e o pagamento
+     torna-se exigível.
+
+9.3. Contestações parciais não suspendem o pagamento da parte não contestada.
+
+${linha}
+10. DAS OBRIGAÇÕES DO CONTRATADO
+${linha}
+
+10.1. Constituem obrigações do CONTRATADO:
+     a) Executar com boa técnica (ABNT NBR 12721, 6118, 9050, 15575);
      b) Manter responsável técnico habilitado no local da obra;
      c) Elaborar e manter atualizado o Diário de Obra (RDO);
-     d) Providenciar a Anotação de Responsabilidade Técnica — ART/RRT junto
-        ao CREA/CAU antes do início das obras;
-     e) Gerenciar a equipe de mão de obra e subcontratados;
-     f) Fiscalizar a qualidade dos serviços executados por terceiros;
-     g) Apresentar medições mensais detalhadas ao CONTRATANTE;
-     h) Guardar todos os documentos fiscais relativos à obra pelo prazo de
-        5 (cinco) anos;
-     i) Comunicar imediatamente o CONTRATANTE sobre qualquer fato que
-        possa afetar prazo, custo ou qualidade da obra;
-     j) Cumprir integralmente as normas de segurança do trabalho (NR-18).
-
-${isAdm ? `7.2. No regime de Administração a Preço de Custo, o CONTRATADO obriga-se
-     ainda a: (i) apresentar notas fiscais e recibos de todas as compras
-     realizadas com verbas do CONTRATANTE; (ii) não efetuar pagamentos sem
-     prévia aprovação do CONTRATANTE para valores superiores a R$ 500,00.` : ''}
+     d) Providenciar ART/RRT junto ao CREA antes do início das obras;
+     e) Gerenciar equipe de mão de obra e subcontratados;
+     f) Apresentar medições mensais detalhadas ao CONTRATANTE;
+     g) Guardar documentos fiscais da obra por 5 (cinco) anos;
+     h) Comunicar imediatamente fatos que afetem prazo, custo ou qualidade;
+     i) Cumprir integralmente NR-18, NR-06, NR-10 e NR-35.
+${isAdm ? `     j) Apresentar notas fiscais de todas as compras com verbas do CONTRATANTE;
+     k) Não efetuar pagamentos acima de R$ 500,00 sem aprovação prévia.` : ''}
 
 ${linha}
-8. DAS OBRIGAÇÕES DO CONTRATANTE
+11. DAS OBRIGAÇÕES DO CONTRATANTE
 ${linha}
 
-8.1. Constituem obrigações do CONTRATANTE:
-
+11.1. Constituem obrigações do CONTRATANTE:
      a) Efetuar os pagamentos nas datas e condições pactuadas;
-     b) Fornecer a documentação do imóvel necessária ao licenciamento;
-     c) Providenciar os projetos e aprovações junto à Prefeitura e órgãos
-        competentes, salvo se expressamente incluídos no objeto deste contrato;
+     b) Fornecer documentação do imóvel para licenciamento;
+     c) Providenciar aprovações junto à Prefeitura e órgãos competentes
+        (salvo se incluídas no objeto);
      d) Garantir livre acesso ao imóvel para execução dos serviços;
-     e) Comunicar ao CONTRATADO qualquer alteração de projeto com
-        antecedência mínima de 5 (cinco) dias úteis;
+     e) Comunicar alterações de projeto com mínimo de 5 dias úteis, por escrito;
      f) Assinar o Diário de Obra quando solicitado;
-     g) Não contratar diretamente os funcionários ou subcontratados do
-        CONTRATADO durante a vigência e por 12 (doze) meses após o término.
-
-${isAdm ? `8.2. No regime de Administração a Preço de Custo, o CONTRATANTE obriga-se
-     a: (i) destinar verba separada para aquisição de materiais; (ii)
-     aprovar previamente as requisições de compra acima de R$ 500,00;
-     (iii) manter conta bancária específica para a obra.` : ''}
+     g) Não contratar diretamente funcionários ou subcontratados do CONTRATADO
+        durante a vigência e por 12 meses após o término;
+     h) Designar representante com poderes para aprovar medições e aditivos.
+${isAdm ? `     i) Manter conta bancária específica para a obra;
+     j) Aprovar previamente compras acima de R$ 500,00.` : ''}
 
 ${linha}
-9. DA RESPONSABILIDADE TÉCNICA
+12. DA RESPONSABILIDADE TÉCNICA
 ${linha}
 
-9.1. O CONTRATADO assume a responsabilidade técnica pelos serviços de
-     engenharia executados, conforme:
+12.1. O CONTRATADO assume responsabilidade técnica conforme:
 
-     Art. 618 do Código Civil Brasileiro (Lei 10.406/2002):
-     "Nos contratos de empreitada de edifícios ou outras construções
-     consideráveis, o empreiteiro de materiais e execução responderá,
-     durante o prazo irredutível de cinco anos, pela solidez e segurança
-     do trabalho, assim em razão dos materiais, como do solo."
+      Art. 618 do Código Civil (Lei 10.406/2002):
+      "Nos contratos de empreitada de edifícios ou outras construções
+      consideráveis, o empreiteiro de materiais e execução responderá,
+      durante o prazo irredutível de cinco anos, pela solidez e segurança
+      do trabalho, assim em razão dos materiais, como do solo."
 
-9.2. Responsável técnico: ${ENG.nome} — CREA ${ENG.crea}
-     ART/RRT nº: _________________________________ (a ser anotada)
-
-9.3. A responsabilidade civil do CONTRATADO por danos a terceiros, vizinhos
-     ou à via pública causados pela execução da obra é de sua exclusividade,
-     nos termos do art. 927 do Código Civil.
+12.2. Responsável técnico: ${ENG.nome} — CREA ${ENG.crea}
+      ART/RRT nº: ___________________________ (a ser anotada)
 
 ${linha}
-10. DAS GARANTIAS DE EXECUÇÃO
+13. DOS VÍCIOS OCULTOS E CONDIÇÕES PREEXISTENTES
 ${linha}
 
-10.1. O CONTRATADO garante a qualidade dos serviços executados pelo prazo
-      mínimo de:
+13.1. Em obras de REFORMA, AMPLIAÇÃO ou ADAPTAÇÃO, o CONTRATADO NÃO
+      responde por:
+      a) Vícios ocultos da construção preexistente não detectáveis por
+         inspeção visual (infiltrações latentes, fissuras estruturais ocultas,
+         instalações fora de norma embutidas, fundações subdimensionadas);
+      b) Danos decorrentes de estrutura, solo ou fundação preexistentes
+         não declarados pelo CONTRATANTE;
+      c) Inadequações de projeto não elaborado pelo CONTRATADO;
+      d) Problemas de materiais fornecidos ou especificados pelo CONTRATANTE.
+
+13.2. Constatada condição preexistente que afete a execução ou a segurança,
+      o CONTRATADO notificará o CONTRATANTE por escrito e os serviços serão
+      suspensos até solução, SEM PENALIDADE ao CONTRATADO.
+
+13.3. Reformas são regidas pela NBR 16280:2015. O CONTRATANTE é responsável
+      por obter todas as aprovações condominiais ou municipais exigidas.
+
+${linha}
+14. DA LIMITAÇÃO DE RESPONSABILIDADE
+${linha}
+
+14.1. O CONTRATADO NÃO SE RESPONSABILIZA por:
+      a) Qualidade de materiais escolhidos, comprados ou fornecidos pelo
+         CONTRATANTE;
+      b) Serviços executados por terceiros contratados diretamente pelo
+         CONTRATANTE sem supervisão do CONTRATADO;
+      c) Danos por uso inadequado, falta de manutenção ou reformas não
+         autorizadas após a entrega da obra;
+      d) Perdas indiretas, lucros cessantes ou danos imateriais;
+      e) Atrasos por greves, desabastecimento, pandemia ou força maior
+         (art. 393 CC).
+
+14.2. Propriedade intelectual de projetos, memoriais e especificações
+      elaborados pelo CONTRATADO permanece com o CONTRATADO até o
+      pagamento integral. O CONTRATANTE recebe licença de uso restrita
+      à execução desta obra.
+
+${linha}
+15. DAS GARANTIAS DE EXECUÇÃO
+${linha}
+
+15.1. O CONTRATADO garante os serviços executados pelo prazo mínimo de:
       — 5 (cinco) anos: solidez estrutural e estanqueidade (art. 618 CC);
-      — 3 (três) anos: impermeabilizações, instalações hidrossanitárias
-        e elétricas (NBR 15575);
+      — 3 (três) anos: impermeabilizações, inst. hidrossanitárias e elétricas
+        (NBR 15575);
       — 1 (um) ano: revestimentos, pinturas e acabamentos em geral.
 
-10.2. O prazo de garantia inicia-se na data do Termo de Entrega da Obra,
-      firmado por ambas as partes.
-
-10.3. A garantia não cobre danos decorrentes de mau uso, ausência de
-      manutenção preventiva, reformas não autorizadas ou eventos de
-      força maior.
+15.2. O prazo de garantia inicia-se na data do Termo de Entrega da Obra.
+      A garantia não cobre danos por mau uso, falta de manutenção preventiva,
+      reformas não autorizadas ou eventos de força maior.
 
 ${linha}
-11. DO SEGURO DA OBRA
+16. DO SEGURO DA OBRA
 ${linha}
 
-11.1. Recomenda-se que o CONTRATANTE contrate seguro de obra (Risco de
-      Engenharia) para cobertura de danos materiais, responsabilidade
-      civil de operações e danos a terceiros durante a execução.
-
-11.2. O CONTRATADO manterá apólice de Responsabilidade Civil Profissional
-      (RC Engenheiro) vigente durante toda a execução do contrato.
+16.1. Recomenda-se que o CONTRATANTE contrate seguro de Risco de Engenharia
+      para cobertura de danos materiais e responsabilidade civil durante a
+      execução. O CONTRATADO manterá apólice de RC Profissional vigente.
 
 ${linha}
-12. DAS PENALIDADES E MULTAS
+17. DAS PENALIDADES E MULTAS
 ${linha}
 
-12.1. Em caso de inadimplência de qualquer das partes, aplica-se:
+17.1. Em caso de inadimplência:
+      a) Multa compensatória: 10% sobre o valor total do contrato;
+      b) Multa moratória: 0,5% ao dia sobre o valor da obrigação, limitada a 10%;
+      c) Perdas e danos: arts. 402-404 do Código Civil.
 
-      a) Multa compensatória: 10% (dez por cento) sobre o valor total
-         do contrato;
-      b) Multa moratória: 0,5% (zero vírgula cinco por cento) ao dia,
-         sobre o valor da obrigação descumprida, limitada a 10%;
-      c) Perdas e danos: apurados nos termos dos arts. 402 a 404 do CC.
-
-12.2. O atraso injustificado na entrega da obra superior a 30 (trinta)
-      dias corridos sujeita o CONTRATADO à multa de 0,1% ao dia sobre
-      o valor total contratado, limitada a 5% do valor total.
-
-12.3. A multa poderá ser compensada com créditos existentes ou cobrada
-      judicialmente, sem prejuízo das demais sanções contratuais e legais.
+17.2. Atraso injustificado superior a 30 dias: multa de 0,1%/dia sobre o
+      valor total, limitada a 5%.
 
 ${linha}
-13. DA RESCISÃO CONTRATUAL
+18. DA RESCISÃO CONTRATUAL
 ${linha}
 
-13.1. O contrato poderá ser rescindido por qualquer das partes, mediante
-      notificação prévia e escrita de 30 (trinta) dias corridos, nos
-      seguintes casos:
+18.1. O contrato pode ser rescindido com notificação escrita de 15 (quinze)
+      dias corridos por: descumprimento de cláusula; inadimplência superior
+      a 30 dias; paralisação injustificada por mais de 15 dias; insolvência
+      ou falência; acordo mútuo.
 
-      a) Descumprimento de qualquer cláusula por qualquer das partes;
-      b) Inadimplência financeira do CONTRATANTE superior a 30 (trinta)
-         dias corridos;
-      c) Paralisação injustificada da obra por mais de 15 (quinze) dias
-         consecutivos imputável ao CONTRATADO;
-      d) Insolvência, falência ou recuperação judicial de qualquer das partes;
-      e) Acordo mútuo entre as partes.
+18.2. RESCISÃO PELO CONTRATANTE SEM JUSTA CAUSA:
+      — Paga ao CONTRATADO o valor dos serviços executados e medidos;
+      — A ENTRADA/SINAL é RETIDA INTEGRALMENTE pelo CONTRATADO como
+        indenização mínima pelos custos de mobilização e perda de agenda;
+      — Multa compensatória de 10% sobre o saldo contratual restante;
+      — Despesas de desmobilização comprovadas.
 
-13.2. Na rescisão imputada ao CONTRATANTE, este deverá pagar ao CONTRATADO:
-      — O valor dos serviços já executados e medidos;
-      — A multa compensatória de 10% sobre o saldo contratual restante;
-      — As despesas de desmobilização já incorridas.
+18.3. RESCISÃO PELO CONTRATADO SEM JUSTA CAUSA:
+      — Devolve materiais e equipamentos do CONTRATANTE;
+      — Paga multa de 10% sobre o saldo contratual;
+      — Garante continuidade mínima da obra por 30 dias.
 
-13.3. Na rescisão imputada ao CONTRATADO, este deverá:
-      — Devolver ao CONTRATANTE os materiais e equipamentos de sua propriedade;
-      — Pagar a multa compensatória de 10% sobre o saldo contratual restante;
-      — Garantir a continuidade mínima da obra por 30 dias.
+18.4. Todos os documentos técnicos (projetos, RDO, planilhas, ARTs) serão
+      entregues ao CONTRATANTE somente após quitação integral do contrato.
 
 ${linha}
-14. DA SEGURANÇA E MEDICINA DO TRABALHO
+19. DA SEGURANÇA E MEDICINA DO TRABALHO
 ${linha}
 
-14.1. O CONTRATADO obriga-se a cumprir integralmente as Normas
-      Regulamentadoras aplicáveis à construção civil, especialmente:
+19.1. O CONTRATADO cumpre: NR-18 (Construção Civil), NR-06 (EPIs),
+      NR-10 (Eletricidade), NR-35 (Trabalho em Altura).
 
-      NR-18 — Segurança e Saúde no Trabalho na Indústria da Construção
-      NR-06 — Equipamentos de Proteção Individual (EPI)
-      NR-10 — Segurança em Instalações e Serviços em Eletricidade
-      NR-35 — Trabalho em Altura
-
-14.2. O CONTRATADO é o único responsável por acidentes de trabalho
-      ocorridos com seus empregados e subcontratados, respondendo perante
-      o INSS, FGTS e demais obrigações trabalhistas e previdenciárias.
-
-14.3. O CONTRATANTE poderá paralisar os serviços que apresentem risco
-      iminente à segurança de trabalhadores ou terceiros, sem que tal
-      paralisação caracterize inadimplência ou rescisão contratual.
+19.2. O CONTRATADO é único responsável por acidentes com seus empregados
+      e subcontratados, respondendo perante o INSS, FGTS e obrigações
+      trabalhistas e previdenciárias.
 
 ${linha}
-15. DA PROTEÇÃO DE DADOS PESSOAIS — LGPD
+20. DA PROTEÇÃO DE DADOS PESSOAIS — LGPD
 ${linha}
 
-15.1. As partes comprometem-se a tratar os dados pessoais compartilhados
-      neste contrato em conformidade com a Lei 13.709/2018 (LGPD),
-      utilizando-os exclusivamente para as finalidades contratuais.
+20.1. As partes tratam dados pessoais em conformidade com a Lei 13.709/2018
+      (LGPD), exclusivamente para: execução deste contrato; emissão de
+      documentos fiscais; cumprimento de obrigações legais.
 
-15.2. Os dados coletados (nome, CPF, RG, endereço, e-mail, telefone)
-      serão utilizados exclusivamente para:
-      — Execução deste contrato;
-      — Emissão de notas fiscais e documentos contábeis;
-      — Cumprimento de obrigações legais e regulatórias.
-
-15.3. Ambas as partes se comprometem a não compartilhar dados pessoais
-      com terceiros sem consentimento prévio, salvo por determinação legal.
+20.2. Nenhuma das partes compartilhará dados pessoais com terceiros sem
+      consentimento prévio, salvo por determinação legal.
 
 ${linha}
-16. DAS DISPOSIÇÕES GERAIS
+21. DAS DISPOSIÇÕES GERAIS
 ${linha}
 
-16.1. Alterações contratuais somente serão válidas mediante Termo Aditivo
-      escrito, assinado por ambas as partes e por duas testemunhas.
-
-16.2. A tolerância de qualquer das partes quanto ao descumprimento de
-      alguma disposição contratual não importará em novação, renúncia ou
-      precedente para futuros descumprimentos.
-
-16.3. Os casos omissos neste contrato serão regulados pelo Código Civil
-      Brasileiro (Lei 10.406/2002) e demais disposições legais pertinentes.
-
-16.4. Este contrato é firmado em caráter irrevogável e irretratável,
-      exceto nas hipóteses previstas na Cláusula 13.
-
-16.5. As partes elegem o foro da Comarca de Promissão/SP para dirimir
-      quaisquer dúvidas ou litígios decorrentes deste contrato, renunciando
-      a qualquer outro, por mais privilegiado que seja.
+21.1. Alterações somente por Termo Aditivo escrito, assinado pelas partes
+      e por duas testemunhas.
+21.2. Tolerância de descumprimento não importa em novação ou renúncia.
+21.3. Casos omissos regidos pelo Código Civil Brasileiro (Lei 10.406/2002).
+21.4. Foro eleito: Comarca de Promissão/SP, renunciando-se a qualquer outro.
 
       ${sep}
       Promissão / SP, _____ de _________________ de _________
 
 ${sep}
-17. DAS ASSINATURAS
+22. DAS ASSINATURAS
 ${sep}
 
 _______________________________________________   _______________________________________________
-${(parte.nome || '[NOME DO CONTRATANTE]').toUpperCase().slice(0,45)}   ${(ENG.nome).toUpperCase().slice(0,45)}
-CPF: ${parte.cpf || '[CPF DO CONTRATANTE]'}                              CPF: ${ENG.cpf}  CREA: ${ENG.crea}
+${(parte.nome||'[NOME DO CONTRATANTE]').toUpperCase().slice(0,44).padEnd(44)}   ${ENG.nome.toUpperCase().slice(0,44)}
+CPF: ${parte.cpf||'[CPF DO CONTRATANTE]'}                            CPF: ${ENG.cpf}  CREA: ${ENG.crea}
 CONTRATANTE                                       CONTRATADO
 
 
@@ -607,7 +853,7 @@ Nome: ________________________________            Nome: ________________________
 RG:   ________________________________            RG:   ________________________________`
   }
 
-  const etapas = ['Tipo', 'Contratado', 'Partes', 'Objeto', 'Valores', 'Revisão IA', 'Contrato']
+  const etapas = ['Tipo', 'Contratado', 'Partes', 'Objeto', 'Valores', 'Revisão IA', 'Contrato', 'Memorial']
 
   return (
     <>
@@ -901,18 +1147,17 @@ RG:   ________________________________            RG:   ________________________
           {etapa === 7 && (
             <>
               <div style={{ ...s.card, borderColor: '#97C459', background: '#f7fbf0' }} className="no-print">
-                <div style={{ fontSize: 18, marginBottom: 4 }}>✅ Contrato pronto!</div>
+                <div style={{ fontSize: 18, marginBottom: 4 }}>✅ Contrato com 22 cláusulas pronto!</div>
                 <div style={{ fontSize: 13, color: '#5a6282' }}>
                   Assinado por: <strong>{modoContratado === 'apex' ? APEX.nome : ENG.nome}</strong>
                   {modoContratado === 'apex' ? ` (CNPJ ${APEX.cnpj})` : ` (CREA ${ENG.crea})`}
+                  {' '}· Inclui cláusulas de proteção: vícios ocultos, serviços extras, limitação de responsabilidade.
                 </div>
               </div>
 
-              {/* Contrato para impressão */}
+              {/* Contrato renderizado em HTML formatado */}
               <div style={{ ...s.card, padding: '24px 32px' }} className="print-card">
-
-                {/* Cabeçalho com logo */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 16, borderBottom: '2px solid #e5e8f0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 16, borderBottom: '2px solid #185FA5' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {modoContratado === 'apex' && (
                       <img src="/logo_apex_nova.jpeg" alt="Apex Global"
@@ -920,7 +1165,7 @@ RG:   ________________________________            RG:   ________________________
                         onError={(e: any) => e.target.style.display = 'none'} />
                     )}
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1f36' }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#185FA5' }}>
                         {modoContratado === 'apex' ? APEX.nome : ENG.nome}
                       </div>
                       <div style={{ fontSize: 11, color: '#8b93a7' }}>
@@ -929,65 +1174,49 @@ RG:   ________________________________            RG:   ________________________
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#1a1f36' }}>CONTRATO COMPLETO</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1f36' }}>CONTRATO COMPLETO · 22 CLÁUSULAS</div>
                     <div style={{ fontSize: 11, color: '#8b93a7' }}>{TIPOS_CONTRATO.find(t => t.id === tipoContrato)?.label}</div>
                   </div>
                 </div>
 
-                {/* Corpo do contrato */}
-                <div style={s.previewBox}>{gerarContrato()}</div>
+                {/* HTML do contrato */}
+                <div dangerouslySetInnerHTML={{ __html: buildContratoHtml() }} />
 
-                {/* ─── Bloco de assinaturas com grid HTML ─── */}
-                <div style={{ marginTop: 32, fontFamily: 'monospace', fontSize: 12 }}>
-                  <div style={{ marginBottom: 24, color: '#1a1f36' }}>
+                {/* Bloco de assinaturas */}
+                <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid #e5e8f0' }}>
+                  <div style={{ fontSize: 12, color: '#5a6282', marginBottom: 24 }}>
                     Promissão / SP, ________ / ________ / ____________
                   </div>
-
-                  {/* Assinaturas principais */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginBottom: 40 }}>
                     <div>
-                      <div style={{ borderTop: '1.5px solid #1a1f36', paddingTop: 8, marginBottom: 6 }}></div>
-                      <div style={{ fontWeight: 600, color: '#1a1f36', marginBottom: 3 }}>
-                        {parte.nome || '[NOME DO CONTRATANTE]'}
-                      </div>
-                      <div style={{ color: '#5a6282' }}>CPF: {parte.cpf || '___________________'}</div>
-                      {parte.rg && <div style={{ color: '#5a6282' }}>RG: {parte.rg}</div>}
-                      <div style={{ fontWeight: 700, marginTop: 6, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.08em' }}>CONTRATANTE</div>
+                      <div style={{ borderTop: '2px solid #1a1f36', paddingTop: 8, marginBottom: 4 }} />
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{parte.nome || '[NOME DO CONTRATANTE]'}</div>
+                      <div style={{ fontSize: 12, color: '#5a6282' }}>CPF: {parte.cpf || '___________________'}</div>
+                      {parte.rg && <div style={{ fontSize: 12, color: '#5a6282' }}>RG: {parte.rg}</div>}
+                      <div style={{ fontWeight: 700, marginTop: 6, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>CONTRATANTE</div>
                     </div>
                     <div>
-                      <div style={{ borderTop: '1.5px solid #1a1f36', paddingTop: 8, marginBottom: 6 }}></div>
-                      <div style={{ fontWeight: 600, color: '#1a1f36', marginBottom: 3 }}>
-                        {modoContratado === 'apex' ? APEX.nome : ENG.nome}
-                      </div>
+                      <div style={{ borderTop: '2px solid #1a1f36', paddingTop: 8, marginBottom: 4 }} />
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{modoContratado === 'apex' ? APEX.nome : ENG.nome}</div>
                       {modoContratado === 'apex' ? (
-                        <>
-                          <div style={{ color: '#5a6282' }}>CNPJ: {APEX.cnpj}</div>
-                          <div style={{ color: '#5a6282' }}>Rep.: {APEX.representante}</div>
-                        </>
+                        <><div style={{ fontSize: 12, color: '#5a6282' }}>CNPJ: {APEX.cnpj}</div>
+                        <div style={{ fontSize: 12, color: '#5a6282' }}>Rep.: {APEX.representante}</div></>
                       ) : (
-                        <>
-                          <div style={{ color: '#5a6282' }}>CPF: {ENG.cpf}</div>
-                          <div style={{ color: '#5a6282' }}>CREA: {ENG.crea}</div>
-                        </>
+                        <><div style={{ fontSize: 12, color: '#5a6282' }}>CPF: {ENG.cpf}</div>
+                        <div style={{ fontSize: 12, color: '#5a6282' }}>CREA: {ENG.crea}</div></>
                       )}
-                      <div style={{ fontWeight: 700, marginTop: 6, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.08em' }}>CONTRATADO</div>
+                      <div style={{ fontWeight: 700, marginTop: 6, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>CONTRATADO</div>
                     </div>
                   </div>
-
-                  {/* Testemunhas */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48 }}>
-                    <div>
-                      <div style={{ borderTop: '1.5px solid #1a1f36', paddingTop: 8, marginBottom: 6 }}></div>
-                      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', marginBottom: 6 }}>TESTEMUNHA 1</div>
-                      <div style={{ color: '#5a6282' }}>Nome: _________________________</div>
-                      <div style={{ color: '#5a6282', marginTop: 4 }}>RG: ___________________________</div>
-                    </div>
-                    <div>
-                      <div style={{ borderTop: '1.5px solid #1a1f36', paddingTop: 8, marginBottom: 6 }}></div>
-                      <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', marginBottom: 6 }}>TESTEMUNHA 2</div>
-                      <div style={{ color: '#5a6282' }}>Nome: _________________________</div>
-                      <div style={{ color: '#5a6282', marginTop: 4 }}>RG: ___________________________</div>
-                    </div>
+                    {['TESTEMUNHA 1', 'TESTEMUNHA 2'].map(t => (
+                      <div key={t}>
+                        <div style={{ borderTop: '1.5px solid #1a1f36', paddingTop: 8, marginBottom: 4 }} />
+                        <div style={{ fontWeight: 700, fontSize: 10, letterSpacing: '0.08em' }}>{t}</div>
+                        <div style={{ fontSize: 12, color: '#5a6282', marginTop: 4 }}>Nome: _________________________</div>
+                        <div style={{ fontSize: 12, color: '#5a6282', marginTop: 4 }}>RG: ___________________________</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -997,12 +1226,104 @@ RG:   ________________________________            RG:   ________________________
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button style={s.btnSecondary}
                     onClick={() => {
-                      const blob = new Blob([gerarContrato()], { type: 'text/plain;charset=utf-8' })
-                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
-                      a.download = `contrato_${parte.nome.replace(/ /g,'_') || 'novo'}.txt`; a.click()
-                    }}>💾 Salvar .txt</button>
-                  <button style={s.btnPrimary} onClick={() => window.print()}>🖨️ Imprimir / PDF</button>
+                      const nomeArq = (parte.nome || 'contrato').replace(/\s+/g,'_')
+                      const docHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Contrato — ${parte.nome}</title>
+<style>body{font-family:'Calibri',Arial,sans-serif;font-size:12pt;margin:2cm;color:#000}
+h1{font-size:16pt;color:#185FA5;text-align:center}
+h2{font-size:11pt;font-weight:bold;text-transform:uppercase;color:#185FA5;margin:18pt 0 6pt;border-bottom:1pt solid #185FA5;padding-bottom:2pt}
+p{margin:4pt 0 8pt;line-height:1.6}ul{margin:6pt 0;padding-left:20pt}li{margin:3pt 0}</style>
+</head><body>${buildContratoHtml()}</body></html>`
+                      const blob = new Blob([docHtml], { type: 'application/msword;charset=utf-8' })
+                      const a = document.createElement('a')
+                      a.href = URL.createObjectURL(blob)
+                      a.download = `contrato_${nomeArq}.doc`
+                      a.click()
+                    }}>💾 Salvar .doc (Word)</button>
+                  <button style={{ ...s.btnSecondary, color: '#185FA5', borderColor: '#185FA5' }}
+                    onClick={() => {
+                      const w = window.open('', '_blank', 'width=900,height=700')
+                      if (!w) return
+                      w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Contrato — ${parte.nome}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1f36;padding:32px;max-width:800px;margin:0 auto}
+h2{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#185FA5;margin:20px 0 6px;border-bottom:1px solid #e5e8f0;padding-bottom:4px}
+p{margin:4px 0 8px;line-height:1.7}ul{margin:6px 0;padding-left:20px}li{margin:3px 0}
+.footer{margin-top:32px;border-top:1px solid #e5e8f0;padding-top:12px;font-size:10px;color:#b0b8cc;display:flex;justify-content:space-between}
+@media print{body{padding:16px}@page{margin:1cm}}</style>
+</head><body>${buildContratoHtml()}
+<div class="footer"><span>${modoContratado === 'apex' ? APEX.nome + ' — CNPJ ' + APEX.cnpj : ENG.nome + ' — CREA ' + ENG.crea}</span><span>Gerado em ${new Date().toLocaleString('pt-BR')}</span></div>
+<script>window.onload=()=>window.print()</script></body></html>`)
+                      w.document.close()
+                    }}>🖨️ Imprimir / PDF</button>
+                  <button style={s.btnPrimary} onClick={() => { setMemorial(''); setEtapa(8) }}>
+                    📐 Gerar Memorial Descritivo →
+                  </button>
                 </div>
+              </div>
+            </>
+          )}
+
+          {/* ─── ETAPA 8: Memorial Descritivo ──────────────── */}
+          {etapa === 8 && (
+            <>
+              <div style={s.card}>
+                <div style={s.sectionTitle}>📐 Memorial Descritivo da Obra <span style={s.autoBadge}>IA Claude</span></div>
+                <div style={{ fontSize: 13, color: '#5a6282', marginBottom: 14, lineHeight: 1.6 }}>
+                  O agente gera um memorial técnico completo conforme <strong>NBR 12721</strong>, com todas as seções obrigatórias (fundações, estrutura, instalações, revestimentos etc.) usando os dados do contrato.
+                </div>
+                {!memorial && (
+                  <button style={{ ...s.btnPrimary, width: '100%', padding: 12, fontSize: 14 }}
+                    onClick={gerarMemorial} disabled={gerandoMemorial}>
+                    {gerandoMemorial ? '⏳ Gerando memorial técnico...' : '📐 Gerar Memorial Descritivo com IA'}
+                  </button>
+                )}
+              </div>
+
+              {memorial && (
+                <>
+                  <div style={{ ...s.card, borderColor: '#97C459', background: '#f7fbf0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#3B6D11' }}>✅ Memorial gerado!</div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button style={s.btnSecondary}
+                          onClick={() => {
+                            const nomeArq = (parte.nome||'memorial').replace(/\s+/g,'_')
+                            const docHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Memorial — ${parte.nome}</title>
+<style>body{font-family:'Calibri',Arial,sans-serif;font-size:12pt;margin:2cm;line-height:1.7}
+h1{font-size:16pt;color:#185FA5}h2{font-size:12pt;color:#185FA5;margin:16pt 0 6pt}
+p{margin:4pt 0}pre{font-family:inherit;white-space:pre-wrap}</style>
+</head><body><h1>Memorial Descritivo</h1><pre>${memorial}</pre></body></html>`
+                            const blob = new Blob([docHtml], { type: 'application/msword;charset=utf-8' })
+                            const a = document.createElement('a')
+                            a.href = URL.createObjectURL(blob)
+                            a.download = `memorial_${nomeArq}.doc`
+                            a.click()
+                          }}>💾 Salvar .doc</button>
+                        <button style={{ ...s.btnSecondary, color: '#185FA5', borderColor: '#185FA5' }}
+                          onClick={() => {
+                            const w = window.open('', '_blank', 'width=900,height=700')
+                            if (!w) return
+                            w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Memorial Descritivo</title>
+<style>body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;padding:32px;max-width:800px;margin:0 auto;white-space:pre-wrap;line-height:1.8}
+h1{font-size:18px;color:#185FA5;margin-bottom:16px}
+.footer{margin-top:32px;border-top:1px solid #e5e8f0;padding-top:12px;font-size:10px;color:#8b93a7}
+@media print{@page{margin:1cm}}</style>
+</head><body><h1>📐 Memorial Descritivo</h1>${memorial.replace(/\n/g,'<br>')}
+<div class="footer">${ENG.nome} — CREA ${ENG.crea} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+<script>window.onload=()=>window.print()</script></body></html>`)
+                            w.document.close()
+                          }}>🖨️ Imprimir</button>
+                        <button style={s.btnSecondary} onClick={gerarMemorial}>🔄 Regenerar</button>
+                      </div>
+                    </div>
+                    <div style={s.previewBox}>{memorial}</div>
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                <button style={s.btnSecondary} onClick={() => setEtapa(7)}>← Voltar ao Contrato</button>
+                <button style={s.btnPrimary} onClick={() => router.push('/dashboard')}>🏠 Ir ao Dashboard</button>
               </div>
             </>
           )}
