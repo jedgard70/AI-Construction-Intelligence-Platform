@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Construction Intelligence Platform v5.3</title>
+<title>AI Construction Intelligence Platform v6.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -160,13 +160,49 @@ textarea::placeholder{color:var(--muted);}
 .rdo-trigger{width:100%;padding:10px 14px;background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.3);border-radius:10px;color:var(--gold);font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;text-align:left;transition:all .2s;display:flex;align-items:center;gap:8px;}
 .rdo-trigger:hover{background:rgba(240,165,0,.15);border-color:var(--gold);}
 
-/* App nav links */
-.nav-app-link{display:flex;align-items:center;gap:8px;padding:8px 10px;color:#185FA5;font-size:13px;text-decoration:none;border-radius:8px;transition:background .15s;}
-.nav-app-link:hover{background:rgba(24,95,165,.08);}
-.nav-juridico{align-items:flex-start;padding:9px 10px;margin-bottom:2px;}
-.nav-juridico .nav-icon{font-size:16px;line-height:1;margin-top:1px;flex-shrink:0;}
-.nav-juridico strong{display:block;font-size:12px;font-weight:700;color:#1a1f36;}
-.nav-juridico small{display:block;font-size:10px;color:#8890a0;margin-top:1px;}
+/* Tool buttons */
+.tool-btn{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:8px;color:var(--text);font-family:var(--font);font-size:11px;font-weight:600;text-decoration:none;}
+.tool-btn:hover{border-color:var(--border2);background:var(--bg3);}
+.tool-icon{font-size:16px;}
+.tool-label{font-size:11px;font-weight:600;}
+.tool-link{justify-content:flex-start;}
+
+/* Module cards */
+.module-grid{display:flex;flex-direction:column;gap:6px;}
+.module-card{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;transition:all .15s;text-decoration:none;color:var(--text);font-family:var(--font);text-align:left;width:100%;}
+.module-card:hover{background:var(--bg3);border-color:var(--border2);transform:translateX(2px);}
+.mc-icon{font-size:18px;flex-shrink:0;width:28px;text-align:center;}
+.mc-title{font-size:12px;font-weight:700;line-height:1.2;}
+.mc-sub{font-size:9px;color:var(--muted);margin-top:2px;font-family:var(--mono);}
+.mc-green{border-left:3px solid var(--ok)!important;}
+.mc-blue{border-left:3px solid var(--blue)!important;}
+.mc-teal{border-left:3px solid var(--teal)!important;}
+.mc-purple{border-left:3px solid #7c3aed!important;}
+.mc-gold{border-left:3px solid var(--gold)!important;}
+.mc-green:hover{background:rgba(34,197,94,.06)!important;}
+.mc-blue:hover{background:rgba(59,130,246,.06)!important;}
+.mc-teal:hover{background:rgba(0,194,168,.06)!important;}
+.mc-purple:hover{background:rgba(124,58,237,.06)!important;}
+.mc-gold:hover{background:rgba(240,165,0,.06)!important;}
+
+/* API Modal */
+.api-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
+.api-overlay.open{display:flex;}
+.api-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:520px;overflow:hidden;}
+.api-modal-header{padding:14px 18px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.api-modal-title{font-size:13px;font-weight:700;}
+.api-modal-body{padding:18px;display:flex;flex-direction:column;gap:10px;}
+.api-field{display:flex;flex-direction:column;gap:4px;}
+.api-field label{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;}
+.api-field input,.api-field select,.api-field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 10px;outline:none;width:100%;transition:border-color .15s;}
+.api-field input:focus,.api-field select:focus,.api-field textarea:focus{border-color:var(--gold);}
+.api-field textarea{resize:vertical;min-height:60px;}
+.api-field select option{background:var(--bg3);}
+.api-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.api-actions{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--bg3);}
+.api-btn-send{flex:1;padding:10px;background:var(--gold);color:#000;border:none;border-radius:8px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;}
+.api-btn-cancel{padding:10px 16px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:var(--font);font-size:12px;cursor:pointer;}
+.api-result{background:var(--bg4);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:10px;font-family:var(--mono);color:var(--teal);white-space:pre-wrap;max-height:180px;overflow-y:auto;}
 
 /* RIGHT PANEL - CHAT */
 .right{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;}
@@ -252,7 +288,7 @@ textarea::placeholder{color:var(--muted);}
     <div class="logo-mark">AI</div>
     <div>
       <div class="logo-text">Construction Intelligence Platform</div>
-      <div class="logo-ver">v5.3 · Enterprise Cognitive Infrastructure</div>
+      <div class="logo-ver">v6.0 · Enterprise Cognitive Infrastructure</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
@@ -458,66 +494,130 @@ textarea::placeholder{color:var(--muted);}
       </div>
     </div>
 
-    <!-- RELATÓRIO EXECUTIVO BUTTON -->
-    <button class="rel-trigger" onclick="openRelatorio()">
-      📄 <span>Relatório Executivo de Obra</span>
-    </button>
-
-    <!-- RDO BUTTON -->
-    <button class="rdo-trigger" onclick="openRDO()">
-      📋 <span>Novo RDO — Relatório Diário de Obra</span>
-    </button>
-
-    <!-- APPS -->
+    <!-- FERRAMENTAS DE OBRA -->
     <div>
-      <div class="sec-label">Apps</div>
-      <a href="/plantas" class="nav-app-link">🔍 Análise de Plantas</a>
-      <a href="/contratos/novo" class="nav-app-link">📄 Novo Contrato</a>
+      <div class="sec-label">Ferramentas de Obra</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="tool-btn" onclick="openRelatorio()">
+          <span class="tool-icon">📄</span>
+          <span class="tool-label">Relatório Executivo</span>
+        </button>
+        <button class="tool-btn" onclick="openRDO()">
+          <span class="tool-icon">📋</span>
+          <span class="tool-label">RDO Diário</span>
+        </button>
+        <a href="/plantas" class="tool-btn tool-link">
+          <span class="tool-icon">🗺</span>
+          <span class="tool-label">Análise de Plantas</span>
+        </a>
+        <button class="tool-btn" onclick="quickAction('Gere relatório de não conformidades abertas com classificação de criticidade, plano de ação corretiva e prazos conforme NBR 15575.')">
+          <span class="tool-icon">🔍</span>
+          <span class="tool-label">Não Conformidades</span>
+        </button>
+      </div>
     </div>
 
-    <!-- JURÍDICO -->
+    <!-- JURÍDICO & COMPLIANCE -->
     <div>
       <div class="sec-label">Jurídico & Compliance</div>
-      <a href="/contratos/novo" class="nav-app-link nav-juridico">
-        <span class="nav-icon">📄</span>
-        <span>
-          <strong>Novo Contrato</strong>
-          <small>Preencher e gerar contrato de obra</small>
-        </span>
-      </a>
-      <a href="/juridico/contratos" class="nav-app-link nav-juridico">
-        <span class="nav-icon">🔍</span>
-        <span>
-          <strong>Analisar Contrato</strong>
-          <small>Análise jurídica com IA</small>
-        </span>
-      </a>
-      <a href="/juridico/compliance" class="nav-app-link nav-juridico">
-        <span class="nav-icon">✅</span>
-        <span>
-          <strong>Compliance</strong>
-          <small>ISO, NRs, LGPD, ABNT</small>
-        </span>
-      </a>
-      <a href="/juridico/due-diligence" class="nav-app-link nav-juridico">
-        <span class="nav-icon">📊</span>
-        <span>
-          <strong>Due Diligence</strong>
-          <small>Relatório para investidor</small>
-        </span>
-      </a>
-      <a href="/juridico/assinatura" class="nav-app-link nav-juridico">
-        <span class="nav-icon">✍️</span>
-        <span>
-          <strong>Assinatura Digital</strong>
-          <small>Enviar e acompanhar via Lumin</small>
-        </span>
-      </a>
+      <div class="module-grid">
+        <a href="/contratos/novo" class="module-card mc-green">
+          <div class="mc-icon">📄</div>
+          <div class="mc-info">
+            <div class="mc-title">Novo Contrato</div>
+            <div class="mc-sub">Gerar contrato de obra</div>
+          </div>
+        </a>
+        <a href="/juridico/contratos" class="module-card mc-blue">
+          <div class="mc-icon">🔍</div>
+          <div class="mc-info">
+            <div class="mc-title">Analisar Contrato</div>
+            <div class="mc-sub">IA · Document Intelligence</div>
+          </div>
+        </a>
+        <a href="/juridico/compliance" class="module-card mc-teal">
+          <div class="mc-icon">✅</div>
+          <div class="mc-info">
+            <div class="mc-title">Compliance</div>
+            <div class="mc-sub">ISO · NRs · LGPD · ABNT</div>
+          </div>
+        </a>
+        <a href="/juridico/due-diligence" class="module-card mc-purple">
+          <div class="mc-icon">📊</div>
+          <div class="mc-info">
+            <div class="mc-title">Due Diligence</div>
+            <div class="mc-sub">Relatório para investidor</div>
+          </div>
+        </a>
+        <a href="/juridico/assinatura" class="module-card mc-gold">
+          <div class="mc-icon">✍️</div>
+          <div class="mc-info">
+            <div class="mc-title">Assinatura Digital</div>
+            <div class="mc-sub">Enviar e assinar via Lumin</div>
+          </div>
+        </a>
+      </div>
     </div>
 
-    <!-- QUICK ACTIONS -->
+    <!-- VENDAS & CAPTAÇÃO -->
     <div>
-      <div class="sec-label">Ações Rápidas</div>
+      <div class="sec-label">Vendas & Captação</div>
+      <div class="module-grid">
+        <button class="module-card mc-gold" onclick="openApiModal('pipeline')">
+          <div class="mc-icon">🚀</div>
+          <div class="mc-info">
+            <div class="mc-title">Pipeline de Vendas</div>
+            <div class="mc-sub">Disparo automático por trigger</div>
+          </div>
+        </button>
+        <button class="module-card mc-green" onclick="openApiModal('lead')">
+          <div class="mc-icon">👤</div>
+          <div class="mc-info">
+            <div class="mc-title">Qualificar Lead</div>
+            <div class="mc-sub">Score · tier hot/warm/cold</div>
+          </div>
+        </button>
+        <button class="module-card mc-blue" onclick="openApiModal('campaign')">
+          <div class="mc-icon">📣</div>
+          <div class="mc-info">
+            <div class="mc-title">Lançar Campanha</div>
+            <div class="mc-sub">Marketing automation</div>
+          </div>
+        </button>
+        <button class="module-card mc-teal" onclick="quickAction('Gere a tese de investimento do projeto ativo com: TIR, VPL, ROI, VGV, Cap Rate, análise risco-retorno, ESG score e recomendação BUY/HOLD/PASS.')">
+          <div class="mc-icon">📈</div>
+          <div class="mc-info">
+            <div class="mc-title">Tese de Investimento</div>
+            <div class="mc-sub">Investment Analyst AI</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- INFRAESTRUTURA & AGENTES -->
+    <div>
+      <div class="sec-label">Infraestrutura & Agentes</div>
+      <div class="module-grid">
+        <button class="module-card mc-purple" onclick="openApiModal('conflict')">
+          <div class="mc-icon">⚖️</div>
+          <div class="mc-info">
+            <div class="mc-title">Resolução de Conflitos</div>
+            <div class="mc-sub">Weighted Consensus Protocol</div>
+          </div>
+        </button>
+        <button class="module-card mc-teal" onclick="openApiModal('edge')">
+          <div class="mc-icon">📡</div>
+          <div class="mc-info">
+            <div class="mc-title">Edge Sync</div>
+            <div class="mc-sub">Drone · IoT · Canteiro</div>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- AÇÕES RÁPIDAS IA -->
+    <div>
+      <div class="sec-label">Ações Rápidas — Agentes IA</div>
       <div class="actions-grid">
         <div class="action-card" onclick="quickAction('Gere um relatório executivo resumido do portfólio com headline, KPIs críticos e próximos passos.')">
           <div class="ac-label">Executivo</div>
@@ -544,7 +644,7 @@ textarea::placeholder{color:var(--muted);}
           <div class="ac-title">Tese Cerrado Sul II</div>
           <div class="ac-agent">→ Investment Analyst</div>
         </div>
-        <div class="action-card" onclick="quickAction('Liste os clashes BIM críticos ativos por disciplina (estrutural, elétrica, hidráulica, HVAC) incluindo impacto nas dimensões 6D (sustentabilidade) e 7D (facility management). Priorize por impacto no cronograma.')">
+        <div class="action-card" onclick="quickAction('Liste os clashes BIM críticos ativos por disciplina (estrutural, elétrica, hidráulica, HVAC) incluindo impacto nas dimensões 6D e 7D. Priorize por impacto no cronograma.')">
           <div class="ac-label">BIM 6D/7D</div>
           <div class="ac-title">Clashes críticos</div>
           <div class="ac-agent">→ BIM Coordinator</div>
@@ -558,6 +658,11 @@ textarea::placeholder{color:var(--muted);}
           <div class="ac-label">Documentos</div>
           <div class="ac-title">Análise documental</div>
           <div class="ac-agent">→ Doc Intelligence AI</div>
+        </div>
+        <div class="action-card" onclick="quickAction('Analise a segurança do canteiro e identifique as 3 principais não-conformidades NR com impacto em responsabilidade civil. Priorize por severidade e gere plano de regularização imediata.')">
+          <div class="ac-label">Segurança · NR</div>
+          <div class="ac-title">Auditoria NR urgente</div>
+          <div class="ac-agent">→ Safety Monitor AI</div>
         </div>
         <div class="action-card" onclick="window.location.href='/plantas'">
           <div class="ac-label">BIM · Plantas</div>
@@ -602,7 +707,22 @@ textarea::placeholder{color:var(--muted);}
 
 </div>
 
-<!-- RELATÓRIO EXECUTIVO MODAL -->
+<!-- ── API MODALS (Pipeline / Lead / Campaign / Conflict / Edge) ── -->
+<div class="api-overlay" id="api-overlay" onclick="closeApiOutside(event)">
+<div class="api-modal">
+  <div class="api-modal-header">
+    <div class="api-modal-title" id="api-modal-title">API</div>
+    <button class="rdo-close" onclick="closeApiModal()">✕</button>
+  </div>
+  <div class="api-modal-body" id="api-modal-body"></div>
+  <div class="api-actions">
+    <button class="api-btn-send" id="api-btn-send" onclick="sendApiModal()">▶ Enviar</button>
+    <button class="api-btn-cancel" onclick="closeApiModal()">Fechar</button>
+  </div>
+</div>
+</div>
+
+
 <div class="rel-overlay" id="rel-overlay" onclick="closeRelOutside(event)">
 <div class="rel-modal">
   <div class="rel-modal-header">
@@ -1293,6 +1413,242 @@ function handleLogout() {
       window.location.replace('/login');
     })
     .catch(function() { window.location.replace('/login'); });
+}
+
+// ─── API MODALS ───────────────────────────────────────────────────────────────
+let currentApiType = null;
+
+const apiModalConfigs = {
+  pipeline: {
+    title: '🚀 Pipeline de Vendas Autônomo',
+    endpoint: '/api/sales/pipeline',
+    method: 'POST',
+    fields: `
+      <div class="api-row">
+        <div class="api-field">
+          <label>Trigger *</label>
+          <select id="af-trigger">
+            <option value="roi_report_generated">roi_report_generated</option>
+            <option value="cinematic_assets_approved">cinematic_assets_approved</option>
+            <option value="cinematic_render_approved">cinematic_render_approved</option>
+            <option value="roi_and_valuation_locked">roi_and_valuation_locked</option>
+            <option value="esg_score_published">esg_score_published</option>
+            <option value="milestone_reached">milestone_reached</option>
+          </select>
+        </div>
+        <div class="api-field">
+          <label>Project ID *</label>
+          <input id="af-project" placeholder="PRJ-2026-001" value="PRJ-2026-001">
+        </div>
+      </div>
+      <div class="api-field">
+        <label>Payload (JSON)</label>
+        <textarea id="af-payload" rows="3">{"roi": 18.5, "vgv": "R$ 12M", "milestone": "Fundação concluída"}</textarea>
+      </div>`,
+    getBody: () => ({
+      trigger: document.getElementById('af-trigger').value,
+      project_id: document.getElementById('af-project').value,
+      payload: JSON.parse(document.getElementById('af-payload').value || '{}')
+    })
+  },
+  lead: {
+    title: '👤 Qualificar Lead',
+    endpoint: '/api/sales/leads',
+    method: 'POST',
+    fields: `
+      <div class="api-row">
+        <div class="api-field"><label>Nome *</label><input id="af-name" placeholder="Maria Investidora"></div>
+        <div class="api-field"><label>E-mail *</label><input id="af-email" placeholder="maria@fundo.com"></div>
+      </div>
+      <div class="api-row">
+        <div class="api-field"><label>Telefone</label><input id="af-phone" placeholder="+55 11 99999-0000"></div>
+        <div class="api-field"><label>Capacidade de Investimento (R$)</label><input id="af-cap" type="number" placeholder="500000" value="500000"></div>
+      </div>
+      <div class="api-row">
+        <div class="api-field">
+          <label>Interesse</label>
+          <select id="af-interest">
+            <option value="investimento_imobiliario">Investimento Imobiliário</option>
+            <option value="compra_imovel">Compra de Imóvel</option>
+            <option value="parceria_obra">Parceria de Obra</option>
+          </select>
+        </div>
+        <div class="api-field">
+          <label>Origem</label>
+          <select id="af-source">
+            <option value="landing_page">Landing Page</option>
+            <option value="indicacao">Indicação</option>
+            <option value="redes_sociais">Redes Sociais</option>
+            <option value="evento">Evento</option>
+          </select>
+        </div>
+      </div>`,
+    getBody: () => ({
+      name: document.getElementById('af-name').value,
+      email: document.getElementById('af-email').value,
+      phone: document.getElementById('af-phone').value,
+      investment_capacity_brl: Number(document.getElementById('af-cap').value),
+      interest: document.getElementById('af-interest').value,
+      source: document.getElementById('af-source').value
+    })
+  },
+  campaign: {
+    title: '📣 Lançar Campanha',
+    endpoint: '/api/campaigns/launch',
+    method: 'POST',
+    fields: `
+      <div class="api-row">
+        <div class="api-field"><label>Nome da Campanha *</label><input id="af-cname" placeholder="Torre Ágora — Lançamento Q2"></div>
+        <div class="api-field"><label>Project ID *</label><input id="af-cpid" placeholder="PRJ-2026-001" value="PRJ-2026-001"></div>
+      </div>
+      <div class="api-row">
+        <div class="api-field">
+          <label>Público-Alvo</label>
+          <select id="af-audience">
+            <option value="investidores_pf">Investidores PF</option>
+            <option value="investidores_pj">Investidores PJ</option>
+            <option value="compradores_finais">Compradores Finais</option>
+            <option value="fundos_imobiliarios">Fundos Imobiliários</option>
+          </select>
+        </div>
+        <div class="api-field">
+          <label>Canal</label>
+          <select id="af-channel">
+            <option value="email">E-mail</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+        </div>
+      </div>
+      <div class="api-row">
+        <div class="api-field"><label>Budget (R$)</label><input id="af-budget" type="number" placeholder="50000" value="50000"></div>
+        <div class="api-field"><label>Data de Início</label><input id="af-start" type="date"></div>
+      </div>`,
+    getBody: () => ({
+      action: 'launch_new_campaign',
+      campaign_name: document.getElementById('af-cname').value,
+      project_id: document.getElementById('af-cpid').value,
+      target_audience: document.getElementById('af-audience').value,
+      channel: document.getElementById('af-channel').value,
+      budget_brl: Number(document.getElementById('af-budget').value),
+      start_date: document.getElementById('af-start').value || new Date().toISOString().slice(0,10),
+      end_date: new Date(Date.now() + 30*86400000).toISOString().slice(0,10),
+      creative_assets_url: 'https://assets.example.com/campanha',
+      roi_report_url: 'https://reports.example.com/roi'
+    })
+  },
+  conflict: {
+    title: '⚖️ Resolução de Conflitos entre Agentes',
+    endpoint: '/api/agents/conflict-resolution',
+    method: 'POST',
+    fields: `
+      <div class="api-row">
+        <div class="api-field">
+          <label>Tipo de Conflito *</label>
+          <select id="af-ctype">
+            <option value="safety_vs_cost">Segurança vs Custo</option>
+            <option value="quality_vs_schedule">Qualidade vs Prazo</option>
+            <option value="design_vs_budget">Design vs Orçamento</option>
+          </select>
+        </div>
+        <div class="api-field"><label>Project ID *</label><input id="af-cpid2" placeholder="PRJ-2026-001" value="PRJ-2026-001"></div>
+      </div>
+      <div class="api-field">
+        <label>Contexto do Conflito (JSON ou texto)</label>
+        <textarea id="af-ctx" rows="3">{"safety_issue": "NR-18 violation — falta guarda-corpo", "cost_impact": 45000, "schedule_impact_days": 3}</textarea>
+      </div>`,
+    getBody: () => ({
+      conflict_type: document.getElementById('af-ctype').value,
+      project_id: document.getElementById('af-cpid2').value,
+      agents_involved: ['Safety_Monitor_AI', 'Cost_Controller_AI'],
+      context: (function(){ try { return JSON.parse(document.getElementById('af-ctx').value); } catch(e) { return { descricao: document.getElementById('af-ctx').value }; } })()
+    })
+  },
+  edge: {
+    title: '📡 Edge Sync — Canteiro / IoT / Drone',
+    endpoint: '/api/infrastructure/edge-sync',
+    method: 'POST',
+    fields: `
+      <div class="api-row">
+        <div class="api-field">
+          <label>Workload *</label>
+          <select id="af-wl">
+            <option value="drone_point_cloud_compilation">Drone — Point Cloud</option>
+            <option value="real_time_iot_filtering">IoT — Filtragem em Tempo Real</option>
+            <option value="local_clash_detection_cache">Clash Detection Cache</option>
+          </select>
+        </div>
+        <div class="api-field"><label>Site ID *</label><input id="af-site" placeholder="SITE-042" value="SITE-042"></div>
+      </div>
+      <div class="api-field">
+        <label>Dados (JSON)</label>
+        <textarea id="af-edata" rows="3">{"points": 1200000, "scan_date": "2026-05-19", "drone_model": "DJI Matrice 300"}</textarea>
+      </div>`,
+    getBody: () => ({
+      workload: document.getElementById('af-wl').value,
+      site_id: document.getElementById('af-site').value,
+      data: (function(){ try { return JSON.parse(document.getElementById('af-edata').value); } catch(e) { return {}; } })()
+    })
+  }
+};
+
+function openApiModal(type) {
+  const cfg = apiModalConfigs[type];
+  if (!cfg) return;
+  currentApiType = type;
+  document.getElementById('api-modal-title').textContent = cfg.title;
+  document.getElementById('api-modal-body').innerHTML = cfg.fields + '<div id="api-result" style="display:none" class="api-result"></div>';
+  document.getElementById('api-btn-send').textContent = '▶ Enviar';
+  document.getElementById('api-btn-send').disabled = false;
+  document.getElementById('api-overlay').classList.add('open');
+  // set today's date on campaign start field if present
+  const startEl = document.getElementById('af-start');
+  if (startEl) startEl.value = new Date().toISOString().slice(0,10);
+}
+
+function closeApiModal() {
+  document.getElementById('api-overlay').classList.remove('open');
+  currentApiType = null;
+}
+
+function closeApiOutside(e) {
+  if (e.target === document.getElementById('api-overlay')) closeApiModal();
+}
+
+async function sendApiModal() {
+  const cfg = apiModalConfigs[currentApiType];
+  if (!cfg) return;
+  const btn = document.getElementById('api-btn-send');
+  const resultEl = document.getElementById('api-result');
+  btn.textContent = 'Enviando…';
+  btn.disabled = true;
+  resultEl.style.display = 'none';
+  try {
+    let body, url = cfg.endpoint;
+    if (cfg.method === 'GET') {
+      url += '?' + new URLSearchParams(cfg.getBody()).toString();
+      body = undefined;
+    } else {
+      body = JSON.stringify(cfg.getBody());
+    }
+    const resp = await fetch(url, {
+      method: cfg.method,
+      headers: cfg.method !== 'GET' ? { 'Content-Type': 'application/json' } : {},
+      body
+    });
+    const data = await resp.json();
+    resultEl.style.display = 'block';
+    resultEl.style.color = resp.ok ? 'var(--teal)' : 'var(--danger)';
+    resultEl.textContent = JSON.stringify(data, null, 2);
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.style.color = 'var(--danger)';
+    resultEl.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.textContent = '▶ Enviar novamente';
+    btn.disabled = false;
+  }
 }
 </script>
 </body>
