@@ -1426,7 +1426,7 @@ const apiModalConfigs = {
     fields: `
       <div class="api-row">
         <div class="api-field">
-          <label>Trigger *</label>
+          <label>Trigger Event *</label>
           <select id="af-trigger">
             <option value="roi_report_generated">roi_report_generated</option>
             <option value="cinematic_assets_approved">cinematic_assets_approved</option>
@@ -1441,14 +1441,26 @@ const apiModalConfigs = {
           <input id="af-project" placeholder="PRJ-2026-001" value="PRJ-2026-001">
         </div>
       </div>
+      <div class="api-row">
+        <div class="api-field"><label>ROI Esperado (%)</label><input id="af-roi" type="number" value="18.5"></div>
+        <div class="api-field"><label>ESG Score (0-100)</label><input id="af-esg" type="number" value="78"></div>
+      </div>
       <div class="api-field">
-        <label>Payload (JSON)</label>
-        <textarea id="af-payload" rows="3">{"roi": 18.5, "vgv": "R$ 12M", "milestone": "Fundação concluída"}</textarea>
+        <label>URL do Render / Asset</label>
+        <input id="af-render" value="https://renders.exemplo.com/torre-agora.mp4">
       </div>`,
     getBody: () => ({
-      trigger: document.getElementById('af-trigger').value,
       project_id: document.getElementById('af-project').value,
-      payload: JSON.parse(document.getElementById('af-payload').value || '{}')
+      trigger_event: document.getElementById('af-trigger').value,
+      assets: {
+        creative_urls: [document.getElementById('af-render').value],
+        esg_score: Number(document.getElementById('af-esg').value),
+        expected_roi: Number(document.getElementById('af-roi').value),
+      },
+      audience: {
+        interests: ['investimento_imobiliario', 'renda_passiva'],
+        locations: ['São Paulo', 'Rio de Janeiro'],
+      }
     })
   },
   lead: {
@@ -1466,7 +1478,7 @@ const apiModalConfigs = {
       </div>
       <div class="api-row">
         <div class="api-field">
-          <label>Interesse</label>
+          <label>Interesse no Projeto</label>
           <select id="af-interest">
             <option value="investimento_imobiliario">Investimento Imobiliário</option>
             <option value="compra_imovel">Compra de Imóvel</option>
@@ -1484,11 +1496,14 @@ const apiModalConfigs = {
         </div>
       </div>`,
     getBody: () => ({
+      lead_id: 'LEAD-' + Date.now(),
       name: document.getElementById('af-name').value,
-      email: document.getElementById('af-email').value,
-      phone: document.getElementById('af-phone').value,
+      contact: {
+        email: document.getElementById('af-email').value,
+        phone: document.getElementById('af-phone').value || undefined,
+      },
+      project_interest: document.getElementById('af-interest').value,
       investment_capacity_brl: Number(document.getElementById('af-cap').value),
-      interest: document.getElementById('af-interest').value,
       source: document.getElementById('af-source').value
     })
   },
@@ -1554,15 +1569,36 @@ const apiModalConfigs = {
         </div>
         <div class="api-field"><label>Project ID *</label><input id="af-cpid2" placeholder="PRJ-2026-001" value="PRJ-2026-001"></div>
       </div>
+      <div class="api-row">
+        <div class="api-field">
+          <label>Agente Solicitante *</label>
+          <select id="af-reqagent">
+            <option value="Safety_Monitor_AI">Safety_Monitor_AI</option>
+            <option value="Cost_Controller_AI">Cost_Controller_AI</option>
+            <option value="Construction_Planner_AI">Construction_Planner_AI</option>
+            <option value="BIM_Coordinator_AI">BIM_Coordinator_AI</option>
+          </select>
+        </div>
+        <div class="api-field">
+          <label>Agente Oponente *</label>
+          <select id="af-oppagent">
+            <option value="Cost_Controller_AI">Cost_Controller_AI</option>
+            <option value="Safety_Monitor_AI">Safety_Monitor_AI</option>
+            <option value="Quality_Control_AI">Quality_Control_AI</option>
+            <option value="Investment_Analyst_AI">Investment_Analyst_AI</option>
+          </select>
+        </div>
+      </div>
       <div class="api-field">
-        <label>Contexto do Conflito (JSON ou texto)</label>
-        <textarea id="af-ctx" rows="3">{"safety_issue": "NR-18 violation — falta guarda-corpo", "cost_impact": 45000, "schedule_impact_days": 3}</textarea>
+        <label>Descrição do Conflito</label>
+        <textarea id="af-ctx" rows="2">NR-18 — falta guarda-corpo. Cost impact: R$45.000. Schedule impact: 3 dias.</textarea>
       </div>`,
     getBody: () => ({
       conflict_type: document.getElementById('af-ctype').value,
       project_id: document.getElementById('af-cpid2').value,
-      agents_involved: ['Safety_Monitor_AI', 'Cost_Controller_AI'],
-      context: (function(){ try { return JSON.parse(document.getElementById('af-ctx').value); } catch(e) { return { descricao: document.getElementById('af-ctx').value }; } })()
+      requesting_agent: document.getElementById('af-reqagent').value,
+      conflicting_agent: document.getElementById('af-oppagent').value,
+      context: { descricao: document.getElementById('af-ctx').value }
     })
   },
   edge: {
@@ -1579,16 +1615,18 @@ const apiModalConfigs = {
             <option value="local_clash_detection_cache">Clash Detection Cache</option>
           </select>
         </div>
-        <div class="api-field"><label>Site ID *</label><input id="af-site" placeholder="SITE-042" value="SITE-042"></div>
+        <div class="api-field"><label>Project ID *</label><input id="af-edgepid" placeholder="PRJ-2026-001" value="PRJ-2026-001"></div>
       </div>
-      <div class="api-field">
-        <label>Dados (JSON)</label>
-        <textarea id="af-edata" rows="3">{"points": 1200000, "scan_date": "2026-05-19", "drone_model": "DJI Matrice 300"}</textarea>
+      <div class="api-row">
+        <div class="api-field"><label>Edge Node ID *</label><input id="af-nodeid" placeholder="NODE-SITE-042-01" value="NODE-SITE-042-01"></div>
+        <div class="api-field"><label>Dados (JSON)</label><input id="af-edata" value='{"points":1200000,"drone_model":"DJI Matrice 300"}'></div>
       </div>`,
     getBody: () => ({
-      workload: document.getElementById('af-wl').value,
-      site_id: document.getElementById('af-site').value,
-      data: (function(){ try { return JSON.parse(document.getElementById('af-edata').value); } catch(e) { return {}; } })()
+      workload_type: document.getElementById('af-wl').value,
+      project_id: document.getElementById('af-edgepid').value,
+      edge_node_id: document.getElementById('af-nodeid').value,
+      payload: (function(){ try { return JSON.parse(document.getElementById('af-edata').value); } catch(e) { return {}; } })(),
+      compressed: false
     })
   }
 };
