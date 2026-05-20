@@ -13,12 +13,17 @@ export default async function handler(req, res) {
   const { model, max_tokens, system, messages } = req.body
 
   try {
+    const hasPDF = Array.isArray(messages) && messages.some(m =>
+      Array.isArray(m.content) && m.content.some(c => c.type === 'document')
+    )
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        ...(hasPDF ? { 'anthropic-beta': 'pdfs-2024-09-25' } : {}),
       },
       body: JSON.stringify({
         model:      model      || 'claude-sonnet-4-6',

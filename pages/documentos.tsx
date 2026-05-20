@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import PrintShareModal from '../components/PrintShareModal'
 
 const DOCS_EXEMPLO = [
   { id:'D-001', nome:'Contrato_Horizonte_Torre_A.pdf', tipo:'Contrato', tamanho:'2,4 MB', data:'15/05/2026', status:'Analisado', tags:['Contrato','Obra','Alto risco'] },
@@ -34,6 +35,7 @@ export default function DocumentosPage() {
   const [selectedDoc, setSelectedDoc] = useState<typeof DOCS_EXEMPLO[0] | null>(null)
   const [docs, setDocs] = useState(DOCS_EXEMPLO)
   const [uploadPct, setUploadPct] = useState(0)
+  const [showPrint, setShowPrint] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function analyzeFile(file: File) {
@@ -57,11 +59,13 @@ export default function DocumentosPage() {
           reader.readAsDataURL(file)
         })
         setUploadPct(55)
-        const mediaType = isPDF ? 'application/pdf' : (file.type || 'image/jpeg')
+        const mediaType = isPDF ? 'application/pdf' : (file.type || 'image/jpeg') as any
         messages = [{
           role: 'user',
           content: [
-            { type: 'document', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            isPDF
+              ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+              : { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
             { type: 'text', text: `Analise este documento de construção civil e retorne um relatório completo com:
 
 1. 📋 TIPO DE DOCUMENTO: identifique exatamente o tipo
@@ -236,20 +240,9 @@ Seja detalhado e técnico. Use emojis nos títulos para facilitar leitura.` }
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                     <div style={s.secTitle}>📋 Resultado — {fileName}</div>
                     <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={() => {
-                        const w = window.open('','_blank','width=800,height=700')
-                        if(!w) return
-                        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Análise — ${fileName}</title>
-<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:32px;max-width:800px;margin:0 auto;font-size:12px;line-height:1.7;color:#1a1f36}
-h1{color:#185FA5;font-size:18px}pre{white-space:pre-wrap;font-family:inherit}
-.footer{margin-top:32px;border-top:1px solid #e5e8f0;padding-top:12px;font-size:10px;color:#8b93a7}
-@media print{@page{margin:1cm}}</style>
-</head><body><h1>📑 Análise Document Intelligence</h1><h2>${fileName}</h2><pre>${result}</pre>
-<div class="footer">Document_Intelligence_AI · AI Construction Platform · ${new Date().toLocaleString('pt-BR')}</div>
-<script>window.onload=()=>window.print()</script></body></html>`)
-                        w.document.close()
-                      }} style={{ padding:'5px 12px', border:'1px solid #e5e8f0', borderRadius:6,
-                        background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                      <button onClick={() => setShowPrint(true)}
+                        style={{ padding:'5px 12px', border:'1px solid #e5e8f0', borderRadius:6,
+                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
                         🖨️ Imprimir
                       </button>
                       <button onClick={() => {
@@ -312,6 +305,20 @@ h1{color:#185FA5;font-size:18px}pre{white-space:pre-wrap;font-family:inherit}
           </div>
         </div>
       </div>
+      {showPrint && result && (
+        <PrintShareModal
+          title={`Análise Document Intelligence — ${fileName}`}
+          onClose={() => setShowPrint(false)}
+          buildHtml={() => `
+<div class="meta">
+  <span>📑 ${fileName}</span>
+  <span>📅 ${new Date().toLocaleDateString('pt-BR')}</span>
+</div>
+<h2>Resultado da Análise IA</h2>
+<div class="text-area">${result.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>')}</div>`}
+          buildText={() => `ANÁLISE DOCUMENT INTELLIGENCE\n${fileName}\n\n${result}`}
+        />
+      )}
     </>
   )
 }
