@@ -705,7 +705,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                     <tbody>
                       {projects.map((p, i) => (
                         <tr key={p.id}
-                          style={{ background: i%2===0 ? '#fff' : '#fafbfd', transition:'background 0.1s' }}
+                          style={{ background: i%2===0 ? '#fff' : '#fafbfd', transition:'background 0.1s',
+                            cursor: p.id.startsWith('example-') ? 'default' : 'pointer' }}
+                          onClick={() => !p.id.startsWith('example-') && router.push(`/projeto/${p.id}`)}
                           onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')}
                           onMouseLeave={e=>(e.currentTarget.style.background=i%2===0?'#fff':'#fafbfd')}>
                           <td style={{ padding:'11px 14px', fontWeight:500, color:'#1a1f36' }}>
