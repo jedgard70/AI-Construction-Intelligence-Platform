@@ -29,13 +29,6 @@ interface NCI {
 
 interface AtlasProject { id: string; name: string }
 
-const SEED_NCIS: NCI[] = [
-  { id:'NCI-001', titulo:'Fissuras em parede de alvenaria — Bloco A', severidade:'alta', status:'aberta', prazo:'20/05/2026', responsavel:'Eng. Carlos', projeto:'Edifício Horizonte', createdAt: new Date(Date.now()-86400000*5).toISOString() },
-  { id:'NCI-002', titulo:'Caimento inadequado em laje de cobertura', severidade:'critica', status:'aberta', prazo:'18/05/2026', responsavel:'Eng. Ana', projeto:'Complexo Industrial Norte', createdAt: new Date(Date.now()-86400000*4).toISOString() },
-  { id:'NCI-003', titulo:'Argamassa fora do traço — Fundação P-12', severidade:'media', status:'em_andamento', prazo:'25/05/2026', responsavel:'Eng. João', projeto:'Condomínio Vale Verde', createdAt: new Date(Date.now()-86400000*3).toISOString() },
-  { id:'NCI-004', titulo:'Revestimento cerâmico com empolamento', severidade:'baixa', status:'resolvida', prazo:'10/05/2026', responsavel:'Eng. Maria', projeto:'Edifício Horizonte', createdAt: new Date(Date.now()-86400000*2).toISOString() },
-  { id:'NCI-005', titulo:'Espessura de laje abaixo do especificado — eixo D', severidade:'critica', status:'aberta', prazo:'17/05/2026', responsavel:'Eng. Carlos', projeto:'Complexo Industrial Norte', createdAt: new Date(Date.now()-86400000).toISOString() },
-]
 
 function buildNciHtml(n: NCI) {
   return `
@@ -101,13 +94,8 @@ export default function QualidadePage() {
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem('atlas_ncis') || '[]') as NCI[]
-      if (stored.length > 0) {
-        setNcis(stored)
-      } else {
-        setNcis(SEED_NCIS)
-        localStorage.setItem('atlas_ncis', JSON.stringify(SEED_NCIS))
-      }
-    } catch { setNcis(SEED_NCIS) }
+      setNcis(stored)
+    } catch { setNcis([]) }
 
     try {
       const ps = JSON.parse(localStorage.getItem('atlas_projects') || '[]') as AtlasProject[]

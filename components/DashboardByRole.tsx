@@ -312,14 +312,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
           setProjects(stored)
         } else {
           // Dados de exemplo só quando não há nada salvo
-          setProjects([
-            { id:'example-1', name:'[Exemplo] Torre Horizonte — Torre A', code:'OBR-2026-EX1', status:'em_andamento',
-              city:'São Paulo', state:'SP', budget_planned:12400000, budget_actual:10200000,
-              completion_pct:68, cpi:1.02, spi:1.04, eac:12200000, esg_score:81 },
-            { id:'example-2', name:'[Exemplo] Clique em "+ Novo Projeto" para criar o seu', code:'OBR-2026-EX2', status:'planejamento',
-              city:'', state:'', budget_planned:0, budget_actual:0,
-              completion_pct:0, cpi:null, spi:null, eac:null, esg_score:null },
-          ])
+          setProjects([])
         }
       } catch {
         setProjects([])
@@ -731,8 +724,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                       {projects.map((p, i) => (
                         <tr key={p.id}
                           style={{ background: i%2===0 ? '#fff' : '#fafbfd', transition:'background 0.1s',
-                            cursor: p.id.startsWith('example-') ? 'default' : 'pointer' }}
-                          onClick={() => !p.id.startsWith('example-') && router.push(`/projeto/${p.id}`)}
+                            cursor: 'pointer' }}
+                          onClick={() => router.push(`/projeto/${p.id}`)}
                           onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')}
                           onMouseLeave={e=>(e.currentTarget.style.background=i%2===0?'#fff':'#fafbfd')}>
                           <td style={{ padding:'11px 14px', fontWeight:500, color:'#1a1f36' }}>
@@ -772,7 +765,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                             </span>
                           </td>
                           <td style={{ padding:'11px 14px' }}>
-                            {!p.id.startsWith('example-') && (
+                            {(
                               <button onClick={() => {
                                 if (!confirm(`Remover "${p.name}"?`)) return
                                 setProjects(prev => {
@@ -2035,8 +2028,7 @@ RETORNE APENAS JSON puro (sem markdown):
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(proj) => {
         setProjects(prev => {
-          const filtered = prev.filter(p => p.id.startsWith('example-'))
-          return [proj, ...(filtered.length === prev.length ? [] : prev.filter(p => !p.id.startsWith('example-')))]
+          return [proj, ...prev]
         })
         setShowNewProject(false)
       }} />}

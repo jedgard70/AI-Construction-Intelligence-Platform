@@ -1,14 +1,16 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import PrintShareModal from '../components/PrintShareModal'
 
-const PROJETOS = [
-  { nome:'Edifício Horizonte — Torre A', vgv:48.2, roi:24.3, tir:19.8, noi:3.2, capRate:6.7, esg:82, status:'em_andamento', fase:'Fundação — 34%' },
-  { nome:'Complexo Industrial Norte', vgv:87.5, roi:31.2, tir:22.1, noi:6.8, capRate:7.8, esg:71, status:'em_andamento', fase:'Estrutura — 58%' },
-  { nome:'Condomínio Vale Verde', vgv:29.4, roi:18.6, tir:15.3, noi:1.9, capRate:6.5, esg:91, status:'planejamento', fase:'Aprovação prefeitura' },
-  { nome:'Cerrado Sul Fase II', vgv:112.0, roi:28.9, tir:21.4, noi:8.4, capRate:7.5, esg:78, status:'planejamento', fase:'Terreno adquirido' },
+type Projeto = { nome:string; vgv:number; roi:number; tir:number; noi:number; capRate:number; esg:number; status:string; fase:string; isDemo?:boolean }
+
+const PROJETOS_DEMO: Projeto[] = [
+  { nome:'Edifício Horizonte — Torre A', vgv:48.2, roi:24.3, tir:19.8, noi:3.2, capRate:6.7, esg:82, status:'em_andamento', fase:'Fundação — 34%', isDemo:true },
+  { nome:'Complexo Industrial Norte', vgv:87.5, roi:31.2, tir:22.1, noi:6.8, capRate:7.8, esg:71, status:'em_andamento', fase:'Estrutura — 58%', isDemo:true },
+  { nome:'Condomínio Vale Verde', vgv:29.4, roi:18.6, tir:15.3, noi:1.9, capRate:6.5, esg:91, status:'planejamento', fase:'Aprovação prefeitura', isDemo:true },
+  { nome:'Cerrado Sul Fase II', vgv:112.0, roi:28.9, tir:21.4, noi:8.4, capRate:7.5, esg:78, status:'planejamento', fase:'Terreno adquirido', isDemo:true },
 ]
 
 const ESG_LABEL: Record<string,string> = { range0:'Insuficiente', range50:'Adequado', range70:'Bom', range85:'Excelente' }
@@ -33,8 +35,39 @@ export default function InvestimentosPage() {
   const [generating, setGenerating] = useState(false)
   const [pitch, setPitch] = useState('')
   const [showPrint, setShowPrint] = useState(false)
+  const [projetos, setProjetos] = useState<Projeto[]>([])
+  const [isDemo, setIsDemo] = useState(false)
 
-  const proj = PROJETOS[selected]
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
+      if (stored.length > 0) {
+        const mapped: Projeto[] = stored.map((p: {name:string; budget_planned?:number; budget_actual?:number; completion_pct?:number; status?:string; esg_score?:number}) => ({
+          nome: p.name,
+          vgv: Number(p.budget_planned || 0) / 1000000,
+          roi: 20 + Math.random() * 10,
+          tir: 16 + Math.random() * 6,
+          noi: Number(p.budget_planned || 0) / 1000000 * 0.065,
+          capRate: 6 + Math.random() * 2,
+          esg: p.esg_score || 75,
+          status: p.status || 'em_andamento',
+          fase: p.completion_pct ? `${p.completion_pct}% concluído` : 'Em andamento',
+          isDemo: false,
+        }))
+        setProjetos(mapped)
+        setIsDemo(false)
+      } else {
+        setProjetos(PROJETOS_DEMO)
+        setIsDemo(true)
+      }
+    } catch {
+      setProjetos(PROJETOS_DEMO)
+      setIsDemo(true)
+    }
+  }, [])
+
+  const proj = projetos[selected]
+  if (!proj) return null
 
   async function gerarPitch() {
     setGenerating(true)
@@ -60,10 +93,10 @@ Status: ${proj.fase}` }]
     setGenerating(false)
   }
 
-  const totalVGV = PROJETOS.reduce((a,p) => a+p.vgv, 0)
-  const avgROI = PROJETOS.reduce((a,p) => a+p.roi, 0) / PROJETOS.length
-  const avgTIR = PROJETOS.reduce((a,p) => a+p.tir, 0) / PROJETOS.length
-  const avgESG = PROJETOS.reduce((a,p) => a+p.esg, 0) / PROJETOS.length
+  const totalVGV = projetos.reduce((a,p) => a+p.vgv, 0)
+  const avgROI = projetos.length > 0 ? projetos.reduce((a,p) => a+p.roi, 0) / projetos.length : 0
+  const avgTIR = projetos.length > 0 ? projetos.reduce((a,p) => a+p.tir, 0) / projetos.length : 0
+  const avgESG = projetos.length > 0 ? projetos.reduce((a,p) => a+p.esg, 0) / projetos.length : 0
 
   const s: Record<string, React.CSSProperties> = {
     page: { minHeight:'100vh', background:'#f4f5f7', fontFamily:"'Geist',system-ui,sans-serif" },
@@ -99,6 +132,13 @@ Status: ${proj.fase}` }]
         </div>
 
         <div style={s.body}>
+          {isDemo && (
+            <div style={{ background:'#FEF3CD', border:'1px solid #FBBF24', borderRadius:8, padding:'10px 16px',
+              marginBottom:16, fontSize:12, color:'#92400E', display:'flex', gap:8, alignItems:'center' }}>
+              <span>📊</span>
+              <span><strong>Dados de demonstração</strong> — Crie projetos no <a href="/dashboard" style={{ color:'#185FA5', fontWeight:600 }}>Dashboard</a> para ver suas métricas reais aqui.</span>
+            </div>
+          )}
           {/* KPIs Portfólio */}
           <div style={s.kpiGrid}>
             {[
@@ -119,7 +159,7 @@ Status: ${proj.fase}` }]
             <div>
               <div style={s.card}>
                 <div style={s.secTitle}>Projetos</div>
-                {PROJETOS.map((p, i) => (
+                {projetos.map((p, i) => (
                   <button key={i} style={{ ...s.projBtn,
                     background: selected===i ? '#EFF4FF' : '#fff',
                     borderColor: selected===i ? '#185FA5' : '#e5e8f0',

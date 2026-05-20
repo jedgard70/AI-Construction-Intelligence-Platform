@@ -26,17 +26,12 @@ interface RDO {
 
 interface AtlasProject { id: string; name: string; code?: string }
 
-const DEFAULT_PROJECTS: AtlasProject[] = [
-  { id: 'horizonte', name: 'Edifício Horizonte — Torre A' },
-  { id: 'industrial', name: 'Complexo Industrial Norte' },
-  { id: 'valeverde', name: 'Condomínio Vale Verde' },
-]
-
 export default function RDOPage() {
   const router = useRouter()
   const [saving, setSaving]   = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [projects, setProjects] = useState<AtlasProject[]>(DEFAULT_PROJECTS)
+  const [projects, setProjects] = useState<AtlasProject[]>([])
+  const [noProjects, setNoProjects] = useState(false)
   const [history, setHistory] = useState<RDO[]>([])
   const [form, setForm] = useState({
     projeto: '',
@@ -61,10 +56,10 @@ export default function RDOPage() {
         setProjects(stored)
         setForm(f => ({ ...f, projeto: stored[0].id }))
       } else {
-        setForm(f => ({ ...f, projeto: DEFAULT_PROJECTS[0].id }))
+        setNoProjects(true)
       }
     } catch {
-      setForm(f => ({ ...f, projeto: DEFAULT_PROJECTS[0].id }))
+      setNoProjects(true)
     }
     try {
       const rdos = JSON.parse(localStorage.getItem('atlas_rdos') || '[]') as RDO[]
@@ -222,6 +217,13 @@ export default function RDOPage() {
             <div style={{ ...s.grid3, marginBottom:12 }}>
               <div style={s.field}>
                 <label style={s.label}>Projeto</label>
+                {noProjects && (
+                  <div style={{ background:'#FEF3CD', border:'1px solid #FBBF24', borderRadius:8, padding:'10px 14px',
+                    fontSize:12, color:'#92400E', marginBottom:12, display:'flex', gap:8, alignItems:'center' }}>
+                    <span>⚠️</span>
+                    <span>Nenhum projeto encontrado. <a href="/dashboard" style={{ color:'#185FA5', fontWeight:600 }}>Crie um projeto no Dashboard</a> para vinculá-lo ao RDO.</span>
+                  </div>
+                )}
                 <select style={s.select} value={form.projeto} onChange={e => set('projeto', e.target.value)}>
                   {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
