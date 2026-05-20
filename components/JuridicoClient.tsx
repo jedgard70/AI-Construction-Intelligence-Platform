@@ -155,6 +155,20 @@ export default function JuridicoClient() {
   const fileRef = useRef<HTMLInputElement>(null)
   const contractSavedRef = useRef(false)
 
+  const [parte, setParte] = useState<Parte>({
+    nome: '', nacionalidade: 'brasileiro(a)', estado_civil: 'casado(a)',
+    profissao: '', cpf: '', rg: '', telefone: '', email: '', endereco: ''
+  })
+  const [obra, setObra] = useState<DadosObra>({
+    endereco: '', setor: '', quadra: '', lote: '', inscricao: '',
+    testada: '', area_terreno: '', area_construir: '',
+    tipo_obra: 'CONSTRUÇÃO DE RESIDÊNCIA', classificacao: 'Residencial Unifamiliar', descricao: ''
+  })
+  const [financeiro, setFinanceiro] = useState<DadosFinanceiros>({
+    valor_total: '', entrada: '', saldo: '', parcelas: '10',
+    valor_parcela: '', dia_vencimento: '10'
+  })
+
   // Save contract metadata to localStorage when step 7 is reached
   useEffect(() => {
     if (etapa !== 7 || contractSavedRef.current) return
@@ -177,20 +191,6 @@ export default function JuridicoClient() {
     } catch {}
   }, [etapa, idioma, usTipoContrato, tipoContrato, usParty.name, parte.nome,
       usProject.state, usFinancial.contractValue, financeiro.valor_total, router.query.projectId])
-
-  const [parte, setParte] = useState<Parte>({
-    nome: '', nacionalidade: 'brasileiro(a)', estado_civil: 'casado(a)',
-    profissao: '', cpf: '', rg: '', telefone: '', email: '', endereco: ''
-  })
-  const [obra, setObra] = useState<DadosObra>({
-    endereco: '', setor: '', quadra: '', lote: '', inscricao: '',
-    testada: '', area_terreno: '', area_construir: '',
-    tipo_obra: 'CONSTRUÇÃO DE RESIDÊNCIA', classificacao: 'Residencial Unifamiliar', descricao: ''
-  })
-  const [financeiro, setFinanceiro] = useState<DadosFinanceiros>({
-    valor_total: '', entrada: '', saldo: '', parcelas: '10',
-    valor_parcela: '', dia_vencimento: '10'
-  })
 
   function setPar(f: keyof Parte, v: string)            { setParte(p => ({ ...p, [f]: v })) }
   function setObr(f: keyof DadosObra, v: string)        { setObra(p  => ({ ...p, [f]: v })) }
