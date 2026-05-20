@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import PrintShareModal from '../components/PrintShareModal'
 
 // ─── Types ──────────────────────────────────────────────────────
 type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential' | 'coordination' | 'quantities' | 'feasibility'
@@ -319,6 +320,7 @@ export default function BimOpsPage() {
   const router = useRouter()
   const [activeModule, setActiveModule] = useState<Module>('dashboard')
   const [projectCtx, setProjectCtx] = useState<{id:string;name:string;code:string}|null>(null)
+  const [printData, setPrintData] = useState<{title:string;content:string}|null>(null)
 
   // Read tab and projectId from URL on mount
   useEffect(() => {
@@ -701,7 +703,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                     </div>
                   )}
                   {aiResult && aiContext === 'dashboard' && (
-                    <div style={s.pre}>{aiResult}</div>
+                    <>
+                      <div style={s.pre}>{aiResult}</div>
+                      <button onClick={() => setPrintData({ title:'BIMForge AI — Executive Dashboard Report', content: aiResult })}
+                        style={{ marginTop:10, padding:'7px 16px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
                   )}
                 </div>
               </>
@@ -782,7 +790,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
 
                 {aiResult && aiContext === 'BIM Upload Analysis' && (
                   <div style={s.card}>
-                    <div style={s.secTit}>🤖 AI Model Analysis Result</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                      <div style={s.secTit}>🤖 AI Model Analysis Result</div>
+                      <button onClick={() => setPrintData({ title:`BIM Analysis — ${uploadedFile?.name ?? 'Model'}`, content: aiResult })}
+                        style={{ padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </div>
                     <div style={s.pre}>{aiResult}</div>
                   </div>
                 )}
@@ -847,7 +861,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                 )}
                 {aiResult && aiContext === 'clash' && (
                   <div style={s.card}>
-                    <div style={s.secTit}>🤖 AI Clash Analysis & Resolution</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                      <div style={s.secTit}>🤖 AI Clash Analysis & Resolution</div>
+                      <button onClick={() => setPrintData({ title:'AI Clash Analysis & Resolution Report', content: aiResult })}
+                        style={{ padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </div>
                     <div style={s.pre}>{aiResult}</div>
                   </div>
                 )}
@@ -917,7 +937,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
 
                 {reportResult && (
                   <div style={s.card}>
-                    <div style={s.secTit}>🤖 AI Permit Readiness Report</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                      <div style={s.secTit}>🤖 AI Permit Readiness Report</div>
+                      <button onClick={() => setPrintData({ title:'AI Permit Readiness Report', content: reportResult })}
+                        style={{ padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </div>
                     <div style={s.pre}>{reportResult}</div>
                   </div>
                 )}
@@ -1034,7 +1060,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                         </div>
                       )}
                       {codeAI && !codeAILoading && (
-                        <div style={{ ...s.pre, marginTop:12, borderLeft:`3px solid ${code.color}` }}>{codeAI}</div>
+                        <>
+                          <div style={{ ...s.pre, marginTop:12, borderLeft:`3px solid ${code.color}` }}>{codeAI}</div>
+                          <button onClick={() => setPrintData({ title:`${code.name} — AI Code Reference`, content: codeAI })}
+                            style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨️ Imprimir / Compartilhar
+                          </button>
+                        </>
                       )}
                     </div>
 
@@ -1202,11 +1234,17 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                         </div>
                       )}
                       {resAI && !resAILoading && (
-                        <div style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8,
-                          padding:14, fontSize:12, color:'#c9d1d9', lineHeight:1.7,
-                          fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
-                          {resAI}
-                        </div>
+                        <>
+                          <div style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8,
+                            padding:14, fontSize:12, color:'#c9d1d9', lineHeight:1.7,
+                            fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
+                            {resAI}
+                          </div>
+                          <button onClick={() => setPrintData({ title:'AI Assistant — Residential Construction Systems', content: resAI })}
+                            style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨️ Imprimir / Compartilhar
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -1246,7 +1284,13 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                     </div>
                   )}
                   {aiResult && aiContext === 'docs' && (
-                    <div style={{ ...s.pre, marginTop:14 }}>{aiResult}</div>
+                    <>
+                      <div style={{ ...s.pre, marginTop:14 }}>{aiResult}</div>
+                      <button onClick={() => setPrintData({ title:'AI Documentation QA Report', content: aiResult })}
+                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
                   )}
                 </div>
               </>
@@ -1306,6 +1350,10 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                   <div style={s.card}>
                     <div style={s.secTit}>🤖 AI Workflow Optimization</div>
                     <div style={s.pre}>{aiResult}</div>
+                    <button onClick={() => setPrintData({ title:'AI Workflow Optimization Report', content: aiResult })}
+                      style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                      🖨️ Imprimir / Compartilhar
+                    </button>
                   </div>
                 )}
               </>
@@ -1339,19 +1387,7 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                       <div style={s.secTit}>🤖 Generated Report</div>
                       <div style={{ display:'flex', gap:8 }}>
-                        <button style={s.btnGhost} onClick={() => {
-                          const w = window.open('','_blank','width=900,height=700')
-                          if(!w) return
-                          w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>BIMForge AI Report</title>
-<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:32px;max-width:800px;margin:0 auto;font-size:12px;line-height:1.7}
-h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
-.footer{margin-top:32px;border-top:1px solid #e5e8f0;padding-top:12px;font-size:10px;color:#8b93a7}
-@media print{@page{margin:1cm}}</style>
-</head><body><h1>⚡ BIMForge AI — Report</h1><pre>${aiResult}</pre>
-<div class="footer">BIMForge AI · AI BIM Operations Platform · ${new Date().toLocaleString('en-US')}</div>
-<script>window.onload=()=>window.print()</script></body></html>`)
-                          w.document.close()
-                        }}>🖨️ Print</button>
+                        <button style={s.btnGhost} onClick={() => setPrintData({ title:'BIMForge AI — Generated Report', content: aiResult })}>🖨️ Imprimir / Compartilhar</button>
                       </div>
                     </div>
                     <div style={s.pre}>{aiResult}</div>
@@ -1589,6 +1625,10 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                   <div style={s.card}>
                     <div style={s.secTit}>🤖 AI Output</div>
                     <div style={s.pre}>{coordAI}</div>
+                    <button onClick={() => setPrintData({ title:'BIM Coordination Meeting Minutes', content: coordAI })}
+                      style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                      🖨️ Imprimir / Compartilhar
+                    </button>
                   </div>
                 )}
               </>
@@ -1686,7 +1726,15 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                     ))}
                   </div>
                   {qtyAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ AI generating estimate...</div>}
-                  {qtyAI && !qtyAILoading && <div style={s.pre}>{qtyAI}</div>}
+                  {qtyAI && !qtyAILoading && (
+                    <>
+                      <div style={s.pre}>{qtyAI}</div>
+                      <button onClick={() => setPrintData({ title:'AI Quantity Survey & Cost Estimate', content: qtyAI })}
+                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -1814,7 +1862,15 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                     ))}
                   </div>
                   {feasAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ AI generating feasibility report...</div>}
-                  {feasAI && !feasAILoading && <div style={s.pre}>{feasAI}</div>}
+                  {feasAI && !feasAILoading && (
+                    <>
+                      <div style={s.pre}>{feasAI}</div>
+                      <button onClick={() => setPrintData({ title:'AI Feasibility Analysis Report', content: feasAI })}
+                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -1822,6 +1878,14 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
           </div>
         </div>
       </div>
+      {printData && (
+        <PrintShareModal
+          title={printData.title}
+          onClose={() => setPrintData(null)}
+          buildHtml={() => `<h2>Report</h2><div class="text-area">${printData.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>')}</div>`}
+          buildText={() => printData.content}
+        />
+      )}
     </>
   )
 }
