@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 
@@ -318,6 +318,21 @@ const STATUS_BG: Record<string,string> = {
 export default function BimOpsPage() {
   const router = useRouter()
   const [activeModule, setActiveModule] = useState<Module>('dashboard')
+  const [projectCtx, setProjectCtx] = useState<{id:string;name:string;code:string}|null>(null)
+
+  // Read tab and projectId from URL on mount
+  useEffect(() => {
+    if (!router.isReady) return
+    if (router.query.tab) setActiveModule(router.query.tab as Module)
+    const pid = router.query.projectId as string
+    if (pid) {
+      try {
+        const all = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
+        const found = all.find((p: {id:string;name:string;code:string}) => p.id === pid)
+        if (found) setProjectCtx({ id: found.id, name: found.name, code: found.code })
+      } catch {}
+    }
+  }, [router.isReady, router.query.tab, router.query.projectId])
   const [analyzing, setAnalyzing] = useState(false)
   const [aiResult, setAiResult] = useState('')
   const [aiContext, setAiContext] = useState('')
@@ -530,6 +545,17 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            {projectCtx && (
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'4px 12px',
+                borderRadius:20, background:'#185FA520', border:'1px solid #185FA5' }}>
+                <span style={{ fontSize:10, color:'#58a6ff' }}>📁</span>
+                <span style={{ fontSize:11, color:'#58a6ff', fontWeight:600 }}>{projectCtx.code}</span>
+                <span style={{ fontSize:11, color:'#8b93a7' }}>{projectCtx.name}</span>
+                <button onClick={() => router.push(`/projeto/${projectCtx.id}`)}
+                  style={{ fontSize:10, color:'#58a6ff', background:'none', border:'none',
+                    cursor:'pointer', padding:0, textDecoration:'underline' }}>← Projeto</button>
+              </div>
+            )}
             <div style={{ fontSize:10, padding:'3px 10px', borderRadius:20, background:'#185FA520',
               color:'#58a6ff', fontWeight:600, border:'1px solid #185FA5' }}>CORE NUCLEUS · v1.0</div>
             <div style={{ fontSize:10, color:'#8b93a7' }}>Claude AI · claude-sonnet-4-6</div>
