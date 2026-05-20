@@ -1704,6 +1704,22 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                       </tbody>
                     </table>
                   </div>
+                  <div style={{ display:'flex', justifyContent:'flex-end', marginTop:10 }}>
+                    <button onClick={() => setPrintData({
+                      title: `CSI MasterFormat Takeoff — ${qtyMarkup}% OH&P`,
+                      content: [
+                        `CSI MASTERFORMAT TAKEOFF`,
+                        `GC Markup/OH&P: ${qtyMarkup}%`,
+                        ``,
+                        ...CSI_TAKEOFF.map(i => `Div ${i.div} — ${i.title}: ${i.qty.toLocaleString()} ${i.unit} @ $${i.unitCost} = $${(i.qty*i.unitCost).toLocaleString()} (w/ markup: $${Math.round(i.qty*i.unitCost*(1+qtyMarkup/100)).toLocaleString()})`),
+                        ``,
+                        `TOTAL DIRECT: $${CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0).toLocaleString()}`,
+                        `TOTAL W/ ${qtyMarkup}% MARKUP: $${Math.round(CSI_TAKEOFF.reduce((a,i)=>a+i.qty*i.unitCost,0)*(1+qtyMarkup/100)).toLocaleString()}`,
+                      ].join('\n')
+                    })} style={{ padding:'7px 16px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:8, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                      🖨️ Imprimir Takeoff
+                    </button>
+                  </div>
                 </div>
 
                 {/* AI Quantity Survey */}
@@ -1840,6 +1856,43 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                       )
                     })()}
                   </div>
+                </div>
+
+                {/* Pro Forma Print button */}
+                <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
+                  <button onClick={() => {
+                    const hardTotal = feasSF * feasHard
+                    const softTotal = feasSF * feasSoft
+                    const totalCost = feasLand + hardTotal + softTotal
+                    const profit = feasSale - totalCost
+                    const roi = ((profit / totalCost) * 100).toFixed(1)
+                    const margin = ((profit / feasSale) * 100).toFixed(1)
+                    const irr = (parseFloat(roi) * 0.72).toFixed(1)
+                    const costPerSF = (totalCost / feasSF).toFixed(0)
+                    setPrintData({
+                      title: `Pro Forma — ${feasCity} (${feasSF.toLocaleString()} SF)`,
+                      content: [
+                        `MERCADO: ${feasCity}`,
+                        `Tamanho: ${feasSF.toLocaleString()} SF`,
+                        ``,
+                        `CUSTOS`,
+                        `Hard Cost Total: $${hardTotal.toLocaleString()}`,
+                        `Soft Cost Total: $${softTotal.toLocaleString()}`,
+                        `Land Cost: $${feasLand.toLocaleString()}`,
+                        `Total Development Cost: $${totalCost.toLocaleString()}`,
+                        `Cost / SF: $${costPerSF}/SF`,
+                        ``,
+                        `RESULTADO`,
+                        `Sale Price: $${feasSale.toLocaleString()}`,
+                        `Gross Profit: $${profit.toLocaleString()}`,
+                        `ROI: ${roi}%`,
+                        `Profit Margin: ${margin}%`,
+                        `Estimated IRR (18 mo): ${irr}%`,
+                      ].join('\n')
+                    })
+                  }} style={{ padding:'8px 18px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:8, color:'#58a6ff', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                    🖨️ Imprimir Pro Forma
+                  </button>
                 </div>
 
                 {/* AI Feasibility */}
