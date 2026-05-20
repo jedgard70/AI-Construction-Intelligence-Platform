@@ -1062,9 +1062,16 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   display:'flex', alignItems:'center', gap:8, background:'#fff' }}>
                   {activePf && isPDF && (
                     <>
-                      <button onClick={() => window.print()}
-                        style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
-                          background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
+                      <button onClick={() => {
+                        const iframe = document.querySelector('iframe[title="' + activePf.name + '"]') as HTMLIFrameElement | null
+                        if (iframe?.contentWindow) {
+                          iframe.contentWindow.focus()
+                          iframe.contentWindow.print()
+                        } else {
+                          window.open(activePf.url, '_blank')
+                        }
+                      }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                        background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
                         🖨️ Imprimir
                       </button>
                       <a href={activePf.url} download={activePf.name}
