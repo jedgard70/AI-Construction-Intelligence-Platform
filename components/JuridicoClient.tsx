@@ -1433,6 +1433,58 @@ RG:   ________________________________            RG:   ________________________
           {/* ─── ETAPA 4: Objeto ───────────────────────────── */}
           {etapa === 4 && idioma === 'pt-BR' && (
             <>
+              {/* Import from plant analysis */}
+              {(() => {
+                let plantData: { fileName: string; analysis: string } | null = null
+                try { plantData = JSON.parse(localStorage.getItem('atlas_plant_analysis') || 'null') } catch {}
+                if (!plantData) return null
+                return (
+                  <div style={{ background:'#EAF3DE', border:'1px solid #97C459', borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#3B6D11', marginBottom:6 }}>
+                      📁 Análise disponível: <strong>{plantData.fileName}</strong>
+                    </div>
+                    <div style={{ fontSize:11, color:'#5a6282', marginBottom:10 }}>
+                      Importe os dados da planta analisada para preencher automaticamente os campos da obra.
+                    </div>
+                    <button style={{ ...s.btnPrimary, background:'#3B6D11', fontSize:12 }}
+                      onClick={async () => {
+                        setAnaliseIA('⏳ Extraindo dados da planta para o contrato...')
+                        try {
+                          const res = await fetch('/api/chat', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              model: 'claude-sonnet-4-6', max_tokens: 800,
+                              system: 'Você extrai dados estruturados de análises técnicas de plantas. Responda APENAS com JSON válido.',
+                              messages: [{ role: 'user', content: `Da análise abaixo, extraia APENAS este JSON (sem texto extra):
+{"tipo_obra":"...","classificacao":"...","area_construir":"...","area_terreno":"...","descricao":"...","valor_estimado":"..."}
+
+Análise: ${plantData!.analysis.substring(0, 3000)}` }]
+                            })
+                          })
+                          const data = await res.json()
+                          const txt = data?.content?.[0]?.text || ''
+                          const match = txt.match(/\{[\s\S]*\}/)
+                          if (match) {
+                            const d = JSON.parse(match[0])
+                            if (d.tipo_obra) setObr('tipo_obra', d.tipo_obra)
+                            if (d.classificacao) setObr('classificacao', d.classificacao)
+                            if (d.area_construir) setObr('area_construir', d.area_construir)
+                            if (d.area_terreno) setObr('area_terreno', d.area_terreno)
+                            if (d.descricao) setObr('descricao', d.descricao)
+                            if (d.valor_estimado) setFin('valor_total', d.valor_estimado)
+                            setAnaliseIA('✅ Dados da planta importados com sucesso!')
+                          } else {
+                            setAnaliseIA('❌ Não foi possível extrair os dados. Verifique a análise.')
+                          }
+                        } catch { setAnaliseIA('❌ Erro ao extrair dados.') }
+                        setTimeout(() => setAnaliseIA(''), 4000)
+                      }}>
+                      📐 Importar dados da planta para este contrato
+                    </button>
+                    {analiseIA && <div style={{ marginTop:8, fontSize:12, color:'#185FA5', fontWeight:600 }}>{analiseIA}</div>}
+                  </div>
+                )
+              })()}
               <div style={s.card}>
                 <div style={s.sectionTitle}>🏠 Dados do imóvel e obra</div>
                 <div style={{ ...s.grid3, marginBottom: 12 }}>
