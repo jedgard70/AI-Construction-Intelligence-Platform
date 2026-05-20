@@ -54,8 +54,32 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
   const loadData = useCallback(async () => {
     const sb = getSupabase()
     if (!sb) {
-      // Demo data
-      setProjects([
+      // Try localStorage projects first, fall back to demo data
+      let localProjects: Project[] = []
+      try {
+        const raw = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
+        localProjects = raw
+          .filter((p: any) => p.id && p.name)
+          .map((p: any) => {
+            const bp = Number(p.budget_planned ?? p.orcamento ?? 5000000)
+            const ba = Number(p.budget_actual  ?? p.realizado   ?? bp * 0.75)
+            const cpi = p.cpi != null ? Number(p.cpi) : (ba > 0 ? bp / ba : 1)
+            const spi = p.spi != null ? Number(p.spi) : 0.95
+            const be = ba * cpi
+            const eac = bp / Math.max(cpi, 0.01)
+            const vac = bp - eac
+            const tcpi = (bp - be) / Math.max(eac - ba, 1)
+            return {
+              id: p.id, name: p.name, code: p.code ?? p.id,
+              status: p.status ?? 'em_andamento',
+              budget_planned: bp, budget_actual: ba, budget_earned: be,
+              cpi, spi, eac, vac, tcpi,
+              completion_pct: Number(p.completion_pct ?? p.avanco_fisico ?? 50),
+            } as Project
+          })
+      } catch {}
+
+      const demoProjects: Project[] = [
         { id:'1', name:'Ponte Av. Central', code:'OBR-2026-001', status:'em_andamento',
           budget_planned:12400000, budget_actual:12100000, budget_earned:12300000,
           cpi:1.02, spi:1.04, eac:12200000, vac:200000, tcpi:0.98, completion_pct:82 },
@@ -68,7 +92,8 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
         { id:'4', name:'BR-163 Trecho 4', code:'OBR-2026-004', status:'em_andamento',
           budget_planned:8100000, budget_actual:7900000, budget_earned:8000000,
           cpi:0.99, spi:0.97, eac:8200000, vac:-100000, tcpi:1.01, completion_pct:71 },
-      ])
+      ]
+      setProjects(localProjects.length > 0 ? localProjects : demoProjects)
       setBudgetData([
         { period:'Jan', pv:6000000, ev:5800000, ac:5900000, cost_labor:3000000, cost_materials:1800000, cost_equipment:600000, cost_third_party:400000, cost_other:100000 },
         { period:'Fev', pv:12000000, ev:11500000, ac:12100000, cost_labor:5800000, cost_materials:3800000, cost_equipment:1500000, cost_third_party:800000, cost_other:200000 },
@@ -99,12 +124,16 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
 
   useEffect(() => { loadData() }, [loadData])
 
-  const totalPlan   = projects.reduce((a, p) => a + p.budget_planned, 0)
-  const totalActual = projects.reduce((a, p) => a + p.budget_actual,  0)
-  const totalEAC    = projects.reduce((a, p) => a + (p.eac ?? p.budget_planned), 0)
-  const totalVAC    = projects.reduce((a, p) => a + (p.vac ?? 0), 0)
-  const cpiMed      = projects.reduce((a, p) => a + (p.cpi ?? 0), 0) / Math.max(projects.length, 1)
-  const spiMed      = projects.reduce((a, p) => a + (p.spi ?? 0), 0) / Math.max(projects.length, 1)
+  const visibleProjects = selectedProject === 'all'
+    ? projects
+    : projects.filter(p => p.id === selectedProject)
+
+  const totalPlan   = visibleProjects.reduce((a, p) => a + p.budget_planned, 0)
+  const totalActual = visibleProjects.reduce((a, p) => a + p.budget_actual,  0)
+  const totalEAC    = visibleProjects.reduce((a, p) => a + (p.eac ?? p.budget_planned), 0)
+  const totalVAC    = visibleProjects.reduce((a, p) => a + (p.vac ?? 0), 0)
+  const cpiMed      = visibleProjects.reduce((a, p) => a + (p.cpi ?? 0), 0) / Math.max(visibleProjects.length, 1)
+  const spiMed      = visibleProjects.reduce((a, p) => a + (p.spi ?? 0), 0) / Math.max(visibleProjects.length, 1)
   const desvio      = totalPlan > 0 ? ((totalActual - totalPlan) / totalPlan) * 100 : 0
 
   if (loading) return (
@@ -212,7 +241,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {projects.map((p, i) => (
+                    {visibleProjects.map((p, i) => (
                       <tr key={p.id}
                         style={{background: i%2===0?'#fff':'#fafbfd',
                           borderBottom:'1px solid #f0f2f7'}}>
@@ -243,7 +272,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
                     {/* Totais */}
                     <tr style={{background:'#EFF4FF', borderTop:'2px solid #185FA5'}}>
                       <td style={{padding:'10px 12px', fontWeight:700, color:'#185FA5', fontSize:11}}>
-                        TOTAL PORTFÓLIO
+                        {selectedProject === 'all' ? 'TOTAL PORTFÓLIO' : 'TOTAL PROJETO'}
                       </td>
                       <td style={{padding:'10px 12px', fontWeight:700, color:kpiColor(cpiMed)}}>
                         {fmtKpi(cpiMed)}
