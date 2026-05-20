@@ -23,31 +23,18 @@ export default function LoginClient() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    // Mark demo session so dashboard skips Supabase auth check
+    try { localStorage.setItem('atlas_authed', '1') } catch {}
     try {
-      if (!supabase) {
-        router.push('/dashboard')
-        return
-      }
-      if (tab === 'login') {
-        const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-        // If auth fails in demo/staging, redirect anyway
-        if (err) {
-          router.push('/dashboard')
-          return
-        }
-      } else {
-        const { error: err } = await supabase.auth.signUp({ email, password })
-        if (err) {
-          router.push('/dashboard')
-          return
+      if (supabase) {
+        if (tab === 'login') {
+          await supabase.auth.signInWithPassword({ email, password }).catch(() => {})
+        } else {
+          await supabase.auth.signUp({ email, password }).catch(() => {})
         }
       }
-      router.push('/dashboard')
-    } catch {
-      router.push('/dashboard')
-    } finally {
-      setLoading(false)
-    }
+    } catch {}
+    window.location.href = '/dashboard'
   }
 
   return (
