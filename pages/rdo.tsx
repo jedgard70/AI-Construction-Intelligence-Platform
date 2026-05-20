@@ -1,23 +1,45 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import PrintShareModal from '../components/PrintShareModal'
 
-const PROJETOS = [
-  { id: 'horizonte', nome: 'Edifício Horizonte — Torre A' },
-  { id: 'industrial', nome: 'Complexo Industrial Norte' },
-  { id: 'valeverde', nome: 'Condomínio Vale Verde' },
-]
-
 const CONDICOES = ['Ensolarado', 'Nublado', 'Chuvoso', 'Parcialmente nublado']
 const TURNOS = ['Manhã (07h–12h)', 'Tarde (12h–17h)', 'Noturno (17h–22h)']
+
+interface RDO {
+  id: string
+  projeto: string
+  projetoNome: string
+  data: string
+  turno: string
+  clima: string
+  efetivo_proprio: string
+  efetivo_terceiro: string
+  atividades: string
+  ocorrencias: string
+  equipamentos: string
+  materiais: string
+  observacoes: string
+  responsavel: string
+  savedAt: string
+}
+
+interface AtlasProject { id: string; name: string; code?: string }
+
+const DEFAULT_PROJECTS: AtlasProject[] = [
+  { id: 'horizonte', name: 'Edifício Horizonte — Torre A' },
+  { id: 'industrial', name: 'Complexo Industrial Norte' },
+  { id: 'valeverde', name: 'Condomínio Vale Verde' },
+]
 
 export default function RDOPage() {
   const router = useRouter()
   const [saving, setSaving]   = useState(false)
   const [showModal, setShowModal] = useState(false)
+  const [projects, setProjects] = useState<AtlasProject[]>(DEFAULT_PROJECTS)
+  const [history, setHistory] = useState<RDO[]>([])
   const [form, setForm] = useState({
-    projeto: 'horizonte',
+    projeto: '',
     data: new Date().toISOString().split('T')[0],
     turno: 'Manhã (07h–12h)',
     clima: 'Ensolarado',
@@ -30,11 +52,30 @@ export default function RDOPage() {
     observacoes: '',
     responsavel: '',
   })
+  const [errors, setErrors] = useState<{ atividades?: string; responsavel?: string }>({})
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]') as AtlasProject[]
+      if (stored.length > 0) {
+        setProjects(stored)
+        setForm(f => ({ ...f, projeto: stored[0].id }))
+      } else {
+        setForm(f => ({ ...f, projeto: DEFAULT_PROJECTS[0].id }))
+      }
+    } catch {
+      setForm(f => ({ ...f, projeto: DEFAULT_PROJECTS[0].id }))
+    }
+    try {
+      const rdos = JSON.parse(localStorage.getItem('atlas_rdos') || '[]') as RDO[]
+      setHistory(rdos.slice(0, 10))
+    } catch {}
+  }, [])
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  const projetoNome = PROJETOS.find(p => p.id === form.projeto)?.nome ?? form.projeto
-  const dataFmt = new Date(form.data + 'T12:00:00').toLocaleDateString('pt-BR')
+  const projetoNome = projects.find(p => p.id === form.projeto)?.name ?? form.projeto
+  const dataFmt = form.data ? new Date(form.data + 'T12:00:00').toLocaleDateString('pt-BR') : ''
   const rdoTitle = `RDO — ${projetoNome} — ${dataFmt}`
 
   function buildHtml() {
@@ -95,8 +136,38 @@ export default function RDOPage() {
   }
 
   async function handleSalvar() {
+    const errs: typeof errors = {}
+    if (!form.atividades.trim()) errs.atividades = 'Campo obrigatório'
+    if (!form.responsavel.trim()) errs.responsavel = 'Campo obrigatório'
+    if (Object.keys(errs).length > 0) { setErrors(errs); return }
+    setErrors({})
     setSaving(true)
-    await new Promise(r => setTimeout(r, 1200))
+
+    try {
+      const rdo: RDO = {
+        id: crypto.randomUUID(),
+        projeto: form.projeto,
+        projetoNome,
+        data: form.data,
+        turno: form.turno,
+        clima: form.clima,
+        efetivo_proprio: form.efetivo_proprio,
+        efetivo_terceiro: form.efetivo_terceiro,
+        atividades: form.atividades,
+        ocorrencias: form.ocorrencias,
+        equipamentos: form.equipamentos,
+        materiais: form.materiais,
+        observacoes: form.observacoes,
+        responsavel: form.responsavel,
+        savedAt: new Date().toISOString(),
+      }
+      const existing = JSON.parse(localStorage.getItem('atlas_rdos') || '[]') as RDO[]
+      const updated = [rdo, ...existing].slice(0, 100)
+      localStorage.setItem('atlas_rdos', JSON.stringify(updated))
+      setHistory(updated.slice(0, 10))
+    } catch {}
+
+    await new Promise(r => setTimeout(r, 600))
     setSaving(false)
     setShowModal(true)
   }
@@ -131,6 +202,7 @@ export default function RDOPage() {
     btn:      { padding:'11px 28px', background:'#185FA5', color:'#fff', border:'none',
       borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer',
       fontFamily:'inherit', transition:'opacity .15s' },
+    errTxt:   { fontSize:11, color:'#A32D2D', marginTop:2 },
   }
 
   return (
@@ -151,7 +223,7 @@ export default function RDOPage() {
               <div style={s.field}>
                 <label style={s.label}>Projeto</label>
                 <select style={s.select} value={form.projeto} onChange={e => set('projeto', e.target.value)}>
-                  {PROJETOS.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div style={s.field}>
@@ -187,9 +259,12 @@ export default function RDOPage() {
 
           {/* Atividades */}
           <div style={s.card}>
-            <div style={s.title}>Atividades Executadas</div>
-            <textarea style={s.textarea} placeholder="Descreva as atividades realizadas no turno..."
+            <div style={s.title}>Atividades Executadas *</div>
+            <textarea
+              style={{ ...s.textarea, borderColor: errors.atividades ? '#A32D2D' : '#e5e8f0' }}
+              placeholder="Descreva as atividades realizadas no turno..."
               value={form.atividades} onChange={e => set('atividades', e.target.value)} rows={4} />
+            {errors.atividades && <div style={s.errTxt}>{errors.atividades}</div>}
           </div>
 
           {/* Ocorrências */}
@@ -221,9 +296,12 @@ export default function RDOPage() {
               placeholder="Observações adicionais, pendências, comunicados..."
               value={form.observacoes} onChange={e => set('observacoes', e.target.value)} rows={3} />
             <div style={s.field}>
-              <label style={s.label}>Responsável pelo RDO</label>
-              <input style={s.input} placeholder="Nome do engenheiro responsável"
+              <label style={s.label}>Responsável pelo RDO *</label>
+              <input
+                style={{ ...s.input, borderColor: errors.responsavel ? '#A32D2D' : '#e5e8f0' }}
+                placeholder="Nome do engenheiro responsável"
                 value={form.responsavel} onChange={e => set('responsavel', e.target.value)} />
+              {errors.responsavel && <div style={s.errTxt}>{errors.responsavel}</div>}
             </div>
           </div>
 
@@ -238,6 +316,32 @@ export default function RDOPage() {
               {saving ? 'Salvando...' : '💾 Salvar RDO'}
             </button>
           </div>
+
+          {/* Histórico */}
+          {history.length > 0 && (
+            <div style={{ ...s.card, marginTop:24 }}>
+              <div style={s.title}>Histórico — Últimos RDOs salvos</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {history.map(r => (
+                  <div key={r.id} style={{ display:'flex', alignItems:'center', gap:12,
+                    padding:'10px 14px', border:'1px solid #e5e8f0', borderRadius:8,
+                    background:'#f8f9fc' }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#1a1f36', marginBottom:2 }}>
+                        {r.projetoNome}
+                      </div>
+                      <div style={{ fontSize:11, color:'#8890a0' }}>
+                        {new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR')} · {r.turno} · {r.responsavel}
+                      </div>
+                    </div>
+                    <div style={{ fontSize:10, fontFamily:'monospace', color:'#8890a0', flexShrink:0 }}>
+                      {new Date(r.savedAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
