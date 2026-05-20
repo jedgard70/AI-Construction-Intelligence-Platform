@@ -1,6 +1,7 @@
 'use client'
 
 export function printDocument(title: string, html: string) {
+  if (typeof window === 'undefined') return
   const w = window.open('', '_blank', 'width=900,height=700')
   if (!w) return
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
@@ -49,9 +50,9 @@ export default function PrintShareModal({ title, onClose, buildHtml, buildText }
 
   function handleCopy() {
     const text = buildText ? buildText() : buildHtml().replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-    navigator.clipboard.writeText(text).then(() => {
+    navigator.clipboard?.writeText(text).then(() => {
       alert('Copiado para a área de transferência!')
-    })
+    }).catch(() => {})
   }
 
   function handleDownload() {

@@ -464,6 +464,38 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
   const [coordTab, setCoordTab] = useState<'rfi'|'submittal'|'matrix'|'meeting'>('rfi')
   const [coordAI, setCoordAI] = useState('')
   const [coordAILoading, setCoordAILoading] = useState(false)
+  // Per-project RFIs
+  const [projectRFIs, setProjectRFIs] = useState<{id:string;subject:string;discipline:string;status:string;date:string}[]>([])
+  const [newRFI, setNewRFI] = useState({ subject:'', discipline:'Architectural' })
+  const [showAddRFI, setShowAddRFI] = useState(false)
+
+  useEffect(() => {
+    const pid = router.query.projectId as string
+    if (!pid) return
+    try {
+      const stored = JSON.parse(localStorage.getItem(`atlas_bimops_rfis_${pid}`) || '[]')
+      setProjectRFIs(stored)
+    } catch {}
+  }, [router.query.projectId])
+
+  function addProjectRFI() {
+    if (!newRFI.subject.trim()) return
+    const pid = router.query.projectId as string
+    const entry = {
+      id: `RFI-P${String(projectRFIs.length + 1).padStart(3,'0')}`,
+      subject: newRFI.subject.trim(),
+      discipline: newRFI.discipline,
+      status: 'Open',
+      date: new Date().toLocaleDateString('en-US'),
+    }
+    const updated = [entry, ...projectRFIs]
+    setProjectRFIs(updated)
+    if (pid) {
+      try { localStorage.setItem(`atlas_bimops_rfis_${pid}`, JSON.stringify(updated)) } catch {}
+    }
+    setNewRFI({ subject:'', discipline:'Architectural' })
+    setShowAddRFI(false)
+  }
   // Quantities
   const [qtyAI, setQtyAI] = useState('')
   const [qtyAILoading, setQtyAILoading] = useState(false)
@@ -1351,13 +1383,38 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                 {coordTab === 'rfi' && (
                   <div style={s.card}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                      <div style={s.secTit}>📝 RFI Log — {RFI_LOG.length} Issues</div>
-                      <div style={{ display:'flex', gap:8 }}>
-                        <span style={{ fontSize:11, color:'#f85149' }}>● {RFI_LOG.filter(r=>r.status==='Open').length} Open</span>
+                      <div style={s.secTit}>📝 RFI Log — {RFI_LOG.length + projectRFIs.length} Issues</div>
+                      <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                        <span style={{ fontSize:11, color:'#f85149' }}>● {RFI_LOG.filter(r=>r.status==='Open').length + projectRFIs.filter(r=>r.status==='Open').length} Open</span>
                         <span style={{ fontSize:11, color:'#3fb950' }}>● {RFI_LOG.filter(r=>r.status==='Answered').length} Answered</span>
-                        <span style={{ fontSize:11, color:'#d29922' }}>● {RFI_LOG.filter(r=>r.status==='Pending').length} Pending</span>
+                        <button onClick={() => setShowAddRFI(v=>!v)}
+                          style={{ ...s.btn, padding:'5px 14px', fontSize:11 }}>+ New RFI</button>
                       </div>
                     </div>
+                    {showAddRFI && (
+                      <div style={{ background:'#0d1117', border:'1px solid #185FA5', borderRadius:8,
+                        padding:'14px 16px', marginBottom:14, display:'flex', gap:10, flexWrap:'wrap' as const,
+                        alignItems:'flex-end' }}>
+                        <div style={{ flex:2, minWidth:200 }}>
+                          <div style={{ fontSize:10, color:'#8b93a7', marginBottom:4, fontWeight:600 }}>SUBJECT *</div>
+                          <input style={s.input} placeholder="Describe the RFI…"
+                            value={newRFI.subject} onChange={e => setNewRFI(v=>({...v,subject:e.target.value}))}
+                            onKeyDown={e => e.key==='Enter' && addProjectRFI()} />
+                        </div>
+                        <div style={{ flex:1, minWidth:150 }}>
+                          <div style={{ fontSize:10, color:'#8b93a7', marginBottom:4, fontWeight:600 }}>DISCIPLINE</div>
+                          <select style={{ ...s.input, cursor:'pointer' }}
+                            value={newRFI.discipline} onChange={e => setNewRFI(v=>({...v,discipline:e.target.value}))}>
+                            {['Architectural','Structural','MEP','Civil','Geotechnical','Fire Protection','Other'].map(d =>
+                              <option key={d}>{d}</option>)}
+                          </select>
+                        </div>
+                        <div style={{ display:'flex', gap:8 }}>
+                          <button style={s.btn} onClick={addProjectRFI}>Add RFI</button>
+                          <button style={s.btnGhost} onClick={() => setShowAddRFI(false)}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ overflowX:'auto' as const }}>
                       <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:11 }}>
                         <thead>
@@ -1368,6 +1425,22 @@ h1{color:#185FA5}pre{white-space:pre-wrap;font-family:inherit}
                           </tr>
                         </thead>
                         <tbody>
+                          {projectRFIs.map(r => (
+                            <tr key={r.id} style={{ borderBottom:'1px solid #21262d', background:'#0d2137' }}>
+                              <td style={{ padding:'8px 10px', color:'#f0a500', fontWeight:700 }}>{r.id}</td>
+                              <td style={{ padding:'8px 10px', color:'#e6edf3', maxWidth:260 }}>{r.subject}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>{r.discipline}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>Project Team</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>AOR</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7', whiteSpace:'nowrap' as const }}>{r.date}</td>
+                              <td style={{ padding:'8px 10px', color:'#8b93a7' }}>—</td>
+                              <td style={{ padding:'8px 10px', color:'#f85149', fontWeight:700 }}>0d</td>
+                              <td style={{ padding:'8px 10px' }}>
+                                <span style={{ padding:'2px 8px', borderRadius:10, fontSize:10, fontWeight:700,
+                                  background:'#FCEBEB', color:'#A32D2D' }}>Open</span>
+                              </td>
+                            </tr>
+                          ))}
                           {RFI_LOG.map(r => (
                             <tr key={r.id} style={{ borderBottom:'1px solid #21262d' }}>
                               <td style={{ padding:'8px 10px', color:'#58a6ff', fontWeight:700 }}>{r.id}</td>
