@@ -41,9 +41,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function init() {
       const sb = getSupabase()
+      const demoFlag = typeof window !== 'undefined' && localStorage.getItem('atlas_authed')
 
-      // Modo demo — sem Supabase configurado
-      if (!sb) {
+      // Modo demo — sem Supabase ou flag de login demo
+      if (!sb || demoFlag) {
         setProfile({
           id: 'demo',
           email: 'demo@constructai.com.br',
