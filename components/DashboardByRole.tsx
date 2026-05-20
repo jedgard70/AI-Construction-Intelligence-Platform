@@ -280,40 +280,27 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const loadData = useCallback(async () => {
     const sb = getSupabase()
     if (!sb) {
-      // Modo demo — dados fictícios
-      setProjects([
-        { id:'1', name:'Ponte Av. Central', code:'OBR-2026-001', status:'em_andamento',
-          city:'São Paulo', state:'SP', budget_planned:12400000, budget_actual:12100000,
-          completion_pct:82, cpi:1.02, spi:1.04, eac:12200000, esg_score:81 },
-        { id:'2', name:'Torre B Comercial', code:'OBR-2026-002', status:'atrasado',
-          city:'Rio de Janeiro', state:'RJ', budget_planned:18700000, budget_actual:20600000,
-          completion_pct:55, cpi:0.81, spi:0.88, eac:23100000, esg_score:78 },
-        { id:'3', name:'Usina Hidrelétrica Paraná', code:'OBR-2026-003', status:'atrasado',
-          city:'Curitiba', state:'PR', budget_planned:9100000, budget_actual:9800000,
-          completion_pct:38, cpi:0.92, spi:0.79, eac:9900000, esg_score:69 },
-        { id:'4', name:'BR-163 Trecho 4', code:'OBR-2026-004', status:'em_andamento',
-          city:'Sinop', state:'MT', budget_planned:8100000, budget_actual:7900000,
-          completion_pct:71, cpi:0.99, spi:0.97, eac:8200000, esg_score:72 },
-      ])
-      setBudgetData([
-        { period:'Jan', pv:6000000,  ev:5800000,  ac:5900000  },
-        { period:'Fev', pv:12000000, ev:11500000, ac:12100000 },
-        { period:'Mar', pv:20000000, ev:19000000, ac:20500000 },
-        { period:'Abr', pv:30000000, ev:28000000, ac:31000000 },
-        { period:'Mai', pv:40000000, ev:36000000, ac:41500000 },
-        { period:'Jun', pv:48300000, ev:null as any, ac:null as any },
-      ])
-      setEvents([
-        { id:'1', event_type:'desvio_custo', source_agent:'Cost_Controller_AI',
-          summary:'Torre B: aço A572 +22% acima do SINAPI. Substituto sugerido: HEA.',
-          priority:'critico', created_at: new Date().toISOString() },
-        { id:'2', event_type:'atraso_caminho_critico', source_agent:'Construction_Planner_AI',
-          summary:'Usina Paraná: 18 dias de atraso acumulado. Replanejamento necessário.',
-          priority:'alto', created_at: new Date().toISOString() },
-        { id:'3', event_type:'documento_processado', source_agent:'Document_Intelligence_AI',
-          summary:'Memorial Torre B: 3 inconsistências de armadura identificadas (págs 47, 89, 112).',
-          priority:'medio', created_at: new Date().toISOString() },
-      ])
+      // Modo local — carrega projetos salvos pelo usuário (localStorage)
+      try {
+        const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
+        if (stored.length > 0) {
+          setProjects(stored)
+        } else {
+          // Dados de exemplo só quando não há nada salvo
+          setProjects([
+            { id:'example-1', name:'[Exemplo] Torre Horizonte — Torre A', code:'OBR-2026-EX1', status:'em_andamento',
+              city:'São Paulo', state:'SP', budget_planned:12400000, budget_actual:10200000,
+              completion_pct:68, cpi:1.02, spi:1.04, eac:12200000, esg_score:81 },
+            { id:'example-2', name:'[Exemplo] Clique em "+ Novo Projeto" para criar o seu', code:'OBR-2026-EX2', status:'planejamento',
+              city:'', state:'', budget_planned:0, budget_actual:0,
+              completion_pct:0, cpi:null, spi:null, eac:null, esg_score:null },
+          ])
+        }
+      } catch {
+        setProjects([])
+      }
+      setBudgetData([])
+      setEvents([])
       setLoading(false)
       return
     }
@@ -705,7 +692,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
                     <thead>
                       <tr style={{ background:'#f8f9fc' }}>
-                        {['Projeto','Localização','Progresso','CPI','SPI','Previsto','Realizado','Status']
+                        {['Projeto','Localização','Progresso','CPI','SPI','Previsto','Realizado','Status','']
                           .map(h => (
                             <th key={h} style={{ padding:'10px 14px', textAlign:'left',
                               fontWeight:600, color:'#8b93a7', whiteSpace:'nowrap',
@@ -718,8 +705,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                     <tbody>
                       {projects.map((p, i) => (
                         <tr key={p.id}
-                          style={{ background: i%2===0 ? '#fff' : '#fafbfd',
-                            transition:'background 0.1s', cursor:'pointer' }}
+                          style={{ background: i%2===0 ? '#fff' : '#fafbfd', transition:'background 0.1s' }}
                           onMouseEnter={e=>(e.currentTarget.style.background='#EFF4FF')}
                           onMouseLeave={e=>(e.currentTarget.style.background=i%2===0?'#fff':'#fafbfd')}>
                           <td style={{ padding:'11px 14px', fontWeight:500, color:'#1a1f36' }}>
@@ -727,20 +713,16 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                             <div style={{ fontSize:10, color:'#a0a8bb', marginTop:2 }}>{p.code}</div>
                           </td>
                           <td style={{ padding:'11px 14px', color:'#5a6282' }}>
-                            {p.city}, {p.state}
+                            {[p.city, p.state].filter(Boolean).join(', ') || '—'}
                           </td>
                           <td style={{ padding:'11px 14px' }}>
                             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                              <div style={{ width:70, height:5, background:'#e5e8f0',
-                                borderRadius:3, overflow:'hidden' }}>
+                              <div style={{ width:70, height:5, background:'#e5e8f0', borderRadius:3, overflow:'hidden' }}>
                                 <div style={{ width:`${p.completion_pct}%`, height:'100%',
-                                  background: p.completion_pct>=75 ? '#3B6D11'
-                                    : p.completion_pct>=40 ? '#185FA5' : '#A32D2D',
+                                  background: p.completion_pct>=75 ? '#3B6D11' : p.completion_pct>=40 ? '#185FA5' : '#A32D2D',
                                   borderRadius:3 }}/>
                               </div>
-                              <span style={{ fontSize:11, fontWeight:500, color:'#3a4166' }}>
-                                {p.completion_pct}%
-                              </span>
+                              <span style={{ fontSize:11, fontWeight:500, color:'#3a4166' }}>{p.completion_pct}%</span>
                             </div>
                           </td>
                           <td style={{ padding:'11px 14px', fontWeight:500,
@@ -751,23 +733,35 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                             color: (p.spi??1)<0.9?'#A32D2D':(p.spi??1)<0.95?'#854F0B':'#3B6D11' }}>
                             {fmtKpi(p.spi)}
                           </td>
-                          <td style={{ padding:'11px 14px', color:'#5a6282' }}>
-                            {fmt(p.budget_planned)}
-                          </td>
-                          <td style={{ padding:'11px 14px',
-                            color: p.budget_actual > p.budget_planned ? '#A32D2D' : '#3B6D11',
-                            fontWeight:500 }}>
+                          <td style={{ padding:'11px 14px', color:'#5a6282' }}>{fmt(p.budget_planned)}</td>
+                          <td style={{ padding:'11px 14px', fontWeight:500,
+                            color: p.budget_actual > p.budget_planned ? '#A32D2D' : '#3B6D11' }}>
                             {fmt(p.budget_actual)}
                           </td>
                           <td style={{ padding:'11px 14px' }}>
-                            <span style={{
-                              fontSize:10, fontWeight:600, padding:'3px 9px',
-                              borderRadius:20,
-                              background: statusColor(p.status)+'18',
-                              color: statusColor(p.status),
-                            }}>
+                            <span style={{ fontSize:10, fontWeight:600, padding:'3px 9px', borderRadius:20,
+                              background: statusColor(p.status)+'18', color: statusColor(p.status) }}>
                               {statusLabel(p.status)}
                             </span>
+                          </td>
+                          <td style={{ padding:'11px 14px' }}>
+                            {!p.id.startsWith('example-') && (
+                              <button onClick={() => {
+                                if (!confirm(`Remover "${p.name}"?`)) return
+                                setProjects(prev => {
+                                  const updated = prev.filter(x => x.id !== p.id)
+                                  try {
+                                    const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
+                                    localStorage.setItem('atlas_projects', JSON.stringify(stored.filter((x: any) => x.id !== p.id)))
+                                  } catch {}
+                                  const sb = getSupabase()
+                                  if (sb) sb.from('projects').delete().eq('id', p.id).then(() => {})
+                                  return updated
+                                })
+                              }} style={{ background:'none', border:'none', cursor:'pointer',
+                                color:'#A32D2D', fontSize:14, padding:'2px 6px', borderRadius:4,
+                                opacity: 0.6 }} title="Remover">✕</button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1161,7 +1155,13 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         )
       })()}
 
-      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={loadData} />}
+      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(proj) => {
+        setProjects(prev => {
+          const filtered = prev.filter(p => p.id.startsWith('example-'))
+          return [proj, ...(filtered.length === prev.length ? [] : prev.filter(p => !p.id.startsWith('example-')))]
+        })
+        setShowNewProject(false)
+      }} />}
       {showNewClient && <NewClientModal onClose={() => setShowNewClient(false)} onCreated={loadData} />}
       <HelpButton />
     </>
