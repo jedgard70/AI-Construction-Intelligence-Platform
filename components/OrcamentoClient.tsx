@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { getSupabase } from '../lib/supabase'
+import PrintShareModal from './PrintShareModal'
 
 const OrcamentoCurvaSChart = dynamic(() => import('./OrcamentoCurvaSChart'), {
   ssr: false,
@@ -50,6 +51,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
   const [selectedProject, setSelectedProject] = useState<string>('all')
   const [budgetData, setBudgetData] = useState<BudgetItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [showPrint, setShowPrint] = useState(false)
 
   const loadData = useCallback(async () => {
     const sb = getSupabase()
@@ -177,6 +179,11 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
                 background:'#fff', fontSize:12, color:'#5a6282', cursor:'pointer'}}>
               🔄 Atualizar
             </button>
+            <button onClick={() => setShowPrint(true)}
+              style={{padding:'7px 14px', border:'1px solid #185FA5', borderRadius:8,
+                background:'#EFF4FF', fontSize:12, color:'#185FA5', fontWeight:600, cursor:'pointer'}}>
+              🖨️ Imprimir Relatório
+            </button>
           </div>
         </div>
 
@@ -302,6 +309,49 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
 
         </div>
       </div>
+
+      {showPrint && (
+        <PrintShareModal
+          title={`Relatório EVM — ${selectedProject === 'all' ? 'Portfólio Completo' : visibleProjects[0]?.name ?? 'Projeto'}`}
+          onClose={() => setShowPrint(false)}
+          buildHtml={() => `
+<div class="meta">
+  <span>📊 BAC: ${fmt(totalPlan)}</span>
+  <span>💰 AC: ${fmt(totalActual)}</span>
+  <span>📈 EAC: ${fmt(totalEAC)}</span>
+  <span>📉 VAC: ${totalVAC>=0?'+':''}${fmt(totalVAC)}</span>
+  <span>CPI: ${cpiMed.toFixed(2)}</span>
+  <span>SPI: ${spiMed.toFixed(2)}</span>
+</div>
+<h2>EVM por Projeto</h2>
+<table>
+  <tr><th>Projeto</th><th>Código</th><th>CPI</th><th>SPI</th><th>EAC</th><th>VAC</th><th>Status</th></tr>
+  ${visibleProjects.map(p=>`<tr>
+    <td><strong>${p.name}</strong></td>
+    <td>${p.code}</td>
+    <td style="color:${(p.cpi??1)>=0.95?'#3B6D11':'#A32D2D'};font-weight:700">${fmtKpi(p.cpi)}</td>
+    <td style="color:${(p.spi??1)>=0.95?'#3B6D11':'#A32D2D'};font-weight:700">${fmtKpi(p.spi)}</td>
+    <td>${fmt(p.eac??0)}</td>
+    <td style="color:${(p.vac??0)>=0?'#3B6D11':'#A32D2D'};font-weight:700">${(p.vac??0)>=0?'+':''}${fmt(p.vac??0)}</td>
+    <td><span class="badge badge-${(p.cpi??1)<0.9?'red':'green'}">${(p.cpi??1)<0.9?'Crítico':(p.cpi??1)<0.95?'Atenção':'OK'}</span></td>
+  </tr>`).join('')}
+  <tr>
+    <td colspan="2"><strong>TOTAL</strong></td>
+    <td style="font-weight:700">${cpiMed.toFixed(2)}</td>
+    <td style="font-weight:700">${spiMed.toFixed(2)}</td>
+    <td><strong>${fmt(totalEAC)}</strong></td>
+    <td style="color:${totalVAC>=0?'#3B6D11':'#A32D2D'};font-weight:700">${totalVAC>=0?'+':''}${fmt(totalVAC)}</td>
+    <td></td>
+  </tr>
+</table>
+<h2>Curva S — Dados Mensais</h2>
+<table>
+  <tr><th>Período</th><th>PV (Previsto)</th><th>EV (Agregado)</th><th>AC (Realizado)</th></tr>
+  ${budgetData.map(b=>`<tr><td>${b.period}</td><td>${fmt(b.pv)}</td><td>${b.ev?fmt(b.ev):'—'}</td><td>${b.ac?fmt(b.ac):'—'}</td></tr>`).join('')}
+</table>`}
+          buildText={() => visibleProjects.map(p=>`${p.name} | CPI:${fmtKpi(p.cpi)} SPI:${fmtKpi(p.spi)} EAC:${fmt(p.eac??0)} VAC:${fmt(p.vac??0)}`).join('\n')}
+        />
+      )}
     </>
   )
 }

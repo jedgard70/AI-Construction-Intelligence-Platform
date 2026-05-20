@@ -2,6 +2,7 @@
 import Head from 'next/head'
 import { useState } from 'react'
 import { useRouter } from 'next/router'
+import PrintShareModal from '../components/PrintShareModal'
 import {
   LayoutDashboard, Box, Library, ImageIcon,
   BarChart3, Clock, HardDrive, Zap, ArrowUpRight,
@@ -56,6 +57,7 @@ export default function ArchVisPage() {
   const [aiResult, setAiResult]   = useState('')
   const [syncMsg, setSyncMsg]     = useState('')
   const [activeMat, setActiveMat] = useState<string | null>(null)
+  const [showPrint, setShowPrint] = useState(false)
 
   const STYLE_OPTIONS = ['Contemporary','Minimalist','Mediterranean','Industrial','Tropical','Japanese','Biophilic','Scandinavian']
   const PLACEHOLDER_IMGS = [
@@ -175,9 +177,14 @@ export default function ArchVisPage() {
                 {aiRunning ? '⏳ Analisando com IA...' : '🤖 Analisar com ArchVis AI'}
               </button>
               {aiResult && (
-                <div style={{ background: '#0f0e11', border: '1px solid #49454f', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: '#cac4d0', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 240, overflowY: 'auto' }}>
-                  {aiResult}
-                </div>
+                <>
+                  <div style={{ background: '#0f0e11', border: '1px solid #49454f', borderRadius: 8, padding: '12px 14px', fontSize: 12, color: '#cac4d0', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: 240, overflowY: 'auto' }}>
+                    {aiResult}
+                  </div>
+                  <button onClick={() => setShowPrint(true)} style={{ marginTop: 8, width: '100%', padding: '7px', background: 'rgba(208,188,255,.1)', border: '1px solid rgba(208,188,255,.25)', borderRadius: 8, color: '#d0bcff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    🖨️ Imprimir Análise
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -360,7 +367,13 @@ export default function ArchVisPage() {
               </div>
               {aiResult && (
                 <div style={{ ...s.card, background: '#0f0e11' }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#d0bcff', marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>AI Analysis</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#d0bcff', textTransform: 'uppercase' as const, letterSpacing: '.08em' }}>AI Analysis</div>
+                    <button onClick={() => setShowPrint(true)}
+                      style={{ padding: '5px 12px', background: 'rgba(208,188,255,.15)', border: '1px solid rgba(208,188,255,.3)', borderRadius: 7, color: '#d0bcff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      🖨️ Imprimir
+                    </button>
+                  </div>
                   <pre style={{ fontSize: 12, color: '#cac4d0', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>{aiResult}</pre>
                 </div>
               )}
@@ -408,6 +421,22 @@ export default function ArchVisPage() {
 
         </div>
       </div>
+
+      {showPrint && selectedProj && aiResult && (
+        <PrintShareModal
+          title={`ArchVis AI Analysis — ${selectedProj.name}`}
+          onClose={() => setShowPrint(false)}
+          buildHtml={() => `
+<div class="meta">
+  <span>🏗️ Projeto: ${selectedProj.name}</span>
+  <span>🎨 Estilo: ${selectedProj.style}</span>
+  <span>📊 Status: ${selectedProj.status}</span>
+</div>
+<h2>Análise ArchVis AI</h2>
+<div class="text-area">${aiResult}</div>`}
+          buildText={() => `ARCHVIS AI — ${selectedProj.name}\nEstilo: ${selectedProj.style}\n\n${aiResult}`}
+        />
+      )}
     </>
   )
 }
