@@ -416,7 +416,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   'Pitch Deck': '/investimentos',
                   'Investimentos': '/investimentos',
                   'Plantas': '/plantas',
-                  'BIM / Clash': '/plantas',
+                  'BIM / Clash': '/bim-ops',
                   'Cronograma': '/orcamento',
                   'Qualidade': '/qualidade',
                   'Sales Pipeline': '/vendas',
