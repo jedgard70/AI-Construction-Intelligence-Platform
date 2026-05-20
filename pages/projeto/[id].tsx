@@ -311,6 +311,13 @@ export default function ProjetoPage() {
           {saved && (
             <span style={{ fontSize:12, color:'#3B6D11', fontWeight:600 }}>✓ Salvo</span>
           )}
+          <button onClick={() => {
+            const url = `${window.location.origin}/cliente/${id}`
+            navigator.clipboard?.writeText(url).then(() => alert('Link copiado! Envie para o cliente.')).catch(() => {})
+          }} style={{ padding:'9px 16px', background:'#f0f8f4', color:'#3B6D11', border:'1.5px solid #97C459',
+            borderRadius:8, fontWeight:600, fontSize:12, cursor:'pointer' }}>
+            🔗 Link do Cliente
+          </button>
           <button style={s.btnSave} onClick={() => editing ? saveProject() : setEditing(true)}
             disabled={saving}>
             {saving ? 'Salvando...' : editing ? '✓ Salvar alterações' : '✏️ Editar projeto'}
