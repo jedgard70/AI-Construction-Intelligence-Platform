@@ -44,6 +44,35 @@ function kpiColor(v: number | null, meta = 0.95) {
   return v >= meta ? '#3B6D11' : v >= meta - 0.05 ? '#854F0B' : '#A32D2D'
 }
 
+// ─── Budget Generator ─────────────────────────────────────────
+function generateBudgetFromProjects(projects: Project[]): BudgetItem[] {
+  if (!projects.length) return []
+  const totalBudget = projects.reduce((s, p) => s + p.budget_planned, 0)
+  const totalActual = projects.reduce((s, p) => s + p.budget_actual, 0)
+  const avgCompletion = projects.reduce((s, p) => s + p.completion_pct, 0) / projects.length
+
+  const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+  const currentMonth = new Date().getMonth()
+  const result: BudgetItem[] = []
+  for (let i = 0; i < 6; i++) {
+    const monthIdx = (currentMonth - 5 + i + 12) % 12
+    const pct = Math.max(0, (avgCompletion / 100) * ((i + 1) / 6))
+    const pvPct = (i + 1) / 6
+    result.push({
+      period: months[monthIdx],
+      pv: Math.round(totalBudget * pvPct),
+      ev: Math.round(totalBudget * pct),
+      ac: Math.round(totalActual * pvPct * 0.98),
+      cost_labor: Math.round(totalBudget * pvPct * 0.48),
+      cost_materials: Math.round(totalBudget * pvPct * 0.30),
+      cost_equipment: Math.round(totalBudget * pvPct * 0.12),
+      cost_third_party: Math.round(totalBudget * pvPct * 0.07),
+      cost_other: Math.round(totalBudget * pvPct * 0.03),
+    })
+  }
+  return result
+}
+
 // ─── Componente ──────────────────────────────────────────────
 export default function OrcamentoClient({ profile }: { profile: any }) {
   const router = useRouter()
@@ -52,6 +81,7 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
   const [budgetData, setBudgetData] = useState<BudgetItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showPrint, setShowPrint] = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
 
   const loadData = useCallback(async () => {
     const sb = getSupabase()
@@ -95,15 +125,21 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
           budget_planned:8100000, budget_actual:7900000, budget_earned:8000000,
           cpi:0.99, spi:0.97, eac:8200000, vac:-100000, tcpi:1.01, completion_pct:71 },
       ]
-      setProjects(localProjects.length > 0 ? localProjects : demoProjects)
-      setBudgetData([
-        { period:'Jan', pv:6000000, ev:5800000, ac:5900000, cost_labor:3000000, cost_materials:1800000, cost_equipment:600000, cost_third_party:400000, cost_other:100000 },
-        { period:'Fev', pv:12000000, ev:11500000, ac:12100000, cost_labor:5800000, cost_materials:3800000, cost_equipment:1500000, cost_third_party:800000, cost_other:200000 },
-        { period:'Mar', pv:20000000, ev:19000000, ac:20500000, cost_labor:10000000, cost_materials:6000000, cost_equipment:2500000, cost_third_party:1500000, cost_other:500000 },
-        { period:'Abr', pv:30000000, ev:28000000, ac:31000000, cost_labor:15000000, cost_materials:9000000, cost_equipment:4000000, cost_third_party:2500000, cost_other:500000 },
-        { period:'Mai', pv:40000000, ev:36000000, ac:41500000, cost_labor:20000000, cost_materials:12000000, cost_equipment:5500000, cost_third_party:3500000, cost_other:500000 },
-        { period:'Jun', pv:48300000, ev:null as any, ac:null as any, cost_labor:0, cost_materials:0, cost_equipment:0, cost_third_party:0, cost_other:0 },
-      ])
+
+      if (localProjects.length > 0) {
+        setProjects(localProjects)
+        setIsDemoMode(false)
+        const budgetFromProjects = generateBudgetFromProjects(localProjects)
+        if (budgetFromProjects.length > 0) {
+          setBudgetData(budgetFromProjects)
+        } else {
+          setBudgetData([])
+        }
+      } else {
+        setProjects(demoProjects)
+        setIsDemoMode(true)
+        setBudgetData(generateBudgetFromProjects(demoProjects))
+      }
       setLoading(false)
       return
     }
@@ -188,6 +224,15 @@ export default function OrcamentoClient({ profile }: { profile: any }) {
         </div>
 
         <div style={{padding:'20px 24px', display:'flex', flexDirection:'column', gap:16}}>
+
+          {/* Demo mode banner */}
+          {isDemoMode && (
+            <div style={{ background:'#FEF3CD', border:'1px solid #FBBF24', borderRadius:8, padding:'10px 16px',
+              fontSize:12, color:'#92400E', display:'flex', gap:8, alignItems:'center', flexShrink:0 }}>
+              <span>📊</span>
+              <span><strong>Dados de demonstração</strong> — Crie projetos no <a href="/dashboard" style={{ color:'#185FA5', fontWeight:600 }}>Dashboard</a> para ver suas métricas reais.</span>
+            </div>
+          )}
 
           {/* KPIs EVM */}
           <div style={{display:'grid', gridTemplateColumns:'repeat(6,minmax(0,1fr))', gap:10}}>

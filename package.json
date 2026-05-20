@@ -26,9 +26,16 @@
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
+    "three": "^0.152.0",
+    "web-ifc": "^0.0.46",
+    "web-ifc-three": "^0.0.126",
     "xlsx": "^0.18.5"
   },
+  "overrides": {
+    "three": "^0.152.0"
+  },
   "devDependencies": {
+    "@types/three": "^0.152.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

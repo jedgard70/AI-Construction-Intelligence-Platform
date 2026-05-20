@@ -8,3 +8,4 @@ dist/
 out/
 *.log
 *.tsbuildinfo
+.claude/worktrees/

@@ -207,12 +207,34 @@ export default async function handler(req, res) {
   const errors = validate(req.body)
   if (errors.length > 0) return res.status(400).json({ status: 'validation_error', errors })
 
-  const templatePath = path.join(process.cwd(), 'templates', 'contratos', 'prestacao-servicos-engenharia-obra.md')
+  // Determine template path based on language and contract type
+  const lang = req.body.lang || 'pt'
+  const tipoContrato = req.body.tipo_contrato || 'prestacao_servicos_engenharia'
+
+  let templateRelPath
+  if (lang === 'en') {
+    const EN_TEMPLATE_MAP = {
+      engineering_services: 'en/engineering-services-agreement.md',
+      prestacao_servicos: 'en/engineering-services-agreement.md',
+      prestacao_servicos_engenharia: 'en/engineering-services-agreement.md',
+      construction_management: 'en/construction-management-agreement.md',
+      administracao_obra: 'en/construction-management-agreement.md',
+      subcontract: 'en/subcontractor-agreement.md',
+      empreitada: 'en/subcontractor-agreement.md',
+      empreitada_global: 'en/subcontractor-agreement.md',
+      empreitada_mao_obra: 'en/subcontractor-agreement.md',
+    }
+    templateRelPath = EN_TEMPLATE_MAP[tipoContrato] || 'en/engineering-services-agreement.md'
+  } else {
+    templateRelPath = 'prestacao-servicos-engenharia-obra.md'
+  }
+
+  const templatePath = path.join(process.cwd(), 'templates', 'contratos', templateRelPath)
   let templateContent
   try {
     templateContent = fs.readFileSync(templatePath, 'utf-8')
   } catch {
-    return res.status(500).json({ status: 'error', message: 'Template não encontrado no servidor' })
+    return res.status(500).json({ status: 'error', message: `Template não encontrado no servidor: ${templateRelPath}` })
   }
 
   const filledContract = fillTemplate(templateContent, req.body)
@@ -231,7 +253,7 @@ export default async function handler(req, res) {
   return res.status(200).json({
     status: 'success',
     contract_id: req.body.numero_contrato,
-    template: 'prestacao-servicos-engenharia-obra',
+    template: templateRelPath.replace('.md', ''),
     generated_at: new Date().toISOString(),
     contract_markdown: filledContract,
     pdf: pdfResult,

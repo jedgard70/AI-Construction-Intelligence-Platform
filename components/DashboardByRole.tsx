@@ -9,6 +9,15 @@ import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 import type { Profile } from '../pages/dashboard'
 
+const IFCViewer = dynamic(() => import('./IFCViewer'), {
+  ssr: false,
+  loading: () => (
+    <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'#8890a0', fontSize:13 }}>
+      Carregando viewer IFC...
+    </div>
+  ),
+})
+
 const CurvaSChart = dynamic(() => import('./CurvaSChart'), {
   ssr: false,
   loading: () => (
@@ -1989,6 +1998,8 @@ RETORNE APENAS JSON puro (sem markdown):
                   ) : isPDF ? (
                     <iframe src={activePf.url} title={activePf.name}
                       style={{ width:'100%', height:'100%', border:'none', display:'block' }} />
+                  ) : activePf.ext === 'ifc' ? (
+                    <IFCViewer url={activePf.url} fileName={activePf.name} />
                   ) : (
                     <div style={{ height:'100%', display:'flex', flexDirection:'column',
                       alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
