@@ -271,7 +271,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [activePlanta, setActivePlanta] = useState(0)
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
-  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'>('viewer')
+  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'quantitativo'>('viewer')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
   const [humanEscala, setHumanEscala] = useState('50')
   const [humanNP, setHumanNP] = useState(6)
@@ -282,6 +282,20 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
+  // Quantitative calculator state
+  const [quantiSubTab, setQuantiSubTab] = useState<'ifc'|'xlsx'>('ifc')
+  const [quantiIfcContent, setQuantiIfcContent] = useState<string|null>(null)
+  const [quantiIfcName, setQuantiIfcName] = useState('')
+  const [quantiXlsxFiles, setQuantiXlsxFiles] = useState<File[]>([])
+  const [quantiProjNome, setQuantiProjNome] = useState('')
+  const [quantiUF, setQuantiUF] = useState('SP')
+  const [quantiBDI, setQuantiBDI] = useState(25)
+  const [quantiCUB, setQuantiCUB] = useState(2180)
+  const [quantiPadrao, setQuantiPadrao] = useState('normal')
+  const [quantiModulos, setQuantiModulos] = useState({estrutura:true,alvenaria:true,esquadrias:true,revestimento:true,cobertura:true,hidraulica:true,eletrica:true})
+  const [quantiLoading, setQuantiLoading] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quantiResult, setQuantiResult] = useState<any>(null)
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
@@ -1084,6 +1098,12 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                       color: viewerTab==='humanize' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
                     🤖 Humanizar com IA
                   </button>
+                  <button onClick={() => setViewerTab('quantitativo')}
+                    style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
+                      background: viewerTab==='quantitativo' ? '#0d7a47' : '#f0f4f8',
+                      color: viewerTab==='quantitativo' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
+                    📊 Quantitativo
+                  </button>
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
                   {activePf && isPDF && viewerTab==='viewer' && (
                     <>
@@ -1385,6 +1405,562 @@ RETORNE EXATAMENTE neste formato markdown:
                           </div>
                         )
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantitative Panel */}
+                {viewerTab === 'quantitativo' && (
+                  <div style={{ flex:1, overflow:'auto', background:'#f8f9fc', display:'grid',
+                    gridTemplateColumns:'340px 1fr', gap:0 }}>
+                    {/* Left controls */}
+                    <div style={{ borderRight:'1px solid #e5e8f0', padding:'18px 16px', display:'flex',
+                      flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff' }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:'#0d7a47' }}>📊 Quantitativo de Materiais</div>
+                      <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5 }}>
+                        Envie um arquivo IFC (Revit) ou Schedules XLSX para calcular quantitativos com IA baseados nas normas NBR/SINAPI.
+                      </div>
+
+                      {/* Sub-tab: IFC vs XLSX */}
+                      <div style={{ display:'flex', gap:6 }}>
+                        {(['ifc','xlsx'] as const).map(t => (
+                          <button key={t} onClick={() => setQuantiSubTab(t)}
+                            style={{ flex:1, padding:'6px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', border:'none', fontFamily:'inherit',
+                              background: quantiSubTab===t ? '#0d7a47' : '#f0f4f8',
+                              color: quantiSubTab===t ? '#fff' : '#5a6282' }}>
+                            {t==='ifc' ? '📦 IFC (Revit)' : '📊 XLSX (Schedules)'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* IFC Upload */}
+                      {quantiSubTab === 'ifc' && (
+                        <div>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em', marginBottom:8 }}>
+                            Arquivo IFC
+                          </div>
+                          {quantiIfcContent ? (
+                            <div style={{ background:'#e4f5ee', border:'1px solid rgba(13,122,71,.2)', borderRadius:8, padding:'10px 12px',
+                              display:'flex', alignItems:'center', gap:8, fontSize:11, color:'#0d7a47' }}>
+                              <span>📦</span>
+                              <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, fontWeight:500 }}>{quantiIfcName}</span>
+                              <button onClick={() => { setQuantiIfcContent(null); setQuantiIfcName(''); setQuantiResult(null) }}
+                                style={{ background:'none', border:'none', cursor:'pointer', color:'#b91c1c', fontSize:11, padding:'2px 6px' }}>✕</button>
+                            </div>
+                          ) : (
+                            <label style={{ cursor:'pointer', display:'block' }}>
+                              <input type="file" accept=".ifc,.IFC" style={{ display:'none' }}
+                                onChange={e => {
+                                  const f = e.target.files?.[0]
+                                  if (!f) return
+                                  setQuantiIfcName(f.name)
+                                  const reader = new FileReader()
+                                  reader.onload = ev => { setQuantiIfcContent(ev.target?.result as string) }
+                                  reader.readAsText(f)
+                                }} />
+                              <div style={{ border:'1.5px dashed #cbd5e1', borderRadius:8, padding:'20px 12px',
+                                textAlign:'center' as const, background:'#f8f9fc' }}>
+                                <div style={{ fontSize:24, marginBottom:6 }}>📦</div>
+                                <div style={{ fontSize:12, fontWeight:500, marginBottom:2 }}>Arraste o arquivo .IFC</div>
+                                <div style={{ fontSize:11, color:'#8890a0' }}>Exportado do Revit (File → Export → IFC)</div>
+                              </div>
+                            </label>
+                          )}
+                          <div style={{ marginTop:8, background:'#fef3cd', borderRadius:6, padding:'8px 10px', fontSize:11, color:'#7a5000' }}>
+                            💡 No Revit: <strong>File → Export → IFC</strong>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* XLSX Upload */}
+                      {quantiSubTab === 'xlsx' && (
+                        <div>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em', marginBottom:8 }}>
+                            Schedules Revit (.xlsx)
+                          </div>
+                          <label style={{ cursor:'pointer', display:'block' }}>
+                            <input type="file" accept=".xlsx,.xls,.csv" multiple style={{ display:'none' }}
+                              onChange={e => {
+                                const fl = Array.from(e.target.files || [])
+                                setQuantiXlsxFiles(prev => {
+                                  const names = prev.map(f => f.name)
+                                  return [...prev, ...fl.filter(f => !names.includes(f.name))]
+                                })
+                              }} />
+                            <div style={{ border:'1.5px dashed #cbd5e1', borderRadius:8, padding:'16px 12px',
+                              textAlign:'center' as const, background:'#f8f9fc' }}>
+                              <div style={{ fontSize:22, marginBottom:4 }}>📊</div>
+                              <div style={{ fontSize:11, fontWeight:500, marginBottom:2 }}>Arraste os arquivos xlsx</div>
+                              <div style={{ fontSize:10, color:'#8890a0' }}>Rooms, Walls, Doors, Windows, Floors…</div>
+                            </div>
+                          </label>
+                          {quantiXlsxFiles.length > 0 && (
+                            <div style={{ marginTop:8, display:'flex', flexDirection:'column' as const, gap:4 }}>
+                              {quantiXlsxFiles.map(f => (
+                                <div key={f.name} style={{ background:'#e4f5ee', border:'1px solid rgba(13,122,71,.15)', borderRadius:6,
+                                  padding:'6px 10px', display:'flex', alignItems:'center', gap:8, fontSize:11, color:'#0d7a47' }}>
+                                  <span>📊</span>
+                                  <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const, fontWeight:500 }}>{f.name}</span>
+                                  <span style={{ fontSize:10, color:'rgba(13,122,71,.6)' }}>{(f.size/1024).toFixed(0)}KB</span>
+                                  <button onClick={() => setQuantiXlsxFiles(prev => prev.filter(x => x.name !== f.name))}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#b91c1c', fontSize:11 }}>✕</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Project config */}
+                      <div>
+                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em', marginBottom:8 }}>Projeto</div>
+                        <div style={{ display:'flex', flexDirection:'column' as const, gap:8 }}>
+                          <div>
+                            <div style={{ fontSize:11, color:'#5a6282', marginBottom:3 }}>Nome do projeto</div>
+                            <input type="text" value={quantiProjNome} onChange={e => setQuantiProjNome(e.target.value)}
+                              placeholder="Ex: Residência Adriano"
+                              style={{ width:'100%', background:'#f0f4f8', border:'1px solid #e5e8f0', borderRadius:6,
+                                padding:'7px 10px', fontSize:11, fontFamily:'inherit', color:'#1a1f36', outline:'none' }} />
+                          </div>
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                            <div>
+                              <div style={{ fontSize:11, color:'#5a6282', marginBottom:3 }}>UF</div>
+                              <select value={quantiUF} onChange={e => setQuantiUF(e.target.value)}
+                                style={{ width:'100%', background:'#f0f4f8', border:'1px solid #e5e8f0', borderRadius:6,
+                                  padding:'7px 8px', fontSize:11, fontFamily:'inherit', color:'#1a1f36', outline:'none' }}>
+                                {['SP','RJ','MG','DF','GO','BA','PR','RS','SC','CE','PE','AM','PA'].map(u =>
+                                  <option key={u} value={u}>{u}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:11, color:'#5a6282', marginBottom:3 }}>BDI (%)</div>
+                              <input type="number" value={quantiBDI} onChange={e => setQuantiBDI(Number(e.target.value))}
+                                min={0} max={60}
+                                style={{ width:'100%', background:'#f0f4f8', border:'1px solid #e5e8f0', borderRadius:6,
+                                  padding:'7px 8px', fontSize:11, fontFamily:'inherit', color:'#1a1f36', outline:'none' }} />
+                            </div>
+                          </div>
+                          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                            <div>
+                              <div style={{ fontSize:11, color:'#5a6282', marginBottom:3 }}>CUB R$/m²</div>
+                              <input type="number" value={quantiCUB} onChange={e => setQuantiCUB(Number(e.target.value))}
+                                min={0}
+                                style={{ width:'100%', background:'#f0f4f8', border:'1px solid #e5e8f0', borderRadius:6,
+                                  padding:'7px 8px', fontSize:11, fontFamily:'inherit', color:'#1a1f36', outline:'none' }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize:11, color:'#5a6282', marginBottom:3 }}>Padrão</div>
+                              <select value={quantiPadrao} onChange={e => setQuantiPadrao(e.target.value)}
+                                style={{ width:'100%', background:'#f0f4f8', border:'1px solid #e5e8f0', borderRadius:6,
+                                  padding:'7px 8px', fontSize:11, fontFamily:'inherit', color:'#1a1f36', outline:'none' }}>
+                                <option value="normal">Normal</option>
+                                <option value="alto">Alto</option>
+                                <option value="baixo">Baixo</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Modules */}
+                      <div>
+                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em', marginBottom:8 }}>Módulos</div>
+                        <div style={{ display:'flex', flexDirection:'column' as const, gap:5 }}>
+                          {([
+                            ['estrutura','🪨 Estrutura (concreto + aço)'],
+                            ['alvenaria','🧱 Alvenaria e argamassa'],
+                            ['esquadrias','🪟 Esquadrias (portas + janelas)'],
+                            ['revestimento','🪵 Revestimentos e tinta'],
+                            ['cobertura','🏠 Cobertura e impermeabilização'],
+                            ['hidraulica','💧 Hidráulica'],
+                            ['eletrica','⚡ Elétrica'],
+                          ] as [keyof typeof quantiModulos, string][]).map(([key, label]) => (
+                            <label key={key} style={{ display:'flex', alignItems:'center', gap:7, fontSize:11, cursor:'pointer' }}>
+                              <input type="checkbox" checked={quantiModulos[key]}
+                                onChange={e => setQuantiModulos(prev => ({ ...prev, [key]: e.target.checked }))}
+                                style={{ width:14, height:14, accentColor:'#0d7a47', cursor:'pointer' }} />
+                              {label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Calculate button */}
+                      <button
+                        disabled={quantiLoading || (quantiSubTab==='ifc' ? !quantiIfcContent : quantiXlsxFiles.length===0)}
+                        onClick={async () => {
+                          setQuantiLoading(true)
+                          setQuantiResult(null)
+                          try {
+                            const nome = quantiProjNome || 'Projeto'
+                            const modsList = Object.entries(quantiModulos).filter(([,v])=>v).map(([k])=>k).join(', ')
+                            let promptText = ''
+
+                            if (quantiSubTab === 'ifc' && quantiIfcContent) {
+                              // Parse IFC basic
+                              const lines = quantiIfcContent.split('\n')
+                              const rooms: {name:string,area:number}[] = []
+                              let wallCount=0, doorCount=0, windowCount=0, slabCount=0
+                              for (const ln of lines) {
+                                const u = ln.toUpperCase()
+                                if (u.includes('IFCSPACE')) {
+                                  const nameM = ln.match(/'([^']+)'/g)
+                                  const areaM = ln.match(/(\d+\.?\d*)/g)
+                                  if (nameM) rooms.push({ name: nameM[0]?.replace(/'/g,'') || 'Ambiente', area: parseFloat(areaM?.[areaM.length-1] || '0') })
+                                }
+                                if (u.includes('IFCWALL') && !u.includes('TYPE')) wallCount++
+                                if (u.includes('IFCDOOR') && !u.includes('TYPE')) doorCount++
+                                if (u.includes('IFCWINDOW') && !u.includes('TYPE')) windowCount++
+                                if (u.includes('IFCSLAB') && !u.includes('TYPE')) slabCount++
+                              }
+                              const trecho = quantiIfcContent.substring(0, 5000)
+                              promptText = `Você é especialista em quantitativo de materiais para construção civil brasileira (normas NBR).
+
+Analise este arquivo IFC exportado do Revit e gere o quantitativo completo de materiais.
+
+DADOS PRÉ-EXTRAÍDOS DO IFC:
+- Ambientes: ${rooms.length} espaços
+- Paredes: ~${wallCount} elementos IFCWALL
+- Portas: ~${doorCount} elementos IFCDOOR
+- Janelas: ~${windowCount} elementos IFCWINDOW
+- Lajes: ~${slabCount} elementos IFCSLAB
+- Dados ambientes: ${JSON.stringify(rooms.slice(0,20))}
+
+TRECHO IFC (primeiros 5000 chars):
+${trecho}
+
+CONFIGURAÇÕES:
+- Projeto: ${nome}, Estado: ${quantiUF}, Padrão: ${quantiPadrao}
+- CUB: R$ ${quantiCUB}/m², BDI: ${quantiBDI}%
+- Módulos: ${modsList}
+
+RETORNE APENAS JSON puro (sem markdown):
+{"resumo":{"nome":"${nome}","area_total":0,"num_ambientes":0,"num_pavimentos":1,"tipo_edificacao":""},"ambientes":[{"nome":"","area":0,"uso":""}],"materiais":[{"categoria":"","itens":[{"descricao":"","quantidade":0,"unidade":"","custo_unit":0,"custo_total":0}]}],"custo_direto":0,"bdi_valor":0,"total_geral":0,"custo_m2":0,"observacoes":""}`
+                            } else if (quantiSubTab === 'xlsx') {
+                              // Read XLSX files
+                              const { read, utils } = await import('xlsx')
+                              let dataSummary = ''
+                              for (const f of quantiXlsxFiles) {
+                                const buf = await f.arrayBuffer()
+                                const wb = read(buf)
+                                dataSummary += `\n\n=== ARQUIVO: ${f.name} ===\n`
+                                for (const sn of wb.SheetNames) {
+                                  const rows = utils.sheet_to_json<string[]>(wb.Sheets[sn], { header:1, defval:'' })
+                                  dataSummary += `Sheet "${sn}":\n`
+                                  dataSummary += (rows as string[][]).slice(0,25).map(r => r.join('\t')).join('\n')
+                                  if (rows.length > 25) dataSummary += `\n... (${rows.length-25} linhas adicionais)`
+                                }
+                              }
+                              promptText = `Você é especialista em quantitativo de materiais para construção civil brasileira (normas NBR, SINAPI).
+
+Analise os dados exportados dos Schedules do Revit abaixo e gere um quantitativo completo de materiais.
+
+DADOS DOS SCHEDULES REVIT:
+${dataSummary}
+
+CONFIGURAÇÕES:
+- Projeto: ${nome}, Estado: ${quantiUF}, Padrão: ${quantiPadrao}
+- CUB SINDUSCON: R$ ${quantiCUB}/m², BDI: ${quantiBDI}%
+- Módulos: ${modsList}
+
+Interprete os dados: Rooms/Ambiente → áreas, Walls/Parede → volumes paredes, Doors/Porta → portas, Windows/Janela → janelas, Floor/Laje → lajes, Column/Pilar → estrutura.
+
+RETORNE APENAS JSON puro (sem markdown):
+{"resumo":{"nome":"${nome}","area_total":0,"num_ambientes":0,"num_pavimentos":1,"tipo_edificacao":"","schedules_lidos":[]},"ambientes":[{"nome":"","area":0,"nivel":""}],"materiais":[{"categoria":"","subtotal":0,"itens":[{"descricao":"","quantidade":0,"unidade":"","custo_unit":0,"custo_total":0,"base":""}]}],"custo_direto":0,"bdi_percentual":${quantiBDI},"bdi_valor":0,"total_geral":0,"custo_m2":0,"alertas":[]}`
+                            }
+
+                            const resp = await fetch('/api/chat', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'claude-sonnet-4-6',
+                                max_tokens: 4000,
+                                messages: [{ role: 'user', content: [{ type: 'text', text: promptText }] }]
+                              })
+                            })
+                            const data = await resp.json()
+                            let txt = (data.content || []).map((b: {text?:string}) => b.text || '').join('')
+                            txt = txt.replace(/```json|```/g, '').trim()
+                            const result = JSON.parse(txt)
+                            result._config = { nome, uf: quantiUF, bdi: quantiBDI, cub: quantiCUB, padrao: quantiPadrao, mode: quantiSubTab }
+                            setQuantiResult(result)
+                          } catch (err) {
+                            setQuantiResult({ _error: (err as Error).message })
+                          }
+                          setQuantiLoading(false)
+                        }}
+                        style={{ padding:'10px 16px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer',
+                          border:'none', fontFamily:'inherit', width:'100%',
+                          background: (quantiLoading || (quantiSubTab==='ifc' ? !quantiIfcContent : quantiXlsxFiles.length===0)) ? '#ccc' : '#0d7a47',
+                          color: (quantiLoading || (quantiSubTab==='ifc' ? !quantiIfcContent : quantiXlsxFiles.length===0)) ? '#999' : '#fff' }}>
+                        {quantiLoading ? '⏳ Calculando...' : '📊 Calcular quantitativo'}
+                      </button>
+                    </div>
+
+                    {/* Right results */}
+                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
+                      {!quantiResult && !quantiLoading && (
+                        <div style={{ flex:1, display:'flex', flexDirection:'column' as const, alignItems:'center',
+                          justifyContent:'center', gap:12, color:'#8890a0', textAlign:'center' as const, padding:'60px 20px' }}>
+                          <div style={{ fontSize:44 }}>📐</div>
+                          <div style={{ fontSize:14, fontWeight:500, color:'#1a1f36' }}>
+                            {quantiSubTab==='ifc' ? 'Envie o arquivo IFC do Revit' : 'Envie os schedules do Revit'}
+                          </div>
+                          <div style={{ fontSize:12, maxWidth:320, lineHeight:1.6 }}>
+                            {quantiSubTab==='ifc'
+                              ? 'O app lê o IFC, extrai ambientes e áreas com IA, e calcula todos os materiais com base nas normas NBR.'
+                              : 'Exporte os schedules de Rooms, Walls, Doors, Windows e Floors do Revit como .xlsx e envie aqui.'}
+                          </div>
+                        </div>
+                      )}
+
+                      {quantiLoading && (
+                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                          gap:12, padding:'60px 20px', color:'#8890a0', fontSize:13 }}>
+                          <div style={{ width:32, height:32, border:'3px solid #e5e8f0', borderTopColor:'#0d7a47',
+                            borderRadius:'50%', animation:'spin .7s linear infinite' }} />
+                          <div>Analisando com IA...</div>
+                          <div style={{ fontSize:11, color:'#b0b8cc' }}>Extraindo ambientes e calculando materiais</div>
+                        </div>
+                      )}
+
+                      {quantiResult?._error && (
+                        <div style={{ background:'#fee2e2', border:'1px solid rgba(185,28,28,.2)', borderRadius:10,
+                          padding:'16px', fontSize:12, color:'#b91c1c' }}>
+                          ❌ Erro ao processar: {quantiResult._error}
+                        </div>
+                      )}
+
+                      {quantiResult && !quantiResult._error && (() => {
+                        const r = quantiResult
+                        const cfg = r._config || {}
+                        const fmtN = (n: number, d=2) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d})
+                        const fmtR = (n: number) => Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})
+                        return (
+                          <>
+                            {/* Metrics card */}
+                            <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 15px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                <div style={{ fontSize:12, fontWeight:600 }}>📊 Resumo — {r.resumo?.nome || cfg.nome}</div>
+                                <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#e4f5ee',
+                                  color:'#0d7a47', border:'1px solid rgba(13,122,71,.2)', fontWeight:500 }}>
+                                  {quantiSubTab==='ifc' ? 'IFC analisado' : 'Schedules lidos'}
+                                </span>
+                              </div>
+                              <div style={{ padding:'14px', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+                                {[
+                                  { l:'Área total', v: fmtN(r.resumo?.area_total,0), u:'m²' },
+                                  { l:'Ambientes', v: r.resumo?.num_ambientes || r.ambientes?.length || 0, u:'cômodos' },
+                                  { l:'Pavimentos', v: r.resumo?.num_pavimentos || 1, u:'andares' },
+                                  { l:'Custo/m²', v: 'R$ '+fmtN(r.custo_m2,0), u:'estimado' },
+                                ].map(m => (
+                                  <div key={m.l} style={{ background:'#f8f9fc', borderRadius:8, padding:'9px 11px' }}>
+                                    <div style={{ fontSize:10, color:'#8890a0', marginBottom:2 }}>{m.l}</div>
+                                    <div style={{ fontSize:16, fontWeight:500 }}>{m.v}</div>
+                                    <div style={{ fontSize:10, color:'#8890a0', marginTop:1 }}>{m.u}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Ambientes */}
+                            {r.ambientes?.length > 0 && (
+                              <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                <div style={{ padding:'10px 15px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                  display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                  <div style={{ fontSize:12, fontWeight:600 }}>🏠 Ambientes identificados</div>
+                                  <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#e8f0fe',
+                                    color:'#185FA5', border:'1px solid rgba(26,86,219,.2)', fontWeight:500 }}>
+                                    {r.ambientes.length} espaços
+                                  </span>
+                                </div>
+                                <div style={{ padding:0, overflowX:'auto' as const }}>
+                                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                                    <thead>
+                                      <tr>
+                                        {['Ambiente','Área (m²)', quantiSubTab==='ifc'?'Uso':'Nível'].map(h => (
+                                          <th key={h} style={{ background:'#f8f9fc', textAlign:'left', fontSize:10,
+                                            fontWeight:500, color:'#8890a0', padding:'6px 10px', borderBottom:'1px solid #e5e8f0' }}>{h}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                      {r.ambientes.map((a: any, i: number) => (
+                                        <tr key={i}>
+                                          <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0' }}>{a.nome}</td>
+                                          <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', textAlign:'right', fontFamily:'monospace', fontWeight:500 }}>{fmtN(a.area)}</td>
+                                          <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', color:'#8890a0' }}>{a.uso || a.nivel || '—'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Alertas */}
+                            {r.alertas?.length > 0 && (
+                              <div style={{ background:'#fef3cd', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#7a5000' }}>
+                                ⚠️ <strong>Atenção:</strong> {r.alertas.join(' · ')}
+                              </div>
+                            )}
+
+                            {/* Materiais table */}
+                            {r.materiais?.length > 0 && (
+                              <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                <div style={{ padding:'10px 15px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                  display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                  <div style={{ fontSize:12, fontWeight:600 }}>📦 Quantitativo de materiais</div>
+                                  <div style={{ display:'flex', gap:6 }}>
+                                    <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#e8f0fe',
+                                      color:'#185FA5', border:'1px solid rgba(26,86,219,.2)', fontWeight:500 }}>NBR · SINAPI</span>
+                                    <span style={{ fontSize:10, padding:'2px 8px', borderRadius:20, background:'#fef3cd',
+                                      color:'#7a5000', border:'1px solid rgba(122,80,0,.2)', fontWeight:500 }}>BDI {cfg.bdi}%</span>
+                                  </div>
+                                </div>
+                                <div style={{ overflowX:'auto' as const }}>
+                                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                                    <thead>
+                                      <tr>
+                                        {['Descrição','Qtd','Und','Unit (R$)','Total (R$)'].map(h => (
+                                          <th key={h} style={{ background:'#f8f9fc',
+                                            textAlign: (h==='Qtd'||h==='Unit (R$)'||h==='Total (R$)') ? 'right' as const : 'left' as const,
+                                            fontSize:10, fontWeight:500, color:'#8890a0', padding:'6px 10px', borderBottom:'1px solid #e5e8f0' }}>{h}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                      {r.materiais.map((cat: any) => [
+                                        <tr key={'cat-'+cat.categoria} style={{ background:'#f0f2f5' }}>
+                                          <td colSpan={5} style={{ padding:'5px 10px', fontWeight:600, fontSize:10,
+                                            color:'#5a6282', textTransform:'uppercase' as const, letterSpacing:'.05em' }}>
+                                            {cat.categoria}{cat.subtotal ? ` — R$ ${fmtR(cat.subtotal)}` : ''}
+                                          </td>
+                                        </tr>,
+                                        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                                        ...(cat.itens||[]).map((it: any, ii: number) => (
+                                          <tr key={'it-'+cat.categoria+ii}>
+                                            <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0' }}>{it.descricao}</td>
+                                            <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', textAlign:'right', fontFamily:'monospace', fontWeight:500 }}>{fmtN(it.quantidade)}</td>
+                                            <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', fontSize:10, color:'#8890a0' }}>{it.unidade}</td>
+                                            <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', textAlign:'right', fontFamily:'monospace', fontWeight:500 }}>R$ {fmtR(it.custo_unit)}</td>
+                                            <td style={{ padding:'7px 10px', borderBottom:'.5px solid #e5e8f0', textAlign:'right', fontFamily:'monospace', fontWeight:500, color:'#0d7a47' }}>R$ {fmtR(it.custo_total)}</td>
+                                          </tr>
+                                        ))
+                                      ])}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div style={{ padding:'14px' }}>
+                                  <div style={{ background:'#e8f0fe', borderRadius:8, padding:'12px 15px',
+                                    display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                    <div>
+                                      <div style={{ fontSize:12, fontWeight:500 }}>Total geral com BDI</div>
+                                      <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>
+                                        Custo direto R$ {fmtR(r.custo_direto)} + BDI {cfg.bdi}% (R$ {fmtR(r.bdi_valor)})
+                                      </div>
+                                    </div>
+                                    <div style={{ fontSize:20, fontWeight:700, color:'#185FA5' }}>R$ {fmtR(r.total_geral)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Observações */}
+                            {r.observacoes && (
+                              <div style={{ background:'#fef3cd', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#7a5000' }}>
+                                💡 {r.observacoes}
+                              </div>
+                            )}
+
+                            {/* Export buttons */}
+                            <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 15px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc' }}>
+                                <div style={{ fontSize:12, fontWeight:600 }}>📤 Exportar</div>
+                              </div>
+                              <div style={{ padding:'14px', display:'flex', gap:8 }}>
+                                <button onClick={async () => {
+                                  const { utils, writeFile } = await import('xlsx')
+                                  const wb = utils.book_new()
+                                  const resumoRows = [
+                                    ['QUANTITATIVO DE MATERIAIS'],[''],
+                                    ['Projeto:', cfg.nome || r.resumo?.nome || '—'],
+                                    ['Estado:', cfg.uf || '—'],
+                                    ['Data:', new Date().toLocaleDateString('pt-BR')],
+                                    ['Área total (m²):', r.resumo?.area_total || 0],
+                                    ['Padrão:', cfg.padrao || 'Normal'],
+                                    ['BDI (%):', (cfg.bdi || 25) + '%'],
+                                    ['Custo direto (R$):', r.custo_direto || 0],
+                                    ['BDI valor (R$):', r.bdi_valor || 0],
+                                    ['TOTAL GERAL (R$):', r.total_geral || 0],
+                                    ['Custo por m² (R$):', r.custo_m2 || 0],
+                                  ]
+                                  utils.book_append_sheet(wb, utils.aoa_to_sheet(resumoRows), 'Resumo')
+                                  if (r.ambientes?.length) {
+                                    const ambRows = [['Ambiente','Área (m²)','Uso/Nível'], ...r.ambientes.map((a: {nome:string,area:number,uso?:string,nivel?:string}) => [a.nome, a.area, a.uso || a.nivel || ''])]
+                                    utils.book_append_sheet(wb, utils.aoa_to_sheet(ambRows), 'Ambientes')
+                                  }
+                                  const matRows: (string|number)[][] = [['Categoria','Descrição','Quantidade','Unidade','Custo Unit. R$','Total R$']]
+                                  for (const cat of (r.materiais || [])) {
+                                    for (const it of (cat.itens || [])) matRows.push([cat.categoria, it.descricao, it.quantidade, it.unidade, it.custo_unit, it.custo_total])
+                                    matRows.push(['','SUBTOTAL — '+cat.categoria,'','','', cat.subtotal || cat.itens?.reduce((s: number, i: {custo_total:number}) => s+(i.custo_total||0), 0) || 0])
+                                    matRows.push([])
+                                  }
+                                  matRows.push([],['','CUSTO DIRETO','','','',r.custo_direto||0],['','BDI ('+cfg.bdi+'%)','','','',r.bdi_valor||0],['','TOTAL GERAL','','','',r.total_geral||0])
+                                  utils.book_append_sheet(wb, utils.aoa_to_sheet(matRows), 'Quantitativo')
+                                  writeFile(wb, `Quantitativo_${(cfg.nome||'Projeto').replace(/\s+/g,'_')}.xlsx`)
+                                }}
+                                  style={{ flex:1, padding:'9px 12px', borderRadius:8, fontSize:12, fontWeight:600,
+                                    cursor:'pointer', border:'none', fontFamily:'inherit', background:'#0d7a47', color:'#fff' }}>
+                                  📊 Excel (.xlsx)
+                                </button>
+                                <button onClick={() => {
+                                  let csv = 'Categoria,Descricao,Quantidade,Unidade,Custo_Unit,Total\n'
+                                  for (const cat of (r.materiais || [])) {
+                                    for (const it of (cat.itens || [])) {
+                                      csv += `"${cat.categoria}","${it.descricao}",${it.quantidade},"${it.unidade}",${it.custo_unit},${it.custo_total}\n`
+                                    }
+                                  }
+                                  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8' })
+                                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+                                  a.download = `Quantitativo_${(cfg.nome||'Projeto').replace(/\s+/g,'_')}.csv`; a.click()
+                                }}
+                                  style={{ flex:1, padding:'9px 12px', borderRadius:8, fontSize:12, fontWeight:500,
+                                    cursor:'pointer', border:'1px solid #185FA5', fontFamily:'inherit', background:'transparent', color:'#185FA5' }}>
+                                  📄 CSV
+                                </button>
+                                <button onClick={() => {
+                                  const printWin = window.open('','_blank','width=900,height=700')
+                                  if (!printWin) return
+                                  const tableRows = (r.materiais||[]).flatMap((cat: {categoria:string,subtotal?:number,itens?:{descricao:string,quantidade:number,unidade:string,custo_unit:number,custo_total:number}[]}) => [
+                                    `<tr style="background:#e8e6de"><td colspan="5" style="padding:5px 10px;font-weight:600;font-size:11px;text-transform:uppercase">${cat.categoria}</td></tr>`,
+                                    ...(cat.itens||[]).map(it => `<tr><td style="padding:7px 10px;border-bottom:.5px solid #e5e8f0">${it.descricao}</td><td style="padding:7px 10px;border-bottom:.5px solid #e5e8f0;text-align:right;font-family:monospace">${Number(it.quantidade).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td style="padding:7px 10px;border-bottom:.5px solid #e5e8f0;color:#666">${it.unidade}</td><td style="padding:7px 10px;border-bottom:.5px solid #e5e8f0;text-align:right;font-family:monospace">R$ ${Number(it.custo_unit).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td><td style="padding:7px 10px;border-bottom:.5px solid #e5e8f0;text-align:right;color:#0d7a47;font-family:monospace">R$ ${Number(it.custo_total).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td></tr>`)
+                                  ])
+                                  printWin.document.write(`<!DOCTYPE html><html><head><title>Quantitativo — ${cfg.nome||'Projeto'}</title><style>body{font-family:'Segoe UI',sans-serif;margin:32px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f8f9fc;text-align:left;padding:7px 10px;border-bottom:2px solid #e5e8f0;font-size:11px;font-weight:600}@media print{body{margin:0}}</style></head><body>
+                                  <h2 style="margin-bottom:4px">Quantitativo de Materiais</h2>
+                                  <div style="font-size:12px;color:#666;margin-bottom:20px">Projeto: <strong>${cfg.nome||'—'}</strong> · ${cfg.uf} · BDI: ${cfg.bdi}% · Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+                                  <table><thead><tr><th>Descrição</th><th style="text-align:right">Qtd</th><th>Und</th><th style="text-align:right">Unit R$</th><th style="text-align:right">Total R$</th></tr></thead><tbody>${tableRows.join('')}</tbody></table>
+                                  <div style="margin-top:20px;padding:12px;background:#e8f0fe;border-radius:8px;display:flex;justify-content:space-between">
+                                    <span>TOTAL GERAL COM BDI</span>
+                                    <strong style="font-size:18px;color:#185FA5">R$ ${Number(r.total_geral||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>
+                                  </div>
+                                  </body></html>`)
+                                  printWin.document.close()
+                                  printWin.focus()
+                                  printWin.print()
+                                }}
+                                  style={{ flex:1, padding:'9px 12px', borderRadius:8, fontSize:12, fontWeight:500,
+                                    cursor:'pointer', border:'1px solid #185FA5', fontFamily:'inherit', background:'transparent', color:'#185FA5' }}>
+                                  🖨️ Imprimir
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
                 )}
