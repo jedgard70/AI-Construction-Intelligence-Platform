@@ -12,6 +12,7 @@ const SEGMENTOS = ['Incorporadora', 'Construtora', 'Escritório de Arquitetura',
 export default function NewClientModal({ onClose, onCreated }: Props) {
   const [nome, setNome] = useState('')
   const [empresa, setEmpresa] = useState('')
+  const [cpfCnpj, setCpfCnpj] = useState('')
   const [segmento, setSegmento] = useState(SEGMENTOS[0])
   const [email, setEmail] = useState('')
   const [telefone, setTelefone] = useState('')
@@ -21,18 +22,33 @@ export default function NewClientModal({ onClose, onCreated }: Props) {
   async function handleSubmit() {
     if (!nome.trim()) { setError('Nome é obrigatório'); return }
     setLoading(true)
+    setError('')
     const sb = getSupabase()
+    let savedToSupabase = false
     if (sb) {
       const { error: err } = await sb.from('clients').insert({
-        name: nome,
-        company: empresa,
-        segment: segmento,
-        email,
-        phone: telefone,
-        status: 'active',
+        nome,
+        razao_social: empresa || null,
+        cpf_cnpj: cpfCnpj.trim() || `TMP-${Date.now()}`,
+        segmento,
+        email: email || null,
+        telefone: telefone || null,
+        status: 'ativo',
       })
-      if (err) { setError(err.message); setLoading(false); return }
+      if (err) {
+        setError(`Supabase: ${err.message} — salvo localmente.`)
+      } else {
+        savedToSupabase = true
+      }
     }
+    // Always save to localStorage as backup
+    const stored = JSON.parse(localStorage.getItem('atlas_clients') || '[]')
+    stored.push({ id: `cli-${Date.now()}`, nome, razao_social: empresa, segmento, email, telefone, status: 'ativo', created_at: new Date().toISOString() })
+    localStorage.setItem('atlas_clients', JSON.stringify(stored))
+    if (!savedToSupabase && !sb) {
+      // No Supabase configured, localStorage only — still success
+    }
+    setLoading(false)
     onCreated()
     onClose()
   }
@@ -61,8 +77,11 @@ export default function NewClientModal({ onClose, onCreated }: Props) {
         <label style={s.label}>Nome Completo *</label>
         <input style={s.input} placeholder="Ex: Carlos Mendes" value={nome} onChange={e => setNome(e.target.value)} />
 
-        <label style={s.label}>Empresa</label>
+        <label style={s.label}>Razão Social / Empresa</label>
         <input style={s.input} placeholder="Ex: Mendes Incorporações Ltda" value={empresa} onChange={e => setEmpresa(e.target.value)} />
+
+        <label style={s.label}>CPF / CNPJ</label>
+        <input style={s.input} placeholder="00.000.000/0001-00 (opcional)" value={cpfCnpj} onChange={e => setCpfCnpj(e.target.value)} />
 
         <label style={s.label}>Segmento</label>
         <select style={s.select} value={segmento} onChange={e => setSegmento(e.target.value)}>

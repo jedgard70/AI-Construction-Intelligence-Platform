@@ -291,6 +291,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
+  const [humanRenderUrl, setHumanRenderUrl] = useState<string|null>(null)
+  const [humanRenderLoading, setHumanRenderLoading] = useState(false)
   // Quantitative calculator state
   const [quantiSubTab, setQuantiSubTab] = useState<'ifc'|'xlsx'>('ifc')
   const [quantiIfcContent, setQuantiIfcContent] = useState<string|null>(null)
@@ -972,13 +974,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         }
 
         return (
-        <div onClick={e => { if (e.target === e.currentTarget) setShowPlantasViewer(false) }}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999,
-            display:'flex', alignItems:'flex-start', justifyContent:'center',
-            padding:20, overflowY:'auto' }}>
-          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:1100,
-            margin:'auto', overflow:'hidden', boxShadow:'0 24px 72px rgba(0,0,0,.35)',
-            display:'flex', flexDirection:'column', maxHeight:'calc(100vh - 40px)' }}>
+        <div style={{ position:'fixed', inset:0, zIndex:9999, display:'flex' }}>
+          <div style={{ background:'#fff', width:'100%', height:'100%',
+            overflow:'hidden', display:'flex', flexDirection:'column' }}>
 
             {/* Header */}
             <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
@@ -1316,7 +1314,7 @@ RETORNE EXATAMENTE neste formato markdown:
                             const d = await r.json()
                             const txt = d.content?.[0]?.text || ''
                             const secs: Record<string,string> = {}
-                            const rx = /###\s+([A-ZÇÁÉÍÓÚ\s\/E]+)\n([\s\S]*?)(?=###|$)/g
+                            const rx = /###\s+([A-ZÇÁÉÍÓÚ0-9\s\-\/\.]+)\n([\s\S]*?)(?=###\s+[A-Z]|$)/g
                             let m
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
@@ -1336,6 +1334,78 @@ RETORNE EXATAMENTE neste formato markdown:
 
                     {/* Right results */}
                     <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
+                      {/* Action bar when results exist */}
+                      {!humanLoading && Object.keys(humanResult).length > 0 && (
+                        <div style={{ display:'flex', gap:8, flexWrap:'wrap' as const }}>
+                          <button onClick={() => {
+                            const dallEPrompt = Object.entries(humanResult).find(([k]) => k.includes('DALL') || k.includes('PROMPT'))?.[1] || ''
+                            if (!dallEPrompt) return alert('Gere a análise primeiro.')
+                            setHumanRenderUrl(null)
+                            setHumanRenderLoading(true)
+                            fetch('/api/render/generate', {
+                              method: 'POST', headers: { 'Content-Type':'application/json' },
+                              body: JSON.stringify({ prompt: dallEPrompt })
+                            }).then(r => r.json()).then(d => {
+                              if (d.url) setHumanRenderUrl(d.url)
+                              else alert(d.error || 'Erro ao gerar renderização. Configure OPENAI_API_KEY.')
+                            }).catch(e => alert(e.message)).finally(() => setHumanRenderLoading(false))
+                          }} style={{ padding:'7px 14px', background:'#534AB7', color:'#fff', border:'none',
+                            borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+                            display:'flex', alignItems:'center', gap:6 }}>
+                            {humanRenderLoading ? '⏳ Renderizando...' : '🎨 Renderizar com IA'}
+                          </button>
+                          <button onClick={() => {
+                            const win = window.open('','_blank','width=1000,height=800')
+                            if (!win) return
+                            const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Humanizador — ${humanTipo}</title>
+                            <style>body{font-family:Arial,sans-serif;padding:24px;max-width:900px;margin:0 auto}
+                            h1{color:#534AB7}h2{color:#1a1f36;margin-top:20px;border-bottom:1px solid #e5e8f0;padding-bottom:6px}
+                            pre{background:#f8f9fc;padding:12px;border-radius:6px;white-space:pre-wrap;font-size:12px;word-break:break-word}
+                            img{max-width:100%;border-radius:8px;margin:12px 0}
+                            @media print{button{display:none}}</style></head><body>
+                            <h1>🏛️ Análise Arquitetônica — ${humanTipo}</h1>
+                            <p style="color:#8890a0;font-size:12px">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+                            ${humanRenderUrl ? `<img src="${humanRenderUrl}" alt="Renderização IA"/>` : ''}
+                            ${Object.entries(humanResult).map(([k,v]) => `<h2>${k}</h2><pre>${v}</pre>`).join('')}
+                            <script>window.print()</script></body></html>`
+                            win.document.write(html)
+                            win.document.close()
+                          }} style={{ padding:'7px 14px', background:'#fff', color:'#5a6282', border:'1px solid #e5e8f0',
+                            borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨️ Imprimir
+                          </button>
+                          <button onClick={() => {
+                            const text = `🏛️ Análise Arquitetônica — ${humanTipo}\n${new Date().toLocaleDateString('pt-BR')}\n\n` +
+                              Object.entries(humanResult).map(([k,v]) => `${k}:\n${v}`).join('\n\n')
+                            window.open(`https://wa.me/?text=${encodeURIComponent(text.slice(0,1500))}`, '_blank')
+                          }} style={{ padding:'7px 14px', background:'#EAF3DE', color:'#3B6D11', border:'1px solid #3B6D11',
+                            borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            📤 WhatsApp
+                          </button>
+                        </div>
+                      )}
+                      {humanRenderLoading && (
+                        <div style={{ display:'flex', alignItems:'center', gap:12, padding:16, background:'#F0EEFF', borderRadius:10, border:'1px solid #d4ccff' }}>
+                          <div style={{ width:28, height:28, border:'3px solid #c4beff', borderTopColor:'#534AB7',
+                            borderRadius:'50%', animation:'spin .7s linear infinite', flexShrink:0 }} />
+                          <div style={{ fontSize:12, color:'#534AB7', fontWeight:500 }}>Gerando renderização com IA... (pode levar 15-30s)</div>
+                        </div>
+                      )}
+                      {humanRenderUrl && (
+                        <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                          <div style={{ padding:'10px 16px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
+                            display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <span style={{ fontSize:12, fontWeight:700, color:'#534AB7' }}>🎨 RENDERIZAÇÃO IA</span>
+                            <a href={humanRenderUrl} download="renderizacao.png"
+                              style={{ fontSize:10, padding:'3px 9px', background:'#534AB7', color:'#fff',
+                                borderRadius:5, cursor:'pointer', textDecoration:'none', fontFamily:'inherit' }}>
+                              ⬇ Baixar
+                            </a>
+                          </div>
+                          <img src={humanRenderUrl} alt="Renderização IA"
+                            style={{ width:'100%', display:'block', maxHeight:440, objectFit:'cover' }} />
+                        </div>
+                      )}
                       {humanLoading && (
                         <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
                           justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
