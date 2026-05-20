@@ -271,6 +271,17 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [activePlanta, setActivePlanta] = useState(0)
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
+  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'>('viewer')
+  const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
+  const [humanEscala, setHumanEscala] = useState('50')
+  const [humanNP, setHumanNP] = useState(6)
+  const [humanEstilo, setHumanEstilo] = useState('photorealistic professional architectural')
+  const [humanLote, setHumanLote] = useState('standard rectangular urban lot with sidewalk and street trees')
+  const [humanVeg, setHumanVeg] = useState('imperial palm trees, tropical shrubs, bromeliads, ornamental grasses, dense tropical foliage')
+  const [humanB64, setHumanB64] = useState<string|null>(null)
+  const [humanImgType, setHumanImgType] = useState('image/jpeg')
+  const [humanResult, setHumanResult] = useState<Record<string,string>>({})
+  const [humanLoading, setHumanLoading] = useState(false)
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
@@ -1059,8 +1070,22 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {/* Toolbar */}
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
-                  display:'flex', alignItems:'center', gap:8, background:'#fff' }}>
-                  {activePf && isPDF && (
+                  display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
+                  {/* Tabs */}
+                  <button onClick={() => setViewerTab('viewer')}
+                    style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
+                      background: viewerTab==='viewer' ? '#185FA5' : '#f0f4f8',
+                      color: viewerTab==='viewer' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
+                    👁️ Visualizar
+                  </button>
+                  <button onClick={() => setViewerTab('humanize')}
+                    style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
+                      background: viewerTab==='humanize' ? '#534AB7' : '#f0f4f8',
+                      color: viewerTab==='humanize' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
+                    🤖 Humanizar com IA
+                  </button>
+                  <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
+                  {activePf && isPDF && viewerTab==='viewer' && (
                     <>
                       <button onClick={() => {
                         const iframe = document.querySelector('iframe[title="' + activePf.name + '"]') as HTMLIFrameElement | null
@@ -1082,7 +1107,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                       </a>
                     </>
                   )}
-                  {activePf && !isPDF && (
+                  {activePf && !isPDF && viewerTab==='viewer' && (
                     <a href={activePf.url} download={activePf.name}
                       style={{ padding:'6px 14px', border:'none', borderRadius:6,
                         background:'#185FA5', fontSize:11, fontWeight:600, cursor:'pointer',
@@ -1098,7 +1123,274 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   )}
                 </div>
 
+                {/* Humanize Panel */}
+                {viewerTab === 'humanize' && (
+                  <div style={{ flex:1, overflow:'auto', background:'#f8f9fc', display:'grid',
+                    gridTemplateColumns:'340px 1fr', gap:0 }}>
+                    {/* Left controls */}
+                    <div style={{ borderRight:'1px solid #e5e8f0', padding:'20px 18px', display:'flex',
+                      flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff' }}>
+                      <div style={{ fontSize:12, fontWeight:700, color:'#185FA5', marginBottom:4 }}>
+                        🤖 Humanizador de Plantas Baixas
+                      </div>
+                      <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5 }}>
+                        Envie uma imagem da planta baixa. A IA analisa ambientes, distribui pessoas e gera prompts DALL-E / Midjourney prontos.
+                      </div>
+
+                      {/* Image upload */}
+                      <div>
+                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                          letterSpacing:'.08em', marginBottom:8 }}>Imagem da Planta</div>
+                        {humanB64 ? (
+                          <div style={{ position:'relative', borderRadius:8, overflow:'hidden', border:'1px solid #e5e8f0' }}>
+                            <img src={`data:${humanImgType};base64,${humanB64}`} alt="Planta"
+                              style={{ width:'100%', maxHeight:160, objectFit:'contain', display:'block', padding:4 }} />
+                            <button onClick={() => setHumanB64(null)}
+                              style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,.6)',
+                                color:'#fff', border:'none', borderRadius:4, fontSize:10, padding:'3px 7px', cursor:'pointer' }}>
+                              ✕ Remover
+                            </button>
+                          </div>
+                        ) : (
+                          <label style={{ cursor:'pointer', display:'block' }}>
+                            <input type="file" accept="image/*" style={{ display:'none' }}
+                              onChange={e => {
+                                const f = e.target.files?.[0]
+                                if (!f) return
+                                const mt = ['image/jpeg','image/png','image/gif','image/webp'].includes(f.type) ? f.type : 'image/jpeg'
+                                setHumanImgType(mt)
+                                const rd = new FileReader()
+                                rd.onload = ev => setHumanB64((ev.target?.result as string).split(',')[1])
+                                rd.readAsDataURL(f)
+                              }} />
+                            <div style={{ border:'1.5px dashed #d0d5e0', borderRadius:8, padding:'24px 12px',
+                              textAlign:'center' as const, background:'#fafafa', transition:'all .2s' }}>
+                              <div style={{ fontSize:28, marginBottom:6 }}>📐</div>
+                              <div style={{ fontSize:12, fontWeight:500, color:'#1a1f36', marginBottom:3 }}>
+                                Arraste ou clique para enviar
+                              </div>
+                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · qualquer planta baixa</div>
+                            </div>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Controls */}
+                      {[
+                        { lbl:'Tipo de edificação', id:'humanTipo', val:humanTipo, set:setHumanTipo, opts:[
+                          ['residencial unifamiliar','🏠 Residencial — casa'],
+                          ['apartamento residencial','🏢 Residencial — apartamento'],
+                          ['escritório comercial','💼 Escritório / Comercial'],
+                          ['loja de varejo','🛍️ Loja / Varejo'],
+                          ['café ou restaurante','☕ Café / Restaurante'],
+                          ['clínica ou consultório','🏥 Clínica / Consultório'],
+                        ]},
+                        { lbl:'Estilo de renderização', id:'humanEstilo', val:humanEstilo, set:setHumanEstilo, opts:[
+                          ['photorealistic professional architectural','Fotorrealista profissional'],
+                          ['high-end architectural visualization','Alta renderização arquitetônica'],
+                          ['watercolor artistic architectural','Aquarela / Artístico'],
+                          ['technical axonometric','Técnico / Axonométrico'],
+                        ]},
+                        { lbl:'Tipo de lote / entorno', id:'humanLote', val:humanLote, set:setHumanLote, opts:[
+                          ['standard rectangular urban lot with sidewalk and street trees','Lote retangular — urbano padrão'],
+                          ['corner lot with two street frontages, sidewalks and urban trees','Lote de esquina — duas frentes'],
+                          ['rural lot with natural landscape, grass, trees and open sky','Lote rural — paisagem natural'],
+                          ['condominium lot surrounded by common areas, gardens and other units','Lote em condomínio'],
+                        ]},
+                        { lbl:'Vegetação / Paisagismo', id:'humanVeg', val:humanVeg, set:setHumanVeg, opts:[
+                          ['imperial palm trees, tropical shrubs, bromeliads, ornamental grasses, dense tropical foliage','🌴 Tropical — palmeiras imperiais'],
+                          ['mediterranean trees, lavender, olive trees, bougainvillea, stone pathways','🫒 Mediterrâneo — oliveiras'],
+                          ['minimalist landscaping, ornamental grasses, pebbles, architectural plants','⬜ Minimalista — gramas ornamentais'],
+                          ['native Brazilian cerrado vegetation, small trees, dry grass','🌵 Cerrado brasileiro'],
+                        ]},
+                      ].map(ctrl => (
+                        <div key={ctrl.id}>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                            letterSpacing:'.08em', marginBottom:5 }}>{ctrl.lbl}</div>
+                          <select value={ctrl.val} onChange={e => ctrl.set(e.target.value)}
+                            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                              fontSize:12, background:'#f8f9fc', color:'#1a1f36', fontFamily:'inherit', outline:'none' }}>
+                            {ctrl.opts.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </div>
+                      ))}
+
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                        <div>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                            letterSpacing:'.08em', marginBottom:5 }}>Escala</div>
+                          <select value={humanEscala} onChange={e => setHumanEscala(e.target.value)}
+                            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                              fontSize:12, background:'#f8f9fc', color:'#1a1f36', fontFamily:'inherit', outline:'none' }}>
+                            {[['25','1 : 25'],['50','1 : 50'],['100','1 : 100'],['200','1 : 200']].map(([v,l]) =>
+                              <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                            letterSpacing:'.08em', marginBottom:5 }}>Nº de pessoas</div>
+                          <input type="number" value={humanNP} min={1} max={20}
+                            onChange={e => setHumanNP(Number(e.target.value))}
+                            style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e8f0', borderRadius:6,
+                              fontSize:12, background:'#f8f9fc', color:'#1a1f36', fontFamily:'inherit', outline:'none' }} />
+                        </div>
+                      </div>
+
+                      {/* Scale info */}
+                      <div style={{ background:'#EFF4FF', borderRadius:6, padding:'8px 12px', fontSize:11, color:'#185FA5' }}>
+                        📏 Escala 1:{humanEscala} — figura 1,70 m = <strong>{((1.70/parseInt(humanEscala))*100).toFixed(2)} cm</strong> na planta
+                      </div>
+
+                      <button
+                        disabled={!humanB64 || humanLoading}
+                        onClick={async () => {
+                          if (!humanB64) return
+                          setHumanLoading(true)
+                          setHumanResult({})
+                          const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
+                          const prompt = `Você é especialista em visualização arquitetônica. Analise esta planta baixa de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
+
+PARÂMETROS:
+- Escala: 1:${humanEscala}
+- Figuras humanas: 1,70 m (= ${cmFig} cm na planta)
+- Número de pessoas: ${humanNP}
+- Estilo: ${humanEstilo}
+- Lote: ${humanLote}
+- Vegetação: ${humanVeg}
+
+RETORNE EXATAMENTE neste formato markdown:
+
+### ANÁLISE
+[Tipo identificado, lista de ambientes com áreas estimadas, total aproximado]
+
+### AMBIENTES E PESSOAS
+[Distribua as ${humanNP} pessoas pelos ambientes: Ambiente | Pessoas | Atividade]
+
+### PROMPT DALL-E
+[Prompt completo em inglês ultra-detalhado para DALL-E/GPT-4o. Incluir lote: ${humanLote}, vegetação: ${humanVeg}, ${humanNP} figuras de 1,70m com atividades específicas, estilo ${humanEstilo}, escala 1:${humanEscala}]
+
+### PROMPT MIDJOURNEY
+[Versão compacta para /imagine com --ar 4:3 --quality 2 --style raw --v 6]
+
+### PASSOS REVIT
+[5 passos com famílias RPC, configuração 1700mm e renderização para esta planta]`
+
+                          try {
+                            const r = await fetch('/api/chat', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'claude-sonnet-4-6',
+                                max_tokens: 1500,
+                                messages: [{
+                                  role: 'user',
+                                  content: [
+                                    { type:'image', source:{ type:'base64', media_type: humanImgType, data: humanB64 } },
+                                    { type:'text', text: prompt }
+                                  ]
+                                }]
+                              })
+                            })
+                            const d = await r.json()
+                            const txt = d.content?.[0]?.text || ''
+                            const secs: Record<string,string> = {}
+                            const rx = /###\s+([A-ZÇÁÉÍÓÚ\s\/E]+)\n([\s\S]*?)(?=###|$)/g
+                            let m
+                            while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
+                            if (!Object.keys(secs).length) secs['RESULTADO'] = txt
+                            setHumanResult(secs)
+                          } catch (err: any) {
+                            setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
+                          }
+                          setHumanLoading(false)
+                        }}
+                        style={{ padding:'12px', background: humanB64 ? '#534AB7' : '#ccc',
+                          color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600,
+                          cursor: humanB64 ? 'pointer' : 'not-allowed', fontFamily:'inherit',
+                          display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                        {humanLoading ? '⏳ Analisando...' : '✨ Gerar Análise e Prompts'}
+                      </button>
+                    </div>
+
+                    {/* Right results */}
+                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
+                      {humanLoading && (
+                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                          justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
+                          <div style={{ width:36, height:36, border:'3px solid #e5e8f0', borderTopColor:'#534AB7',
+                            borderRadius:'50%', animation:'spin .7s linear infinite' }} />
+                          <div style={{ fontSize:13 }}>Analisando planta com IA...</div>
+                          <div style={{ fontSize:11, color:'#b0b8cc' }}>Identificando ambientes e calculando escala 1,70 m</div>
+                        </div>
+                      )}
+                      {!humanLoading && Object.keys(humanResult).length === 0 && (
+                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                          justifyContent:'center', gap:14, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                          <div style={{ fontSize:48 }}>🏛️</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36' }}>Aguardando planta baixa</div>
+                          <div style={{ fontSize:12, maxWidth:280, lineHeight:1.6 }}>
+                            Envie uma imagem da planta e clique em "Gerar Análise e Prompts"
+                          </div>
+                          <div style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:'12px 16px', fontSize:11, color:'#5a6282' }}>
+                            <div style={{ fontWeight:700, marginBottom:6 }}>Escala de referência (1,70 m)</div>
+                            {[['1:25','6,8 cm'],['1:50','3,4 cm'],['1:100','1,7 cm'],['1:200','0,85 cm']].map(([s,v]) => (
+                              <div key={s} style={{ display:'flex', justifyContent:'space-between', padding:'3px 0',
+                                borderBottom:'1px solid #e5e8f0' }}>
+                                <span>{s}</span><span style={{ color:'#3B6D11', fontWeight:600 }}>{v} na planta</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {!humanLoading && Object.keys(humanResult).map(key => {
+                        const val = humanResult[key]
+                        const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
+                        const promptId = `hprompt-${key.replace(/\s/g,'')}`
+                        return (
+                          <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                            <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                              <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>
+                                {key.includes('ANÁLISE') ? '📊' : key.includes('AMBIENTES') ? '🚶' : key.includes('DALL') ? '🎨' : key.includes('MIDJOURNEY') ? '🎭' : key.includes('REVIT') ? '🏗️' : '📋'} {key}
+                              </div>
+                              {isPrompt && (
+                                <button id={`btn-${promptId}`}
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(val)
+                                    const btn = document.getElementById(`btn-${promptId}`)
+                                    if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
+                                  }}
+                                  style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
+                                    borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                  📋 Copiar
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ padding:'14px 16px' }}>
+                              {isPrompt ? (
+                                <div id={promptId} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:6,
+                                  padding:'10px 12px', fontFamily:'monospace', fontSize:11, lineHeight:1.8,
+                                  color:'#1a1f36', whiteSpace:'pre-wrap' as const }}>
+                                  {val}
+                                </div>
+                              ) : (
+                                <div style={{ fontSize:12, lineHeight:1.75, color:'#5a6282',
+                                  whiteSpace:'pre-wrap' as const }}
+                                  dangerouslySetInnerHTML={{ __html: val
+                                    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+                                    .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid #e5e8f0">$1</div>')
+                                    .replace(/\n/g,'<br/>') }} />
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {/* Viewer canvas */}
+                {viewerTab === 'viewer' && (
                 <div style={{ flex:1, overflow:'hidden', background:'#f0f2f5', position:'relative' }}>
                   {!activePf ? (
                     <div style={{ height:'100%', display:'flex', flexDirection:'column',
@@ -1157,6 +1449,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                     </div>
                   )}
                 </div>
+                )}
               </div>
             </div>
           </div>
