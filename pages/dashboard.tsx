@@ -58,10 +58,19 @@ export default function Dashboard() {
       }
 
       try {
-        // Verifica sessão ativa
+        // Verifica sessão ativa — sem sessão, entra em modo demo
         const { data: { session } } = await sb.auth.getSession()
         if (!session) {
-          router.replace('/login')
+          setProfile({
+            id: 'demo',
+            email: 'demo@constructai.com.br',
+            full_name: 'Usuário Demo',
+            role: 'diretor_executivo',
+            company: 'ConstructAI Demo',
+            avatar_url: null,
+            is_active: true,
+          })
+          setLoading(false)
           return
         }
 
