@@ -1042,10 +1042,9 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
         }
 
         return (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.85)', zIndex:9999,
-            display:'flex', flexDirection:'column' }}>
-          <div style={{ background:'#fff', width:'100vw', height:'100vh',
-            overflow:'hidden', display:'flex', flexDirection:'column' }}>
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0,
+            background:'#fff', zIndex:9999,
+            display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
             {/* Header */}
             <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
@@ -1581,7 +1580,6 @@ RETORNE EXATAMENTE neste formato markdown:
                 )}
               </div>
             </div>
-          </div>
         </div>
         )
       })()}
