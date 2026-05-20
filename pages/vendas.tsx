@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import PrintShareModal from '../components/PrintShareModal'
@@ -52,8 +52,26 @@ export default function VendasPage() {
   const [showModal, setShowModal] = useState(false)
   const [showPrint, setShowPrint] = useState(false)
   const [generatingCopy, setGeneratingCopy] = useState(false)
+  const [leads, setLeads] = useState(LEADS)
+  const [leadsIsDemo, setLeadsIsDemo] = useState(false)
 
-  const totalVGV = LEADS.reduce((a,l) => a + parseFloat(l.valor.replace('R$ ','').replace(',','.').replace('M','')), 0)
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('atlas_leads') || '[]')
+      if (stored.length > 0) {
+        setLeads(stored)
+        setLeadsIsDemo(false)
+      } else {
+        setLeads(LEADS)
+        setLeadsIsDemo(true)
+      }
+    } catch {
+      setLeads(LEADS)
+      setLeadsIsDemo(true)
+    }
+  }, [])
+
+  const totalVGV = leads.reduce((a,l) => a + parseFloat(l.valor.replace('R$ ','').replace(',','.').replace('M','')), 0)
 
   async function launchCampaign() {
     setShowModal(true)
@@ -80,7 +98,7 @@ export default function VendasPage() {
           max_tokens:900,
           system:`Você é o Sales_Engine_AI — especialista em copywriting imobiliário e captação de investidores para construção civil no Brasil. Gere textos persuasivos, diretos e profissionais para campanhas de investimento em ativos imobiliários.`,
           messages:[{ role:'user', content:`Gatilho da campanha: "${TRIGGER_LABELS[trigger]}"
-Pipeline atual: R$ ${totalVGV.toFixed(1)}M em ${LEADS.length} leads
+Pipeline atual: R$ ${totalVGV.toFixed(1)}M em ${leads.length} leads
 
 Gere EXATAMENTE neste formato (sem texto extra):
 ---VARIANTE_A---
@@ -171,7 +189,7 @@ Gere EXATAMENTE neste formato (sem texto extra):
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:22 }}>
             {[
               { val:`R$ ${totalVGV.toFixed(1)}M`, lbl:'VGV Pipeline', color:'#185FA5' },
-              { val:String(LEADS.length), lbl:'Leads ativos', color:'#534AB7' },
+              { val:String(leads.length), lbl:'Leads ativos', color:'#534AB7' },
               { val:'1', lbl:'Em due diligence', color:'#3B6D11' },
               { val:'87', lbl:'Score médio', color:'#BA7517' },
             ].map(k => (
@@ -187,7 +205,7 @@ Gere EXATAMENTE neste formato (sem texto extra):
             <div style={s.secTitle}>Funil de Captação</div>
             <div style={{ display:'flex', gap:0, overflowX:'auto' }}>
               {ETAPAS.map((etapa, i) => {
-                const count = LEADS.filter(l => l.etapa === etapa).length
+                const count = leads.filter(l => l.etapa === etapa).length
                 return (
                   <div key={etapa} style={{ flex:1, minWidth:110, textAlign:'center' as const,
                     padding:'12px 8px', borderRight: i < ETAPAS.length-1 ? '1px solid #e5e8f0' : 'none' }}>
@@ -203,8 +221,15 @@ Gere EXATAMENTE neste formato (sem texto extra):
           {/* Leads */}
           <div style={s.card}>
             <div style={s.secTitle}>Leads e Oportunidades</div>
+            {leadsIsDemo && (
+              <div style={{ background:'#EFF4FF', border:'1px solid #BFDBFE', borderRadius:8, padding:'8px 14px',
+                marginBottom:12, fontSize:11, color:'#1E40AF', display:'flex', gap:8, alignItems:'center' }}>
+                <span>ℹ️</span>
+                <span><strong>Pipeline de demonstração</strong> — Estes leads são dados de exemplo.</span>
+              </div>
+            )}
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {LEADS.map(l => (
+              {leads.map(l => (
                 <div key={l.id} style={{ border:'1px solid #e5e8f0', borderRadius:10,
                   padding:'12px 16px', display:'flex', alignItems:'center', gap:16 }}>
                   <div style={{ flexShrink:0 }}>
