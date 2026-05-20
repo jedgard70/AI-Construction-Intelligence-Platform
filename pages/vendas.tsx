@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import PrintShareModal from '../components/PrintShareModal'
 
 const LEADS = [
   { id:'L-001', nome:'Grupo Cavalcanti Incorporações', tipo:'Investidor', valor:'R$ 12,4M', etapa:'Proposta enviada', score:92, contato:'pedro@cavalcanti.com.br' },
@@ -49,6 +50,7 @@ export default function VendasPage() {
   const [currentStep, setCurrentStep] = useState(0)
   const [campaign, setCampaign] = useState<CampaignData | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [showPrint, setShowPrint] = useState(false)
   const [generatingCopy, setGeneratingCopy] = useState(false)
 
   const totalVGV = LEADS.reduce((a,l) => a + parseFloat(l.valor.replace('R$ ','').replace(',','.').replace('M','')), 0)
@@ -469,6 +471,12 @@ Gere EXATAMENTE neste formato (sem texto extra):
                       cursor:'pointer', fontFamily:'inherit' }}>
                       📲 WhatsApp
                     </button>
+                    <button onClick={() => setShowPrint(true)}
+                      style={{ padding:'9px 18px', border:'1px solid #185FA5', borderRadius:8,
+                        background:'#EFF4FF', color:'#185FA5', fontSize:13, fontWeight:600,
+                        cursor:'pointer', fontFamily:'inherit' }}>
+                      🖨️ Imprimir Relatório
+                    </button>
                     <button onClick={launchCampaign}
                       style={{ padding:'9px 20px', border:'none', borderRadius:8,
                         background:'#185FA5', color:'#fff', fontSize:13, fontWeight:700,
@@ -481,6 +489,38 @@ Gere EXATAMENTE neste formato (sem texto extra):
             )}
           </div>
         </div>
+      )}
+      {showPrint && campaign && (
+        <PrintShareModal
+          title={`Relatório de Campanha — ${campaign.campaign_id}`}
+          onClose={() => setShowPrint(false)}
+          buildHtml={() => `
+<div class="meta">
+  <span>🚀 ID: ${campaign.campaign_id}</span>
+  <span>🎯 Gatilho: ${TRIGGER_LABELS[trigger]}</span>
+  <span>📊 Score: ${campaign.score}/100</span>
+</div>
+<h2>Métricas da Campanha</h2>
+<table>
+  <tr><th>Indicador</th><th>Valor</th></tr>
+  ${campaign.metrics.map(m => `<tr><td>${m.label}</td><td><strong>${m.value}</strong></td></tr>`).join('')}
+</table>
+<h2>Copywriting — Variante A (Racional / ROI)</h2>
+<div class="text-area">${campaign.variantA}</div>
+<h2>Copywriting — Variante B (Emocional / Exclusividade)</h2>
+<div class="text-area">${campaign.variantB}</div>
+<h2>Segmentação da Audiência</h2>
+<table>
+  <tr><th>Segmento</th><th>Participação</th></tr>
+  ${campaign.audience.map(a => `<tr><td>${a.segment}</td><td><strong>${a.pct}%</strong></td></tr>`).join('')}
+</table>
+<h2>Plataformas de Distribuição</h2>
+<table>
+  <tr><th>Plataforma</th><th>Status</th><th>Alcance</th><th>Budget</th></tr>
+  ${campaign.platforms.map(p => `<tr><td>${p.icon} ${p.name}</td><td>${p.status}</td><td>${p.reach}</td><td>${p.budget}</td></tr>`).join('')}
+</table>`}
+          buildText={() => `RELATÓRIO DE CAMPANHA — ${campaign.campaign_id}\nGatilho: ${TRIGGER_LABELS[trigger]}\nScore: ${campaign.score}/100\n\n${campaign.metrics.map(m=>m.label+': '+m.value).join('\n')}\n\nVARIANTE A:\n${campaign.variantA}\n\nVARIANTE B:\n${campaign.variantB}`}
+        />
       )}
     </>
   )

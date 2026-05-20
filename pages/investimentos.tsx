@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
+import PrintShareModal from '../components/PrintShareModal'
 
 const PROJETOS = [
   { nome:'Edifício Horizonte — Torre A', vgv:48.2, roi:24.3, tir:19.8, noi:3.2, capRate:6.7, esg:82, status:'em_andamento', fase:'Fundação — 34%' },
@@ -31,6 +32,7 @@ export default function InvestimentosPage() {
   const [selected, setSelected] = useState(0)
   const [generating, setGenerating] = useState(false)
   const [pitch, setPitch] = useState('')
+  const [showPrint, setShowPrint] = useState(false)
 
   const proj = PROJETOS[selected]
 
@@ -173,11 +175,19 @@ Status: ${proj.fase}` }]
                     {generating ? '⏳ Gerando...' : '🎯 Gerar Pitch para Investidores'}
                   </button>
                   {pitch && (
-                    <div style={{ marginTop:16, padding:'16px', background:'#f8f9fc',
-                      borderRadius:10, border:'1px solid #e5e8f0', fontSize:12,
-                      lineHeight:1.75, color:'#1a1f36', whiteSpace:'pre-wrap' }}>
-                      {pitch}
-                    </div>
+                    <>
+                      <div style={{ marginTop:16, padding:'16px', background:'#f8f9fc',
+                        borderRadius:10, border:'1px solid #e5e8f0', fontSize:12,
+                        lineHeight:1.75, color:'#1a1f36', whiteSpace:'pre-wrap' }}>
+                        {pitch}
+                      </div>
+                      <button onClick={() => setShowPrint(true)}
+                        style={{ marginTop:10, padding:'9px 18px', background:'#185FA5', color:'#fff',
+                          border:'none', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                          fontFamily:'inherit', display:'flex', alignItems:'center', gap:6 }}>
+                        🖨️ Imprimir / Exportar Pitch
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -185,6 +195,35 @@ Status: ${proj.fase}` }]
           </div>
         </div>
       </div>
+      {showPrint && (
+        <PrintShareModal
+          title={`Valuation & Pitch — ${proj.nome}`}
+          onClose={() => setShowPrint(false)}
+          buildHtml={() => `
+<div class="meta">
+  <span>🏗️ ${proj.nome}</span>
+  <span>📊 VGV: ${fmt(proj.vgv)}</span>
+  <span>📅 ${proj.fase}</span>
+</div>
+<h2>Indicadores Financeiros</h2>
+<div class="grid3">
+  <div class="field"><label>VGV</label><p style="font-size:18px;font-weight:700;color:#185FA5">${fmt(proj.vgv)}</p></div>
+  <div class="field"><label>ROI</label><p style="font-size:18px;font-weight:700;color:#3B6D11">${proj.roi}%</p></div>
+  <div class="field"><label>TIR</label><p style="font-size:18px;font-weight:700;color:#534AB7">${proj.tir}%</p></div>
+  <div class="field"><label>NOI Anual</label><p style="font-size:18px;font-weight:700;color:#185FA5">${fmt(proj.noi)}</p></div>
+  <div class="field"><label>Cap Rate</label><p style="font-size:18px;font-weight:700;color:#BA7517">${proj.capRate}%</p></div>
+  <div class="field"><label>ESG Score</label><p style="font-size:18px;font-weight:700;color:${esgColor(proj.esg)}">${proj.esg}/100 — ${esgLabel(proj.esg)}</p></div>
+</div>
+<h2>Pitch para Investidores</h2>
+<div class="text-area">${pitch}</div>`}
+          buildText={() => [
+            `VALUATION & PITCH — ${proj.nome}`,
+            `VGV: ${fmt(proj.vgv)} | ROI: ${proj.roi}% | TIR: ${proj.tir}%`,
+            `NOI: ${fmt(proj.noi)} | Cap Rate: ${proj.capRate}% | ESG: ${proj.esg}/100`,
+            ``, pitch,
+          ].join('\n')}
+        />
+      )}
     </>
   )
 }
