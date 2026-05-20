@@ -5,6 +5,7 @@ import NewClientModal from './NewClientModal'
 import { printDocument } from './PrintShareModal'
 import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 import type { Profile } from '../pages/dashboard'
@@ -934,48 +935,16 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
           nwc:   { icon:'🔗', cat:'Navisworks',   color:'#7C3AED' },
           nwd:   { icon:'🔗', cat:'Navisworks',   color:'#7C3AED' },
         }
+        const THREE_D_EXTS = ['ifc','rvt','dwg','dxf','dgn','dwf','dwfx','fbx','stl','obj','step','stp','sat','gbxml','nwc','nwd']
         const activePf = plantFiles[activePlanta] ?? null
         const isPDF = activePf?.ext === 'pdf'
         const isImage = activePf ? IMAGE_EXTS.includes(activePf.ext) : false
+        const is3D = activePf ? THREE_D_EXTS.includes(activePf.ext) : false
         const canAnalyze = activePf ? (isImage || isPDF) : false
 
-        async function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
-          const files = Array.from(e.target.files || [])
-          if (!files.length) return
-          setPlantUploading(true)
-          const newEntries = files.map(f => {
-            const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
-            return { name: f.name, type: f.type || 'application/octet-stream', url: URL.createObjectURL(f), size: f.size, ext }
-          })
-          const newIdx = plantFiles.length
-          setPlantFiles(prev => {
-            const merged = [...prev, ...newEntries]
-            setActivePlanta(newIdx)
-            return merged
-          })
-          setPlantUploading(false)
-          e.target.value = ''
-          // Auto-load base64 for the first new file if image or PDF
-          const firstNew = files[0]
-          const firstExt = firstNew.name.split('.').pop()?.toLowerCase() ?? ''
-          if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
-            const b64 = await new Promise<string>((res, rej) => {
-              const r = new FileReader()
-              r.onload = () => res((r.result as string).split(',')[1])
-              r.onerror = rej; r.readAsDataURL(firstNew)
-            })
-            setActivePfB64(b64)
-            setActivePfMediaType(firstNew.type || (firstExt === 'pdf' ? 'application/pdf' : 'image/jpeg'))
-            setUnifiedAnalysis(''); setViewerTab('viewer')
-          } else {
-            setActivePfB64(null)
-          }
-        }
-
-        async function runUnifiedAnalysis() {
-          if (!activePfB64 || !activePf) return
+        async function autoRunAnalysis(b64: string, mediaType: string, pf: {name:string,ext:string}) {
           setUnifiedLoading(true); setUnifiedAnalysis(''); setViewerTab('analysis')
-          const isPDFFile = activePf.ext === 'pdf'
+          const isPDFFile = pf.ext === 'pdf'
           try {
             const res = await fetch('/api/chat', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -983,8 +952,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                 model: 'claude-sonnet-4-6', max_tokens: 3000,
                 system: `Você é o Atlas BIM Intelligence — sistema integrado de análise de plantas e projetos de construção civil. Você combina análise BIM, quantitativos, memorial descritivo e conformidade normativa em uma única análise completa. Responda sempre em português do Brasil.`,
                 messages: [{ role: 'user', content: [
-                  { type: isPDFFile ? 'document' : 'image', source: { type: 'base64', media_type: activePfMediaType, data: activePfB64 } } as any,
-                  { type: 'text', text: `Analise esta planta/documento "${activePf.name}" e gere um relatório técnico completo integrado.
+                  { type: isPDFFile ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: b64 } } as any,
+                  { type: 'text', text: `Analise esta planta/documento "${pf.name}" e gere um relatório técnico completo integrado.
 
 ### 1. IDENTIFICAÇÃO DO PROJETO
 Tipo de edificação, pavimento, escala, descrição geral, ambientes identificados com áreas estimadas.
@@ -1017,13 +986,62 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
             setUnifiedAnalysis(text)
             try {
               localStorage.setItem('atlas_plant_analysis', JSON.stringify({
-                fileName: activePf.name,
+                fileName: pf.name,
                 analysis: text,
                 date: new Date().toISOString()
               }))
             } catch {}
-          } catch { setUnifiedAnalysis('Erro ao conectar. Verifique ANTHROPIC_API_KEY.') }
+          } catch (err: any) {
+            setUnifiedAnalysis(`Erro: ${err.message || 'Falha ao conectar. Verifique ANTHROPIC_API_KEY no Vercel.'}`)
+          }
           setUnifiedLoading(false)
+        }
+
+        async function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+          const files = Array.from(e.target.files || [])
+          if (!files.length) return
+          setPlantUploading(true)
+          const newEntries = files.map(f => {
+            const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
+            return { name: f.name, type: f.type || 'application/octet-stream', url: URL.createObjectURL(f), size: f.size, ext }
+          })
+          const newIdx = plantFiles.length
+          setPlantFiles(prev => [...prev, ...newEntries])
+          setActivePlanta(newIdx)
+          setPlantUploading(false)
+          e.target.value = ''
+
+          const firstNew = files[0]
+          const firstExt = firstNew.name.split('.').pop()?.toLowerCase() ?? ''
+          const firstEntry = newEntries[0]
+
+          if (THREE_D_EXTS.includes(firstExt)) {
+            // Open 3D viewer in new window
+            const url = URL.createObjectURL(firstNew)
+            try { localStorage.setItem('bim3d_file_url', url); localStorage.setItem('bim3d_file_name', firstNew.name); localStorage.setItem('bim3d_file_ext', firstExt) } catch {}
+            window.open(`/bim-3d?name=${encodeURIComponent(firstNew.name)}&ext=${firstExt}`, '_blank', 'width=1400,height=900')
+          } else if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
+            // Read base64 and auto-trigger AI analysis
+            const mediaType = firstNew.type || (firstExt === 'pdf' ? 'application/pdf' : 'image/jpeg')
+            const b64 = await new Promise<string>((res, rej) => {
+              const r = new FileReader()
+              r.onload = () => res((r.result as string).split(',')[1])
+              r.onerror = rej
+              r.readAsDataURL(firstNew)
+            })
+            setActivePfB64(b64)
+            setActivePfMediaType(mediaType)
+            setUnifiedAnalysis('')
+            // Auto-trigger analysis immediately, passing data directly (no state lag)
+            await autoRunAnalysis(b64, mediaType, firstEntry)
+          } else {
+            setActivePfB64(null)
+          }
+        }
+
+        function runUnifiedAnalysis() {
+          if (!activePfB64 || !activePf) return
+          autoRunAnalysis(activePfB64, activePfMediaType, activePf)
         }
 
         function removeFile(idx: number) {
@@ -1041,9 +1059,9 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
           return (b/1048576).toFixed(1) + ' MB'
         }
 
-        return (
+        return createPortal(
         <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0,
-            background:'#fff', zIndex:9999,
+            background:'#fff', zIndex:2147483647,
             display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
             {/* Header */}
@@ -1168,10 +1186,22 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   </button>
                   {canAnalyze && (
                     <button onClick={runUnifiedAnalysis}
+                      disabled={unifiedLoading}
                       style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
                         background: viewerTab==='analysis' ? '#3B6D11' : '#EAF3DE',
-                        color: viewerTab==='analysis' ? '#fff' : '#3B6D11', border:'1px solid #97C459', fontFamily:'inherit' }}>
-                      {unifiedLoading ? '⏳ Analisando...' : '🤖 Analisar Tudo (BIM + Memorial + Quantitativo)'}
+                        color: viewerTab==='analysis' ? '#fff' : '#3B6D11', border:'1px solid #97C459', fontFamily:'inherit',
+                        opacity: unifiedLoading ? 0.7 : 1 }}>
+                      {unifiedLoading ? '⏳ Analisando com IA...' : '🤖 Analisar Tudo (BIM + Memorial + Quantitativo)'}
+                    </button>
+                  )}
+                  {is3D && activePf && (
+                    <button onClick={() => {
+                      try { localStorage.setItem('bim3d_file_url', activePf.url); localStorage.setItem('bim3d_file_name', activePf.name); localStorage.setItem('bim3d_file_ext', activePf.ext) } catch {}
+                      window.open(`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`, '_blank', 'width=1400,height=900')
+                    }}
+                      style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
+                        background:'#534AB7', color:'#fff', border:'none', fontFamily:'inherit' }}>
+                      🎲 Abrir Viewer 3D
                     </button>
                   )}
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
@@ -1580,8 +1610,8 @@ RETORNE EXATAMENTE neste formato markdown:
                 )}
               </div>
             </div>
-        </div>
-        )
+        </div>,
+        document.body)
       })()}
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(proj) => {
