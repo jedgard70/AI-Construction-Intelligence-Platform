@@ -32,6 +32,18 @@ interface ActivityEntry {
   to?: string
 }
 
+interface ContractMeta {
+  id: string
+  projectId: string | null
+  idioma: string
+  type: string
+  party: string
+  state: string
+  value: string
+  date: string
+  status: string
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────
 const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL',
@@ -131,6 +143,7 @@ export default function ProjetoPage() {
   const [aiText,   setAiText]     = useState('')
   const [aiLoading,setAiLoading]  = useState(false)
   const [aiCtx,    setAiCtx]      = useState('')
+  const [contracts, setContracts] = useState<ContractMeta[]>([])
 
   // Edit form state
   const [form, setForm] = useState<Partial<Project>>({})
@@ -165,6 +178,12 @@ export default function ProjetoPage() {
     try {
       const key = `atlas_activity_${id}`
       setActivity(JSON.parse(localStorage.getItem(key) || '[]'))
+    } catch {}
+
+    // Load contracts linked to this project
+    try {
+      const allContracts: ContractMeta[] = JSON.parse(localStorage.getItem('atlas_contracts') || '[]')
+      setContracts(allContracts.filter(c => c.projectId === id))
     } catch {}
   }, [id])
 
@@ -480,14 +499,14 @@ export default function ProjetoPage() {
                 <div style={s.cardTit}>⚡ Serviços do Projeto</div>
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
                   {[
-                    { icon:'🤝', label:'Coordenação', desc:'RFIs · Submittals', href:'/bim-ops?tab=coordination' },
-                    { icon:'⚡', label:'Compatibilização', desc:'Clash Detection', href:'/bim-ops?tab=clash' },
-                    { icon:'📐', label:'Quantitativos', desc:'CSI Takeoff', href:'/bim-ops?tab=quantities' },
-                    { icon:'📊', label:'Viabilidade', desc:'Pro Forma · IRR', href:'/bim-ops?tab=feasibility' },
-                    { icon:'🏠', label:'Construção', desc:'Sistemas · Specs', href:'/bim-ops?tab=residential' },
-                    { icon:'📁', label:'Doc. Executiva', desc:'CSI · Drawings', href:'/bim-ops?tab=docs' },
-                    { icon:'⚖️', label:'Contrato', desc:'EN-US · PT-BR', href:'/juridico' },
-                    { icon:'📋', label:'Permits', desc:'US · Checklist', href:'/bim-ops?tab=permits' },
+                    { icon:'🤝', label:'Coordenação', desc:'RFIs · Submittals', href:`/bim-ops?tab=coordination&projectId=${id}` },
+                    { icon:'⚡', label:'Compatibilização', desc:'Clash Detection', href:`/bim-ops?tab=clash&projectId=${id}` },
+                    { icon:'📐', label:'Quantitativos', desc:'CSI Takeoff', href:`/bim-ops?tab=quantities&projectId=${id}` },
+                    { icon:'📊', label:'Viabilidade', desc:'Pro Forma · IRR', href:`/bim-ops?tab=feasibility&projectId=${id}` },
+                    { icon:'🏠', label:'Construção', desc:'Sistemas · Specs', href:`/bim-ops?tab=residential&projectId=${id}` },
+                    { icon:'📁', label:'Doc. Executiva', desc:'CSI · Drawings', href:`/bim-ops?tab=docs&projectId=${id}` },
+                    { icon:'⚖️', label:'Contrato', desc:'EN-US · PT-BR', href:`/juridico?projectId=${id}` },
+                    { icon:'📋', label:'Permits', desc:'US · Checklist', href:`/bim-ops?tab=permits&projectId=${id}` },
                   ].map(srv => (
                     <a key={srv.label} href={srv.href}
                       style={{ display:'block', padding:'12px 14px', borderRadius:10, textDecoration:'none',
@@ -506,6 +525,50 @@ export default function ProjetoPage() {
                     </a>
                   ))}
                 </div>
+              </div>
+
+              {/* ── Contratos ── */}
+              <div style={s.card}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                  <div style={s.cardTit}>⚖️ Contratos do Projeto</div>
+                  <a href={`/juridico?projectId=${id}`}
+                    style={{ fontSize:12, fontWeight:600, color:'#185FA5', textDecoration:'none',
+                      padding:'6px 14px', border:'1.5px solid #185FA5', borderRadius:8 }}>
+                    + Novo Contrato
+                  </a>
+                </div>
+                {contracts.length === 0 ? (
+                  <div style={{ fontSize:13, color:'#8b93a7', padding:'12px 0' }}>
+                    Nenhum contrato gerado ainda.{' '}
+                    <a href={`/juridico?projectId=${id}`} style={{ color:'#185FA5' }}>Gerar contrato →</a>
+                  </div>
+                ) : (
+                  <div>
+                    {contracts.map(c => (
+                      <div key={c.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
+                        padding:'10px 0', borderBottom:'1px solid #f0f2f5' }}>
+                        <div>
+                          <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
+                            {c.type.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            <span style={{ marginLeft:8, fontSize:10, padding:'2px 7px', borderRadius:10,
+                              background: c.idioma === 'en-US' ? '#EFF4FF' : '#EAF3DE',
+                              color: c.idioma === 'en-US' ? '#185FA5' : '#3B6D11', fontWeight:700 }}>
+                              {c.idioma}
+                            </span>
+                          </div>
+                          <div style={{ fontSize:11, color:'#8b93a7', marginTop:2 }}>
+                            {c.party || '—'} · {c.state} · {new Date(c.date).toLocaleDateString('pt-BR')}
+                            {c.value ? ` · ${c.value}` : ''}
+                          </div>
+                        </div>
+                        <span style={{ fontSize:10, padding:'3px 10px', borderRadius:20,
+                          background:'#FFF3E0', color:'#BA7517', fontWeight:700 }}>
+                          {c.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* ── AI Analysis ── */}
@@ -548,7 +611,48 @@ Formato: executivo, linguagem clara para cliente não técnico. Inclua: sumário
                   </div>
                 )}
                 {aiText && !aiLoading && (
-                  <div style={s.pre}>{aiText}</div>
+                  <>
+                    <div style={s.pre}>{aiText}</div>
+                    <div style={{ display:'flex', gap:8, marginTop:10 }}>
+                      <button onClick={() => {
+                        const w = window.open('', '_blank', 'width=900,height=700')
+                        if (!w) return
+                        const today = new Date().toLocaleDateString('pt-BR')
+                        const ctxLabels: Record<string,string> = {
+                          exec: 'Diagnóstico Executivo', risk: 'Análise de Risco', client: 'Relatório para Cliente'
+                        }
+                        w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>${ctxLabels[aiCtx]||'Análise IA'} — ${project.name}</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a2b3c;padding:32px;max-width:800px;margin:0 auto}
+  @media print{body{padding:16px}@page{margin:1.5cm}}
+  .header{border-bottom:2px solid #0F4C81;padding-bottom:16px;margin-bottom:24px}
+  .title{font-size:18px;font-weight:700;color:#0F4C81}
+  .meta{font-size:11px;color:#5C7A99;margin-top:4px}
+  .content{white-space:pre-wrap;line-height:1.8;font-size:12px}
+  .footer{margin-top:32px;padding-top:12px;border-top:1px solid #d0dcea;font-size:10px;color:#8b93a7;text-align:center}
+</style></head><body>
+<div class="header">
+  <div class="title">${ctxLabels[aiCtx]||'Análise IA'}</div>
+  <div class="meta">${project.name} (${project.code}) · ${project.city}, ${project.state} · Emitido em ${today}</div>
+  <div class="meta">Avanço: ${project.completion_pct}% · CPI: ${project.cpi??'—'} · SPI: ${project.spi??'—'} · ESG: ${project.esg_score??'—'}/100</div>
+</div>
+<div class="content">${aiText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+<div class="footer">Atlas Construction Intelligence Platform · Gerado por IA · ${today}</div>
+<script>window.onload=()=>window.print()<\/script>
+</body></html>`)
+                        w.document.close()
+                      }} style={{ ...s.btnAI, background:'#534AB7' }}>
+                        🖨️ Exportar PDF
+                      </button>
+                      <button onClick={() => {
+                        navigator.clipboard?.writeText(aiText).catch(()=>{})
+                      }} style={{ ...s.btnAI, background:'transparent', border:'1px solid #e2e8f0',
+                        color:'#534AB7' }}>
+                        📋 Copiar
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             </div>

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
 
 interface Parte {
@@ -153,6 +153,30 @@ export default function JuridicoClient() {
   const [memorial, setMemorial]           = useState('')
   const [gerandoMemorial, setGerandoMem]  = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const contractSavedRef = useRef(false)
+
+  // Save contract metadata to localStorage when step 7 is reached
+  useEffect(() => {
+    if (etapa !== 7 || contractSavedRef.current) return
+    contractSavedRef.current = true
+    try {
+      const projectId = (router.query.projectId as string) || null
+      const meta = {
+        id: crypto.randomUUID(),
+        projectId,
+        idioma,
+        type: idioma === 'en-US' ? usTipoContrato : tipoContrato,
+        party: idioma === 'en-US' ? (usParty.name || '') : parte.nome,
+        state: idioma === 'en-US' ? (usProject.state || 'TX') : 'BR',
+        value: idioma === 'en-US' ? usFinancial.contractValue : financeiro.valor_total,
+        date: new Date().toISOString(),
+        status: 'draft',
+      }
+      const existing = JSON.parse(localStorage.getItem('atlas_contracts') || '[]')
+      localStorage.setItem('atlas_contracts', JSON.stringify([meta, ...existing].slice(0, 200)))
+    } catch {}
+  }, [etapa, idioma, usTipoContrato, tipoContrato, usParty.name, parte.nome,
+      usProject.state, usFinancial.contractValue, financeiro.valor_total, router.query.projectId])
 
   const [parte, setParte] = useState<Parte>({
     nome: '', nacionalidade: 'brasileiro(a)', estado_civil: 'casado(a)',
