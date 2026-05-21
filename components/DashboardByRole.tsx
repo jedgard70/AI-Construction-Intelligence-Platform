@@ -294,12 +294,26 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [geminiMarketing, setGeminiMarketing] = useState<string>('')
   const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
   const [geminiMarketingLoading, setGeminiMarketingLoading] = useState(false)
+  const [geminiPaletteError, setGeminiPaletteError] = useState<string|null>(null)
+  const [geminiMarketingError, setGeminiMarketingError] = useState<string|null>(null)
+  const [humanGallery, setHumanGallery] = useState<Array<{id:string,type:'planta'|'render',b64:string,mime:string,label:string,createdAt:number}>>([])
+  const [galleryLoaded, setGalleryLoaded] = useState(false)
   const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
   const [humanAssistantInput, setHumanAssistantInput] = useState('')
   const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
   const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
+
+  // Load gallery from localStorage once
+  React.useEffect(() => {
+    if (galleryLoaded) return
+    try {
+      const saved = localStorage.getItem('acip_humanizer_gallery')
+      if (saved) setHumanGallery(JSON.parse(saved))
+    } catch {}
+    setGalleryLoaded(true)
+  }, [galleryLoaded])
   const [activePfMediaType, setActivePfMediaType] = useState('image/jpeg')
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
@@ -1450,7 +1464,23 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           setPollinationsUrl(null)
                           setGeminiPalette([])
                           setGeminiMarketing('')
+                          setGeminiPaletteError(null)
+                          setGeminiMarketingError(null)
                           setHumanTab('analise')
+                          // Save uploaded floor plan to gallery
+                          if (humanB64 && humanImgType !== 'application/pdf') {
+                            try {
+                              const saved = localStorage.getItem('acip_humanizer_gallery')
+                              const gallery: any[] = saved ? JSON.parse(saved) : []
+                              const already = gallery.find((g: any) => g.type === 'planta' && g.b64 === humanB64)
+                              if (!already) {
+                                const entry = { id: 'p' + Date.now(), type: 'planta', b64: humanB64, mime: humanImgType, label: humanTipo || 'Planta', createdAt: Date.now() }
+                                const next = [entry, ...gallery].slice(0, 30)
+                                localStorage.setItem('acip_humanizer_gallery', JSON.stringify(next))
+                                setHumanGallery(next)
+                              }
+                            } catch {}
+                          }
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
                           const imgLabel = humanAnaliseTipo === 'planta' ? (humanLang==='pt-BR'?'planta baixa':'floor plan')
                             : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'facade')
@@ -1476,14 +1506,11 @@ RETURN EXACTLY in this markdown format:
 ### PEOPLE & SPACES
 [Distribute ${humanNP} people across spaces: Space | People | Activity]
 
-### DALL-E PROMPT
-[Complete ultra-detailed English prompt for DALL-E/GPT-4o. Include setting: ${humanLote}, vegetation: ${humanVeg}, ${humanNP} figures at 1.70m with specific activities, style ${humanEstilo}, scale 1:${humanEscala}]
+### GEMINI RENDER PROMPT
+[Write an ultra-detailed English prompt for Gemini 2.0 Flash Exp to generate an image-to-image humanization of this ${imgLabel}. Include: setting ${humanLote}, vegetation ${humanVeg}, ${humanNP} people at 1.70m with specific activities, style ${humanEstilo}, scale 1:${humanEscala}, flooring materials per room, high-end furniture, swimming pool if space allows, natural bird's-eye sunlight. Start with: "You are an expert architectural visualizer. Transform this floor plan into..."]
 
-### MIDJOURNEY PROMPT
-[Compact version for /imagine with --ar 4:3 --quality 2 --style raw --v 6]
-
-### REVIT STEPS
-[5 steps with RPC families, 1700mm configuration and rendering for this project]`
+### IMPROVEMENT SUGGESTIONS
+[List 5 concrete improvements: layout, natural light, space optimization, materials, circulation]`
                             : `Você é especialista em visualização arquitetônica. Analise esta ${imgLabel} de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
 
 PARÂMETROS:
@@ -1503,14 +1530,11 @@ RETORNE EXATAMENTE neste formato markdown:
 ### AMBIENTES E PESSOAS
 [Distribua as ${humanNP} pessoas pelos ambientes: Ambiente | Pessoas | Atividade]
 
-### PROMPT DALL-E
-[Prompt completo em inglês ultra-detalhado para DALL-E/GPT-4o. Incluir lote: ${humanLote}, vegetação: ${humanVeg}, ${humanNP} figuras de 1,70m com atividades específicas, estilo ${humanEstilo}, escala 1:${humanEscala}]
+### PROMPT GEMINI RENDER
+[Escreva um prompt em inglês ultra-detalhado para o Gemini 2.0 Flash Exp gerar uma humanização image-to-image desta ${imgLabel}. Inclua: lote ${humanLote}, vegetação ${humanVeg}, ${humanNP} pessoas de 1,70 m com atividades específicas, estilo ${humanEstilo}, escala 1:${humanEscala}, materiais de piso por ambiente, móveis de alto padrão, piscina se houver espaço, iluminação natural bird's-eye. Comece com: "You are an expert architectural visualizer. Transform this floor plan into..."]
 
-### PROMPT MIDJOURNEY
-[Versão compacta para /imagine com --ar 4:3 --quality 2 --style raw --v 6]
-
-### PASSOS REVIT
-[5 passos com famílias RPC, configuração 1700mm e renderização para esta ${imgLabel}]`
+### MELHORIAS SUGERIDAS
+[Liste 5 melhorias concretas para o projeto: layout, iluminação natural, aproveitamento de espaço, materiais, circulação]`
 
                           let analysisText = ''
                           let dallePrompt = ''
@@ -1540,7 +1564,7 @@ RETORNE EXATAMENTE neste formato markdown:
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
                             setHumanResult(secs)
-                            const dalleKey = Object.keys(secs).find(k => k.includes('DALL'))
+                            const dalleKey = Object.keys(secs).find(k => k.includes('GEMINI') || k.includes('DALL') || k.includes('PROMPT'))
                             dallePrompt = dalleKey ? secs[dalleKey] : ''
                           } catch (err: any) {
                             setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
@@ -1593,8 +1617,20 @@ Result must look like a premium bird's-eye architectural render for luxury real 
                               if (data?.error?.message) { setGeminiRenderError(data.error.message); return }
                               const parts = data?.candidates?.[0]?.content?.parts ?? []
                               const imgPart = parts.find((p: any) => p.inlineData?.data)
-                              if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
-                              else setGeminiRenderError('Gemini não retornou imagem.')
+                              if (imgPart) {
+                                const b64 = imgPart.inlineData.data
+                                setGeminiRenderB64(b64)
+                                setGeminiRenderError(null)
+                                // Save render to gallery
+                                try {
+                                  const saved = localStorage.getItem('acip_humanizer_gallery')
+                                  const gallery: any[] = saved ? JSON.parse(saved) : []
+                                  const entry = { id: Date.now().toString(), type: 'render', b64, mime: 'image/jpeg', label: humanTipo || 'Render', createdAt: Date.now() }
+                                  const next = [entry, ...gallery].slice(0, 30)
+                                  localStorage.setItem('acip_humanizer_gallery', JSON.stringify(next))
+                                  setHumanGallery(next)
+                                } catch {}
+                              } else setGeminiRenderError('Gemini não retornou imagem.')
                             }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
                             .finally(() => setGeminiRenderLoading(false))
                           } else if (dallePrompt) {
@@ -1608,6 +1644,7 @@ Result must look like a premium bird's-eye architectural render for luxury real 
                           // Gemini palette
                           if (analysisText) {
                             setGeminiPaletteLoading(true)
+                            setGeminiPaletteError(null)
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1615,21 +1652,25 @@ Result must look like a premium bird's-eye architectural render for luxury real 
                                 model: 'gemini-2.0-flash',
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Based on this architectural analysis of a "${tipoSnap}" building, suggest a professional color palette with exactly 6 colors.
-Analysis: ${analysisText.slice(0, 600)}
-Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
+Analysis: ${analysisText.slice(0, 1200)}
+Return ONLY a valid JSON array (no markdown, no extra text): [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
                               })
-                            }).then(r => r.json()).then(data => {
+                            }).then(async r => {
+                              const data = await r.json()
+                              if (data?.error?.message) { setGeminiPaletteError(data.error.message); return }
                               const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                              const match = txt.match(/\[[\s\S]*\]/)
+                              const match = txt.match(/\[[\s\S]*?\]/)
                               if (match) {
-                                try { setGeminiPalette(JSON.parse(match[0])) } catch {}
-                              }
-                            }).catch(() => {}).finally(() => setGeminiPaletteLoading(false))
+                                try { setGeminiPalette(JSON.parse(match[0])); setGeminiPaletteError(null) } catch(e: any) { setGeminiPaletteError('Erro ao parsear paleta: ' + match[0].slice(0, 60)) }
+                              } else { setGeminiPaletteError('Gemini não retornou paleta válida.') }
+                            }).catch((e: any) => setGeminiPaletteError(e?.message || 'Erro de rede'))
+                            .finally(() => setGeminiPaletteLoading(false))
                           }
 
                           // Gemini marketing copy
                           if (analysisText) {
                             setGeminiMarketingLoading(true)
+                            setGeminiMarketingError(null)
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1638,7 +1679,7 @@ Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage"
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Você é um copywriter especializado em marketing imobiliário de alto padrão. Com base nesta análise arquitetônica de um imóvel "${tipoSnap}", crie textos de marketing profissionais em português:
 
-Análise: ${analysisText.slice(0, 600)}
+Análise: ${analysisText.slice(0, 1200)}
 
 Crie:
 1. **Headline** (até 10 palavras, impactante)
@@ -1647,10 +1688,14 @@ Crie:
 4. **Diferenciais** (5 bullet points com emojis)
 5. **Call to Action** (1 frase poderosa)` }]}]
                               })
-                            }).then(r => r.json()).then(data => {
+                            }).then(async r => {
+                              const data = await r.json()
+                              if (data?.error?.message) { setGeminiMarketingError(data.error.message); return }
                               const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                              if (txt) setGeminiMarketing(txt)
-                            }).catch(() => {}).finally(() => setGeminiMarketingLoading(false))
+                              if (txt) { setGeminiMarketing(txt); setGeminiMarketingError(null) }
+                              else setGeminiMarketingError('Gemini não retornou texto de marketing.')
+                            }).catch((e: any) => setGeminiMarketingError(e?.message || 'Erro de rede'))
+                            .finally(() => setGeminiMarketingLoading(false))
                           }
                         }}
                         style={{ padding:'12px', background: humanB64 ? '#534AB7' : '#ccc',
