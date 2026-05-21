@@ -1097,7 +1097,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', gridTemplateRows:'1fr', flex:1, overflow:'hidden', minHeight:0 }}>
 
               {/* Sidebar — lista de arquivos */}
               <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
@@ -1184,7 +1184,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
               </div>
 
               {/* Main viewer area */}
-              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
                 {/* Toolbar */}
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
                   display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
@@ -1267,7 +1267,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                 {/* Humanize Panel */}
                 {viewerTab === 'humanize' && (
                   <div style={{ flex:1, overflow:'hidden', background:'#f8f9fc', display:'grid',
-                    gridTemplateColumns:'340px 1fr', gap:0, minHeight:0 }}>
+                    gridTemplateColumns:'340px 1fr', gridTemplateRows:'1fr', gap:0, minHeight:0 }}>
                     {/* Left controls */}
                     <div style={{ borderRight:'1px solid #e5e8f0', display:'flex',
                       flexDirection:'column' as const, overflowY:'auto' as const, background:'#fff', minHeight:0 }}>
@@ -1562,7 +1562,21 @@ RETORNE EXATAMENTE neste formato markdown:
                             setGeminiRenderB64(null)
                             setGeminiRenderError(null)
                             setGeminiRenderLoading(true)
-                            const renderPrompt = `You are an architectural visualization expert. Humanize this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a stunning photorealistic render. CRITICAL RULES: (1) Keep EXACTLY the same perspective, scale, walls, and room layout as the original drawing — do NOT invent new geometry. (2) Add realistic flooring materials (hardwood, marble, tiles) per room type. (3) Furnish every room with high-end modern furniture at correct scale (1:${humanEscala}). (4) Add ${humanNP} people naturally doing activities. (5) Add indoor plants, artwork, decorative objects. (6) EXTERIOR: ${loteSnap} lot type, ${vegSnap} vegetation, paved sidewalk, parked cars. (7) Lighting: golden-hour natural sunlight from above. Style: ${estiloSnap}, premium luxury real estate marketing render. No text overlays.`
+                            const renderPrompt = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'architectural cross-section'} into a photorealistic bird's-eye view humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective. Do NOT invent new walls or rooms.
+
+Transform the plan by adding:
+- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets — appropriate per room type
+- High-end modern furniture placed exactly inside each room at correct scale (1:${humanEscala})
+- ${estiloSnap} interior style
+- ${humanNP} people doing realistic activities in different rooms (1.70 m height reference)
+- Indoor plants, decorative objects, lighting fixtures, artwork on walls
+- Swimming pool with blue water texture if outdoor space allows
+- EXTERIOR (outside building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, parked cars, shadow projection from vegetation
+- Natural overhead sunlight with soft shadows
+
+Result must look like a premium bird's-eye architectural render for luxury real estate marketing. No text overlays.`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1836,7 +1850,7 @@ Crie:
                                   </div>
                                   {geminiRenderB64 ? (
                                     <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render Gemini"
-                                      style={{ width:'100%', display:'block', maxHeight:480, objectFit:'contain', background:'#f0f4f8' }} />
+                                      style={{ width:'100%', display:'block', maxHeight:480, objectFit:'cover' }} />
                                   ) : (
                                     <img src={pollinationsUrl!} alt="Render"
                                       style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }}
@@ -1858,8 +1872,8 @@ Crie:
                                     )}
                                     {humanB64 && humanImgType !== 'application/pdf' && (
                                     <button onClick={() => {
-                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true)
-                                      const p = `You are an architectural visualization expert. Humanize this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a stunning photorealistic render. CRITICAL RULES: (1) Keep EXACTLY the same perspective, scale, walls, and room layout — do NOT invent new geometry. (2) Realistic flooring materials (hardwood, marble, tiles) per room. (3) High-end modern furniture at correct scale. (4) Add ${humanNP} people doing activities. (5) Indoor plants, artwork, decor. (6) EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk. (7) Golden-hour sunlight. Style: ${humanEstilo}, premium luxury. Seed:${Date.now()}`
+                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                      const p = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'architectural cross-section'} into a photorealistic bird's-eye view humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture at scale 1:${humanEscala}, ${humanNP} people doing activities, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}, premium luxury real estate marketing render. No text overlays. Variation seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
                                         body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                       }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)} else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
@@ -1905,8 +1919,8 @@ Crie:
                                 )}
                               </div>
                             ) : (
-                              /* Empty state — shown only before analysis runs */
-                              !geminiRenderLoading && (
+                              /* Empty state — shown only before analysis runs, not when there is an error */
+                              !geminiRenderLoading && !geminiRenderError && (
                                 <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
                                   <div style={{ fontSize:48 }}>🎨</div>
                                   <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
