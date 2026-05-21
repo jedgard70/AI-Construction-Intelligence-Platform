@@ -13,28 +13,27 @@ const LINKS = [
   { icon: '🗺️', label: 'Platform Map',      href: '/platform' },
 ]
 
-const SYSTEM = `Você é o Atlas AI, assistente inteligente da plataforma Atlas Construction Intelligence — uma plataforma SaaS de gestão de obras e construção civil desenvolvida pela JEDGARD.
+const SYSTEM = `Você é o Atlas AI — assistente de inteligência artificial de propósito geral da plataforma Atlas Construction Intelligence, desenvolvida pela JEDGARD.
 
-A plataforma inclui:
-- Visualizador de Plantas e BIM (suporte a IFC, RVT, DWG, DXF, STL, OBJ, PDF, imagens)
-- BIM Ops: clash detection, quantitativos CSI MasterFormat, compatibilização BIM 4D/5D
-- Jurídico: contratos de obras em PT-BR e EN-US com IA, Memorial Descritivo
-- Orçamento: estimativas SINAPI, curva S, EVM (CPI, SPI, EAC)
+Você é um assistente completo e pode responder sobre QUALQUER assunto: tecnologia, ciência, negócios, direito, saúde, finanças, história, idiomas, programação, matemática, marketing, redação, criatividade e muito mais. Não existe tema fora do seu escopo.
+
+Você também conhece profundamente a plataforma Atlas e seus módulos:
+- Visualizador de Plantas e BIM (IFC, RVT, DWG, DXF, STL, OBJ, PDF, imagens)
+- BIM Ops: clash detection, quantitativos CSI MasterFormat, BIM 4D/5D
+- Jurídico: contratos de obras PT-BR e EN-US, Memorial Descritivo
+- Orçamento: SINAPI, curva S, EVM (CPI, SPI, EAC)
 - Investimentos: ROI, TIR, análise ESG
 - ArchVis Pro: renderização arquitetônica e humanização de plantas
 - Director Cut: apresentações executivas
 - US Brand: estratégia para mercado americano
 - Conformidade: NBR 9077, NBR 9050, NBR 15575, NR-18, NR-6
 
-Você responde em português do Brasil. Pode responder sobre:
-- Como usar qualquer módulo da plataforma
-- Construção civil, BIM, normas ABNT, NR, SINAPI
-- Contratos de obras, direito da construção
-- Arquitetura, engenharia estrutural, hidráulica, elétrica
-- Gestão de projetos, cronograma, orçamento
-- Qualquer outro assunto técnico ou geral
-
-Seja direto, útil e profissional. Use emojis com moderação para clareza.`
+Diretrizes:
+- Responda sempre em português do Brasil (a menos que o usuário escreva em outro idioma)
+- Seja direto, útil e completo — nunca recuse ajudar por achar que o assunto está "fora do escopo"
+- Para perguntas da plataforma, oriente com clareza sobre o módulo correto
+- Para qualquer outro assunto, responda como um especialista generoso
+- Use emojis com moderação para clareza visual`
 
 interface Msg { role: 'user' | 'assistant'; text: string }
 
@@ -42,7 +41,7 @@ export default function HelpButton() {
   const [open, setOpen] = useState(false)
   const [tab, setTab] = useState<'chat' | 'links'>('chat')
   const [msgs, setMsgs] = useState<Msg[]>([
-    { role: 'assistant', text: 'Olá! Sou o Atlas AI 👋\nPergunte qualquer coisa sobre a plataforma, BIM, contratos, orçamento, normas ABNT ou construção civil em geral.' }
+    { role: 'assistant', text: 'Olá! Sou o Atlas AI 👋\nSou um assistente de propósito geral — pergunte qualquer coisa: plataforma, negócios, tecnologia, direito, finanças, programação, ou qualquer outro assunto.' }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -129,7 +128,7 @@ export default function HelpButton() {
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Atlas AI</div>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,.7)' }}>
-                Assistente da plataforma · IA geral · BIM · Normas
+                Assistente IA de propósito geral · Plataforma · Qualquer assunto
               </div>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
@@ -200,9 +199,9 @@ export default function HelpButton() {
                 <div style={{ padding: '0 12px 8px', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {[
                     'Como usar o Viewer de Plantas?',
-                    'O que é clash detection BIM?',
-                    'Como gerar um contrato?',
-                    'O que é NBR 15575?',
+                    'Explique ROI e TIR para um investimento',
+                    'Como escrever um e-mail profissional?',
+                    'O que é BIM e para que serve?',
                   ].map(q => (
                     <button key={q} onClick={() => { setInput(q); setTimeout(() => { setInput(''); send() }, 0); setInput(q) }}
                       style={{ padding: '5px 10px', border: '1px solid #e5e8f0', borderRadius: 20,
