@@ -273,7 +273,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
   const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'>('viewer')
-  const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'>('planta')
+  const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'|'interior'>('planta')
   const [humanLang, setHumanLang] = useState<'pt-BR'|'en-US'>('pt-BR')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
   const [humanEscala, setHumanEscala] = useState('50')
@@ -1365,11 +1365,12 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           letterSpacing:'.08em', marginBottom:8 }}>
                           {humanLang === 'pt-BR' ? '1 — Tipo de imagem' : '1 — Image type'}
                         </div>
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
                           {([
                             ['planta', '📐', humanLang==='pt-BR'?'Planta Baixa':'Floor Plan'],
                             ['fachada', '🏢', humanLang==='pt-BR'?'Fachada':'Facade'],
                             ['corte', '✂️', humanLang==='pt-BR'?'Corte/Seção':'Section'],
+                            ['interior', '🏠', humanLang==='pt-BR'?'Interior 3D':'Interior 3D'],
                           ] as const).map(([v, ic, lbl]) => (
                             <button key={v} onClick={() => setHumanAnaliseTipo(v)}
                               style={{ padding:'8px 6px', border:`1.5px solid ${humanAnaliseTipo===v?'#3b82f6':'#e5e8f0'}`,
@@ -1528,7 +1529,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           }
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
                           const imgLabel = humanAnaliseTipo === 'planta' ? (humanLang==='pt-BR'?'planta baixa':'floor plan')
-                            : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'facade')
+                            : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'building facade')
+                            : humanAnaliseTipo === 'interior' ? (humanLang==='pt-BR'?'interior 3D':'3D interior')
                             : (humanLang==='pt-BR'?'corte/seção':'section/elevation')
                           const isEnglish = humanLang === 'en-US'
                           const prompt = isEnglish
@@ -1552,7 +1554,7 @@ RETURN EXACTLY in this markdown format:
 [Distribute ${humanNP} people across spaces: Space | People | Activity]
 
 ### GEMINI RENDER PROMPT
-[Write an ultra-detailed English prompt for Gemini 2.0 Flash Exp to generate an image-to-image humanization of this ${imgLabel}. Include: setting ${humanLote}, vegetation ${humanVeg}, ${humanNP} people at 1.70m with specific activities, style ${humanEstilo}, scale 1:${humanEscala}, flooring materials per room, high-end furniture, swimming pool if space allows, natural bird's-eye sunlight. Start with: "You are an expert architectural visualizer. Transform this floor plan into..."]
+[Write an ultra-detailed English prompt for Gemini 2.0 Flash Exp to generate a photorealistic image-to-image humanization. ${humanAnaliseTipo === 'planta' ? `Bird's-eye view: same top-down geometry, realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, swimming pool if space allows, EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, overhead sunlight with shadows.` : humanAnaliseTipo === 'fachada' ? `Front elevation: same facade geometry, photorealistic wall/roof materials, golden hour lighting, ${humanVeg}, luxury car in driveway, sky with clouds, ${humanNP} people visible.` : humanAnaliseTipo === 'interior' ? `Interior perspective: same camera angle and layout, photorealistic materials (flooring/walls/ceiling), LED recessed lighting + strip lights, ${humanNP} person doing activity at 1.70m, decorative elements, reflections and ambient occlusion, style: ${humanEstilo}.` : `Cross-section: same geometry, photorealistic materials on cut surfaces, interior spaces with furniture and people at scale.`} Style: ${humanEstilo}. No text overlays.]
 
 ### IMPROVEMENT SUGGESTIONS
 [List 5 concrete improvements: layout, natural light, space optimization, materials, circulation]`
@@ -1576,7 +1578,7 @@ RETORNE EXATAMENTE neste formato markdown:
 [Distribua as ${humanNP} pessoas pelos ambientes: Ambiente | Pessoas | Atividade]
 
 ### PROMPT GEMINI RENDER
-[Escreva um prompt em inglês ultra-detalhado para o Gemini 2.0 Flash Exp gerar uma humanização image-to-image desta ${imgLabel}. Inclua: lote ${humanLote}, vegetação ${humanVeg}, ${humanNP} pessoas de 1,70 m com atividades específicas, estilo ${humanEstilo}, escala 1:${humanEscala}, materiais de piso por ambiente, móveis de alto padrão, piscina se houver espaço, iluminação natural bird's-eye. Comece com: "You are an expert architectural visualizer. Transform this floor plan into..."]
+[Escreva um prompt em inglês ultra-detalhado para o Gemini 2.0 Flash Exp gerar humanização fotorrealista image-to-image. ${humanAnaliseTipo === 'planta' ? `Vista aérea: mesma geometria top-down, pisos realistas por ambiente, mobiliário escala 1:${humanEscala}, ${humanNP} pessoas de 1,70 m, piscina se houver espaço, EXTERIOR: ${humanLote}, ${humanVeg}, calçada, carros, iluminação solar superior.` : humanAnaliseTipo === 'fachada' ? `Elevação frontal: mesma geometria da fachada, materiais fotorrealistas (muro/telhado/revestimentos), iluminação dourada (golden hour), ${humanVeg}, carro luxo na garagem, céu com nuvens, ${humanNP} pessoas visíveis.` : humanAnaliseTipo === 'interior' ? `Perspectiva interior: mesmo ângulo de câmera e layout, materiais fotorrealistas (piso/paredes/teto), LED embutido + fita LED sob armários, ${humanNP} pessoa(s) fazendo atividade de 1,70 m, elementos decorativos, reflexos e ambient occlusion, estilo ${humanEstilo}.` : `Corte transversal: mesma geometria, materiais fotorrealistas nas superfícies de corte, ambientes internos com mobiliário e pessoas em escala.`} Estilo: ${humanEstilo}. Sem sobreposição de texto.]
 
 ### MELHORIAS SUGERIDAS
 [Liste 5 melhorias concretas para o projeto: layout, iluminação natural, aproveitamento de espaço, materiais, circulação]`
@@ -1631,21 +1633,71 @@ RETORNE EXATAMENTE neste formato markdown:
                             setGeminiRenderB64(null)
                             setGeminiRenderError(null)
                             setGeminiRenderLoading(true)
-                            const renderPrompt = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'architectural cross-section'} into a photorealistic bird's-eye view humanized visualization.
+                            const renderPrompt = humanAnaliseTipo === 'planta'
+                              ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.
 
-CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective. Do NOT invent new walls or rooms.
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT create a 3D exterior view. Do NOT invent new walls or rooms.
 
-Transform the plan by adding:
-- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets — appropriate per room type
-- High-end modern furniture placed exactly inside each room at correct scale (1:${humanEscala})
-- ${estiloSnap} interior style
-- ${humanNP} people doing realistic activities in different rooms (1.70 m height reference)
-- Indoor plants, decorative objects, lighting fixtures, artwork on walls
+Add to the plan:
+- Realistic flooring per room: hardwood, large-format porcelain tiles, marble, carpets
+- High-end modern furniture at correct scale (1:${humanEscala})
+- ${estiloSnap} interior style with indoor plants, decor, artwork, lighting fixtures
+- ${humanNP} people doing realistic activities (1.70 m height reference)
 - Swimming pool with blue water texture if outdoor space allows
-- EXTERIOR (outside building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, parked cars, shadow projection from vegetation
-- Natural overhead sunlight with soft shadows
+- EXTERIOR: ${loteSnap}, ${vegSnap}, paved sidewalk, street markings, parked luxury car, shadow projection from vegetation
+- Natural overhead sunlight with soft cast shadows
 
-Result must look like a premium bird's-eye architectural render for luxury real estate marketing. No text overlays.`
+Result: premium bird's-eye architectural render for luxury real estate marketing. No text overlays.`
+                              : humanAnaliseTipo === 'fachada'
+                              ? `You are an expert architectural visualizer. Transform this building facade/elevation drawing into a photorealistic architectural exterior render.
+
+CRITICAL: Keep EXACTLY the same camera angle, building silhouette, roof profile, and facade proportions as the original. Do NOT change the building shape or layout.
+
+Transform by adding:
+- Photorealistic wall materials: exposed concrete panels, stucco, stone cladding, wood slats — match architectural style
+- Realistic roof covering: dark ceramic tiles, flat concrete slab with parapet, metal sheet — per design
+- High-end windows with glass reflections and warm interior light visible through glazing
+- Premium front door and garage door with metallic/wood finish and subtle lighting
+- Dramatic golden-hour sunlight casting realistic shadows across the facade
+- ${vegSnap}, palm trees and ornamental shrubs along the boundary wall and sidewalk
+- Realistic concrete or stone pavement on driveway and sidewalk
+- A luxury dark-colored vehicle parked in or near the garage
+- Dramatic sky: warm sunset clouds or blue clear sky with depth
+- Wall sconces, security camera, architectural accent lighting details
+
+Result: premium photorealistic exterior render for luxury real estate marketing. No text overlays.`
+                              : humanAnaliseTipo === 'interior'
+                              ? `You are an expert architectural visualizer. Transform this 3D interior model/sketch into a photorealistic interior architectural render.
+
+CRITICAL: Keep EXACTLY the same camera position, viewing angle, room layout, and all existing furniture/objects. Do NOT rearrange the space.
+
+Transform by adding:
+- Photorealistic floor: polished large-format porcelain tiles, concrete microcement or hardwood
+- Photorealistic walls: smooth painted surfaces, textured plaster or wood accent panels
+- Photorealistic ceiling: white gypsum board with recessed LED spots and LED strip lighting
+- Premium cabinets: matte white lacquer or natural wood veneer with stone countertops
+- Stainless steel and high-gloss appliances with metallic reflections
+- Warm LED strip lighting under upper cabinets, recessed ceiling spots casting soft pools of light
+- Natural light streaming through windows with realistic light rays and window frame shadows
+- ${humanNP} realistic person/people doing activities (1.70 m height) — professional but casual
+- Elegant decor: ceramic vase with olive branch, cutting board with bread, small potted plant, stainless accessories
+- Photorealistic ambient occlusion, material reflections, soft shadows and depth of field
+- Style: ${estiloSnap}, luxury real estate marketing quality
+
+Result: premium photorealistic interior render. No text overlays.`
+                              : `You are an expert architectural visualizer. Transform this architectural cross-section drawing into a photorealistic rendered section.
+
+CRITICAL: Keep EXACTLY the same section cut geometry and proportions.
+
+Transform by adding:
+- Photorealistic materials on all cut surfaces: concrete structure, brick/block fill, insulation layers
+- Interior spaces visible through the cut: realistic flooring, furniture, ceiling finishes
+- Natural light entering through windows and skylights with realistic rays
+- ${humanNP} people shown in scale (1.70 m) inside spaces doing activities
+- Exterior context: ${vegSnap}, ground materials, sky
+- Style: ${estiloSnap}
+
+Result: premium photorealistic architectural section render. No text overlays.`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1909,13 +1961,26 @@ Crie:
                                 </div>
                                 <div>
                                   <div style={{ fontSize:14, fontWeight:700, color:'#e0e7ff', marginBottom:6 }}>
-                                    {humanLang==='pt-BR'?'Humanizando a planta...':'Humanizing floor plan...'}
+                                    {humanLang==='pt-BR'
+                                      ? humanAnaliseTipo==='fachada' ? 'Renderizando fachada...'
+                                        : humanAnaliseTipo==='interior' ? 'Renderizando interior...'
+                                        : humanAnaliseTipo==='corte' ? 'Renderizando corte...'
+                                        : 'Humanizando a planta...'
+                                      : humanAnaliseTipo==='fachada' ? 'Rendering facade...'
+                                        : humanAnaliseTipo==='interior' ? 'Rendering interior...'
+                                        : humanAnaliseTipo==='corte' ? 'Rendering section...'
+                                        : 'Humanizing floor plan...'
+                                    }
                                   </div>
                                   <div style={{ fontSize:11, color:'rgba(167,139,250,.8)', lineHeight:1.6 }}>
                                     Gemini 2.0 Flash Exp — image-to-image<br/>
                                     {humanLang==='pt-BR'
-                                      ?'Preservando geometria e adicionando mobiliário, pessoas e paisagismo'
-                                      :'Preserving geometry, adding furniture, people & landscaping'}
+                                      ? humanAnaliseTipo==='fachada' ? 'Preservando geometria, aplicando materiais, iluminação e vegetação'
+                                        : humanAnaliseTipo==='interior' ? 'Preservando câmera, aplicando materiais, iluminação LED e pessoas'
+                                        : 'Preservando geometria e adicionando mobiliário, pessoas e paisagismo'
+                                      : humanAnaliseTipo==='fachada' ? 'Preserving geometry, applying materials, lighting & vegetation'
+                                        : humanAnaliseTipo==='interior' ? 'Preserving camera, applying materials, LED lighting & people'
+                                        : 'Preserving geometry, adding furniture, people & landscaping'}
                                   </div>
                                 </div>
                               </div>
@@ -1963,7 +2028,13 @@ Crie:
                                     {humanB64 && humanImgType !== 'application/pdf' && (
                                     <button onClick={() => {
                                       setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
-                                      const p = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'architectural cross-section'} into a photorealistic bird's-eye view humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture at scale 1:${humanEscala}, ${humanNP} people doing activities, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}, premium luxury real estate marketing render. No text overlays. Variation seed:${Date.now()}`
+                                      const p = humanAnaliseTipo === 'planta'
+                                        ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked luxury car, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : humanAnaliseTipo === 'fachada'
+                                        ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nAdd: photorealistic wall materials, dark roof tiles/concrete slab, premium door & garage with metallic finish, golden-hour sunlight with facade shadows, ${humanVeg} along boundary wall and sidewalk, luxury dark vehicle in driveway, dramatic sky with clouds. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : humanAnaliseTipo === 'interior'
+                                        ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nAdd: photorealistic flooring, painted walls, gypsum ceiling with LED recessed spots and strip lights, premium cabinets with stone countertops, stainless appliances, natural light from windows, ${humanNP} person at 1.70m doing activity, elegant decor. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials on cut surfaces, interior spaces with furniture and people at scale 1.70m, natural light, ${humanVeg}. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
                                         body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                       }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)} else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
@@ -2182,7 +2253,14 @@ Crie:
                                       setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
                                       setHumanTab('render')
                                       const assistantSuggestions = msg.text
-                                      const p = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a photorealistic bird's-eye view humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nBase render settings: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}.\n\nADDITIONAL INSTRUCTIONS FROM CONSULTANT:\n${assistantSuggestions}\n\nApply these suggestions in the render. No text overlays. Variation seed:${Date.now()}`
+                                      const p = (humanAnaliseTipo === 'planta'
+                                        ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nBase render: realistic flooring per room, furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked luxury car, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}.`
+                                        : humanAnaliseTipo === 'fachada'
+                                        ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nBase render: photorealistic wall materials, roof covering, premium doors, golden-hour sunlight, ${humanVeg} along wall and sidewalk, luxury vehicle in driveway, sky with clouds. Style: ${humanEstilo}.`
+                                        : humanAnaliseTipo === 'interior'
+                                        ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nBase render: photorealistic flooring/walls/ceiling, LED recessed spots and strip lights, premium cabinets and stone countertops, stainless appliances, ${humanNP} person at 1.70m, elegant decor. Style: ${humanEstilo}.`
+                                        : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nBase render: photorealistic materials, interior spaces with furniture and people at scale. Style: ${humanEstilo}.`
+                                      ) + `\n\nADDITIONAL INSTRUCTIONS FROM CONSULTANT:\n${assistantSuggestions}\n\nApply these suggestions in the render. No text overlays. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
                                         body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                       }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)}else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
