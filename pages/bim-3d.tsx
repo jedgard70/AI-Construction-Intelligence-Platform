@@ -29,7 +29,7 @@ export default function BIM3DViewer() {
     const init = async () => {
       try {
         const THREE = await import('three')
-        const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls.js' as any)
+        const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls' as any)
 
         const w = mount.clientWidth, h = mount.clientHeight
 
@@ -42,7 +42,7 @@ export default function BIM3DViewer() {
         camera.position.set(8, 8, 14)
 
         // Renderer
-        renderer = new THREE.WebGLRenderer({ antialias: true })
+        renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
         renderer.setSize(w, h)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
         renderer.shadowMap.enabled = true
@@ -100,11 +100,11 @@ export default function BIM3DViewer() {
         const fileUrl = fileBuffer ? URL.createObjectURL(new Blob([fileBuffer])) : null
 
         if (fileUrl && ext === 'stl') {
-          const { STLLoader } = await import('three/examples/jsm/loaders/STLLoader.js' as any)
+          const { STLLoader } = await import('three/examples/jsm/loaders/STLLoader' as any)
           new STLLoader().load(fileUrl, (geo: any) => { addMesh(geo, 0x3B6D11); setStatus('ready') },
             undefined, () => { fallbackCube(THREE, scene); setStatus('ready') })
         } else if (fileUrl && ext === 'obj') {
-          const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader.js' as any)
+          const { OBJLoader } = await import('three/examples/jsm/loaders/OBJLoader' as any)
           new OBJLoader().load(fileUrl, (obj: any) => {
             const box = new THREE.Box3().setFromObject(obj)
             const center = new THREE.Vector3(); box.getCenter(center)
@@ -240,23 +240,27 @@ Top 5 ações prioritárias para aprovação e execução.` }]
             {showPanel?'📊 Ocultar análise':'📊 Ver análise'}
           </button>
           <button onClick={() => {
-            // Capture WebGL canvas as image before printing
             const canvas = mountRef.current?.querySelector('canvas')
-            let imgEl: HTMLImageElement | null = null
-            if (canvas) {
-              const dataUrl = canvas.toDataURL('image/png')
-              imgEl = document.createElement('img')
-              imgEl.src = dataUrl
-              imgEl.id = '__print_canvas__'
-              imgEl.style.cssText = 'display:none;width:100%;max-width:700px;border-radius:8px;margin-bottom:16px'
-              mountRef.current?.appendChild(imgEl)
-            }
-            const st = document.createElement('style')
-            st.id = '__print_style__'
-            st.textContent = '@media print{canvas{display:none!important}#__print_canvas__{display:block!important}}'
-            document.head.appendChild(st)
-            window.print()
-            setTimeout(() => { imgEl?.remove(); st.remove() }, 500)
+            const canvasImg = canvas
+              ? `<img src="${canvas.toDataURL('image/png')}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>`
+              : ''
+            const w = window.open('', '_blank', 'width=960,height=800')
+            if (!w) return
+            w.document.write(`<html><head><title>BIM — ${fileName}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
+h1{font-size:18px;margin-bottom:16px;color:#185FA5}
+pre{font-family:monospace;font-size:11px;line-height:1.85;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:8px;border:1px solid #e5e8f0}
+@page{size:auto;margin:15mm}
+@media print{.noprint{display:none}img{page-break-inside:avoid;max-height:200mm}}
+</style></head><body>
+<h1>${EXT_ICON[fileExt]||'📦'} ${fileName} — Análise BIM Intelligence</h1>
+${canvasImg}
+<pre>${aiAnalysis}</pre>
+<br/>
+<button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Imprimir</button>
+</body></html>`)
+            w.document.close()
           }}
             style={{ padding:'5px 12px',borderRadius:6,fontSize:11,fontWeight:600,cursor:'pointer',
               background:'#534AB7',color:'#fff',border:'none' }}>
@@ -311,12 +315,24 @@ Top 5 ações prioritárias para aprovação e execução.` }]
               </div>
               {aiAnalysis && !aiLoading && (
                 <button onClick={() => {
-                  // Capture 3D canvas + analysis into a print window
                   const canvas = mountRef.current?.querySelector('canvas')
-                  const canvasImg = canvas ? `<img src="${canvas.toDataURL('image/png')}" style="width:100%;max-width:680px;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
-                  const w = window.open('','_blank','width=900,height=750')
+                  const canvasImg = canvas
+                    ? `<img src="${canvas.toDataURL('image/png')}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>`
+                    : ''
+                  const w = window.open('', '_blank', 'width=960,height=800')
                   if (!w) return
-                  w.document.write(`<html><head><title>BIM — ${fileName}</title><style>body{font-family:monospace;padding:32px;font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap;max-width:900px;margin:0 auto}h1{font-size:18px;font-family:sans-serif;margin-bottom:16px}@media print{.noprint{display:none}}</style></head><body><h1>📊 ${EXT_ICON[fileExt]||''} ${fileName}</h1>${canvasImg}${aiAnalysis}<br/><br/><button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Imprimir</button></body></html>`)
+                  w.document.write(`<html><head><title>BIM — ${fileName}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
+h1{font-size:18px;margin-bottom:16px;color:#185FA5}
+pre{font-family:monospace;font-size:11px;line-height:1.85;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:8px;border:1px solid #e5e8f0}
+@page{size:auto;margin:15mm}
+@media print{.noprint{display:none}img{page-break-inside:avoid;max-height:200mm}}
+</style></head><body>
+<h1>${EXT_ICON[fileExt]||'📦'} ${fileName} — Análise BIM Intelligence</h1>
+${canvasImg}<pre>${aiAnalysis}</pre>
+<br/><button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Imprimir</button>
+</body></html>`)
                   w.document.close()
                 }} style={{ padding:'4px 10px',background:'#185FA5',color:'#fff',border:'none',
                   borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit' }}>
@@ -365,20 +381,22 @@ function fallbackCube(THREE: any, scene: any) {
 }
 
 function buildingPlaceholder(THREE: any, scene: any) {
-  // Simple building: base + floors + roof
   const addBox = (w: number, h: number, d: number, x: number, y: number, z: number, color: number) => {
     const geo = new THREE.BoxGeometry(w, h, d)
     const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.2, roughness: 0.6 })
     const mesh = new THREE.Mesh(geo, mat)
     mesh.position.set(x, y, z); mesh.castShadow = true; mesh.receiveShadow = true
     scene.add(mesh)
-    scene.add(Object.assign(new THREE.LineSegments(
-      new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x4a5078 })
-    ), { position: mesh.position.clone() }))
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geo),
+      new THREE.LineBasicMaterial({ color: 0x4a5078 })
+    )
+    edges.position.set(x, y, z)
+    scene.add(edges)
   }
-  addBox(8, 0.5, 6, 0, 0.25, 0, 0x3a4060)  // slab
-  addBox(8, 3,   6, 0, 2,    0, 0x4a5580)  // floor 1
-  addBox(7, 3,   5, 0, 5,    0, 0x534AB7)  // floor 2
-  addBox(6, 3,   4, 0, 8,    0, 0x3B6D11)  // floor 3
-  addBox(5, 1,   3, 0, 10.5, 0, 0x185FA5)  // penthouse
+  addBox(8, 0.5, 6, 0, 0.25,  0, 0x3a4060)
+  addBox(8, 3,   6, 0, 2,     0, 0x4a5580)
+  addBox(7, 3,   5, 0, 5,     0, 0x534AB7)
+  addBox(6, 3,   4, 0, 8,     0, 0x3B6D11)
+  addBox(5, 1,   3, 0, 10.5,  0, 0x185FA5)
 }
