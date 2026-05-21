@@ -1613,11 +1613,13 @@ ${imgHtml}${renderHtml}${sections}
                             <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização — Visualização Humanizada</div>
                             <div style={{ fontSize:10, color:'rgba(255,255,255,.75)' }}>Gerado por IA</div>
                           </div>
-                          <div style={{ position:'relative' as const, background:'#0d0d1a', minHeight:200,
-                            display:'flex', alignItems:'center', justifyContent:'center' }}>
+                          <div style={{ position:'relative' as const, background:'#0d0d1a',
+                            display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' as const,
+                            maxHeight: 320 }}>
                             {humanRenderLoading && (
                               <div style={{ position:'absolute' as const, inset:0, display:'flex', flexDirection:'column' as const,
-                                alignItems:'center', justifyContent:'center', gap:10, color:'#8880c0', zIndex:1 }}>
+                                alignItems:'center', justifyContent:'center', gap:10, color:'#8880c0', zIndex:1,
+                                background:'#0d0d1a' }}>
                                 <div style={{ width:32, height:32, border:'3px solid #534AB7', borderTopColor:'transparent',
                                   borderRadius:'50%', animation:'spin .8s linear infinite' }} />
                                 <div style={{ fontSize:11 }}>Gerando renderização...</div>
@@ -1628,7 +1630,7 @@ ${imgHtml}${renderHtml}${sections}
                               alt="Renderização humanizada"
                               onLoad={() => setHumanRenderLoading(false)}
                               onError={() => { setHumanRenderLoading(false); setHumanRenderUrl(null) }}
-                              style={{ width:'100%', display:'block', borderRadius:0,
+                              style={{ width:'100%', display:'block', objectFit:'cover', maxHeight:320,
                                 opacity: humanRenderLoading ? 0 : 1, transition:'opacity .4s' }}
                             />
                           </div>
@@ -1803,9 +1805,31 @@ ${imgHtml}${renderHtml}${sections}
                             <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📊 {activePf?.name}</div>
                             <div style={{ display:'flex', gap:6 }}>
                               <button onClick={() => {
-                                const w = window.open('','_blank','width=900,height=700')
+                                const w = window.open('', '_blank', 'width=960,height=800')
                                 if (!w) return
-                                w.document.write(`<html><head><title>Análise BIM — ${activePf?.name}</title><style>body{font-family:monospace;padding:32px;font-size:13px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 Análise BIM — ${activePf?.name}</h1>${unifiedAnalysis}<br/><br/><button onclick="window.print()">🖨️ Imprimir</button></body></html>`)
+                                const pf = activePf!
+                                const plantBlock = isPDF
+                                  ? `<div style="margin-bottom:24px;page-break-inside:avoid"><embed src="${pf.url}" type="application/pdf" style="width:100%;height:420px;border-radius:8px;border:1px solid #e5e8f0;display:block"/></div>`
+                                  : isImage
+                                  ? `<img src="${pf.url}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid;max-height:420px;object-fit:contain"/>`
+                                  : ''
+                                w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Análise — ${pf.name}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
+h1{font-size:18px;color:#185FA5;margin-bottom:4px}
+.sub{font-size:11px;color:#8890a0;margin-bottom:20px}
+pre{font-family:monospace;font-size:11px;line-height:1.85;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:8px;border:1px solid #e5e8f0;page-break-inside:avoid}
+@page{size:auto;margin:15mm}
+@media print{.noprint{display:none}img,embed{page-break-inside:avoid;max-height:280mm}}
+</style></head><body>
+<h1>📊 Análise BIM Intelligence — ${pf.name}</h1>
+<div class="sub">${new Date().toLocaleDateString('pt-BR')} · Atlas Construction Intelligence</div>
+${plantBlock}
+<pre>${unifiedAnalysis}</pre>
+<br/>
+<button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button>
+</body></html>`)
                                 w.document.close()
                               }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 🖨️ Imprimir
