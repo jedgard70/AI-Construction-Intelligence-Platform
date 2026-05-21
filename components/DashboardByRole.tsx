@@ -289,6 +289,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
   const [activePfMediaType, setActivePfMediaType] = useState('image/jpeg')
+  const [printPaperSize, setPrintPaperSize] = useState('auto')
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
@@ -1253,9 +1254,46 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
                   {activePf && isPDF && viewerTab==='viewer' && (
                     <>
+                      <select value={printPaperSize} onChange={e => setPrintPaperSize(e.target.value)}
+                        title="Tamanho do papel para impressão"
+                        style={{ padding:'4px 7px', border:'1px solid #e5e8f0', borderRadius:6,
+                          fontSize:11, background:'#fff', color:'#5a6282', fontFamily:'inherit',
+                          cursor:'pointer', outline:'none' }}>
+                        <option value="auto">📄 Automático</option>
+                        <option value="A0 landscape">A0 (1189×841)</option>
+                        <option value="A1 landscape">A1 (841×594)</option>
+                        <option value="A2 landscape">A2 (594×420)</option>
+                        <option value="A3 landscape">A3 (420×297)</option>
+                        <option value="A3">A3 retrato</option>
+                        <option value="A4">A4 (210×297)</option>
+                        <option value="A4 landscape">A4 paisagem</option>
+                        <option value="letter">Letter (US)</option>
+                        <option value="legal">Legal (US)</option>
+                      </select>
                       <button onClick={() => {
-                        const pw = window.open(activePf.url, '_blank', 'width=1200,height=900')
-                        if (pw) setTimeout(() => pw.print(), 1500)
+                        const pageSize = printPaperSize
+                        const w = window.open('', '_blank', 'width=1200,height=900')
+                        if (!w) return
+                        w.document.write(`<!DOCTYPE html><html><head>
+<meta charset="utf-8"/>
+<title>${activePf.name}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#fff;overflow:hidden}
+@page{size:${pageSize};margin:0}
+.bar{position:fixed;top:0;left:0;right:0;height:36px;background:#185FA5;display:flex;align-items:center;padding:0 12px;gap:10px;z-index:999}
+.bar span{color:#fff;font:600 12px/1 'Segoe UI',sans-serif;flex:1}
+.bar button{padding:4px 14px;background:#fff;color:#185FA5;border:none;border-radius:5px;cursor:pointer;font:600 11px/1 inherit}
+embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 36px)}
+@media print{.bar{display:none}embed{top:0;height:100%}}
+</style></head><body>
+<div class="bar">
+  <span>🖨️ ${activePf.name} — Papel: ${pageSize === 'auto' ? 'Automático' : pageSize}</span>
+  <button onclick="window.print()">Imprimir</button>
+</div>
+<embed src="${activePf.url}" type="application/pdf" width="100%" height="100%"/>
+</body></html>`)
+                        w.document.close()
                       }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
                         background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
                         🖨️ Imprimir
