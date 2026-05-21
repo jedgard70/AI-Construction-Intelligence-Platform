@@ -50,7 +50,7 @@ ${newMessages.map(m => `${m.role}: ${m.content}`).join('\n')}
 Respond to the user's latest message as the AI assistant.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        model: "gemini-2.0-flash",
         contents: prompt,
       });
 

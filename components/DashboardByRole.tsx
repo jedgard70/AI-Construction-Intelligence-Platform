@@ -273,6 +273,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
   const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'>('viewer')
+  const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'>('planta')
+  const [humanLang, setHumanLang] = useState<'pt-BR'|'en-US'>('pt-BR')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
   const [humanEscala, setHumanEscala] = useState('50')
   const [humanNP, setHumanNP] = useState(6)
@@ -283,13 +285,20 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
-  const [humanRenderUrl, setHumanRenderUrl] = useState<string|null>(null)
-  const [humanRenderLoading, setHumanRenderLoading] = useState(false)
+  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'>('analise')
+  const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
+  const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
+  const [geminiPalette, setGeminiPalette] = useState<Array<{name:string,hex:string,usage:string}>>([])
+  const [geminiMarketing, setGeminiMarketing] = useState<string>('')
+  const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
+  const [geminiMarketingLoading, setGeminiMarketingLoading] = useState(false)
+  const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
+  const [humanAssistantInput, setHumanAssistantInput] = useState('')
+  const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
   const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
   const [activePfMediaType, setActivePfMediaType] = useState('image/jpeg')
-  const [printPaperSize, setPrintPaperSize] = useState('auto')
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
@@ -374,6 +383,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; background: #f4f5f7; font-family: 'Geist', sans-serif; }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #d0d5e0; border-radius: 2px; }
+        @keyframes kenburns { from { transform: scale(1.05); } to { transform: scale(1.5) translateY(-8%); } }
+        .reel-kenburns { animation: kenburns 18s linear forwards; }
       `}</style>
 
       <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
@@ -994,14 +1005,6 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                 analysis: text,
                 date: new Date().toISOString()
               }))
-              // Also save the image so Juridico/US-Brand can show it
-              if (b64 && mediaType) {
-                try {
-                  localStorage.setItem('atlas_plant_image', JSON.stringify({
-                    b64, mediaType, fileName: pf.name
-                  }))
-                } catch {}
-              }
             } catch {}
           } catch (err: any) {
             setUnifiedAnalysis(`Erro: ${err.message || 'Falha ao conectar. Verifique ANTHROPIC_API_KEY no Vercel.'}`)
@@ -1028,24 +1031,9 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
           const firstEntry = newEntries[0]
 
           if (THREE_D_EXTS.includes(firstExt)) {
-            // Store file in IndexedDB (works across browser windows, unlike blob URLs)
-            try {
-              localStorage.setItem('bim3d_file_name', firstNew.name)
-              localStorage.setItem('bim3d_file_ext', firstExt)
-              const ab = await firstNew.arrayBuffer()
-              await new Promise<void>((res, rej) => {
-                const req = indexedDB.open('bim3d', 1)
-                req.onupgradeneeded = (ev: any) => ev.target.result.createObjectStore('files')
-                req.onsuccess = (ev: any) => {
-                  const db = ev.target.result
-                  const tx = db.transaction('files', 'readwrite')
-                  tx.objectStore('files').put(ab, 'current')
-                  tx.oncomplete = () => { db.close(); res() }
-                  tx.onerror = rej
-                }
-                req.onerror = rej
-              })
-            } catch {}
+            // Open 3D viewer in new window
+            const url = URL.createObjectURL(firstNew)
+            try { localStorage.setItem('bim3d_file_url', url); localStorage.setItem('bim3d_file_name', firstNew.name); localStorage.setItem('bim3d_file_ext', firstExt) } catch {}
             window.open(`/bim-3d?name=${encodeURIComponent(firstNew.name)}&ext=${firstExt}`, '_blank', 'width=1400,height=900')
           } else if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
             // Read base64 and auto-trigger AI analysis
@@ -1107,7 +1095,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden', minHeight:0 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
 
               {/* Sidebar — lista de arquivos */}
               <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
@@ -1194,7 +1182,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
               </div>
 
               {/* Main viewer area */}
-              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
                 {/* Toolbar */}
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
                   display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
@@ -1226,24 +1214,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                     </button>
                   )}
                   {is3D && activePf && (
-                    <button onClick={async () => {
-                      try {
-                        localStorage.setItem('bim3d_file_name', activePf.name)
-                        localStorage.setItem('bim3d_file_ext', activePf.ext)
-                        const ab = await fetch(activePf.url).then(r => r.arrayBuffer())
-                        await new Promise<void>((res, rej) => {
-                          const req = indexedDB.open('bim3d', 1)
-                          req.onupgradeneeded = (ev: any) => ev.target.result.createObjectStore('files')
-                          req.onsuccess = (ev: any) => {
-                            const db = ev.target.result
-                            const tx = db.transaction('files', 'readwrite')
-                            tx.objectStore('files').put(ab, 'current')
-                            tx.oncomplete = () => { db.close(); res() }
-                            tx.onerror = rej
-                          }
-                          req.onerror = rej
-                        })
-                      } catch {}
+                    <button onClick={() => {
+                      try { localStorage.setItem('bim3d_file_url', activePf.url); localStorage.setItem('bim3d_file_name', activePf.name); localStorage.setItem('bim3d_file_ext', activePf.ext) } catch {}
                       window.open(`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`, '_blank', 'width=1400,height=900')
                     }}
                       style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
@@ -1254,46 +1226,14 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
                   {activePf && isPDF && viewerTab==='viewer' && (
                     <>
-                      <select value={printPaperSize} onChange={e => setPrintPaperSize(e.target.value)}
-                        title="Tamanho do papel para impressão"
-                        style={{ padding:'4px 7px', border:'1px solid #e5e8f0', borderRadius:6,
-                          fontSize:11, background:'#fff', color:'#5a6282', fontFamily:'inherit',
-                          cursor:'pointer', outline:'none' }}>
-                        <option value="auto">📄 Automático</option>
-                        <option value="A0 landscape">A0 (1189×841)</option>
-                        <option value="A1 landscape">A1 (841×594)</option>
-                        <option value="A2 landscape">A2 (594×420)</option>
-                        <option value="A3 landscape">A3 (420×297)</option>
-                        <option value="A3">A3 retrato</option>
-                        <option value="A4">A4 (210×297)</option>
-                        <option value="A4 landscape">A4 paisagem</option>
-                        <option value="letter">Letter (US)</option>
-                        <option value="legal">Legal (US)</option>
-                      </select>
                       <button onClick={() => {
-                        const pageSize = printPaperSize
-                        const w = window.open('', '_blank', 'width=1200,height=900')
-                        if (!w) return
-                        w.document.write(`<!DOCTYPE html><html><head>
-<meta charset="utf-8"/>
-<title>${activePf.name}</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;background:#fff;overflow:hidden}
-@page{size:${pageSize};margin:0}
-.bar{position:fixed;top:0;left:0;right:0;height:36px;background:#185FA5;display:flex;align-items:center;padding:0 12px;gap:10px;z-index:999}
-.bar span{color:#fff;font:600 12px/1 'Segoe UI',sans-serif;flex:1}
-.bar button{padding:4px 14px;background:#fff;color:#185FA5;border:none;border-radius:5px;cursor:pointer;font:600 11px/1 inherit}
-embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100% - 36px)}
-@media print{.bar{display:none}embed{top:0;height:100%}}
-</style></head><body>
-<div class="bar">
-  <span>🖨️ ${activePf.name} — Papel: ${pageSize === 'auto' ? 'Automático' : pageSize}</span>
-  <button onclick="window.print()">Imprimir</button>
-</div>
-<embed src="${activePf.url}" type="application/pdf" width="100%" height="100%"/>
-</body></html>`)
-                        w.document.close()
+                        const iframe = document.querySelector('iframe[title="' + activePf.name + '"]') as HTMLIFrameElement | null
+                        if (iframe?.contentWindow) {
+                          iframe.contentWindow.focus()
+                          iframe.contentWindow.print()
+                        } else {
+                          window.open(activePf.url, '_blank')
+                        }
                       }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
                         background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
                         🖨️ Imprimir
@@ -1327,32 +1267,80 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                   <div style={{ flex:1, overflow:'hidden', background:'#f8f9fc', display:'grid',
                     gridTemplateColumns:'340px 1fr', gap:0, minHeight:0 }}>
                     {/* Left controls */}
-                    <div style={{ borderRight:'1px solid #e5e8f0', padding:'20px 18px', display:'flex',
-                      flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff', minHeight:0 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:'#185FA5', marginBottom:4 }}>
-                        🤖 Humanizador de Plantas Baixas
+                    <div style={{ borderRight:'1px solid #e5e8f0', display:'flex',
+                      flexDirection:'column' as const, overflowY:'auto' as const, background:'#fff', minHeight:0 }}>
+
+                      {/* Studio 3D Header */}
+                      <div style={{ background:'linear-gradient(135deg,#1e293b,#0f172a)', padding:'14px 18px',
+                        display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ width:34, height:34, background:'#3b82f6', borderRadius:8,
+                            display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>
+                            🏗️
+                          </div>
+                          <div>
+                            <div style={{ fontSize:12, fontWeight:700, color:'#fff' }}>Studio 3D</div>
+                            <div style={{ fontSize:10, color:'#94a3b8' }}>Plantas, Fachadas e Vídeos com IA</div>
+                          </div>
+                        </div>
+                        {/* Language toggle */}
+                        <div style={{ display:'flex', borderRadius:6, overflow:'hidden', border:'1px solid #334155' }}>
+                          {(['pt-BR','en-US'] as const).map(l => (
+                            <button key={l} onClick={() => setHumanLang(l)}
+                              style={{ padding:'4px 8px', border:'none', cursor:'pointer', fontSize:10, fontWeight:600,
+                                background: humanLang === l ? '#3b82f6' : 'transparent',
+                                color: humanLang === l ? '#fff' : '#94a3b8', fontFamily:'inherit' }}>
+                              {l === 'pt-BR' ? '🇧🇷' : '🇺🇸'}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5 }}>
-                        Envie uma imagem da planta baixa. A IA analisa ambientes, distribui pessoas e gera prompts DALL-E / Midjourney prontos.
+
+                      <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column' as const, gap:14 }}>
+
+                      {/* Tipo de imagem */}
+                      <div>
+                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                          letterSpacing:'.08em', marginBottom:8 }}>
+                          {humanLang === 'pt-BR' ? '1 — Tipo de imagem' : '1 — Image type'}
+                        </div>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
+                          {([
+                            ['planta', '📐', humanLang==='pt-BR'?'Planta Baixa':'Floor Plan'],
+                            ['fachada', '🏢', humanLang==='pt-BR'?'Fachada':'Facade'],
+                            ['corte', '✂️', humanLang==='pt-BR'?'Corte/Seção':'Section'],
+                          ] as const).map(([v, ic, lbl]) => (
+                            <button key={v} onClick={() => setHumanAnaliseTipo(v)}
+                              style={{ padding:'8px 6px', border:`1.5px solid ${humanAnaliseTipo===v?'#3b82f6':'#e5e8f0'}`,
+                                borderRadius:8, background: humanAnaliseTipo===v ? '#eff6ff' : '#fafafa',
+                                cursor:'pointer', fontFamily:'inherit', textAlign:'center' as const,
+                                display:'flex', flexDirection:'column' as const, alignItems:'center', gap:4 }}>
+                              <span style={{ fontSize:18 }}>{ic}</span>
+                              <span style={{ fontSize:10, fontWeight:600, color: humanAnaliseTipo===v ? '#3b82f6' : '#5a6282' }}>{lbl}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Image upload */}
                       <div>
                         <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
-                          letterSpacing:'.08em', marginBottom:8 }}>Imagem da Planta</div>
+                          letterSpacing:'.08em', marginBottom:8 }}>
+                          {humanLang === 'pt-BR' ? '2 — Projeto 2D' : '2 — 2D Project'}
+                        </div>
                         {humanB64 ? (
-                          <div style={{ position:'relative', borderRadius:8, overflow:'hidden', border:'1px solid #e5e8f0' }}>
+                          <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'2px solid #3b82f6' }}>
                             <img src={`data:${humanImgType};base64,${humanB64}`} alt="Planta"
-                              style={{ width:'100%', maxHeight:160, objectFit:'contain', display:'block', padding:4 }} />
-                            <button onClick={() => setHumanB64(null)}
-                              style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,.6)',
+                              style={{ width:'100%', maxHeight:160, objectFit:'contain', display:'block', background:'#f8faff', padding:4 }} />
+                            <button onClick={() => { setHumanB64(null); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
+                              style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,.65)',
                                 color:'#fff', border:'none', borderRadius:4, fontSize:10, padding:'3px 7px', cursor:'pointer' }}>
-                              ✕ Remover
+                              ✕ {humanLang==='pt-BR'?'Remover':'Remove'}
                             </button>
                           </div>
                         ) : (
                           <label style={{ cursor:'pointer', display:'block' }}>
-                            <input type="file" accept="image/*,.pdf" style={{ display:'none' }}
+                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt" style={{ display:'none' }}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (!f) return
@@ -1365,22 +1353,27 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                                 rd.onload = ev => setHumanB64((ev.target?.result as string).split(',')[1])
                                 rd.readAsDataURL(f)
                               }} />
-                            <div style={{ border:'1.5px dashed #d0d5e0', borderRadius:8, padding:'24px 12px',
-                              textAlign:'center' as const, background:'#fafafa', transition:'all .2s' }}>
-                              <div style={{ fontSize:28, marginBottom:6 }}>📐</div>
-                              <div style={{ fontSize:12, fontWeight:500, color:'#1a1f36', marginBottom:3 }}>
-                                Arraste ou clique para enviar
+                            <div style={{ border:'2px dashed #93c5fd', borderRadius:10, padding:'28px 12px',
+                              textAlign:'center' as const, background:'#eff6ff', transition:'all .2s' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background='#dbeafe' }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='#eff6ff' }}>
+                              <div style={{ fontSize:32, marginBottom:8 }}>🖼️</div>
+                              <div style={{ fontSize:12, fontWeight:600, color:'#1e40af', marginBottom:3 }}>
+                                {humanLang==='pt-BR'?'Arraste ou clique aqui':'Drag or click to upload'}
                               </div>
-                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · WebP · PDF</div>
-                              <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4 }}>Para IFC/RVT/DWG, exporte como PDF ou imagem primeiro</div>
+                              <div style={{ fontSize:10, color:'#60a5fa' }}>JPG · PNG · PDF · DWG · IFC</div>
                             </div>
                           </label>
                         )}
                       </div>
 
                       {/* Controls */}
+                      <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                        letterSpacing:'.08em' }}>
+                        {humanLang==='pt-BR'?'3 — Parâmetros':'3 — Parameters'}
+                      </div>
                       {[
-                        { lbl:'Tipo de edificação', id:'humanTipo', val:humanTipo, set:setHumanTipo, opts:[
+                        { lbl: humanLang==='pt-BR'?'Tipo de edificação':'Building type', id:'humanTipo', val:humanTipo, set:setHumanTipo, opts:[
                           ['residencial unifamiliar','🏠 Residencial — casa'],
                           ['apartamento residencial','🏢 Residencial — apartamento'],
                           ['escritório comercial','💼 Escritório / Comercial'],
@@ -1388,23 +1381,23 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                           ['café ou restaurante','☕ Café / Restaurante'],
                           ['clínica ou consultório','🏥 Clínica / Consultório'],
                         ]},
-                        { lbl:'Estilo de renderização', id:'humanEstilo', val:humanEstilo, set:setHumanEstilo, opts:[
-                          ['photorealistic professional architectural','Fotorrealista profissional'],
-                          ['high-end architectural visualization','Alta renderização arquitetônica'],
-                          ['watercolor artistic architectural','Aquarela / Artístico'],
-                          ['technical axonometric','Técnico / Axonométrico'],
+                        { lbl: humanLang==='pt-BR'?'Estilo de renderização':'Render style', id:'humanEstilo', val:humanEstilo, set:setHumanEstilo, opts:[
+                          ['photorealistic professional architectural',humanLang==='pt-BR'?'Fotorrealista profissional':'Photorealistic'],
+                          ['high-end architectural visualization',humanLang==='pt-BR'?'Alta renderização arquitetônica':'High-end arch. viz'],
+                          ['watercolor artistic architectural',humanLang==='pt-BR'?'Aquarela / Artístico':'Watercolor / Artistic'],
+                          ['technical axonometric',humanLang==='pt-BR'?'Técnico / Axonométrico':'Technical / Axonometric'],
                         ]},
-                        { lbl:'Tipo de lote / entorno', id:'humanLote', val:humanLote, set:setHumanLote, opts:[
-                          ['standard rectangular urban lot with sidewalk and street trees','Lote retangular — urbano padrão'],
-                          ['corner lot with two street frontages, sidewalks and urban trees','Lote de esquina — duas frentes'],
-                          ['rural lot with natural landscape, grass, trees and open sky','Lote rural — paisagem natural'],
-                          ['condominium lot surrounded by common areas, gardens and other units','Lote em condomínio'],
+                        { lbl: humanLang==='pt-BR'?'Tipo de lote / entorno':'Lot / setting', id:'humanLote', val:humanLote, set:setHumanLote, opts:[
+                          ['standard rectangular urban lot with sidewalk and street trees',humanLang==='pt-BR'?'Lote retangular — urbano padrão':'Rectangular urban lot'],
+                          ['corner lot with two street frontages, sidewalks and urban trees',humanLang==='pt-BR'?'Lote de esquina — duas frentes':'Corner lot'],
+                          ['rural lot with natural landscape, grass, trees and open sky',humanLang==='pt-BR'?'Lote rural — paisagem natural':'Rural lot'],
+                          ['condominium lot surrounded by common areas, gardens and other units',humanLang==='pt-BR'?'Lote em condomínio':'Condominium'],
                         ]},
-                        { lbl:'Vegetação / Paisagismo', id:'humanVeg', val:humanVeg, set:setHumanVeg, opts:[
-                          ['imperial palm trees, tropical shrubs, bromeliads, ornamental grasses, dense tropical foliage','🌴 Tropical — palmeiras imperiais'],
-                          ['mediterranean trees, lavender, olive trees, bougainvillea, stone pathways','🫒 Mediterrâneo — oliveiras'],
-                          ['minimalist landscaping, ornamental grasses, pebbles, architectural plants','⬜ Minimalista — gramas ornamentais'],
-                          ['native Brazilian cerrado vegetation, small trees, dry grass','🌵 Cerrado brasileiro'],
+                        { lbl: humanLang==='pt-BR'?'Vegetação / Paisagismo':'Vegetation / Landscaping', id:'humanVeg', val:humanVeg, set:setHumanVeg, opts:[
+                          ['imperial palm trees, tropical shrubs, bromeliads, ornamental grasses, dense tropical foliage',humanLang==='pt-BR'?'🌴 Tropical — palmeiras imperiais':'🌴 Tropical — imperial palms'],
+                          ['mediterranean trees, lavender, olive trees, bougainvillea, stone pathways',humanLang==='pt-BR'?'🫒 Mediterrâneo — oliveiras':'🫒 Mediterranean — olive trees'],
+                          ['minimalist landscaping, ornamental grasses, pebbles, architectural plants',humanLang==='pt-BR'?'⬜ Minimalista — gramas ornamentais':'⬜ Minimalist — ornamental grass'],
+                          ['native Brazilian cerrado vegetation, small trees, dry grass',humanLang==='pt-BR'?'🌵 Cerrado brasileiro':'🌵 Brazilian Cerrado'],
                         ]},
                       ].map(ctrl => (
                         <div key={ctrl.id}>
@@ -1421,7 +1414,7 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                         <div>
                           <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
-                            letterSpacing:'.08em', marginBottom:5 }}>Escala</div>
+                            letterSpacing:'.08em', marginBottom:5 }}>{humanLang==='pt-BR'?'Escala':'Scale'}</div>
                           <select value={humanEscala} onChange={e => setHumanEscala(e.target.value)}
                             style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e8f0', borderRadius:6,
                               fontSize:12, background:'#f8f9fc', color:'#1a1f36', fontFamily:'inherit', outline:'none' }}>
@@ -1431,7 +1424,7 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                         </div>
                         <div>
                           <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
-                            letterSpacing:'.08em', marginBottom:5 }}>Nº de pessoas</div>
+                            letterSpacing:'.08em', marginBottom:5 }}>{humanLang==='pt-BR'?'Nº de pessoas':'People count'}</div>
                           <input type="number" value={humanNP} min={1} max={20}
                             onChange={e => setHumanNP(Number(e.target.value))}
                             style={{ width:'100%', padding:'8px 10px', border:'1px solid #e5e8f0', borderRadius:6,
@@ -1440,8 +1433,8 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                       </div>
 
                       {/* Scale info */}
-                      <div style={{ background:'#EFF4FF', borderRadius:6, padding:'8px 12px', fontSize:11, color:'#185FA5' }}>
-                        📏 Escala 1:{humanEscala} — figura 1,70 m = <strong>{((1.70/parseInt(humanEscala))*100).toFixed(2)} cm</strong> na planta
+                      <div style={{ background:'#eff6ff', borderRadius:6, padding:'8px 12px', fontSize:11, color:'#1d4ed8' }}>
+                        📏 {humanLang==='pt-BR'?'Escala':'Scale'} 1:{humanEscala} — {humanLang==='pt-BR'?'figura':'person'} 1,70 m = <strong>{((1.70/parseInt(humanEscala))*100).toFixed(2)} cm</strong> {humanLang==='pt-BR'?'na planta':'on plan'}
                       </div>
 
                       <button
@@ -1450,10 +1443,44 @@ embed{position:fixed;top:36px;left:0;right:0;bottom:0;width:100%;height:calc(100
                           if (!humanB64) return
                           setHumanLoading(true)
                           setHumanResult({})
-                          setHumanRenderUrl(null)
-                          setHumanRenderLoading(false)
+                          setGeminiRenderB64(null)
+                          setGeminiPalette([])
+                          setGeminiMarketing('')
+                          setHumanTab('analise')
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
-                          const prompt = `Você é especialista em visualização arquitetônica. Analise esta planta baixa de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
+                          const imgLabel = humanAnaliseTipo === 'planta' ? (humanLang==='pt-BR'?'planta baixa':'floor plan')
+                            : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'facade')
+                            : (humanLang==='pt-BR'?'corte/seção':'section/elevation')
+                          const isEnglish = humanLang === 'en-US'
+                          const prompt = isEnglish
+                            ? `You are an expert architectural visualizer. Analyze this ${imgLabel} of a "${humanTipo}" building and provide a complete analysis in English.
+
+PARAMETERS:
+- Scale: 1:${humanEscala}
+- Human figures: 1.70m (= ${cmFig} cm on plan)
+- Number of people: ${humanNP}
+- Style: ${humanEstilo}
+- Setting: ${humanLote}
+- Vegetation: ${humanVeg}
+- Image type: ${imgLabel}
+
+RETURN EXACTLY in this markdown format:
+
+### ANALYSIS
+[Building type identified, list of spaces with estimated areas, total approximate area]
+
+### PEOPLE & SPACES
+[Distribute ${humanNP} people across spaces: Space | People | Activity]
+
+### DALL-E PROMPT
+[Complete ultra-detailed English prompt for DALL-E/GPT-4o. Include setting: ${humanLote}, vegetation: ${humanVeg}, ${humanNP} figures at 1.70m with specific activities, style ${humanEstilo}, scale 1:${humanEscala}]
+
+### MIDJOURNEY PROMPT
+[Compact version for /imagine with --ar 4:3 --quality 2 --style raw --v 6]
+
+### REVIT STEPS
+[5 steps with RPC families, 1700mm configuration and rendering for this project]`
+                            : `Você é especialista em visualização arquitetônica. Analise esta ${imgLabel} de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
 
 PARÂMETROS:
 - Escala: 1:${humanEscala}
@@ -1462,6 +1489,7 @@ PARÂMETROS:
 - Estilo: ${humanEstilo}
 - Lote: ${humanLote}
 - Vegetação: ${humanVeg}
+- Tipo de imagem: ${imgLabel}
 
 RETORNE EXATAMENTE neste formato markdown:
 
@@ -1478,8 +1506,10 @@ RETORNE EXATAMENTE neste formato markdown:
 [Versão compacta para /imagine com --ar 4:3 --quality 2 --style raw --v 6]
 
 ### PASSOS REVIT
-[5 passos com famílias RPC, configuração 1700mm e renderização para esta planta]`
+[5 passos com famílias RPC, configuração 1700mm e renderização para esta ${imgLabel}]`
 
+                          let analysisText = ''
+                          let dallePrompt = ''
                           try {
                             const r = await fetch('/api/chat', {
                               method: 'POST',
@@ -1499,204 +1529,597 @@ RETORNE EXATAMENTE neste formato markdown:
                             })
                             const d = await r.json()
                             const txt = d.content?.[0]?.text || ''
+                            analysisText = txt
                             const secs: Record<string,string> = {}
                             const rx = /###\s+([^\n]+)\n([\s\S]*?)(?=###\s|$)/g
                             let m
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
                             setHumanResult(secs)
-                            // Generate render image from DALL-E prompt via Pollinations.ai (free, no API key)
-                            const dallePromptKey = Object.keys(secs).find(k => k.includes('DALL'))
-                            const dallePromptText = dallePromptKey ? secs[dallePromptKey] : ''
-                            if (dallePromptText) {
-                              setHumanRenderLoading(true)
-                              const encoded = encodeURIComponent(dallePromptText.slice(0, 500))
-                              setHumanRenderUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1024&height=768&nologo=true&seed=${Date.now()}`)
-                            }
+                            const dalleKey = Object.keys(secs).find(k => k.includes('DALL'))
+                            dallePrompt = dalleKey ? secs[dalleKey] : ''
                           } catch (err: any) {
                             setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
                           }
                           setHumanLoading(false)
+
+                          // Auto-trigger Gemini render + palette + marketing in parallel
+                          const b64Snap = humanB64
+                          const imgTypeSnap = humanImgType
+                          const tipoSnap = humanTipo
+                          const estiloSnap = humanEstilo
+                          const loteSnap = humanLote
+                          const vegSnap = humanVeg
+
+                          // Gemini image-to-image render
+                          if (b64Snap && imgTypeSnap !== 'application/pdf') {
+                            setGeminiRenderLoading(true)
+                            const renderPrompt = `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
+
+Transform the plan by adding:
+- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
+- High-end modern furniture placed exactly inside each room
+- ${estiloSnap} interior rendering style
+- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
+- Plants, decor, lighting fixtures, artwork on walls
+- Swimming pool with water texture if space allows
+- EXTERIOR (outside the building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, shadow projection from vegetation
+- Natural overhead sunlight with soft shadows
+- The result must look like a premium architectural bird's-eye render as used in luxury real estate marketing`
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash-exp',
+                                contents: [{ role: 'user', parts: [
+                                  { inlineData: { mimeType: imgTypeSnap, data: b64Snap } },
+                                  { text: renderPrompt }
+                                ]}],
+                                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const parts = data?.candidates?.[0]?.content?.parts ?? []
+                              const imgPart = parts.find((p: any) => p.inlineData?.data)
+                              if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
+                            }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                          }
+
+                          // Gemini palette
+                          if (analysisText) {
+                            setGeminiPaletteLoading(true)
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash',
+                                contents: [{ role: 'user', parts: [{ text:
+                                  `Based on this architectural analysis of a "${tipoSnap}" building, suggest a professional color palette with exactly 6 colors.
+Analysis: ${analysisText.slice(0, 600)}
+Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                              const match = txt.match(/\[[\s\S]*\]/)
+                              if (match) {
+                                try { setGeminiPalette(JSON.parse(match[0])) } catch {}
+                              }
+                            }).catch(() => {}).finally(() => setGeminiPaletteLoading(false))
+                          }
+
+                          // Gemini marketing copy
+                          if (analysisText) {
+                            setGeminiMarketingLoading(true)
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash',
+                                contents: [{ role: 'user', parts: [{ text:
+                                  `Você é um copywriter especializado em marketing imobiliário de alto padrão. Com base nesta análise arquitetônica de um imóvel "${tipoSnap}", crie textos de marketing profissionais em português:
+
+Análise: ${analysisText.slice(0, 600)}
+
+Crie:
+1. **Headline** (até 10 palavras, impactante)
+2. **Subtítulo** (até 20 palavras)
+3. **Descrição** (2 parágrafos ricos e sedutores, 60-80 palavras cada)
+4. **Diferenciais** (5 bullet points com emojis)
+5. **Call to Action** (1 frase poderosa)` }]}]
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                              if (txt) setGeminiMarketing(txt)
+                            }).catch(() => {}).finally(() => setGeminiMarketingLoading(false))
+                          }
                         }}
                         style={{ padding:'12px', background: humanB64 ? '#534AB7' : '#ccc',
                           color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600,
                           cursor: humanB64 ? 'pointer' : 'not-allowed', fontFamily:'inherit',
                           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                        {humanLoading ? '⏳ Analisando...' : '✨ Gerar Análise e Prompts'}
+                        {humanLoading
+                          ? (humanLang==='pt-BR'?'⏳ Analisando...':'⏳ Analyzing...')
+                          : (humanLang==='pt-BR'?'✨ Gerar Análise Completa com IA':'✨ Analyze with AI')}
                       </button>
+
+                      </div>{/* end inner padding div */}
                     </div>
 
-                    {/* Right results */}
-                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
-                      {/* Print button when results exist */}
+                    {/* Right results — tabbed */}
+                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0 }}>
+
+                      {/* Tabs header */}
                       {!humanLoading && Object.keys(humanResult).length > 0 && (
-                        <button onClick={async () => {
-                          const w = window.open('','_blank','width=960,height=800')
-                          if (!w) return
-                          // Convert base64 to Blob URL so Chrome doesn't block it in document.write
-                          let plantImgUrl = ''
-                          if (humanB64) {
-                            try {
-                              const byteStr = atob(humanB64)
-                              const ab = new ArrayBuffer(byteStr.length)
-                              const ia = new Uint8Array(ab)
-                              for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i)
-                              plantImgUrl = URL.createObjectURL(new Blob([ab], { type: humanImgType }))
-                            } catch { plantImgUrl = '' }
-                          }
-                          const imgHtml = plantImgUrl ? `<img src="${plantImgUrl}" style="width:100%;border-radius:8px;margin-bottom:16px;display:block;page-break-inside:avoid"/>` : ''
-                          const renderHtml = humanRenderUrl && !humanRenderLoading
-                            ? `<h2>🎨 RENDERIZAÇÃO HUMANIZADA</h2><img src="${humanRenderUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>`
-                            : ''
-                          const sections = Object.entries(humanResult).map(([k,v]) =>
-                            `<h2>${k.includes('DALL') ? '🎨' : k.includes('MIDJ') ? '🎭' : k.includes('REVIT') ? '🏗️' : k.includes('AMBIENTES') ? '🚶' : '📊'} ${k}</h2><pre>${v}</pre>`
-                          ).join('')
-                          w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Humanização — ${humanTipo}</title><style>
-*{box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
-h1{font-size:20px;color:#185FA5;margin-bottom:4px}
-.sub{font-size:12px;color:#8890a0;margin-bottom:24px}
-h2{font-size:14px;color:#534AB7;margin:20px 0 8px;page-break-after:avoid}
-pre{white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.85;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0;page-break-inside:avoid}
-img{width:100%;height:auto;border-radius:8px;display:block;page-break-inside:avoid}
-@page{size:auto;margin:15mm}
-@media print{.no-print{display:none}body{padding:0}}
-</style></head><body>
-<h1>🏛️ Humanização de Planta Baixa</h1>
-<div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>
-${imgHtml}${renderHtml}${sections}
-<br/>
-<button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button>
-</body></html>`)
-                          w.document.close()
-                        }}
-                          style={{ padding:'9px 18px', background:'#534AB7', color:'#fff', border:'none', borderRadius:8,
-                            fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-                            display:'flex', alignItems:'center', gap:8, alignSelf:'flex-start' as const }}>
-                          🖨️ Imprimir Relatório Humanizado
-                        </button>
-                      )}
-                      {humanLoading && (
-                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
-                          justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
-                          <div style={{ width:36, height:36, border:'3px solid #e5e8f0', borderTopColor:'#534AB7',
-                            borderRadius:'50%', animation:'spin .7s linear infinite' }} />
-                          <div style={{ fontSize:13 }}>Analisando planta com IA...</div>
-                          <div style={{ fontSize:11, color:'#b0b8cc' }}>Identificando ambientes e calculando escala 1,70 m</div>
-                        </div>
-                      )}
-                      {!humanLoading && Object.keys(humanResult).length === 0 && (
-                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
-                          justifyContent:'center', gap:14, padding:48, color:'#8890a0', textAlign:'center' as const }}>
-                          <div style={{ fontSize:48 }}>🏛️</div>
-                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36' }}>Aguardando planta baixa</div>
-                          <div style={{ fontSize:12, maxWidth:280, lineHeight:1.6 }}>
-                            Envie uma imagem da planta e clique em "Gerar Análise e Prompts"
-                          </div>
-                          <div style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:'12px 16px', fontSize:11, color:'#5a6282' }}>
-                            <div style={{ fontWeight:700, marginBottom:6 }}>Escala de referência (1,70 m)</div>
-                            {[['1:25','6,8 cm'],['1:50','3,4 cm'],['1:100','1,7 cm'],['1:200','0,85 cm']].map(([s,v]) => (
-                              <div key={s} style={{ display:'flex', justifyContent:'space-between', padding:'3px 0',
-                                borderBottom:'1px solid #e5e8f0' }}>
-                                <span>{s}</span><span style={{ color:'#3B6D11', fontWeight:600 }}>{v} na planta</span>
-                              </div>
-                            ))}
-                          </div>
+                        <div style={{ display:'flex', gap:2, padding:'8px 12px', borderBottom:'1px solid #e5e8f0',
+                          background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
+                          {([
+                            ['analise','📊 Análise'],
+                            ['render','🎨 Render IA'],
+                            ['palette','🎭 Paleta'],
+                            ['marketing','📣 Marketing'],
+                            ['assistant','💬 Assistente'],
+                          ] as const).map(([t, lbl]) => (
+                            <button key={t} onClick={() => setHumanTab(t)}
+                              style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, border:'none',
+                                cursor:'pointer', fontFamily:'inherit',
+                                background: humanTab === t ? '#534AB7' : 'transparent',
+                                color: humanTab === t ? '#fff' : '#5a6282' }}>
+                              {lbl}{t === 'render' && geminiRenderLoading ? ' ⏳' : ''}
+                              {t === 'palette' && geminiPaletteLoading ? ' ⏳' : ''}
+                              {t === 'marketing' && geminiMarketingLoading ? ' ⏳' : ''}
+                            </button>
+                          ))}
+                          <button onClick={async () => {
+                            const w = window.open('','_blank','width=960,height=800')
+                            if (!w) return
+                            let plantImgUrl = ''
+                            if (humanB64 && humanImgType !== 'application/pdf') {
+                              try {
+                                const bs = atob(humanB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                plantImgUrl = URL.createObjectURL(new Blob([ab], { type: humanImgType }))
+                              } catch {}
+                            }
+                            let renderImgUrl = ''
+                            if (geminiRenderB64) {
+                              try {
+                                const bs = atob(geminiRenderB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                renderImgUrl = URL.createObjectURL(new Blob([ab], { type: 'image/jpeg' }))
+                              } catch {}
+                            }
+                            const imgHtml = plantImgUrl ? `<img src="${plantImgUrl}" style="width:100%;border-radius:8px;margin-bottom:16px;display:block;page-break-inside:avoid"/>` : ''
+                            const renderHtml = renderImgUrl ? `<h2>🎨 RENDERIZAÇÃO IA</h2><img src="${renderImgUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>` : ''
+                            const paletteHtml = geminiPalette.length ? `<h2>🎭 PALETA DE CORES</h2><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px">${geminiPalette.map(c=>`<div style="display:flex;align-items:center;gap:8px;background:#f8f9fc;padding:8px 12px;border-radius:8px;border:1px solid #e5e8f0"><div style="width:32px;height:32px;border-radius:6px;background:${c.hex};border:1px solid rgba(0,0,0,.1)"></div><div><div style="font-size:12px;font-weight:700">${c.name}</div><div style="font-size:10px;color:#8890a0">${c.hex} · ${c.usage}</div></div></div>`).join('')}</div>` : ''
+                            const marketingHtml = geminiMarketing ? `<h2>📣 MARKETING</h2><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">${geminiMarketing.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</div>` : ''
+                            const sections = Object.entries(humanResult).map(([k,v]) =>
+                              `<h2>${k.includes('DALL')?'🎨':k.includes('MIDJ')?'🎭':k.includes('REVIT')?'🏗️':k.includes('AMBIENTES')?'🚶':'📊'} ${k}</h2><pre>${v}</pre>`
+                            ).join('')
+                            w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Humanização — ${humanTipo}</title><style>*{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:24px 32px;color:#1a1f36;margin:0}h1{font-size:20px;color:#185FA5;margin-bottom:4px}.sub{font-size:12px;color:#8890a0;margin-bottom:24px}h2{font-size:14px;color:#534AB7;margin:20px 0 8px;page-break-after:avoid}pre{white-space:pre-wrap;font-size:12px;line-height:1.85;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0;page-break-inside:avoid}img{width:100%;height:auto;border-radius:8px;display:block;page-break-inside:avoid}@page{size:auto;margin:15mm}@media print{.no-print{display:none}}</style></head><body><h1>🏛️ Humanização de Planta Baixa</h1><div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>${imgHtml}${renderHtml}${paletteHtml}${marketingHtml}${sections}<br/><button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
+                            w.document.close()
+                          }}
+                            style={{ marginLeft:'auto', padding:'5px 12px', background:'#3B6D11', color:'#fff',
+                              border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨️ Imprimir
+                          </button>
                         </div>
                       )}
 
-                      {/* Rendering card — real image from Pollinations.ai */}
-                      {!humanLoading && humanRenderUrl && (
-                        <div style={{ background:'#fff', border:'2px solid #534AB7', borderRadius:12, overflow:'hidden' as const }}>
-                          <div style={{ padding:'10px 16px', background:'#534AB7', display:'flex', alignItems:'center', gap:8 }}>
-                            <span style={{ fontSize:16 }}>🎨</span>
-                            <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização — Visualização Humanizada</div>
-                            <div style={{ fontSize:10, color:'rgba(255,255,255,.75)' }}>Gerado por IA</div>
+                      {/* Scrollable content */}
+                      <div style={{ flex:1, overflowY:'auto' as const, padding:'16px', display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
+
+                        {/* Loading state */}
+                        {humanLoading && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                            justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
+                            <div style={{ width:36, height:36, border:'3px solid #e5e8f0', borderTopColor:'#534AB7',
+                              borderRadius:'50%', animation:'spin .7s linear infinite' }} />
+                            <div style={{ fontSize:13 }}>Analisando planta com IA...</div>
+                            <div style={{ fontSize:11, color:'#b0b8cc' }}>Gemini + Claude: identificando ambientes, gerando paleta e marketing</div>
                           </div>
-                          <div style={{ position:'relative' as const, background:'#0d0d1a',
-                            display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' as const,
-                            maxHeight: 320 }}>
-                            {humanRenderLoading && (
-                              <div style={{ position:'absolute' as const, inset:0, display:'flex', flexDirection:'column' as const,
-                                alignItems:'center', justifyContent:'center', gap:10, color:'#8880c0', zIndex:1,
-                                background:'#0d0d1a' }}>
-                                <div style={{ width:32, height:32, border:'3px solid #534AB7', borderTopColor:'transparent',
+                        )}
+
+                        {/* Empty state */}
+                        {!humanLoading && Object.keys(humanResult).length === 0 && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                            justifyContent:'center', gap:14, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                            <div style={{ fontSize:48 }}>🏛️</div>
+                            <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36' }}>Humanizador Studio 3D</div>
+                            <div style={{ fontSize:12, maxWidth:300, lineHeight:1.6 }}>
+                              Envie uma imagem da planta e clique em <strong>"✨ Gerar Análise"</strong>.<br/>
+                              A IA (Claude + Gemini) gerará análise, render 3D, paleta de cores e textos de marketing.
+                            </div>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, width:'100%', maxWidth:280 }}>
+                              {[['📊','Análise de ambientes'],['🎨','Render IA (Gemini)'],['🎭','Paleta de cores'],['📣','Copy de marketing']].map(([ic,lb])=>(
+                                <div key={lb} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8,
+                                  padding:'10px', textAlign:'center' as const, fontSize:11, color:'#5a6282' }}>
+                                  <div style={{ fontSize:20, marginBottom:4 }}>{ic}</div>{lb}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* ── Tab: Análise ── */}
+                        {!humanLoading && humanTab === 'analise' && Object.keys(humanResult).map(key => {
+                          const val = humanResult[key]
+                          const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
+                          const promptId = `hprompt-${key.replace(/\s/g,'')}`
+                          return (
+                            <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>
+                                  {key.includes('ANÁLISE') ? '📊' : key.includes('AMBIENTES') ? '🚶' : key.includes('DALL') ? '🎨' : key.includes('MIDJOURNEY') ? '🎭' : key.includes('REVIT') ? '🏗️' : '📋'} {key}
+                                </div>
+                                {isPrompt && (
+                                  <button id={`btn-${promptId}`}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val)
+                                      const btn = document.getElementById(`btn-${promptId}`)
+                                      if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
+                                    }}
+                                    style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
+                                      borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                    📋 Copiar
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ padding:'14px 16px' }}>
+                                {isPrompt ? (
+                                  <div id={promptId} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:6,
+                                    padding:'10px 12px', fontFamily:'monospace', fontSize:11, lineHeight:1.8,
+                                    color:'#1a1f36', whiteSpace:'pre-wrap' as const }}>{val}</div>
+                                ) : (
+                                  <div style={{ fontSize:12, lineHeight:1.75, color:'#5a6282', whiteSpace:'pre-wrap' as const }}
+                                    dangerouslySetInnerHTML={{ __html: val
+                                      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+                                      .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid #e5e8f0">$1</div>')
+                                      .replace(/\n/g,'<br/>') }} />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* ── Tab: Render IA ── */}
+                        {!humanLoading && humanTab === 'render' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:16 }}>
+                            {geminiRenderLoading && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:40, color:'#8890a0' }}>
+                                <div style={{ width:40, height:40, border:'3px solid #534AB7', borderTopColor:'transparent',
                                   borderRadius:'50%', animation:'spin .8s linear infinite' }} />
-                                <div style={{ fontSize:11 }}>Gerando renderização...</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#534AB7' }}>
+                                  {humanLang==='pt-BR'?'Gemini gerando renderização...':'Gemini generating render...'}
+                                </div>
+                                <div style={{ fontSize:11, color:'#b0b8cc' }}>
+                                  {humanLang==='pt-BR'?'Transformando planta em visualização 3D realista':'Converting drawing to photorealistic 3D visualization'}
+                                </div>
                               </div>
                             )}
-                            <img
-                              src={humanRenderUrl}
-                              alt="Renderização humanizada"
-                              onLoad={() => setHumanRenderLoading(false)}
-                              onError={() => { setHumanRenderLoading(false); setHumanRenderUrl(null) }}
-                              style={{ width:'100%', display:'block', objectFit:'cover', maxHeight:320,
-                                opacity: humanRenderLoading ? 0 : 1, transition:'opacity .4s' }}
-                            />
-                          </div>
-                          <div style={{ padding:'10px 14px', display:'flex', gap:8, flexWrap:'wrap' as const,
-                            borderTop:'1px solid #e5e8f0', background:'#f8f9fc' }}>
-                            <button onClick={() => {
-                              setHumanRenderLoading(true)
-                              setHumanRenderUrl(prev => prev ? prev.replace(/seed=\d+/, `seed=${Date.now()}`) : prev)
-                            }}
-                              style={{ padding:'6px 12px', background:'#534AB7', color:'#fff', border:'none',
-                                borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                              🔄 Gerar outra versão
-                            </button>
-                            <a href={humanRenderUrl} download="renderizacao-humanizada.png" target="_blank" rel="noreferrer"
-                              style={{ padding:'6px 12px', background:'#3B6D11', color:'#fff', border:'none',
-                                borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-                                textDecoration:'none', display:'inline-flex', alignItems:'center' }}>
-                              ⬇️ Baixar imagem
-                            </a>
-                          </div>
-                        </div>
-                      )}
+                            {!geminiRenderLoading && geminiRenderB64 && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                                {/* Render full width */}
+                                <div style={{ background:'#fff', border:'2px solid #534AB7', borderRadius:12, overflow:'hidden' as const }}>
+                                  <div style={{ padding:'10px 16px', background:'linear-gradient(135deg,#534AB7,#3d37a0)',
+                                    display:'flex', alignItems:'center', gap:8 }}>
+                                    <span style={{ fontSize:16 }}>🎨</span>
+                                    <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
+                                      {humanLang==='pt-BR'?'Renderização IA — Gemini Vision':'AI Render — Gemini Vision'}
+                                    </div>
+                                    <div style={{ fontSize:10, color:'rgba(255,255,255,.7)' }}>Gemini 2.0 Flash Exp</div>
+                                  </div>
+                                  <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render"
+                                    style={{ width:'100%', display:'block', maxHeight:400, objectFit:'cover' }} />
+                                  <div style={{ padding:'10px 14px', display:'flex', gap:8, background:'#f8f9fc', borderTop:'1px solid #e5e8f0', flexWrap:'wrap' as const }}>
+                                    <a href={`data:image/jpeg;base64,${geminiRenderB64}`} download="render-gemini.jpg"
+                                      style={{ padding:'6px 14px', background:'#534AB7', color:'#fff', border:'none',
+                                        borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+                                        textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
+                                      ⬇️ {humanLang==='pt-BR'?'Baixar Render':'Download Render'}
+                                    </a>
+                                    <button onClick={() => {
+                                      if (!humanB64 || humanImgType === 'application/pdf') return
+                                      setGeminiRenderB64(null)
+                                      setGeminiRenderLoading(true)
+                                      fetch('/api/gemini', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          model: 'gemini-2.0-flash-exp',
+                                          contents: [{ role: 'user', parts: [
+                                            { inlineData: { mimeType: humanImgType, data: humanB64 } },
+                                            { text: `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
 
-                      {!humanLoading && Object.keys(humanResult).map(key => {
-                        const val = humanResult[key]
-                        const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
-                        const promptId = `hprompt-${key.replace(/\s/g,'')}`
-                        return (
-                          <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
-                            <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
-                              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>
-                                {key.includes('ANÁLISE') ? '📊' : key.includes('AMBIENTES') ? '🚶' : key.includes('DALL') ? '🎨' : key.includes('MIDJOURNEY') ? '🎭' : key.includes('REVIT') ? '🏗️' : '📋'} {key}
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
+
+Transform the plan by adding:
+- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
+- High-end modern furniture placed exactly inside each room
+- ${humanEstilo} interior rendering style
+- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
+- Plants, decor, lighting fixtures
+- EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk with paving, street markings, natural overhead sunlight
+- The result must look like a premium architectural bird's-eye render for luxury real estate marketing
+- New variation seed: ${Date.now()}` }
+                                          ]}],
+                                          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                                        })
+                                      }).then(r => r.json()).then(data => {
+                                        const parts = data?.candidates?.[0]?.content?.parts ?? []
+                                        const imgPart = parts.find((p: any) => p.inlineData?.data)
+                                        if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
+                                      }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                                    }}
+                                      style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
+                                        borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                      🔄 {humanLang==='pt-BR'?'Nova versão':'New version'}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Reel Simulator — 9:16 Instagram/TikTok preview */}
+                                <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
+                                  <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#0f172a',
+                                    display:'flex', alignItems:'center', gap:8 }}>
+                                    <span style={{ fontSize:14 }}>📱</span>
+                                    <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
+                                      {humanLang==='pt-BR'?'Reel Preview — Instagram / TikTok':'Reel Preview — Instagram / TikTok'}
+                                    </div>
+                                    <div style={{ fontSize:10, color:'#64748b' }}>9:16</div>
+                                  </div>
+                                  <div style={{ padding:'16px', background:'#0f172a', display:'flex', justifyContent:'center' }}>
+                                    <div style={{
+                                      width: 180, aspectRatio:'9/16', overflow:'hidden', position:'relative' as const,
+                                      borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.6)', background:'#000'
+                                    }}>
+                                      <img
+                                        src={`data:image/jpeg;base64,${geminiRenderB64}`}
+                                        alt="Reel"
+                                        className="reel-kenburns"
+                                        key={geminiRenderB64?.slice(-20)}
+                                        style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                                      />
+                                      <div style={{
+                                        position:'absolute' as const, inset:0,
+                                        background:'linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 60%)',
+                                        display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'14px 12px'
+                                      }}>
+                                        <div style={{ fontSize:11, fontWeight:700, color:'#fff', lineHeight:1.3 }}>{humanTipo}</div>
+                                        <div style={{ fontSize:9, color:'rgba(255,255,255,.7)', marginTop:3 }}>
+                                          {humanLang==='pt-BR'?'Visualização Arquitetônica':'Architectural Visualization'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div style={{ padding:'10px 14px', borderTop:'1px solid #e5e8f0',
+                                    display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' as const, background:'#f8f9fc' }}>
+                                    <div style={{ fontSize:10, color:'#8890a0', textAlign:'center' as const }}>
+                                      {humanLang==='pt-BR'
+                                        ?'Preview animado com efeito Ken Burns • Ideal para Reels e Stories'
+                                        :'Animated Ken Burns preview • Ideal for Reels and Stories'}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                              {isPrompt && (
-                                <button id={`btn-${promptId}`}
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(val)
-                                    const btn = document.getElementById(`btn-${promptId}`)
-                                    if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
-                                  }}
-                                  style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
-                                    borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
-                                  📋 Copiar
-                                </button>
+                            )}
+                            {!geminiRenderLoading && !geminiRenderB64 && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:48 }}>🎨</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
+                                  {humanLang==='pt-BR'?'Renderização IA':'AI Render'}
+                                </div>
+                                <div style={{ fontSize:11, lineHeight:1.6, maxWidth:280 }}>
+                                  {humanLang==='pt-BR'
+                                    ?<>O render será gerado automaticamente ao analisar.<br/>Requer <strong>GEMINI_API_KEY</strong> no Vercel.</>
+                                    :<>Render is generated automatically after analysis.<br/>Requires <strong>GEMINI_API_KEY</strong> in Vercel.</>}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Paleta ── */}
+                        {!humanLoading && humanTab === 'palette' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {geminiPaletteLoading && (
+                              <div style={{ display:'flex', alignItems:'center', gap:12, padding:32, color:'#8890a0' }}>
+                                <div style={{ width:24, height:24, border:'2px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:12 }}>Gemini sugerindo paleta de cores...</div>
+                              </div>
+                            )}
+                            {!geminiPaletteLoading && geminiPalette.length > 0 && (
+                              <>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>🎭 Paleta de Cores Recomendada</div>
+                                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                                  {geminiPalette.map((c,i) => (
+                                    <div key={i} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' as const }}>
+                                      <div style={{ height:64, background:c.hex }} />
+                                      <div style={{ padding:'10px 12px' }}>
+                                        <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:2 }}>{c.name}</div>
+                                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                          <div style={{ fontSize:11, color:'#8890a0', fontFamily:'monospace' }}>{c.hex}</div>
+                                          <button onClick={() => navigator.clipboard.writeText(c.hex)}
+                                            style={{ fontSize:10, padding:'2px 7px', background:'#f0f4f8', border:'none',
+                                              borderRadius:4, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                            Copiar
+                                          </button>
+                                        </div>
+                                        <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4 }}>{c.usage}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                            {!geminiPaletteLoading && geminiPalette.length === 0 && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:36 }}>🎭</div>
+                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Marketing ── */}
+                        {!humanLoading && humanTab === 'marketing' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {geminiMarketingLoading && (
+                              <div style={{ display:'flex', alignItems:'center', gap:12, padding:32, color:'#8890a0' }}>
+                                <div style={{ width:24, height:24, border:'2px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:12 }}>Gemini criando textos de marketing...</div>
+                              </div>
+                            )}
+                            {!geminiMarketingLoading && geminiMarketing && (
+                              <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' as const }}>
+                                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                  display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                  <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>📣 Copy de Marketing Imobiliário</div>
+                                  <button onClick={() => navigator.clipboard.writeText(geminiMarketing)}
+                                    style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
+                                      borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                    📋 Copiar tudo
+                                  </button>
+                                </div>
+                                <div style={{ padding:'16px', fontSize:12, lineHeight:1.85, color:'#1a1f36' }}
+                                  dangerouslySetInnerHTML={{ __html: geminiMarketing
+                                    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#185FA5">$1</strong>')
+                                    .replace(/^##\s+(.+)$/gm,'<h3 style="color:#534AB7;font-size:13px;margin:16px 0 6px">$1</h3>')
+                                    .replace(/^###\s+(.+)$/gm,'<h4 style="color:#534AB7;font-size:12px;margin:12px 0 4px">$1</h4>')
+                                    .replace(/^[-•*]\s+(.+)$/gm,'<div style="padding:4px 0 4px 16px;border-left:3px solid #534AB7;margin:3px 0">$1</div>')
+                                    .replace(/\n\n/g,'<br/><br/>')
+                                    .replace(/\n/g,'<br/>') }} />
+                              </div>
+                            )}
+                            {!geminiMarketingLoading && !geminiMarketing && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:36 }}>📣</div>
+                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Assistente ── */}
+                        {!humanLoading && humanTab === 'assistant' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:10 }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:4 }}>
+                              💬 Assistente do Projeto
+                            </div>
+                            <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5, marginBottom:8 }}>
+                              Tire dúvidas sobre a planta, pede sugestões de layout, materiais, cores ou acabamentos.
+                            </div>
+                            {/* Messages */}
+                            <div style={{ display:'flex', flexDirection:'column' as const, gap:8, maxHeight:320, overflowY:'auto' as const }}>
+                              {humanAssistantMsgs.length === 0 && (
+                                <div style={{ background:'#f0f4f8', borderRadius:10, padding:'12px 14px', fontSize:12, color:'#5a6282', lineHeight:1.6 }}>
+                                  Olá! Sou seu assistente de projeto. Posso responder sobre:<br/>
+                                  • Sugestões de layout e circulação<br/>
+                                  • Materiais e acabamentos<br/>
+                                  • Normas ABNT para o ambiente<br/>
+                                  • Melhorias de iluminação e ventilação
+                                </div>
+                              )}
+                              {humanAssistantMsgs.map((msg, i) => (
+                                <div key={i} style={{ display:'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                  <div style={{ maxWidth:'85%', padding:'9px 13px', borderRadius:12, fontSize:12, lineHeight:1.65,
+                                    whiteSpace:'pre-wrap' as const,
+                                    background: msg.role === 'user' ? '#534AB7' : '#f4f6fb',
+                                    color: msg.role === 'user' ? '#fff' : '#1a1f36',
+                                    borderBottomRightRadius: msg.role === 'user' ? 2 : 12,
+                                    borderBottomLeftRadius: msg.role === 'assistant' ? 2 : 12 }}>
+                                    {msg.text}
+                                  </div>
+                                </div>
+                              ))}
+                              {humanAssistantLoading && (
+                                <div style={{ display:'flex', gap:6, padding:'8px 12px' }}>
+                                  {[0,1,2].map(i => (
+                                    <div key={i} style={{ width:6, height:6, borderRadius:'50%', background:'#534AB7',
+                                      animation:`bounce .9s ease-in-out ${i*0.15}s infinite` }} />
+                                  ))}
+                                </div>
                               )}
                             </div>
-                            <div style={{ padding:'14px 16px' }}>
-                              {isPrompt ? (
-                                <div id={promptId} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:6,
-                                  padding:'10px 12px', fontFamily:'monospace', fontSize:11, lineHeight:1.8,
-                                  color:'#1a1f36', whiteSpace:'pre-wrap' as const }}>
-                                  {val}
-                                </div>
-                              ) : (
-                                <div style={{ fontSize:12, lineHeight:1.75, color:'#5a6282',
-                                  whiteSpace:'pre-wrap' as const }}
-                                  dangerouslySetInnerHTML={{ __html: val
-                                    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-                                    .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid #e5e8f0">$1</div>')
-                                    .replace(/\n/g,'<br/>') }} />
-                              )}
+                            {/* Input */}
+                            <div style={{ display:'flex', gap:8, marginTop:4 }}>
+                              <input
+                                value={humanAssistantInput}
+                                onChange={e => setHumanAssistantInput(e.target.value)}
+                                onKeyDown={async e => {
+                                  if (e.key !== 'Enter' || !humanAssistantInput.trim() || humanAssistantLoading) return
+                                  const q = humanAssistantInput.trim()
+                                  setHumanAssistantInput('')
+                                  const newMsgs = [...humanAssistantMsgs, { role: 'user' as const, text: q }]
+                                  setHumanAssistantMsgs(newMsgs)
+                                  setHumanAssistantLoading(true)
+                                  const ctx = Object.entries(humanResult).map(([k,v])=>`${k}:\n${v}`).join('\n\n')
+                                  try {
+                                    const r = await fetch('/api/chat', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        model: 'claude-sonnet-4-6',
+                                        max_tokens: 600,
+                                        system: `Você é um assistente especialista em arquitetura e design de interiores. O contexto do projeto é:\n\n${ctx}\n\nResponda de forma concisa e prática em português.`,
+                                        messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
+                                      })
+                                    })
+                                    const d = await r.json()
+                                    const reply = d?.content?.[0]?.text || 'Desculpe, não consegui responder.'
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: reply }])
+                                  } catch {
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: '⚠️ Erro de conexão.' }])
+                                  }
+                                  setHumanAssistantLoading(false)
+                                }}
+                                placeholder="Pergunte sobre o projeto..."
+                                disabled={humanAssistantLoading || Object.keys(humanResult).length === 0}
+                                style={{ flex:1, padding:'9px 12px', border:'1px solid #e5e8f0', borderRadius:8,
+                                  fontSize:12, outline:'none', fontFamily:'inherit', color:'#1a1f36' }} />
+                              <button
+                                disabled={!humanAssistantInput.trim() || humanAssistantLoading || Object.keys(humanResult).length === 0}
+                                onClick={async () => {
+                                  const q = humanAssistantInput.trim()
+                                  if (!q || humanAssistantLoading) return
+                                  setHumanAssistantInput('')
+                                  const newMsgs = [...humanAssistantMsgs, { role: 'user' as const, text: q }]
+                                  setHumanAssistantMsgs(newMsgs)
+                                  setHumanAssistantLoading(true)
+                                  const ctx = Object.entries(humanResult).map(([k,v])=>`${k}:\n${v}`).join('\n\n')
+                                  try {
+                                    const r = await fetch('/api/chat', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        model: 'claude-sonnet-4-6',
+                                        max_tokens: 600,
+                                        system: `Você é um assistente especialista em arquitetura e design de interiores. O contexto do projeto é:\n\n${ctx}\n\nResponda de forma concisa e prática em português.`,
+                                        messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
+                                      })
+                                    })
+                                    const d = await r.json()
+                                    const reply = d?.content?.[0]?.text || 'Desculpe, não consegui responder.'
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: reply }])
+                                  } catch {
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: '⚠️ Erro de conexão.' }])
+                                  }
+                                  setHumanAssistantLoading(false)
+                                }}
+                                style={{ width:36, height:36, borderRadius:8, border:'none',
+                                  background: humanAssistantInput.trim() && !humanAssistantLoading ? '#534AB7' : '#e5e8f0',
+                                  color:'#fff', fontSize:16, cursor: humanAssistantInput.trim() && !humanAssistantLoading ? 'pointer' : 'default',
+                                  display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                ➤
+                              </button>
                             </div>
                           </div>
-                        )
-                      })}
+                        )}
+
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1805,31 +2228,9 @@ ${imgHtml}${renderHtml}${sections}
                             <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📊 {activePf?.name}</div>
                             <div style={{ display:'flex', gap:6 }}>
                               <button onClick={() => {
-                                const w = window.open('', '_blank', 'width=960,height=800')
+                                const w = window.open('','_blank','width=900,height=700')
                                 if (!w) return
-                                const pf = activePf!
-                                const plantBlock = isPDF
-                                  ? `<div style="margin-bottom:24px;page-break-inside:avoid"><embed src="${pf.url}" type="application/pdf" style="width:100%;height:420px;border-radius:8px;border:1px solid #e5e8f0;display:block"/></div>`
-                                  : isImage
-                                  ? `<img src="${pf.url}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid;max-height:420px;object-fit:contain"/>`
-                                  : ''
-                                w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<title>Análise — ${pf.name}</title><style>
-*{box-sizing:border-box}
-body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
-h1{font-size:18px;color:#185FA5;margin-bottom:4px}
-.sub{font-size:11px;color:#8890a0;margin-bottom:20px}
-pre{font-family:monospace;font-size:11px;line-height:1.85;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:8px;border:1px solid #e5e8f0;page-break-inside:avoid}
-@page{size:auto;margin:15mm}
-@media print{.noprint{display:none}img,embed{page-break-inside:avoid;max-height:280mm}}
-</style></head><body>
-<h1>📊 Análise BIM Intelligence — ${pf.name}</h1>
-<div class="sub">${new Date().toLocaleDateString('pt-BR')} · Atlas Construction Intelligence</div>
-${plantBlock}
-<pre>${unifiedAnalysis}</pre>
-<br/>
-<button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button>
-</body></html>`)
+                                w.document.write(`<html><head><title>Análise BIM — ${activePf?.name}</title><style>body{font-family:monospace;padding:32px;font-size:13px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 Análise BIM — ${activePf?.name}</h1>${unifiedAnalysis}<br/><br/><button onclick="window.print()">🖨️ Imprimir</button></body></html>`)
                                 w.document.close()
                               }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 🖨️ Imprimir
