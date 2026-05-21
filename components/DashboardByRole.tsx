@@ -1554,9 +1554,20 @@ RETORNE EXATAMENTE neste formato markdown:
                           // Gemini image-to-image render
                           if (b64Snap && imgTypeSnap !== 'application/pdf') {
                             setGeminiRenderLoading(true)
-                            const renderPrompt = dallePrompt
-                              ? `Render this architectural floor plan as a photorealistic ${estiloSnap} visualization. Style: ${estiloSnap}. Setting: ${loteSnap}. Vegetation: ${vegSnap}. Add people at 1.70m scale. High quality architectural render, natural lighting, warm atmosphere.`
-                              : `Render this floor plan as a photorealistic architectural visualization with natural lighting, professional quality, ${estiloSnap} style.`
+                            const renderPrompt = `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
+
+Transform the plan by adding:
+- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
+- High-end modern furniture placed exactly inside each room
+- ${estiloSnap} interior rendering style
+- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
+- Plants, decor, lighting fixtures, artwork on walls
+- Swimming pool with water texture if space allows
+- EXTERIOR (outside the building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, shadow projection from vegetation
+- Natural overhead sunlight with soft shadows
+- The result must look like a premium architectural bird's-eye render as used in luxury real estate marketing`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1819,7 +1830,19 @@ Crie:
                                           model: 'gemini-2.0-flash-exp',
                                           contents: [{ role: 'user', parts: [
                                             { inlineData: { mimeType: humanImgType, data: humanB64 } },
-                                            { text: `Render this architectural drawing as a photorealistic ${humanEstilo} visualization. Setting: ${humanLote}. Vegetation: ${humanVeg}. Add ${humanNP} people at 1.70m scale. High quality, natural lighting, warm atmosphere. Variation seed: ${Date.now()}` }
+                                            { text: `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
+
+Transform the plan by adding:
+- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
+- High-end modern furniture placed exactly inside each room
+- ${humanEstilo} interior rendering style
+- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
+- Plants, decor, lighting fixtures
+- EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk with paving, street markings, natural overhead sunlight
+- The result must look like a premium architectural bird's-eye render for luxury real estate marketing
+- New variation seed: ${Date.now()}` }
                                           ]}],
                                           generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
                                         })
