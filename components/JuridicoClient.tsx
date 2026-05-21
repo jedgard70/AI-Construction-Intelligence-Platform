@@ -152,8 +152,25 @@ export default function JuridicoClient() {
   const [uploadStatus, setUploadStatus]   = useState('')
   const [memorial, setMemorial]           = useState('')
   const [gerandoMemorial, setGerandoMem]  = useState(false)
+  const [memorialCtx, setMemorialCtx]     = useState<{analysis:string,plantB64:string|null,plantMime:string,plantName:string}|null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const contractSavedRef = useRef(false)
+
+  // Load BIM analysis context from viewer if it was passed
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('acip_memorial_context')
+      if (raw) {
+        const ctx = JSON.parse(raw)
+        // Only use if recent (within 1 hour)
+        if (ctx && Date.now() - ctx.createdAt < 3600000) {
+          setMemorialCtx({ analysis: ctx.analysis, plantB64: ctx.plantB64 || null, plantMime: ctx.plantMime || 'image/jpeg', plantName: ctx.plantName || 'Projeto' })
+          // Pre-populate memorial with the BIM analysis
+          if (ctx.analysis && !memorial) setMemorial(ctx.analysis)
+        }
+      }
+    } catch {}
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [parte, setParte] = useState<Parte>({
     nome: '', nacionalidade: 'brasileiro(a)', estado_civil: 'casado(a)',
@@ -1882,8 +1899,19 @@ p{margin:4px 0 8px;line-height:1.7}ul{margin:6px 0;padding-left:20px}li{margin:3
               <div style={s.card}>
                 <div style={s.sectionTitle}>📐 Memorial Descritivo da Obra <span style={s.autoBadge}>IA Claude</span></div>
                 <div style={{ fontSize: 13, color: '#5a6282', marginBottom: 14, lineHeight: 1.6 }}>
-                  O agente gera um memorial técnico completo conforme <strong>NBR 12721</strong>, com todas as seções obrigatórias (fundações, estrutura, instalações, revestimentos etc.) usando os dados do contrato.
+                  O agente gera um memorial técnico completo conforme <strong>NBR 12721</strong>, com todas as seções obrigatórias usando os dados do contrato.
+                  {memorialCtx && <span style={{ color:'#185FA5', fontWeight:600 }}> · Relatório técnico BIM importado do Visualizador ✓</span>}
                 </div>
+                {/* Show imported floor plan if available */}
+                {memorialCtx?.plantB64 && (
+                  <div style={{ marginBottom:14, borderRadius:8, overflow:'hidden', border:'2px solid #185FA5' }}>
+                    <div style={{ background:'#185FA5', padding:'6px 12px', fontSize:11, fontWeight:600, color:'#fff' }}>
+                      📐 {memorialCtx.plantName} — Planta do Projeto
+                    </div>
+                    <img src={`data:${memorialCtx.plantMime};base64,${memorialCtx.plantB64}`} alt="Planta"
+                      style={{ width:'100%', display:'block', maxHeight:320, objectFit:'contain', background:'#f8faff' }} />
+                  </div>
+                )}
                 {!memorial && (
                   <button style={{ ...s.btnPrimary, width: '100%', padding: 12, fontSize: 14 }}
                     onClick={gerarMemorial} disabled={gerandoMemorial}>
@@ -1901,11 +1929,14 @@ p{margin:4px 0 8px;line-height:1.7}ul{margin:6px 0;padding-left:20px}li{margin:3
                         <button style={s.btnSecondary}
                           onClick={() => {
                             const nomeArq = (parte.nome||'memorial').replace(/\s+/g,'_')
+                            const plantImgDoc = memorialCtx?.plantB64
+                              ? `<div style="margin-bottom:24pt"><h2>PLANTA DO PROJETO</h2><img src="data:${memorialCtx.plantMime};base64,${memorialCtx.plantB64}" style="width:100%;border:1px solid #ccc;border-radius:4px"/></div>`
+                              : ''
                             const docHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Memorial — ${parte.nome}</title>
 <style>body{font-family:'Calibri',Arial,sans-serif;font-size:12pt;margin:2cm;line-height:1.7}
 h1{font-size:16pt;color:#185FA5}h2{font-size:12pt;color:#185FA5;margin:16pt 0 6pt}
-p{margin:4pt 0}pre{font-family:inherit;white-space:pre-wrap}</style>
-</head><body><h1>Memorial Descritivo</h1><pre>${memorial}</pre></body></html>`
+p{margin:4pt 0}pre{font-family:inherit;white-space:pre-wrap}img{max-width:100%}</style>
+</head><body><h1>Memorial Descritivo — ${obra.tipo_obra}</h1>${plantImgDoc}<pre>${memorial}</pre></body></html>`
                             const blob = new Blob([docHtml], { type: 'application/msword;charset=utf-8' })
                             const a = document.createElement('a')
                             a.href = URL.createObjectURL(blob)
@@ -1914,16 +1945,62 @@ p{margin:4pt 0}pre{font-family:inherit;white-space:pre-wrap}</style>
                           }}>💾 Salvar .doc</button>
                         <button style={{ ...s.btnSecondary, color: '#185FA5', borderColor: '#185FA5' }}
                           onClick={() => {
-                            const w = window.open('', '_blank', 'width=900,height=700')
+                            const w = window.open('', '_blank', 'width=960,height=800')
                             if (!w) return
-                            w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Memorial Descritivo</title>
-<style>body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;padding:32px;max-width:800px;margin:0 auto;white-space:pre-wrap;line-height:1.8}
-h1{font-size:18px;color:#185FA5;margin-bottom:16px}
-.footer{margin-top:32px;border-top:1px solid #e5e8f0;padding-top:12px;font-size:10px;color:#8b93a7}
-@media print{@page{margin:1cm}}</style>
-</head><body><h1>📐 Memorial Descritivo</h1>${memorial.replace(/\n/g,'<br>')}
-<div class="footer">${ENG.nome} — CREA ${ENG.crea} · Gerado em ${new Date().toLocaleString('pt-BR')}</div>
-<script>window.onload=()=>window.print()</script></body></html>`)
+                            const now = new Date()
+                            const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+                            const plantImgHtml = memorialCtx?.plantB64
+                              ? `<div class="section"><div class="sec-title">📐 PLANTA DO PROJETO — ${memorialCtx.plantName}</div><img src="data:${memorialCtx.plantMime};base64,${memorialCtx.plantB64}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;margin-top:10px;page-break-inside:avoid"/></div>`
+                              : ''
+                            const analysisHtml = memorialCtx?.analysis
+                              ? `<div class="section"><div class="sec-title">📊 RELATÓRIO TÉCNICO BIM</div><div class="analysis-body">${memorialCtx.analysis.replace(/\n/g,'<br/>')}</div></div>`
+                              : ''
+                            w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Memorial Descritivo — ${obra.tipo_obra}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#1a1f36;background:#fff}
+.page{max-width:900px;margin:0 auto;padding:32px 40px}
+.header{border-bottom:3px solid #185FA5;padding-bottom:20px;margin-bottom:28px}
+.logo-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.title{font-size:22px;font-weight:700;color:#185FA5}
+.subtitle{font-size:13px;color:#5a6282;margin-top:4px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;background:#f8f9fc;padding:14px;border-radius:8px;border:1px solid #e5e8f0}
+.meta-item .label{font-size:9px;font-weight:700;color:#8890a0;text-transform:uppercase;letter-spacing:.1em}
+.meta-item .value{font-size:12px;font-weight:600;color:#1a1f36;margin-top:2px}
+.section{margin-bottom:28px;page-break-inside:avoid}
+.sec-title{font-size:12px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;background:#eff6ff;border-left:3px solid #185FA5;border-radius:0 4px 4px 0;margin-bottom:10px;margin-top:20px}
+.analysis-body{font-size:12px;line-height:1.9;color:#1a1f36;background:#f8f9fc;padding:16px;border-radius:6px;border:1px solid #e5e8f0;white-space:pre-wrap}
+.memorial-body{font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}
+.footer{border-top:1px solid #e5e8f0;margin-top:40px;padding-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#8890a0}
+.stamp{border:2px solid #185FA5;border-radius:8px;padding:10px 16px;text-align:center;font-size:10px;color:#185FA5;font-weight:600}
+@page{size:A4;margin:15mm}
+@media print{.no-print{display:none}.page{padding:0}}
+</style></head><body><div class="page">
+<div class="header">
+  <div class="logo-row">
+    <div><div class="title">🏛️ MEMORIAL DESCRITIVO</div><div class="subtitle">${obra.tipo_obra} · ${obra.classificacao} · AI Construction Intelligence Platform</div></div>
+    <div class="stamp">RT: ${ENG.nome}<br/>CREA ${ENG.crea}</div>
+  </div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Contratante</div><div class="value">${parte.nome || '[CONTRATANTE]'}</div></div>
+    <div class="meta-item"><div class="label">Endereço da Obra</div><div class="value">${obra.endereco || 'Conforme projeto'}</div></div>
+    <div class="meta-item"><div class="label">Data de Emissão</div><div class="value">${dateStr}</div></div>
+    <div class="meta-item"><div class="label">Área Construída</div><div class="value">${obra.area_construir ? obra.area_construir+' m²' : '—'}</div></div>
+    <div class="meta-item"><div class="label">Área do Terreno</div><div class="value">${obra.area_terreno ? obra.area_terreno+' m²' : '—'}</div></div>
+    <div class="meta-item"><div class="label">Norma de Referência</div><div class="value">ABNT NBR 12721 · NBR 6492</div></div>
+  </div>
+</div>
+${plantImgHtml}
+${analysisHtml}
+<div class="section">
+  <div class="sec-title">📋 MEMORIAL DESCRITIVO TÉCNICO</div>
+  <div class="memorial-body">${memorial.replace(/\n/g,'<br/>')}</div>
+</div>
+<div class="footer">
+  <div>${ENG.nome} — CREA ${ENG.crea} · Emitido em ${dateStr}</div>
+  <div>Memorial Descritivo · NBR 12721 · AI Construction Intelligence Platform</div>
+</div>
+<br/><button class="no-print" onclick="window.print()" style="padding:10px 28px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600">🖨️ Imprimir Memorial Descritivo</button>
+</div></body></html>`)
                             w.document.close()
                           }}>🖨️ Imprimir</button>
                         <button style={s.btnSecondary} onClick={gerarMemorial}>🔄 Regenerar</button>

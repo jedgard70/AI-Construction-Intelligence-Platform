@@ -2834,14 +2834,85 @@ Crie:
                             <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📊 {activePf?.name}</div>
                             <div style={{ display:'flex', gap:6 }}>
                               <button onClick={() => {
-                                const w = window.open('','_blank','width=900,height=700')
+                                const w = window.open('','_blank','width=960,height=800')
                                 if (!w) return
-                                w.document.write(`<html><head><title>Análise BIM — ${activePf?.name}</title><style>body{font-family:monospace;padding:32px;font-size:13px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 Análise BIM — ${activePf?.name}</h1>${unifiedAnalysis}<br/><br/><button onclick="window.print()">🖨️ Imprimir</button></body></html>`)
+                                const now = new Date()
+                                const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+                                // Build floor plan image HTML
+                                let plantImgHtml = ''
+                                if (activePfB64 && activePfMediaType !== 'application/pdf') {
+                                  try {
+                                    const bs = atob(activePfB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                    for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                    const blobUrl = URL.createObjectURL(new Blob([ab], { type: activePfMediaType }))
+                                    plantImgHtml = `<div class="section"><div class="sec-title">📐 PLANTA / PROJETO</div><img src="${blobUrl}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;page-break-inside:avoid;margin-top:10px"/></div>`
+                                  } catch {}
+                                } else if (activePf?.url && activePf?.ext && !['pdf','dwg','dxf','ifc','rvt'].includes(activePf.ext)) {
+                                  plantImgHtml = `<div class="section"><div class="sec-title">📐 PLANTA / PROJETO</div><img src="${activePf.url}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;page-break-inside:avoid;margin-top:10px"/></div>`
+                                }
+                                // Format analysis into sections
+                                const analysisFormatted = unifiedAnalysis
+                                  .replace(/^#+\s*(.+)$/gm, (_: string, t: string) => `<div class="sec-title">${t}</div>`)
+                                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                  .replace(/\n/g, '<br/>')
+                                w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><title>Memorial Descritivo — ${activePf?.name ?? 'Projeto'}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#1a1f36;background:#fff}
+.page{max-width:900px;margin:0 auto;padding:32px 40px}
+.header{border-bottom:3px solid #185FA5;padding-bottom:20px;margin-bottom:28px}
+.logo-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.title{font-size:22px;font-weight:700;color:#185FA5;letter-spacing:.5px}
+.subtitle{font-size:13px;color:#5a6282;margin-top:4px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;background:#f8f9fc;padding:14px;border-radius:8px;border:1px solid #e5e8f0}
+.meta-item .label{font-size:9px;font-weight:700;color:#8890a0;text-transform:uppercase;letter-spacing:.1em}
+.meta-item .value{font-size:12px;font-weight:600;color:#1a1f36;margin-top:2px}
+.section{margin-bottom:28px;page-break-inside:avoid}
+.sec-title{font-size:12px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;background:#eff6ff;border-left:3px solid #185FA5;border-radius:0 4px 4px 0;margin-bottom:10px;margin-top:20px}
+.analysis-body{font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:6px;border:1px solid #e5e8f0}
+.footer{border-top:1px solid #e5e8f0;margin-top:40px;padding-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#8890a0}
+.stamp{border:2px solid #185FA5;border-radius:8px;padding:10px 16px;text-align:center;font-size:10px;color:#185FA5;font-weight:600}
+@page{size:A4;margin:15mm}
+@media print{.no-print{display:none}.page{padding:0}}
+</style></head><body><div class="page">
+<div class="header">
+  <div class="logo-row">
+    <div><div class="title">🏛️ MEMORIAL DESCRITIVO</div><div class="subtitle">Relatório Técnico Completo · AI Construction Intelligence Platform</div></div>
+    <div class="stamp">🤖 AI BIM<br/>Intelligence</div>
+  </div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Arquivo / Projeto</div><div class="value">${activePf?.name ?? 'Projeto'}</div></div>
+    <div class="meta-item"><div class="label">Data de Emissão</div><div class="value">${dateStr}</div></div>
+    <div class="meta-item"><div class="label">Norma de Referência</div><div class="value">ABNT NBR 6492 · NBR 12721</div></div>
+  </div>
+</div>
+${plantImgHtml}
+<div class="section">
+  <div class="sec-title">📋 RELATÓRIO TÉCNICO COMPLETO</div>
+  <div class="analysis-body">${analysisFormatted}</div>
+</div>
+<div class="footer">
+  <div>Gerado em ${dateStr} · AI Construction Intelligence Platform</div>
+  <div>Memorial Descritivo · Quantitativo · BIM · ABNT NBR</div>
+</div>
+<br/><button class="no-print" onclick="window.print()" style="padding:10px 28px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600">🖨️ Imprimir Memorial Descritivo</button>
+</div></body></html>`)
                                 w.document.close()
                               }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 🖨️ Imprimir
                               </button>
-                              <button onClick={() => window.open('/juridico', '_self')}
+                              <button onClick={() => {
+                                // Save memorial context so Juridico page can pick it up
+                                try {
+                                  localStorage.setItem('acip_memorial_context', JSON.stringify({
+                                    analysis: unifiedAnalysis,
+                                    plantB64: activePfB64,
+                                    plantMime: activePfMediaType,
+                                    plantName: activePf?.name ?? 'Projeto',
+                                    createdAt: Date.now()
+                                  }))
+                                } catch {}
+                                window.open('/juridico', '_blank')
+                              }}
                                 style={{ padding:'5px 11px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 ⚖️ Jurídico
                               </button>
