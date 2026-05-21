@@ -1868,12 +1868,11 @@ Crie:
                     </div>
 
                     {/* Right results — tabbed */}
-                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0 }}>
+                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0, height:'100%' }}>
 
-                      {/* Tabs header */}
-                      {!humanLoading && Object.keys(humanResult).length > 0 && (
-                        <div style={{ display:'flex', gap:2, padding:'8px 12px', borderBottom:'1px solid #e5e8f0',
-                          background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
+                      {/* Tabs header — always visible */}
+                      <div style={{ display:'flex', gap:2, padding:'8px 12px', borderBottom:'1px solid #e5e8f0',
+                        background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
                           {([
                             ['analise','📊 Análise'],
                             ['ambientes','🚶 Ambientes'],
@@ -1894,7 +1893,7 @@ Crie:
                               {t === 'marketing' && geminiMarketingLoading ? ' ⏳' : ''}
                             </button>
                           ))}
-                          <button onClick={async () => {
+                          {Object.keys(humanResult).length > 0 && <button onClick={async () => {
                             const w = window.open('','_blank','width=960,height=800')
                             if (!w) return
                             let plantImgUrl = ''
@@ -1926,12 +1925,11 @@ Crie:
                             style={{ marginLeft:'auto', padding:'5px 12px', background:'#3B6D11', color:'#fff',
                               border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                             🖨️ Imprimir
-                          </button>
+                          </button>}
                         </div>
-                      )}
 
                       {/* Scrollable content */}
-                      <div style={{ flex:1, overflowY:'auto' as const, padding:'16px', display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
+                      <div style={{ flex:1, height:0, overflowY:'auto' as const, padding:'16px', display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
 
                         {/* Loading state */}
                         {humanLoading && (
