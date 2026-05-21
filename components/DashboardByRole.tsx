@@ -1555,27 +1555,19 @@ RETORNE EXATAMENTE neste formato markdown:
                           const loteSnap = humanLote
                           const vegSnap = humanVeg
 
-                          // Gemini image-to-image render
+                          // ── Render: Pollinations PRIMARY (instant) + Gemini background upgrade ──
+                          if (dallePrompt) {
+                            // Show Pollinations immediately — always works, no API key needed
+                            const encoded = encodeURIComponent(
+                              `${dallePrompt} bird's-eye architectural floor plan render, luxury real estate, top-down view`.slice(0, 500)
+                            )
+                            setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
+                          }
+
+                          // Try Gemini image-to-image in background — replaces Pollinations if successful
                           if (b64Snap && imgTypeSnap !== 'application/pdf') {
                             setGeminiRenderLoading(true)
-                            const renderPrompt = `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
-
-CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
-
-Transform the plan by adding:
-- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
-- High-end modern furniture placed exactly inside each room
-- ${estiloSnap} interior rendering style
-- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
-- Plants, decor, lighting fixtures, artwork on walls
-- Swimming pool with water texture if space allows
-- EXTERIOR (outside the building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, shadow projection from vegetation
-- Natural overhead sunlight with soft shadows
-- The result must look like a premium architectural bird's-eye render as used in luxury real estate marketing`
-                            const fallbackToPollinationsSnap = (prompt: string) => {
-                              const encoded = encodeURIComponent(prompt.slice(0, 500))
-                              setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
-                            }
+                            const renderPrompt = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. CRITICAL: Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring (hardwood, tiles, marble), high-end modern furniture in each room, ${humanNP} people doing activities, plants, decor. EXTERIOR: ${loteSnap}, ${vegSnap}, sidewalk, natural overhead sunlight. Premium luxury real estate marketing render.`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1589,26 +1581,12 @@ Transform the plan by adding:
                               })
                             }).then(async r => {
                               const data = await r.json()
-                              const apiErr = data?.error?.message
-                              if (apiErr) {
-                                setGeminiRenderError(apiErr)
-                                // Fallback: use Pollinations with DALL-E prompt
-                                if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
-                                return
-                              }
+                              if (data?.error?.message) { setGeminiRenderError(data.error.message); return }
                               const parts = data?.candidates?.[0]?.content?.parts ?? []
                               const imgPart = parts.find((p: any) => p.inlineData?.data)
-                              if (imgPart) {
-                                setGeminiRenderB64(imgPart.inlineData.data)
-                                setGeminiRenderError(null)
-                              } else {
-                                setGeminiRenderError('Gemini não retornou imagem — usando Pollinations como alternativa.')
-                                if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
-                              }
-                            }).catch((e: any) => {
-                              setGeminiRenderError(e?.message || 'Erro de rede')
-                              if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
-                            })
+                              if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
+                              else setGeminiRenderError('Gemini não retornou imagem.')
+                            }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
                             .finally(() => setGeminiRenderLoading(false))
                           }
 
@@ -1812,70 +1790,63 @@ Crie:
                         {/* ── Tab: Render IA ── */}
                         {!humanLoading && humanTab === 'render' && (
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:16 }}>
-                            {geminiRenderLoading && (
-                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:40, color:'#8890a0' }}>
-                                <div style={{ width:40, height:40, border:'3px solid #534AB7', borderTopColor:'transparent',
-                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
-                                <div style={{ fontSize:13, fontWeight:600, color:'#534AB7' }}>
-                                  {humanLang==='pt-BR'?'Gemini gerando renderização...':'Gemini generating render...'}
-                                </div>
-                                <div style={{ fontSize:11, color:'#b0b8cc' }}>
-                                  {humanLang==='pt-BR'?'Transformando planta em visualização 3D realista':'Converting drawing to photorealistic 3D visualization'}
-                                </div>
+
+                            {/* Gemini upgrade badge while loading */}
+                            {geminiRenderLoading && !geminiRenderB64 && (
+                              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
+                                background:'#eff6ff', borderRadius:8, border:'1px solid #93c5fd', fontSize:11, color:'#1d4ed8' }}>
+                                <div style={{ width:14, height:14, border:'2px solid #3b82f6', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite', flexShrink:0 }} />
+                                Gemini processando versão image-to-image…
                               </div>
                             )}
-                            {!geminiRenderLoading && geminiRenderB64 && (
+
+                            {/* Primary render: Pollinations (always shown when available) */}
+                            {(pollinationsUrl || geminiRenderB64) ? (
                               <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
-                                {/* Render full width */}
-                                <div style={{ background:'#fff', border:'2px solid #534AB7', borderRadius:12, overflow:'hidden' as const }}>
-                                  <div style={{ padding:'10px 16px', background:'linear-gradient(135deg,#534AB7,#3d37a0)',
+                                {/* Main render card */}
+                                <div style={{ background:'#fff', border:`2px solid ${geminiRenderB64?'#534AB7':'#3b82f6'}`, borderRadius:12, overflow:'hidden' as const }}>
+                                  <div style={{ padding:'10px 16px', background: geminiRenderB64 ? 'linear-gradient(135deg,#534AB7,#3d37a0)' : 'linear-gradient(135deg,#1e3a5f,#1e40af)',
                                     display:'flex', alignItems:'center', gap:8 }}>
                                     <span style={{ fontSize:16 }}>🎨</span>
                                     <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
-                                      {humanLang==='pt-BR'?'Renderização IA — Gemini Vision':'AI Render — Gemini Vision'}
+                                      {geminiRenderB64
+                                        ? (humanLang==='pt-BR'?'Render IA — Gemini image-to-image':'AI Render — Gemini image-to-image')
+                                        : (humanLang==='pt-BR'?'Render IA — Gerado por IA':'AI Render — AI Generated')}
                                     </div>
-                                    <div style={{ fontSize:10, color:'rgba(255,255,255,.7)' }}>Gemini 2.0 Flash Exp</div>
+                                    <div style={{ fontSize:10, color:'rgba(255,255,255,.7)' }}>
+                                      {geminiRenderB64 ? 'Gemini 2.0 Flash Exp' : 'Pollinations.ai'}
+                                    </div>
                                   </div>
-                                  <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render"
-                                    style={{ width:'100%', display:'block', maxHeight:400, objectFit:'cover' }} />
+                                  {geminiRenderB64 ? (
+                                    <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render Gemini"
+                                      style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }} />
+                                  ) : (
+                                    <img src={pollinationsUrl!} alt="Render"
+                                      style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }}
+                                      onError={() => setPollinationsUrl(null)} />
+                                  )}
                                   <div style={{ padding:'10px 14px', display:'flex', gap:8, background:'#f8f9fc', borderTop:'1px solid #e5e8f0', flexWrap:'wrap' as const }}>
-                                    <a href={`data:image/jpeg;base64,${geminiRenderB64}`} download="render-gemini.jpg"
-                                      style={{ padding:'6px 14px', background:'#534AB7', color:'#fff', border:'none',
-                                        borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-                                        textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
-                                      ⬇️ {humanLang==='pt-BR'?'Baixar Render':'Download Render'}
-                                    </a>
+                                    {geminiRenderB64 ? (
+                                      <a href={`data:image/jpeg;base64,${geminiRenderB64}`} download="render-gemini.jpg"
+                                        style={{ padding:'6px 14px', background:'#534AB7', color:'#fff', borderRadius:6,
+                                          fontSize:11, fontWeight:600, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
+                                        ⬇️ {humanLang==='pt-BR'?'Baixar':'Download'}
+                                      </a>
+                                    ) : (
+                                      <a href={pollinationsUrl!} download="render.jpg" target="_blank" rel="noreferrer"
+                                        style={{ padding:'6px 14px', background:'#3b82f6', color:'#fff', borderRadius:6,
+                                          fontSize:11, fontWeight:600, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
+                                        ⬇️ {humanLang==='pt-BR'?'Baixar':'Download'}
+                                      </a>
+                                    )}
                                     <button onClick={() => {
-                                      if (!humanB64 || humanImgType === 'application/pdf') return
-                                      setGeminiRenderB64(null)
-                                      setGeminiRenderError(null)
-                                      setGeminiRenderLoading(true)
-                                      const regenPrompt = `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
-
-CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
-
-Transform by adding: realistic flooring (hardwood, tiles, marble), high-end modern furniture, ${humanNP} people doing activities, plants, decor. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, natural overhead sunlight. Premium luxury real estate marketing render. Seed: ${Date.now()}`
-                                      fetch('/api/gemini', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          model: 'gemini-2.0-flash-exp',
-                                          contents: [{ role: 'user', parts: [
-                                            { inlineData: { mimeType: humanImgType, data: humanB64 } },
-                                            { text: regenPrompt }
-                                          ]}],
-                                          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-                                        })
-                                      }).then(async r => {
-                                        const data = await r.json()
-                                        const apiErr = data?.error?.message
-                                        if (apiErr) { setGeminiRenderError(apiErr); return }
-                                        const parts = data?.candidates?.[0]?.content?.parts ?? []
-                                        const imgPart = parts.find((p: any) => p.inlineData?.data)
-                                        if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
-                                        else setGeminiRenderError('Gemini não retornou imagem. Tente novamente.')
-                                      }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
-                                      .finally(() => setGeminiRenderLoading(false))
+                                      if (!humanB64 || humanImgType==='application/pdf') return
+                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true)
+                                      const p = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring, high-end furniture, ${humanNP} people, plants. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk. Premium luxury real estate. Seed:${Date.now()}`
+                                      fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
+                                        body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip)setGeminiRenderB64(ip.inlineData.data); else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
                                     }}
                                       style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
                                         borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
@@ -1884,91 +1855,61 @@ Transform by adding: realistic flooring (hardwood, tiles, marble), high-end mode
                                   </div>
                                 </div>
 
-                                {/* Reel Simulator — 9:16 Instagram/TikTok preview */}
-                                <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
-                                  <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#0f172a',
-                                    display:'flex', alignItems:'center', gap:8 }}>
-                                    <span style={{ fontSize:14 }}>📱</span>
-                                    <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
-                                      {humanLang==='pt-BR'?'Reel Preview — Instagram / TikTok':'Reel Preview — Instagram / TikTok'}
+                                {/* Reel Simulator */}
+                                {(geminiRenderB64 || pollinationsUrl) && (
+                                  <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
+                                    <div style={{ padding:'10px 16px', background:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
+                                      <span style={{ fontSize:14 }}>📱</span>
+                                      <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Reel Preview — Instagram / TikTok</div>
+                                      <div style={{ fontSize:10, color:'#64748b' }}>9:16</div>
                                     </div>
-                                    <div style={{ fontSize:10, color:'#64748b' }}>9:16</div>
-                                  </div>
-                                  <div style={{ padding:'16px', background:'#0f172a', display:'flex', justifyContent:'center' }}>
-                                    <div style={{
-                                      width: 180, aspectRatio:'9/16', overflow:'hidden', position:'relative' as const,
-                                      borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.6)', background:'#000'
-                                    }}>
-                                      <img
-                                        src={`data:image/jpeg;base64,${geminiRenderB64}`}
-                                        alt="Reel"
-                                        className="reel-kenburns"
-                                        key={geminiRenderB64?.slice(-20)}
-                                        style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
-                                      />
-                                      <div style={{
-                                        position:'absolute' as const, inset:0,
-                                        background:'linear-gradient(to top, rgba(0,0,0,.75) 0%, transparent 60%)',
-                                        display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'14px 12px'
-                                      }}>
-                                        <div style={{ fontSize:11, fontWeight:700, color:'#fff', lineHeight:1.3 }}>{humanTipo}</div>
-                                        <div style={{ fontSize:9, color:'rgba(255,255,255,.7)', marginTop:3 }}>
-                                          {humanLang==='pt-BR'?'Visualização Arquitetônica':'Architectural Visualization'}
+                                    <div style={{ padding:'16px', background:'#0f172a', display:'flex', justifyContent:'center' }}>
+                                      <div style={{ width:180, aspectRatio:'9/16', overflow:'hidden', position:'relative' as const,
+                                        borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.6)', background:'#000' }}>
+                                        <img
+                                          src={geminiRenderB64 ? `data:image/jpeg;base64,${geminiRenderB64}` : pollinationsUrl!}
+                                          alt="Reel" className="reel-kenburns"
+                                          key={(geminiRenderB64 ?? pollinationsUrl ?? '').slice(-20)}
+                                          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                                        />
+                                        <div style={{ position:'absolute' as const, inset:0, background:'linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 60%)',
+                                          display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'14px 12px' }}>
+                                          <div style={{ fontSize:11, fontWeight:700, color:'#fff', lineHeight:1.3 }}>{humanTipo}</div>
+                                          <div style={{ fontSize:9, color:'rgba(255,255,255,.7)', marginTop:3 }}>
+                                            {humanLang==='pt-BR'?'Visualização Arquitetônica':'Architectural Visualization'}
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  <div style={{ padding:'10px 14px', borderTop:'1px solid #e5e8f0',
-                                    display:'flex', gap:8, justifyContent:'center', flexWrap:'wrap' as const, background:'#f8f9fc' }}>
-                                    <div style={{ fontSize:10, color:'#8890a0', textAlign:'center' as const }}>
-                                      {humanLang==='pt-BR'
-                                        ?'Preview animado com efeito Ken Burns • Ideal para Reels e Stories'
-                                        :'Animated Ken Burns preview • Ideal for Reels and Stories'}
+                                    <div style={{ padding:'8px 14px', background:'#f8f9fc', borderTop:'1px solid #e5e8f0', fontSize:10, color:'#8890a0', textAlign:'center' as const }}>
+                                      {humanLang==='pt-BR'?'Ken Burns • Ideal para Reels e Stories':'Ken Burns • Ideal for Reels & Stories'}
                                     </div>
                                   </div>
-                                </div>
+                                )}
                               </div>
-                            )}
-                            {!geminiRenderLoading && !geminiRenderB64 && (
-                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:40, color:'#8890a0', textAlign:'center' as const }}>
-                                <div style={{ fontSize:40 }}>🎨</div>
-                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
-                                  {humanLang==='pt-BR'?'Renderização IA':'AI Render'}
-                                </div>
-                                {geminiRenderError && (
-                                  <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8,
-                                    padding:'10px 14px', maxWidth:400, textAlign:'left' as const }}>
-                                    <div style={{ fontSize:11, fontWeight:700, color:'#dc2626', marginBottom:4 }}>
-                                      ⚠️ Gemini image-to-image indisponível
-                                    </div>
-                                    <div style={{ fontSize:10, color:'#7f1d1d', lineHeight:1.6, fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
-                                      {geminiRenderError}
-                                    </div>
+                            ) : (
+                              /* Empty state — shown only before analysis runs */
+                              !geminiRenderLoading && (
+                                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                  <div style={{ fontSize:48 }}>🎨</div>
+                                  <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
+                                    {humanLang==='pt-BR'?'Renderização IA':'AI Render'}
                                   </div>
-                                )}
-                                {pollinationsUrl && (
-                                  <div style={{ width:'100%', maxWidth:480 }}>
-                                    <div style={{ fontSize:11, color:'#8890a0', marginBottom:8, textAlign:'left' as const }}>
-                                      🎨 Render alternativo via Pollinations.ai (a partir do prompt DALL-E gerado):
-                                    </div>
-                                    <img src={pollinationsUrl} alt="Render Pollinations"
-                                      style={{ width:'100%', borderRadius:10, display:'block', border:'1px solid #e5e8f0' }}
-                                      onLoad={() => {}}
-                                      onError={() => setPollinationsUrl(null)} />
-                                    <a href={pollinationsUrl} download="render-pollinations.jpg" target="_blank" rel="noreferrer"
-                                      style={{ display:'inline-block', marginTop:8, padding:'6px 14px', background:'#534AB7',
-                                        color:'#fff', borderRadius:6, fontSize:11, fontWeight:600, textDecoration:'none' }}>
-                                      ⬇️ Baixar
-                                    </a>
-                                  </div>
-                                )}
-                                {!geminiRenderError && !pollinationsUrl && (
                                   <div style={{ fontSize:11, lineHeight:1.6, maxWidth:280 }}>
                                     {humanLang==='pt-BR'
-                                      ?<>O render é gerado automaticamente ao analisar.<br/>Certifique-se que <strong>GEMINI_API_KEY</strong> está no Vercel e o site foi redesplantado após salvar a chave.</>
-                                      :<>Render is generated automatically after analysis.<br/>Make sure <strong>GEMINI_API_KEY</strong> is saved in Vercel and the site was redeployed after saving.</>}
+                                      ?'Envie uma planta e clique em "Gerar Análise" — o render aparece automaticamente.'
+                                      :'Upload a floor plan and click "Analyze" — the render appears automatically.'}
                                   </div>
-                                )}
+                                </div>
+                              )
+                            )}
+
+                            {/* Gemini error note (small, non-blocking) */}
+                            {geminiRenderError && !geminiRenderLoading && (
+                              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:6,
+                                padding:'8px 12px', fontSize:10, color:'#7f1d1d', display:'flex', gap:8, alignItems:'flex-start' }}>
+                                <span style={{ flexShrink:0 }}>⚠️</span>
+                                <span>Gemini image-to-image: {geminiRenderError.slice(0, 120)}</span>
                               </div>
                             )}
                           </div>
