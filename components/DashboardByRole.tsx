@@ -943,7 +943,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         const canAnalyze = activePf ? (isImage || isPDF) : false
 
         async function autoRunAnalysis(b64: string, mediaType: string, pf: {name:string,ext:string}) {
-          setUnifiedLoading(true); setUnifiedAnalysis(''); setViewerTab('analysis')
+          setUnifiedLoading(true); setUnifiedAnalysis('')
+          // Stay on viewer tab so the file remains visible while AI runs
           const isPDFFile = pf.ext === 'pdf'
           try {
             const res = await fetch('/api/chat', {
@@ -1185,13 +1186,17 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                     🎨 Humanizar
                   </button>
                   {canAnalyze && (
-                    <button onClick={runUnifiedAnalysis}
+                    <button
                       disabled={unifiedLoading}
+                      onClick={() => {
+                        if (unifiedAnalysis) { setViewerTab('analysis') }
+                        else { runUnifiedAnalysis() }
+                      }}
                       style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
-                        background: viewerTab==='analysis' ? '#3B6D11' : '#EAF3DE',
-                        color: viewerTab==='analysis' ? '#fff' : '#3B6D11', border:'1px solid #97C459', fontFamily:'inherit',
-                        opacity: unifiedLoading ? 0.7 : 1 }}>
-                      {unifiedLoading ? '⏳ Analisando com IA...' : '🤖 Analisar Tudo (BIM + Memorial + Quantitativo)'}
+                        background: unifiedLoading ? '#8a9a70' : unifiedAnalysis ? '#3B6D11' : '#EAF3DE',
+                        color: (unifiedLoading || unifiedAnalysis) ? '#fff' : '#3B6D11',
+                        border:'1px solid #97C459', fontFamily:'inherit', position:'relative' as const }}>
+                      {unifiedLoading ? '⏳ Analisando...' : unifiedAnalysis ? '📊 Ver Análise (pronta)' : '🤖 Analisar Tudo'}
                     </button>
                   )}
                   {is3D && activePf && (
@@ -1438,6 +1443,24 @@ RETORNE EXATAMENTE neste formato markdown:
 
                     {/* Right results */}
                     <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
+                      {/* Print button when results exist */}
+                      {!humanLoading && Object.keys(humanResult).length > 0 && (
+                        <button onClick={() => {
+                          const w = window.open('','_blank','width=900,height=700')
+                          if (!w) return
+                          const imgHtml = humanB64 ? `<img src="data:${humanImgType};base64,${humanB64}" style="max-width:100%;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
+                          const sections = Object.entries(humanResult).map(([k,v]) =>
+                            `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">${k}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px">${v}</pre>`
+                          ).join('')
+                          w.document.write(`<html><head><title>Humanização — ${humanTipo}</title><style>body{font-family:'Segoe UI',sans-serif;padding:32px;color:#1a1f36;max-width:900px;margin:0 auto}h1{font-size:20px;color:#185FA5;margin-bottom:4px}.sub{font-size:12px;color:#8890a0;margin-bottom:24px}@media print{.no-print{display:none}}</style></head><body><h1>🏛️ Humanização de Planta Baixa</h1><div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>${imgHtml}${sections}<br/><button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
+                          w.document.close()
+                        }}
+                          style={{ padding:'9px 18px', background:'#534AB7', color:'#fff', border:'none', borderRadius:8,
+                            fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+                            display:'flex', alignItems:'center', gap:8, alignSelf:'flex-start' as const }}>
+                          🖨️ Imprimir Relatório Humanizado
+                        </button>
+                      )}
                       {humanLoading && (
                         <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
                           justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
@@ -1557,55 +1580,92 @@ RETORNE EXATAMENTE neste formato markdown:
                       </div>
                     </div>
                   )}
-                  {/* Overlay: Analisar Tudo button when file loaded */}
-                  {canAnalyze && !unifiedLoading && !unifiedAnalysis && (
-                    <button onClick={runUnifiedAnalysis}
-                      style={{ position:'absolute', bottom:24, right:24,
-                        padding:'12px 22px', background:'#3B6D11', color:'#fff', border:'none',
-                        borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer',
-                        fontFamily:'inherit', boxShadow:'0 4px 16px rgba(0,0,0,.4)',
-                        display:'flex', alignItems:'center', gap:8 }}>
-                      🤖 Analisar Tudo — BIM + Memorial + Quantitativo
-                    </button>
+                  {/* Overlay: loading banner while AI runs */}
+                  {unifiedLoading && (
+                    <div style={{ position:'absolute', top:12, left:'50%', transform:'translateX(-50%)',
+                      background:'rgba(26,31,54,.92)', color:'#a8d88a', borderRadius:10,
+                      padding:'10px 20px', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:10,
+                      boxShadow:'0 4px 20px rgba(0,0,0,.5)', backdropFilter:'blur(6px)' }}>
+                      <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid #3B6D11',
+                        borderTopColor:'#a8d88a', animation:'spin .7s linear infinite', flexShrink:0 }} />
+                      Atlas BIM Intelligence analisando… aguarde
+                    </div>
+                  )}
+                  {/* Overlay: analysis ready */}
+                  {canAnalyze && !unifiedLoading && unifiedAnalysis && viewerTab === 'viewer' && (
+                    <div style={{ position:'absolute', top:12, left:'50%', transform:'translateX(-50%)',
+                      background:'rgba(59,109,17,.95)', color:'#fff', borderRadius:10,
+                      padding:'10px 20px', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', gap:10,
+                      boxShadow:'0 4px 20px rgba(0,0,0,.4)', cursor:'pointer', backdropFilter:'blur(6px)' }}
+                      onClick={() => setViewerTab('analysis')}>
+                      ✅ Análise pronta — clique para ver
+                    </div>
                   )}
                 </div>
                 )}
 
                 {/* Analysis result tab */}
                 {viewerTab === 'analysis' && (
-                  <div style={{ flex:1, overflowY:'auto' as const, padding:24, background:'#f8f9fc' }}>
-                    {unifiedLoading ? (
-                      <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:16, padding:60 }}>
-                        <div style={{ width:44, height:44, borderRadius:'50%', border:'4px solid #e5e8f0', borderTopColor:'#3B6D11', animation:'spin .7s linear infinite' }} />
-                        <div style={{ fontSize:14, fontWeight:600, color:'#185FA5' }}>Atlas BIM Intelligence analisando...</div>
-                        <div style={{ fontSize:12, color:'#8890a0' }}>Gerando Memorial Descritivo · Quantitativo · BIM · Conformidade NBR</div>
-                      </div>
-                    ) : unifiedAnalysis ? (
-                      <>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                          <div>
-                            <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36' }}>📊 Análise Completa — {activePf?.name}</div>
-                            <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>Memorial Descritivo · Quantitativo · BIM · Conformidade · Dados para Contrato</div>
+                  <div style={{ flex:1, overflow:'hidden', display:'flex' }}>
+                    {/* Left: file preview */}
+                    {activePf && (
+                      <div style={{ width:'45%', borderRight:'1px solid #e5e8f0', background:'#1a1a2e',
+                        display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', flexShrink:0 }}>
+                        {isPDF ? (
+                          <iframe src={activePf.url} title={activePf.name}
+                            style={{ width:'100%', height:'100%', border:'none', display:'block' }} />
+                        ) : isImage ? (
+                          <img src={activePf.url} alt={activePf.name}
+                            style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', padding:12,
+                              boxShadow:'0 8px 32px rgba(0,0,0,.6)', borderRadius:6 }} />
+                        ) : (
+                          <div style={{ textAlign:'center' as const, color:'#8890a0', padding:24 }}>
+                            <div style={{ fontSize:48, marginBottom:8 }}>{(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}</div>
+                            <div style={{ fontSize:13, color:'#e0e4f0' }}>{activePf.name}</div>
                           </div>
-                          <div style={{ display:'flex', gap:8 }}>
-                            <button onClick={() => window.open('/juridico', '_self')}
-                              style={{ padding:'7px 14px', background:'#534AB7', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                              ⚖️ Usar no Jurídico
-                            </button>
-                          </div>
-                        </div>
-                        <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, padding:'18px 20px',
-                          fontSize:12, lineHeight:1.9, color:'#1a1f36', whiteSpace:'pre-wrap' as const, fontFamily:'monospace' }}>
-                          {unifiedAnalysis}
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
-                        <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
-                        <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Análise não iniciada</div>
-                        <div style={{ fontSize:12 }}>Carregue uma imagem ou PDF e clique em "Analisar Tudo"</div>
+                        )}
                       </div>
                     )}
+                    {/* Right: analysis */}
+                    <div style={{ flex:1, overflowY:'auto' as const, padding:20, background:'#f8f9fc' }}>
+                      {unifiedLoading ? (
+                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:16, padding:60 }}>
+                          <div style={{ width:44, height:44, borderRadius:'50%', border:'4px solid #e5e8f0', borderTopColor:'#3B6D11', animation:'spin .7s linear infinite' }} />
+                          <div style={{ fontSize:14, fontWeight:600, color:'#185FA5' }}>Atlas BIM Intelligence analisando...</div>
+                          <div style={{ fontSize:12, color:'#8890a0' }}>Memorial Descritivo · Quantitativo · BIM · NBR</div>
+                        </div>
+                      ) : unifiedAnalysis ? (
+                        <>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📊 {activePf?.name}</div>
+                            <div style={{ display:'flex', gap:6 }}>
+                              <button onClick={() => {
+                                const w = window.open('','_blank','width=900,height=700')
+                                if (!w) return
+                                w.document.write(`<html><head><title>Análise BIM — ${activePf?.name}</title><style>body{font-family:monospace;padding:32px;font-size:13px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 Análise BIM — ${activePf?.name}</h1>${unifiedAnalysis}<br/><br/><button onclick="window.print()">🖨️ Imprimir</button></body></html>`)
+                                w.document.close()
+                              }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                🖨️ Imprimir
+                              </button>
+                              <button onClick={() => window.open('/juridico', '_self')}
+                                style={{ padding:'5px 11px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                ⚖️ Jurídico
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, padding:'16px 18px',
+                            fontSize:11, lineHeight:1.9, color:'#1a1f36', whiteSpace:'pre-wrap' as const, fontFamily:'monospace' }}>
+                            {unifiedAnalysis}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
+                          <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Análise não iniciada</div>
+                          <div style={{ fontSize:12 }}>Carregue uma imagem ou PDF — a análise inicia automaticamente</div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
