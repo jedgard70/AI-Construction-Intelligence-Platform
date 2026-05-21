@@ -4,7 +4,7 @@ import NewProjectModal from './NewProjectModal'
 import NewClientModal from './NewClientModal'
 import { printDocument } from './PrintShareModal'
 import dynamic from 'next/dynamic'
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
@@ -273,7 +273,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
   const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'>('viewer')
-  const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'>('planta')
+  const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'|'interior'>('planta')
   const [humanLang, setHumanLang] = useState<'pt-BR'|'en-US'>('pt-BR')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
   const [humanEscala, setHumanEscala] = useState('50')
@@ -285,7 +285,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
-  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'>('analise')
+  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'|'ambientes'|'prompts'|'adicionais'>('analise')
   const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
   const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
   const [geminiRenderError, setGeminiRenderError] = useState<string|null>(null)
@@ -294,12 +294,37 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [geminiMarketing, setGeminiMarketing] = useState<string>('')
   const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
   const [geminiMarketingLoading, setGeminiMarketingLoading] = useState(false)
+  const [geminiPaletteError, setGeminiPaletteError] = useState<string|null>(null)
+  const [geminiMarketingError, setGeminiMarketingError] = useState<string|null>(null)
+  const [humanGallery, setHumanGallery] = useState<Array<{id:string,type:'planta'|'render',b64:string,mime:string,label:string,createdAt:number}>>([])
+  const [galleryLoaded, setGalleryLoaded] = useState(false)
+  const [geminiVariants, setGeminiVariants] = useState<Record<string, string|null>>({})
+  const [variantsLoading, setVariantsLoading] = useState<Record<string, boolean>>({})
+  const [reelGenerating, setReelGenerating] = useState(false)
+  const [reelVideoUrl, setReelVideoUrl] = useState<string|null>(null)
+  const [reelEffect, setReelEffect] = useState<string>('auto')
+  const [reelNarration, setReelNarration] = useState<string>('')
+  const [reelNarrationLoading, setReelNarrationLoading] = useState(false)
+  const [reelAudioB64, setReelAudioB64] = useState<string|null>(null)
+  const [humanIs3D, setHumanIs3D] = useState(false)
+  const [humanFileName, setHumanFileName] = useState('')
+  const [humanAdicionalInput, setHumanAdicionalInput] = useState('')
   const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
   const [humanAssistantInput, setHumanAssistantInput] = useState('')
   const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
   const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
+
+  // Load gallery from localStorage once
+  React.useEffect(() => {
+    if (galleryLoaded) return
+    try {
+      const saved = localStorage.getItem('acip_humanizer_gallery')
+      if (saved) setHumanGallery(JSON.parse(saved))
+    } catch {}
+    setGalleryLoaded(true)
+  }, [galleryLoaded])
   const [activePfMediaType, setActivePfMediaType] = useState('image/jpeg')
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
@@ -1097,7 +1122,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', gridTemplateRows:'1fr', flex:1, overflow:'hidden', minHeight:0 }}>
 
               {/* Sidebar — lista de arquivos */}
               <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
@@ -1184,7 +1209,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
               </div>
 
               {/* Main viewer area */}
-              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
                 {/* Toolbar */}
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
                   display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
@@ -1267,7 +1292,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                 {/* Humanize Panel */}
                 {viewerTab === 'humanize' && (
                   <div style={{ flex:1, overflow:'hidden', background:'#f8f9fc', display:'grid',
-                    gridTemplateColumns:'340px 1fr', gap:0, minHeight:0 }}>
+                    gridTemplateColumns:'340px 1fr', gridTemplateRows:'1fr', gap:0, minHeight:0 }}>
                     {/* Left controls */}
                     <div style={{ borderRight:'1px solid #e5e8f0', display:'flex',
                       flexDirection:'column' as const, overflowY:'auto' as const, background:'#fff', minHeight:0 }}>
@@ -1298,6 +1323,51 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                         </div>
                       </div>
 
+                      {/* Gallery strip */}
+                      {humanGallery.length > 0 && (
+                        <div style={{ padding:'8px 12px', borderBottom:'1px solid #e5e8f0', flexShrink:0 }}>
+                          <div style={{ fontSize:10, fontWeight:600, color:'#8890a0', marginBottom:6 }}>
+                            📁 Galeria ({humanGallery.length})
+                          </div>
+                          <div style={{ display:'flex', gap:6, overflowX:'auto' as const, paddingBottom:4 }}>
+                            {humanGallery.map(item => (
+                              <div key={item.id}
+                                title={`${item.type === 'planta' ? '📐 Planta' : '🎨 Render'}: ${item.label}`}
+                                onClick={() => {
+                                  if (item.type === 'planta') {
+                                    setHumanB64(item.b64)
+                                    setHumanImgType(item.mime)
+                                  } else {
+                                    setGeminiRenderB64(item.b64)
+                                    setHumanTab('render')
+                                  }
+                                }}
+                                style={{ flexShrink:0, position:'relative' as const, width:52, height:52, cursor:'pointer',
+                                  borderRadius:6, overflow:'hidden', border:'2px solid #e5e8f0',
+                                  transition:'border-color .15s' }}>
+                                <img src={`data:${item.mime};base64,${item.b64}`} alt={item.label}
+                                  style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                                  onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                                <div style={{ position:'absolute' as const, bottom:0, left:0, right:0,
+                                  background:'rgba(0,0,0,.55)', fontSize:8, color:'#fff', textAlign:'center', padding:'1px 0' }}>
+                                  {item.type === 'planta' ? '📐' : '🎨'}
+                                </div>
+                              </div>
+                            ))}
+                            <button onClick={() => {
+                              if (!confirm('Limpar galeria?')) return
+                              localStorage.removeItem('acip_humanizer_gallery')
+                              setHumanGallery([])
+                            }} title="Limpar galeria"
+                              style={{ flexShrink:0, width:52, height:52, border:'1px dashed #e5e8f0', background:'#f8f9fc',
+                                borderRadius:6, cursor:'pointer', fontSize:16, color:'#b0b8cc', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Image upload + preview */}
                       <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column' as const, gap:14 }}>
 
                       {/* Tipo de imagem */}
@@ -1306,11 +1376,12 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           letterSpacing:'.08em', marginBottom:8 }}>
                           {humanLang === 'pt-BR' ? '1 — Tipo de imagem' : '1 — Image type'}
                         </div>
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6 }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
                           {([
                             ['planta', '📐', humanLang==='pt-BR'?'Planta Baixa':'Floor Plan'],
                             ['fachada', '🏢', humanLang==='pt-BR'?'Fachada':'Facade'],
                             ['corte', '✂️', humanLang==='pt-BR'?'Corte/Seção':'Section'],
+                            ['interior', '🏠', humanLang==='pt-BR'?'Interior 3D':'Interior 3D'],
                           ] as const).map(([v, ic, lbl]) => (
                             <button key={v} onClick={() => setHumanAnaliseTipo(v)}
                               style={{ padding:'8px 6px', border:`1.5px solid ${humanAnaliseTipo===v?'#3b82f6':'#e5e8f0'}`,
@@ -1328,13 +1399,26 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                       <div>
                         <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
                           letterSpacing:'.08em', marginBottom:8 }}>
-                          {humanLang === 'pt-BR' ? '2 — Projeto 2D' : '2 — 2D Project'}
+                          {humanLang === 'pt-BR' ? '2 — Projeto 2D / 3D' : '2 — 2D / 3D Project'}
                         </div>
-                        {humanB64 ? (
+                        {humanIs3D && humanB64 ? (
+                          <div style={{ border:'2px solid #7c3aed', borderRadius:10, padding:'14px', background:'#f5f3ff',
+                            display:'flex', alignItems:'center', gap:12 }}>
+                            <div style={{ fontSize:28 }}>🏗️</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'#7c3aed' }}>Projeto 3D carregado</div>
+                              <div style={{ fontSize:10, color:'#5a6282', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{humanFileName}</div>
+                            </div>
+                            <button onClick={() => { setHumanB64(null); setHumanIs3D(false); setHumanFileName(''); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
+                              style={{ background:'rgba(124,58,237,.15)', color:'#7c3aed', border:'none', borderRadius:4, fontSize:10, padding:'4px 8px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                              ✕ Remover
+                            </button>
+                          </div>
+                        ) : humanB64 ? (
                           <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'2px solid #3b82f6' }}>
                             <img src={`data:${humanImgType};base64,${humanB64}`} alt="Planta"
                               style={{ width:'100%', maxHeight:160, objectFit:'contain', display:'block', background:'#f8faff', padding:4 }} />
-                            <button onClick={() => { setHumanB64(null); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
+                            <button onClick={() => { setHumanB64(null); setHumanIs3D(false); setHumanFileName(''); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
                               style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,.65)',
                                 color:'#fff', border:'none', borderRadius:4, fontSize:10, padding:'3px 7px', cursor:'pointer' }}>
                               ✕ {humanLang==='pt-BR'?'Remover':'Remove'}
@@ -1342,11 +1426,22 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           </div>
                         ) : (
                           <label style={{ cursor:'pointer', display:'block' }}>
-                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt" style={{ display:'none' }}
+                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.fbx,.stl,.step,.stp,.obj,.nwd,.nwc" style={{ display:'none' }}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (!f) return
-                                const isPDFFile = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                                const ext = f.name.toLowerCase().split('.').pop() || ''
+                                const is3DType = ['ifc','rvt','fbx','stl','obj','step','stp','dwg','dxf','dgn','nwd','nwc'].includes(ext)
+                                if (is3DType) {
+                                  setHumanIs3D(true)
+                                  setHumanFileName(f.name)
+                                  setHumanImgType('application/octet-stream')
+                                  setHumanB64('3d:' + f.name)
+                                  return
+                                }
+                                setHumanIs3D(false)
+                                setHumanFileName('')
+                                const isPDFFile = f.type === 'application/pdf' || ext === 'pdf'
                                 const mt = isPDFFile ? 'application/pdf'
                                   : ['image/jpeg','image/png','image/gif','image/webp'].includes(f.type) ? f.type
                                   : f.type.startsWith('image/') ? f.type : 'image/jpeg'
@@ -1363,7 +1458,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                               <div style={{ fontSize:12, fontWeight:600, color:'#1e40af', marginBottom:3 }}>
                                 {humanLang==='pt-BR'?'Arraste ou clique aqui':'Drag or click to upload'}
                               </div>
-                              <div style={{ fontSize:10, color:'#60a5fa' }}>JPG · PNG · PDF · DWG · IFC</div>
+                              <div style={{ fontSize:10, color:'#60a5fa' }}>JPG · PNG · PDF · DWG · IFC · FBX · OBJ</div>
                             </div>
                           </label>
                         )}
@@ -1450,10 +1545,32 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           setPollinationsUrl(null)
                           setGeminiPalette([])
                           setGeminiMarketing('')
+                          setGeminiPaletteError(null)
+                          setGeminiMarketingError(null)
+                          setGeminiVariants({})
+                          setVariantsLoading({})
+                          setReelVideoUrl(null)
+                          setReelNarration('')
+                          setReelAudioB64(null)
                           setHumanTab('analise')
+                          // Save uploaded floor plan to gallery
+                          if (humanB64 && humanImgType !== 'application/pdf') {
+                            try {
+                              const saved = localStorage.getItem('acip_humanizer_gallery')
+                              const gallery: any[] = saved ? JSON.parse(saved) : []
+                              const already = gallery.find((g: any) => g.type === 'planta' && g.b64 === humanB64)
+                              if (!already) {
+                                const entry = { id: 'p' + Date.now(), type: 'planta', b64: humanB64, mime: humanImgType, label: humanTipo || 'Planta', createdAt: Date.now() }
+                                const next = [entry, ...gallery].slice(0, 30)
+                                localStorage.setItem('acip_humanizer_gallery', JSON.stringify(next))
+                                setHumanGallery(next)
+                              }
+                            } catch {}
+                          }
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
                           const imgLabel = humanAnaliseTipo === 'planta' ? (humanLang==='pt-BR'?'planta baixa':'floor plan')
-                            : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'facade')
+                            : humanAnaliseTipo === 'fachada' ? (humanLang==='pt-BR'?'fachada':'building facade')
+                            : humanAnaliseTipo === 'interior' ? (humanLang==='pt-BR'?'interior 3D':'3D interior')
                             : (humanLang==='pt-BR'?'corte/seção':'section/elevation')
                           const isEnglish = humanLang === 'en-US'
                           const prompt = isEnglish
@@ -1476,14 +1593,11 @@ RETURN EXACTLY in this markdown format:
 ### PEOPLE & SPACES
 [Distribute ${humanNP} people across spaces: Space | People | Activity]
 
-### DALL-E PROMPT
-[Complete ultra-detailed English prompt for DALL-E/GPT-4o. Include setting: ${humanLote}, vegetation: ${humanVeg}, ${humanNP} figures at 1.70m with specific activities, style ${humanEstilo}, scale 1:${humanEscala}]
+### GEMINI RENDER PROMPT
+[Write an ultra-detailed English prompt for Gemini 2.0 Flash Exp to generate a photorealistic image-to-image humanization. ${humanAnaliseTipo === 'planta' ? `Bird's-eye view: same top-down geometry, realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, swimming pool if space allows, EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, overhead sunlight with shadows.` : humanAnaliseTipo === 'fachada' ? `Front elevation: same facade geometry, photorealistic wall/roof materials, golden hour lighting, ${humanVeg}, luxury car in driveway, sky with clouds, ${humanNP} people visible.` : humanAnaliseTipo === 'interior' ? `Interior perspective: same camera angle and layout, photorealistic materials (flooring/walls/ceiling), LED recessed lighting + strip lights, ${humanNP} person doing activity at 1.70m, decorative elements, reflections and ambient occlusion, style: ${humanEstilo}.` : `Cross-section: same geometry, photorealistic materials on cut surfaces, interior spaces with furniture and people at scale.`} Style: ${humanEstilo}. No text overlays.]
 
-### MIDJOURNEY PROMPT
-[Compact version for /imagine with --ar 4:3 --quality 2 --style raw --v 6]
-
-### REVIT STEPS
-[5 steps with RPC families, 1700mm configuration and rendering for this project]`
+### IMPROVEMENT SUGGESTIONS
+[List 5 concrete improvements: layout, natural light, space optimization, materials, circulation]`
                             : `Você é especialista em visualização arquitetônica. Analise esta ${imgLabel} de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
 
 PARÂMETROS:
@@ -1503,17 +1617,32 @@ RETORNE EXATAMENTE neste formato markdown:
 ### AMBIENTES E PESSOAS
 [Distribua as ${humanNP} pessoas pelos ambientes: Ambiente | Pessoas | Atividade]
 
-### PROMPT DALL-E
-[Prompt completo em inglês ultra-detalhado para DALL-E/GPT-4o. Incluir lote: ${humanLote}, vegetação: ${humanVeg}, ${humanNP} figuras de 1,70m com atividades específicas, estilo ${humanEstilo}, escala 1:${humanEscala}]
+### PROMPT GEMINI RENDER
+[Escreva um prompt em inglês ultra-detalhado para o Gemini 2.0 Flash Exp gerar humanização fotorrealista image-to-image. ${humanAnaliseTipo === 'planta' ? `Vista aérea: mesma geometria top-down, pisos realistas por ambiente, mobiliário escala 1:${humanEscala}, ${humanNP} pessoas de 1,70 m, piscina se houver espaço, EXTERIOR: ${humanLote}, ${humanVeg}, calçada, carros, iluminação solar superior.` : humanAnaliseTipo === 'fachada' ? `Elevação frontal: mesma geometria da fachada, materiais fotorrealistas (muro/telhado/revestimentos), iluminação dourada (golden hour), ${humanVeg}, carro luxo na garagem, céu com nuvens, ${humanNP} pessoas visíveis.` : humanAnaliseTipo === 'interior' ? `Perspectiva interior: mesmo ângulo de câmera e layout, materiais fotorrealistas (piso/paredes/teto), LED embutido + fita LED sob armários, ${humanNP} pessoa(s) fazendo atividade de 1,70 m, elementos decorativos, reflexos e ambient occlusion, estilo ${humanEstilo}.` : `Corte transversal: mesma geometria, materiais fotorrealistas nas superfícies de corte, ambientes internos com mobiliário e pessoas em escala.`} Estilo: ${humanEstilo}. Sem sobreposição de texto.]
 
-### PROMPT MIDJOURNEY
-[Versão compacta para /imagine com --ar 4:3 --quality 2 --style raw --v 6]
-
-### PASSOS REVIT
-[5 passos com famílias RPC, configuração 1700mm e renderização para esta ${imgLabel}]`
+### MELHORIAS SUGERIDAS
+[Liste 5 melhorias concretas para o projeto: layout, iluminação natural, aproveitamento de espaço, materiais, circulação]`
 
                           let analysisText = ''
                           let dallePrompt = ''
+                          // 3D file path: text-only analysis (no image data to send)
+                          const is3DAnalysis = humanIs3D || humanImgType === 'application/octet-stream'
+                          const text3DPrompt = `Você é especialista em BIM, CAD e Arquitetura. Analise este arquivo de projeto 3D: "${humanFileName || humanB64?.replace('3d:','') || 'projeto.ifc'}".
+Tipo de edificação: ${humanTipo}. Escala: 1:${humanEscala}. Estilo: ${humanEstilo}.
+
+RETORNE EXATAMENTE neste formato:
+
+### ANÁLISE
+[Tipo de arquivo, uso típico, compatibilidade BIM, estrutura esperada do projeto para "${humanTipo}"]
+
+### AMBIENTES E PESSOAS
+[Ambientes típicos para ${humanTipo}, distribuição de ${humanNP} pessoas: Ambiente | Pessoas | Atividade esperada]
+
+### PROMPT GEMINI RENDER
+[Prompt em inglês para renderização após exportar vista 2D do projeto: descreva a visualização ideal para este tipo de projeto, estilo ${humanEstilo}, com materiais fotorrealistas, iluminação dramática, ${humanNP} pessoas em escala]
+
+### MELHORIAS SUGERIDAS
+[5 boas práticas BIM/CAD e de projeto para "${humanTipo}": coordenação de disciplinas, LOD recomendado, compatibilização, clash detection, entregáveis]`
                           try {
                             const r = await fetch('/api/chat', {
                               method: 'POST',
@@ -1523,11 +1652,13 @@ RETORNE EXATAMENTE neste formato markdown:
                                 max_tokens: 1500,
                                 messages: [{
                                   role: 'user',
-                                  content: [
-                                    { type: humanImgType === 'application/pdf' ? 'document' : 'image',
-                                      source:{ type:'base64', media_type: humanImgType, data: humanB64 } } as any,
-                                    { type:'text', text: prompt }
-                                  ]
+                                  content: is3DAnalysis
+                                    ? [{ type:'text', text: text3DPrompt }]
+                                    : [
+                                        { type: humanImgType === 'application/pdf' ? 'document' : 'image',
+                                          source:{ type:'base64', media_type: humanImgType, data: humanB64 } } as any,
+                                        { type:'text', text: prompt }
+                                      ]
                                 }]
                               })
                             })
@@ -1540,7 +1671,7 @@ RETORNE EXATAMENTE neste formato markdown:
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
                             setHumanResult(secs)
-                            const dalleKey = Object.keys(secs).find(k => k.includes('DALL'))
+                            const dalleKey = Object.keys(secs).find(k => k.includes('GEMINI') || k.includes('DALL') || k.includes('PROMPT'))
                             dallePrompt = dalleKey ? secs[dalleKey] : ''
                           } catch (err: any) {
                             setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
@@ -1555,19 +1686,78 @@ RETORNE EXATAMENTE neste formato markdown:
                           const loteSnap = humanLote
                           const vegSnap = humanVeg
 
-                          // ── Render: Pollinations PRIMARY (instant) + Gemini background upgrade ──
-                          if (dallePrompt) {
-                            // Show Pollinations immediately — always works, no API key needed
-                            const encoded = encodeURIComponent(
-                              `${dallePrompt} bird's-eye architectural floor plan render, luxury real estate, top-down view`.slice(0, 500)
-                            )
-                            setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
-                          }
-
-                          // Try Gemini image-to-image in background — replaces Pollinations if successful
-                          if (b64Snap && imgTypeSnap !== 'application/pdf') {
+                          // ── Render: Gemini image-to-image PRIMARY ──
+                          // Skip 3D files (no visual data to render); requires 2D image export
+                          if (b64Snap && imgTypeSnap !== 'application/pdf' && imgTypeSnap !== 'application/octet-stream' && !is3DAnalysis) {
+                            setPollinationsUrl(null)
+                            setGeminiRenderB64(null)
+                            setGeminiRenderError(null)
                             setGeminiRenderLoading(true)
-                            const renderPrompt = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. CRITICAL: Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring (hardwood, tiles, marble), high-end modern furniture in each room, ${humanNP} people doing activities, plants, decor. EXTERIOR: ${loteSnap}, ${vegSnap}, sidewalk, natural overhead sunlight. Premium luxury real estate marketing render.`
+                            const renderPrompt = humanAnaliseTipo === 'planta'
+                              ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT create a 3D exterior view. Do NOT invent new walls or rooms.
+
+Add to the plan:
+- Realistic flooring per room: hardwood, large-format porcelain tiles, marble, carpets
+- High-end modern furniture at correct scale (1:${humanEscala})
+- ${estiloSnap} interior style with indoor plants, decor, artwork, lighting fixtures
+- ${humanNP} people doing realistic activities (1.70 m height reference)
+- Swimming pool with blue water texture if outdoor space allows
+- EXTERIOR: ${loteSnap}, ${vegSnap}, paved sidewalk, street markings, parked luxury car, shadow projection from vegetation
+- Natural overhead sunlight with soft cast shadows
+
+Result: premium bird's-eye architectural render for luxury real estate marketing. No text overlays.`
+                              : humanAnaliseTipo === 'fachada'
+                              ? `You are an expert architectural visualizer. Transform this building facade/elevation drawing into a photorealistic architectural exterior render.
+
+CRITICAL: Keep EXACTLY the same camera angle, building silhouette, roof profile, and facade proportions as the original. Do NOT change the building shape or layout.
+
+Transform by adding:
+- Photorealistic wall materials: exposed concrete panels, stucco, stone cladding, wood slats — match architectural style
+- Realistic roof covering: dark ceramic tiles, flat concrete slab with parapet, metal sheet — per design
+- High-end windows with glass reflections and warm interior light visible through glazing
+- Premium front door and garage door with metallic/wood finish and subtle lighting
+- Dramatic golden-hour sunlight casting realistic shadows across the facade
+- ${vegSnap}, palm trees and ornamental shrubs along the boundary wall and sidewalk
+- Realistic concrete or stone pavement on driveway and sidewalk
+- A luxury dark-colored vehicle parked in or near the garage
+- Dramatic sky: warm sunset clouds or blue clear sky with depth
+- Wall sconces, security camera, architectural accent lighting details
+
+Result: premium photorealistic exterior render for luxury real estate marketing. No text overlays.`
+                              : humanAnaliseTipo === 'interior'
+                              ? `You are an expert architectural visualizer. Transform this 3D interior model/sketch into a photorealistic interior architectural render.
+
+CRITICAL: Keep EXACTLY the same camera position, viewing angle, room layout, and all existing furniture/objects. Do NOT rearrange the space.
+
+Transform by adding:
+- Photorealistic floor: polished large-format porcelain tiles, concrete microcement or hardwood
+- Photorealistic walls: smooth painted surfaces, textured plaster or wood accent panels
+- Photorealistic ceiling: white gypsum board with recessed LED spots and LED strip lighting
+- Premium cabinets: matte white lacquer or natural wood veneer with stone countertops
+- Stainless steel and high-gloss appliances with metallic reflections
+- Warm LED strip lighting under upper cabinets, recessed ceiling spots casting soft pools of light
+- Natural light streaming through windows with realistic light rays and window frame shadows
+- ${humanNP} realistic person/people doing activities (1.70 m height) — professional but casual
+- Elegant decor: ceramic vase with olive branch, cutting board with bread, small potted plant, stainless accessories
+- Photorealistic ambient occlusion, material reflections, soft shadows and depth of field
+- Style: ${estiloSnap}, luxury real estate marketing quality
+
+Result: premium photorealistic interior render. No text overlays.`
+                              : `You are an expert architectural visualizer. Transform this architectural cross-section drawing into a photorealistic rendered section.
+
+CRITICAL: Keep EXACTLY the same section cut geometry and proportions.
+
+Transform by adding:
+- Photorealistic materials on all cut surfaces: concrete structure, brick/block fill, insulation layers
+- Interior spaces visible through the cut: realistic flooring, furniture, ceiling finishes
+- Natural light entering through windows and skylights with realistic rays
+- ${humanNP} people shown in scale (1.70 m) inside spaces doing activities
+- Exterior context: ${vegSnap}, ground materials, sky
+- Style: ${estiloSnap}
+
+Result: premium photorealistic architectural section render. No text overlays.`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1584,15 +1774,34 @@ RETORNE EXATAMENTE neste formato markdown:
                               if (data?.error?.message) { setGeminiRenderError(data.error.message); return }
                               const parts = data?.candidates?.[0]?.content?.parts ?? []
                               const imgPart = parts.find((p: any) => p.inlineData?.data)
-                              if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
-                              else setGeminiRenderError('Gemini não retornou imagem.')
+                              if (imgPart) {
+                                const b64 = imgPart.inlineData.data
+                                setGeminiRenderB64(b64)
+                                setGeminiRenderError(null)
+                                // Save render to gallery
+                                try {
+                                  const saved = localStorage.getItem('acip_humanizer_gallery')
+                                  const gallery: any[] = saved ? JSON.parse(saved) : []
+                                  const entry = { id: Date.now().toString(), type: 'render', b64, mime: 'image/jpeg', label: humanTipo || 'Render', createdAt: Date.now() }
+                                  const next = [entry, ...gallery].slice(0, 30)
+                                  localStorage.setItem('acip_humanizer_gallery', JSON.stringify(next))
+                                  setHumanGallery(next)
+                                } catch {}
+                              } else setGeminiRenderError('Gemini não retornou imagem.')
                             }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
                             .finally(() => setGeminiRenderLoading(false))
+                          } else if (dallePrompt) {
+                            // PDF or no image: fall back to Pollinations text-to-image
+                            const encoded = encodeURIComponent(
+                              `${dallePrompt} bird's-eye architectural floor plan render, luxury real estate, top-down view`.slice(0, 500)
+                            )
+                            setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
                           }
 
                           // Gemini palette
                           if (analysisText) {
                             setGeminiPaletteLoading(true)
+                            setGeminiPaletteError(null)
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1600,21 +1809,25 @@ RETORNE EXATAMENTE neste formato markdown:
                                 model: 'gemini-2.0-flash',
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Based on this architectural analysis of a "${tipoSnap}" building, suggest a professional color palette with exactly 6 colors.
-Analysis: ${analysisText.slice(0, 600)}
-Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
+Analysis: ${analysisText.slice(0, 1200)}
+Return ONLY a valid JSON array (no markdown, no extra text): [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
                               })
-                            }).then(r => r.json()).then(data => {
+                            }).then(async r => {
+                              const data = await r.json()
+                              if (data?.error?.message) { setGeminiPaletteError(data.error.message); return }
                               const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                              const match = txt.match(/\[[\s\S]*\]/)
+                              const match = txt.match(/\[[\s\S]*?\]/)
                               if (match) {
-                                try { setGeminiPalette(JSON.parse(match[0])) } catch {}
-                              }
-                            }).catch(() => {}).finally(() => setGeminiPaletteLoading(false))
+                                try { setGeminiPalette(JSON.parse(match[0])); setGeminiPaletteError(null) } catch(e: any) { setGeminiPaletteError('Erro ao parsear paleta: ' + match[0].slice(0, 60)) }
+                              } else { setGeminiPaletteError('Gemini não retornou paleta válida.') }
+                            }).catch((e: any) => setGeminiPaletteError(e?.message || 'Erro de rede'))
+                            .finally(() => setGeminiPaletteLoading(false))
                           }
 
                           // Gemini marketing copy
                           if (analysisText) {
                             setGeminiMarketingLoading(true)
+                            setGeminiMarketingError(null)
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1623,7 +1836,7 @@ Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage"
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Você é um copywriter especializado em marketing imobiliário de alto padrão. Com base nesta análise arquitetônica de um imóvel "${tipoSnap}", crie textos de marketing profissionais em português:
 
-Análise: ${analysisText.slice(0, 600)}
+Análise: ${analysisText.slice(0, 1200)}
 
 Crie:
 1. **Headline** (até 10 palavras, impactante)
@@ -1632,10 +1845,14 @@ Crie:
 4. **Diferenciais** (5 bullet points com emojis)
 5. **Call to Action** (1 frase poderosa)` }]}]
                               })
-                            }).then(r => r.json()).then(data => {
+                            }).then(async r => {
+                              const data = await r.json()
+                              if (data?.error?.message) { setGeminiMarketingError(data.error.message); return }
                               const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-                              if (txt) setGeminiMarketing(txt)
-                            }).catch(() => {}).finally(() => setGeminiMarketingLoading(false))
+                              if (txt) { setGeminiMarketing(txt); setGeminiMarketingError(null) }
+                              else setGeminiMarketingError('Gemini não retornou texto de marketing.')
+                            }).catch((e: any) => setGeminiMarketingError(e?.message || 'Erro de rede'))
+                            .finally(() => setGeminiMarketingLoading(false))
                           }
                         }}
                         style={{ padding:'12px', background: humanB64 ? '#534AB7' : '#ccc',
@@ -1659,10 +1876,13 @@ Crie:
                           background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
                           {([
                             ['analise','📊 Análise'],
-                            ['render','🎨 Render IA'],
+                            ['ambientes','🚶 Ambientes'],
+                            ['prompts','🎨 Prompts'],
+                            ['render','🖼️ Render IA'],
                             ['palette','🎭 Paleta'],
                             ['marketing','📣 Marketing'],
                             ['assistant','💬 Assistente'],
+                            ['adicionais','✏️ Adicionais'],
                           ] as const).map(([t, lbl]) => (
                             <button key={t} onClick={() => setHumanTab(t)}
                               style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, border:'none',
@@ -1791,18 +2011,46 @@ Crie:
                         {!humanLoading && humanTab === 'render' && (
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:16 }}>
 
-                            {/* Gemini upgrade badge while loading */}
+                            {/* Loading card — shown while Gemini processes */}
                             {geminiRenderLoading && !geminiRenderB64 && (
-                              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
-                                background:'#eff6ff', borderRadius:8, border:'1px solid #93c5fd', fontSize:11, color:'#1d4ed8' }}>
-                                <div style={{ width:14, height:14, border:'2px solid #3b82f6', borderTopColor:'transparent',
-                                  borderRadius:'50%', animation:'spin .8s linear infinite', flexShrink:0 }} />
-                                Gemini processando versão image-to-image…
+                              <div style={{ background:'linear-gradient(135deg,#1e1b4b,#312e81)', borderRadius:12,
+                                padding:'40px 24px', display:'flex', flexDirection:'column' as const, alignItems:'center', gap:16, textAlign:'center' as const }}>
+                                <div style={{ position:'relative' as const, width:56, height:56 }}>
+                                  <div style={{ position:'absolute' as const, inset:0, border:'3px solid rgba(167,139,250,.3)', borderRadius:'50%' }} />
+                                  <div style={{ position:'absolute' as const, inset:0, border:'3px solid transparent',
+                                    borderTopColor:'#a78bfa', borderRadius:'50%', animation:'spin .9s linear infinite' }} />
+                                  <div style={{ position:'absolute' as const, inset:8, background:'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                                    borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🎨</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:14, fontWeight:700, color:'#e0e7ff', marginBottom:6 }}>
+                                    {humanLang==='pt-BR'
+                                      ? humanAnaliseTipo==='fachada' ? 'Renderizando fachada...'
+                                        : humanAnaliseTipo==='interior' ? 'Renderizando interior...'
+                                        : humanAnaliseTipo==='corte' ? 'Renderizando corte...'
+                                        : 'Humanizando a planta...'
+                                      : humanAnaliseTipo==='fachada' ? 'Rendering facade...'
+                                        : humanAnaliseTipo==='interior' ? 'Rendering interior...'
+                                        : humanAnaliseTipo==='corte' ? 'Rendering section...'
+                                        : 'Humanizing floor plan...'
+                                    }
+                                  </div>
+                                  <div style={{ fontSize:11, color:'rgba(167,139,250,.8)', lineHeight:1.6 }}>
+                                    Gemini 2.0 Flash Exp — image-to-image<br/>
+                                    {humanLang==='pt-BR'
+                                      ? humanAnaliseTipo==='fachada' ? 'Preservando geometria, aplicando materiais, iluminação e vegetação'
+                                        : humanAnaliseTipo==='interior' ? 'Preservando câmera, aplicando materiais, iluminação LED e pessoas'
+                                        : 'Preservando geometria e adicionando mobiliário, pessoas e paisagismo'
+                                      : humanAnaliseTipo==='fachada' ? 'Preserving geometry, applying materials, lighting & vegetation'
+                                        : humanAnaliseTipo==='interior' ? 'Preserving camera, applying materials, LED lighting & people'
+                                        : 'Preserving geometry, adding furniture, people & landscaping'}
+                                  </div>
+                                </div>
                               </div>
                             )}
 
-                            {/* Primary render: Pollinations (always shown when available) */}
-                            {(pollinationsUrl || geminiRenderB64) ? (
+                            {/* Render result */}
+                            {(geminiRenderB64 || pollinationsUrl) ? (
                               <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
                                 {/* Main render card */}
                                 <div style={{ background:'#fff', border:`2px solid ${geminiRenderB64?'#534AB7':'#3b82f6'}`, borderRadius:12, overflow:'hidden' as const }}>
@@ -1820,7 +2068,7 @@ Crie:
                                   </div>
                                   {geminiRenderB64 ? (
                                     <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render Gemini"
-                                      style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }} />
+                                      style={{ width:'100%', display:'block', maxHeight:480, objectFit:'cover' }} />
                                   ) : (
                                     <img src={pollinationsUrl!} alt="Render"
                                       style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }}
@@ -1840,56 +2088,420 @@ Crie:
                                         ⬇️ {humanLang==='pt-BR'?'Baixar':'Download'}
                                       </a>
                                     )}
+                                    {humanB64 && humanImgType !== 'application/pdf' && (
                                     <button onClick={() => {
-                                      if (!humanB64 || humanImgType==='application/pdf') return
-                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true)
-                                      const p = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring, high-end furniture, ${humanNP} people, plants. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk. Premium luxury real estate. Seed:${Date.now()}`
+                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                      const p = humanAnaliseTipo === 'planta'
+                                        ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked luxury car, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : humanAnaliseTipo === 'fachada'
+                                        ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nAdd: photorealistic wall materials, dark roof tiles/concrete slab, premium door & garage with metallic finish, golden-hour sunlight with facade shadows, ${humanVeg} along boundary wall and sidewalk, luxury dark vehicle in driveway, dramatic sky with clouds. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : humanAnaliseTipo === 'interior'
+                                        ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nAdd: photorealistic flooring, painted walls, gypsum ceiling with LED recessed spots and strip lights, premium cabinets with stone countertops, stainless appliances, natural light from windows, ${humanNP} person at 1.70m doing activity, elegant decor. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
+                                        : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials on cut surfaces, interior spaces with furniture and people at scale 1.70m, natural light, ${humanVeg}. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
                                         body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
-                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip)setGeminiRenderB64(ip.inlineData.data); else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
+                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)} else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
                                     }}
                                       style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
                                         borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                       🔄 {humanLang==='pt-BR'?'Nova versão':'New version'}
                                     </button>
+                                    )}
                                   </div>
                                 </div>
 
-                                {/* Reel Simulator */}
-                                {(geminiRenderB64 || pollinationsUrl) && (
+                                {/* ── Style Variants for Marketing ── */}
+                                {geminiRenderB64 && humanB64 && humanImgType !== 'application/pdf' && (
                                   <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
-                                    <div style={{ padding:'10px 16px', background:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
-                                      <span style={{ fontSize:14 }}>📱</span>
-                                      <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Reel Preview — Instagram / TikTok</div>
-                                      <div style={{ fontSize:10, color:'#64748b' }}>9:16</div>
-                                    </div>
-                                    <div style={{ padding:'16px', background:'#0f172a', display:'flex', justifyContent:'center' }}>
-                                      <div style={{ width:180, aspectRatio:'9/16', overflow:'hidden', position:'relative' as const,
-                                        borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.6)', background:'#000' }}>
-                                        <img
-                                          src={geminiRenderB64 ? `data:image/jpeg;base64,${geminiRenderB64}` : pollinationsUrl!}
-                                          alt="Reel" className="reel-kenburns"
-                                          key={(geminiRenderB64 ?? pollinationsUrl ?? '').slice(-20)}
-                                          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
-                                        />
-                                        <div style={{ position:'absolute' as const, inset:0, background:'linear-gradient(to top,rgba(0,0,0,.75) 0%,transparent 60%)',
-                                          display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'14px 12px' }}>
-                                          <div style={{ fontSize:11, fontWeight:700, color:'#fff', lineHeight:1.3 }}>{humanTipo}</div>
-                                          <div style={{ fontSize:9, color:'rgba(255,255,255,.7)', marginTop:3 }}>
-                                            {humanLang==='pt-BR'?'Visualização Arquitetônica':'Architectural Visualization'}
-                                          </div>
-                                        </div>
+                                    <div style={{ padding:'10px 16px', background:'linear-gradient(135deg,#1e1b4b,#312e81)', display:'flex', alignItems:'center', gap:8 }}>
+                                      <span style={{ fontSize:14 }}>✨</span>
+                                      <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
+                                        {humanLang==='pt-BR' ? 'Variações para Divulgação' : 'Marketing Variations'}
                                       </div>
+                                      <div style={{ fontSize:9, color:'rgba(255,255,255,.5)' }}>Gemini</div>
                                     </div>
-                                    <div style={{ padding:'8px 14px', background:'#f8f9fc', borderTop:'1px solid #e5e8f0', fontSize:10, color:'#8890a0', textAlign:'center' as const }}>
-                                      {humanLang==='pt-BR'?'Ken Burns • Ideal para Reels e Stories':'Ken Burns • Ideal for Reels & Stories'}
+                                    <div style={{ padding:'14px', display:'flex', flexDirection:'column' as const, gap:10 }}>
+                                      <div style={{ fontSize:10, color:'#8890a0', lineHeight:1.5 }}>
+                                        {humanLang==='pt-BR'
+                                          ? 'Gere o mesmo projeto em 3 estilos diferentes para divulgação profissional'
+                                          : 'Generate the same project in 3 styles for professional marketing'}
+                                      </div>
+                                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+                                        {([
+                                          { key:'night', emoji:'🌙', label: humanLang==='pt-BR'?'Noturno':'Night',
+                                            suffix: 'STYLE: stunning nighttime render — warm amber and gold interior light glowing from windows, soft exterior LED uplighting along walls and landscaping, dramatic dark sky, cozy intimate atmosphere, luxury architectural night photography quality' },
+                                          { key:'minimal', emoji:'☀️', label: humanLang==='pt-BR'?'Minimalista':'Minimal',
+                                            suffix: 'STYLE: bright minimalist render — abundant natural daylight flooding the space, clean white and warm ivory palette, Scandinavian aesthetic, soft overcast sky, spacious and airy feeling, crisp clean lines' },
+                                          { key:'watercolor', emoji:'🎨', label: humanLang==='pt-BR'?'Aquarela':'Watercolor',
+                                            suffix: 'STYLE: artistic watercolor architectural illustration — hand-painted appearance, warm pastel tones, visible brush strokes on surfaces, architectural sketch quality, artistic and elegant presentation style' },
+                                        ] as const).map(style => (
+                                          <div key={style.key} style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
+                                            <button
+                                              disabled={!!variantsLoading[style.key]}
+                                              onClick={() => {
+                                                setVariantsLoading(p => ({...p, [style.key]: true}))
+                                                setGeminiVariants(p => ({...p, [style.key]: null}))
+                                                const baseP = humanAnaliseTipo === 'planta'
+                                                  ? `Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization. CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms. Add: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked luxury car, shadow projection.`
+                                                  : humanAnaliseTipo === 'fachada'
+                                                  ? `Transform this building facade into a photorealistic exterior render. CRITICAL: Keep EXACTLY the same camera angle and facade geometry. Add: photorealistic wall materials and roof, premium doors, ${humanVeg} along wall and sidewalk, luxury dark vehicle in driveway.`
+                                                  : humanAnaliseTipo === 'interior'
+                                                  ? `Transform this 3D interior into a photorealistic render. CRITICAL: Keep EXACTLY the same camera position and room layout. Add: photorealistic flooring, walls, ceiling, LED recessed lights and strip lights, premium cabinets and stone countertops, stainless appliances, ${humanNP} person at 1.70m doing activity.`
+                                                  : `Transform this cross-section into a photorealistic rendered section. CRITICAL: Keep EXACTLY the same geometry. Add: photorealistic materials, interior spaces with furniture and people at scale.`
+                                                const fullP = `You are an expert architectural visualizer. ${baseP}\n\n${style.suffix}\n\nNo text overlays. Seed:${Date.now()}`
+                                                fetch('/api/gemini', { method:'POST', headers:{'Content-Type':'application/json'},
+                                                  body: JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                                }).then(async r => {
+                                                  const d = await r.json()
+                                                  const ip = (d?.candidates?.[0]?.content?.parts??[]).find((x: any) => x.inlineData?.data)
+                                                  if (ip) setGeminiVariants(p => ({...p, [style.key]: ip.inlineData.data}))
+                                                }).catch(() => {}).finally(() => setVariantsLoading(p => ({...p, [style.key]: false})))
+                                              }}
+                                              style={{ padding:'8px 6px', border:`1.5px solid ${geminiVariants[style.key] ? '#22c55e' : '#e5e8f0'}`,
+                                                borderRadius:8, background: geminiVariants[style.key] ? '#f0fdf4' : variantsLoading[style.key] ? '#faf5ff' : '#fafafa',
+                                                cursor: variantsLoading[style.key] ? 'wait' : 'pointer', fontFamily:'inherit',
+                                                display:'flex', flexDirection:'column' as const, alignItems:'center', gap:4, width:'100%' }}>
+                                              <span style={{ fontSize:18 }}>{variantsLoading[style.key] ? '⏳' : style.emoji}</span>
+                                              <span style={{ fontSize:9, fontWeight:600, color: geminiVariants[style.key] ? '#16a34a' : '#5a6282', lineHeight:1.2 }}>
+                                                {variantsLoading[style.key] ? (humanLang==='pt-BR'?'Gerando...':'Generating...') : style.label}
+                                              </span>
+                                            </button>
+                                            {geminiVariants[style.key] && (
+                                              <div style={{ position:'relative' as const, borderRadius:6, overflow:'hidden' as const }}>
+                                                <img src={`data:image/jpeg;base64,${geminiVariants[style.key]!}`} alt={style.label}
+                                                  style={{ width:'100%', display:'block', aspectRatio:'4/3', objectFit:'cover' as const }} />
+                                                <a href={`data:image/jpeg;base64,${geminiVariants[style.key]!}`} download={`render-${style.key}-${humanTipo.replace(/ /g,'-')}.jpg`}
+                                                  style={{ position:'absolute' as const, bottom:4, right:4, background:'rgba(0,0,0,.7)', color:'#fff',
+                                                    borderRadius:4, padding:'3px 6px', fontSize:9, textDecoration:'none', display:'inline-flex', gap:3 }}>
+                                                  ⬇️
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
                                     </div>
                                   </div>
                                 )}
+
+                                {/* ── Video Reel Generator (full featured) ── */}
+                                {(geminiRenderB64 || pollinationsUrl) && (() => {
+                                  // helper: draw image centered+scaled to fill canvas
+                                  function applyTransform(ctx2: CanvasRenderingContext2D, img2: HTMLImageElement,
+                                    scale: number, panX: number, panY: number, rotation = 0) {
+                                    const iA = img2.width / img2.height
+                                    let dW = 1080, dH = 1080 / iA
+                                    if (dH < 1920) { dH = 1920; dW = 1920 * iA }
+                                    ctx2.save()
+                                    ctx2.translate(540 + panX, 960 + panY)
+                                    if (rotation !== 0) ctx2.rotate(rotation)
+                                    ctx2.scale(scale, scale)
+                                    ctx2.drawImage(img2, -dW/2, -dH/2, dW, dH)
+                                    ctx2.restore()
+                                  }
+                                  const EFFECTS = [
+                                    { key:'kenburns-in',  label: 'Ken Burns ↗', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1+0.16*t, -50*t, -25*t) },
+                                    { key:'kenburns-out', label: 'Zoom Out ↙', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.16-0.16*t, 50*(1-t), 25*(1-t)) },
+                                    { key:'pan-right',    label: 'Pan → Dir',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, -120+240*t, 0) },
+                                    { key:'pan-left',     label: 'Pan ← Esq',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, 120-240*t, 0) },
+                                    { key:'pan-down',     label: 'Pan ↓ Des',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, 0, -100+200*t) },
+                                    { key:'rotate-zoom',  label: 'Rotate+Zoom', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1+0.1*t, 0, 0, (-0.04+0.08*t)*Math.PI) },
+                                  ]
+                                  const imgCount = 1 + Object.values(geminiVariants).filter(Boolean).length
+                                  return (
+                                  <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
+                                    <div style={{ padding:'10px 16px', background:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
+                                      <span style={{ fontSize:14 }}>🎬</span>
+                                      <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
+                                        {humanLang==='pt-BR' ? 'Vídeo Reel — Instagram / TikTok' : 'Video Reel — Instagram / TikTok'}
+                                      </div>
+                                      <div style={{ fontSize:9, color:'#475569' }}>9:16 • {imgCount * 5}s</div>
+                                    </div>
+
+                                    <div style={{ padding:'14px', display:'flex', flexDirection:'column' as const, gap:12 }}>
+
+                                      {/* Phone preview */}
+                                      <div style={{ display:'flex', justifyContent:'center', background:'#0f172a', borderRadius:8, padding:'14px' }}>
+                                        <div style={{ width:130, aspectRatio:'9/16' as any, overflow:'hidden', position:'relative' as const,
+                                          borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.7)', background:'#000' }}>
+                                          <img src={geminiRenderB64 ? `data:image/jpeg;base64,${geminiRenderB64}` : pollinationsUrl!}
+                                            alt="Reel" className="reel-kenburns"
+                                            key={(geminiRenderB64 ?? pollinationsUrl ?? '').slice(-20)}
+                                            style={{ width:'100%', height:'100%', objectFit:'cover' as const, display:'block' }} />
+                                          <div style={{ position:'absolute' as const, inset:0,
+                                            background:'linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 50%)',
+                                            display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'10px 8px' }}>
+                                            <div style={{ fontSize:9, fontWeight:700, color:'#fff', lineHeight:1.3 }}>
+                                              {humanTipo.charAt(0).toUpperCase()+humanTipo.slice(1)}
+                                            </div>
+                                            <div style={{ fontSize:7, color:'rgba(255,255,255,.65)', marginTop:2 }}>
+                                              Visualização Arquitetônica Premium
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Camera Effect selector */}
+                                      <div>
+                                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                          letterSpacing:'.08em', marginBottom:6 }}>
+                                          {humanLang==='pt-BR' ? '🎥 Efeito de Câmera' : '🎥 Camera Effect'}
+                                        </div>
+                                        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5 }}>
+                                          {[{key:'auto', label:'🎲 Auto'}, ...EFFECTS.map(e => ({key:e.key, label: e.label}))].map(ef => (
+                                            <button key={ef.key} onClick={() => setReelEffect(ef.key)}
+                                              style={{ padding:'6px 4px', border:`1.5px solid ${reelEffect===ef.key?'#3b82f6':'#e5e8f0'}`,
+                                                borderRadius:6, background: reelEffect===ef.key?'#eff6ff':'#fafafa',
+                                                cursor:'pointer', fontFamily:'inherit', fontSize:9, fontWeight:600,
+                                                color: reelEffect===ef.key?'#3b82f6':'#5a6282', lineHeight:1.3, textAlign:'center' as const }}>
+                                              {ef.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* AI Narration section */}
+                                      <div style={{ background:'#f8f9fc', borderRadius:8, padding:'10px 12px', display:'flex', flexDirection:'column' as const, gap:8 }}>
+                                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em' }}>
+                                          🎙️ {humanLang==='pt-BR' ? 'Narração com IA' : 'AI Narration'}
+                                        </div>
+                                        {reelNarration ? (
+                                          <textarea value={reelNarration} onChange={e => setReelNarration(e.target.value)}
+                                            rows={4} style={{ width:'100%', padding:'8px', border:'1px solid #e5e8f0', borderRadius:6,
+                                              fontSize:11, fontFamily:'inherit', resize:'vertical' as const, color:'#1a1f36', background:'#fff', boxSizing:'border-box' as const }} />
+                                        ) : (
+                                          <div style={{ fontSize:10, color:'#8890a0', lineHeight:1.5 }}>
+                                            {humanLang==='pt-BR'
+                                              ? 'Gere um roteiro de vendas em PT-BR com narração por voz Gemini (áudio .webm)'
+                                              : 'Generate a sales script in PT-BR with Gemini voice narration (audio .webm)'}
+                                          </div>
+                                        )}
+                                        <div style={{ display:'flex', gap:8 }}>
+                                          <button disabled={reelNarrationLoading}
+                                            onClick={async () => {
+                                              setReelNarrationLoading(true)
+                                              setReelAudioB64(null)
+                                              try {
+                                                // 1. Generate script text via Gemini
+                                                const scriptR = await fetch('/api/gemini', {
+                                                  method:'POST', headers:{'Content-Type':'application/json'},
+                                                  body: JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:
+                                                    `Escreva um roteiro de narração de vídeo de 15 segundos em português brasileiro profissional e elegante para um vídeo de marketing imobiliário de um projeto "${humanTipo}" de estilo "${humanEstilo}". Máximo 5 frases curtas. Linguagem premium, inspiradora. Sem hashtags. Apenas o texto da narração.`
+                                                  }]}] })
+                                                })
+                                                const scriptD = await scriptR.json()
+                                                const scriptText = scriptD?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || `Descubra o projeto premium ${humanTipo}. Design exclusivo com acabamentos de alto padrão. Um espaço que une elegância e funcionalidade. Viva a experiência da arquitetura de excelência.`
+                                                setReelNarration(scriptText)
+
+                                                // 2. Generate audio via Gemini TTS
+                                                const audioR = await fetch('/api/gemini', {
+                                                  method:'POST', headers:{'Content-Type':'application/json'},
+                                                  body: JSON.stringify({
+                                                    model:'gemini-2.0-flash-exp',
+                                                    contents:[{role:'user',parts:[{text: scriptText}]}],
+                                                    generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:'Aoede' } } } }
+                                                  })
+                                                })
+                                                const audioD = await audioR.json()
+                                                const audioPart = (audioD?.candidates?.[0]?.content?.parts??[]).find((p: any) => p.inlineData?.data)
+                                                if (audioPart) setReelAudioB64(audioPart.inlineData.data)
+                                              } catch(e: any) {
+                                                console.error('Narration error:', e)
+                                              } finally {
+                                                setReelNarrationLoading(false)
+                                              }
+                                            }}
+                                            style={{ flex:1, padding:'7px 10px', background: reelNarrationLoading ? '#64748b' : '#4f46e5',
+                                              color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600,
+                                              cursor: reelNarrationLoading ? 'wait' : 'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
+                                            {reelNarrationLoading ? '⏳ Gerando...' : '✨ Gerar Roteiro + Voz'}
+                                          </button>
+                                          {reelAudioB64 && (
+                                            <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'#16a34a', fontWeight:600 }}>
+                                              🎵 Voz pronta
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Generate + download */}
+                                      <div style={{ display:'flex', gap:8 }}>
+                                        <button disabled={reelGenerating}
+                                          onClick={async () => {
+                                            if (reelVideoUrl) { URL.revokeObjectURL(reelVideoUrl); setReelVideoUrl(null) }
+                                            setReelGenerating(true)
+                                            try {
+                                              // Collect images
+                                              const allB64: string[] = []
+                                              if (geminiRenderB64) allB64.push(geminiRenderB64)
+                                              ;(['night','minimal','watercolor'] as const).forEach(k => { if (geminiVariants[k]) allB64.push(geminiVariants[k]!) })
+
+                                              const canvas = document.createElement('canvas')
+                                              canvas.width = 1080; canvas.height = 1920
+                                              const ctx2 = canvas.getContext('2d')!
+
+                                              const imgs = await Promise.all(allB64.slice(0,4).map(b64 => new Promise<HTMLImageElement>((res, rej) => {
+                                                const im = new Image(); im.onload = () => res(im); im.onerror = rej
+                                                im.src = `data:image/jpeg;base64,${b64}`
+                                              })))
+                                              if (!imgs.length) { setReelGenerating(false); return }
+
+                                              // Build per-segment effect list
+                                              const effectFns = imgs.map((_, i) => {
+                                                if (reelEffect === 'auto') {
+                                                  return EFFECTS[i % EFFECTS.length].fn
+                                                }
+                                                return (EFFECTS.find(e => e.key === reelEffect) || EFFECTS[0]).fn
+                                              })
+
+                                              // Audio setup
+                                              let audioCtx: AudioContext|null = null
+                                              let audioDestination: MediaStreamAudioDestinationNode|null = null
+                                              if (reelAudioB64) {
+                                                try {
+                                                  audioCtx = new AudioContext({ sampleRate: 24000 })
+                                                  audioDestination = audioCtx.createMediaStreamDestination()
+                                                  // Decode PCM-16 at 24kHz
+                                                  const raw = atob(reelAudioB64)
+                                                  const bytes = new Uint8Array(raw.length)
+                                                  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
+                                                  const int16 = new Int16Array(bytes.buffer)
+                                                  const audioBuffer = audioCtx.createBuffer(1, int16.length, 24000)
+                                                  const ch = audioBuffer.getChannelData(0)
+                                                  for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768.0
+                                                  const src = audioCtx.createBufferSource()
+                                                  src.buffer = audioBuffer
+                                                  src.connect(audioDestination)
+                                                  src.start(0)
+                                                } catch(e) { audioCtx = null; audioDestination = null }
+                                              }
+
+                                              // MediaRecorder setup
+                                              const videoStream = canvas.captureStream(30)
+                                              const allTracks = [...videoStream.getTracks()]
+                                              if (audioDestination) allTracks.push(...audioDestination.stream.getAudioTracks())
+                                              const combinedStream = new MediaStream(allTracks)
+                                              const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
+                                                : MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+                                              const recorder = new MediaRecorder(combinedStream, { mimeType })
+                                              const chunks: BlobPart[] = []
+                                              recorder.ondataavailable = (e: BlobEvent) => { if (e.data.size > 0) chunks.push(e.data) }
+
+                                              const segDur = 5000 // 5s per image
+                                              const totalDur = imgs.length * segDur
+                                              const fps = 30; const frameMs = 1000/fps
+                                              recorder.start(100)
+                                              const t0 = performance.now()
+                                              let lastF = t0
+
+                                              await new Promise<void>(resolve => {
+                                                function frame() {
+                                                  const now = performance.now()
+                                                  if (now - lastF < frameMs - 2) { requestAnimationFrame(frame); return }
+                                                  lastF = now
+                                                  const elapsed = now - t0
+                                                  if (elapsed >= totalDur) { recorder.stop(); resolve(); return }
+
+                                                  const segIdx = Math.min(Math.floor(elapsed / segDur), imgs.length-1)
+                                                  const segT = (elapsed % segDur) / segDur
+                                                  const img2 = imgs[segIdx]
+
+                                                  ctx2.clearRect(0,0,1080,1920)
+                                                  effectFns[segIdx](ctx2, img2, segT)
+
+                                                  // Cross-fade transition at segment boundaries
+                                                  if (imgs.length > 1) {
+                                                    const fadeIn  = segT < 0.12 ? 1 - segT/0.12 : 0
+                                                    const fadeOut = segT > 0.88 ? (segT-0.88)/0.12 : 0
+                                                    const alpha = Math.max(fadeIn, fadeOut)
+                                                    if (alpha > 0) { ctx2.fillStyle=`rgba(0,0,0,${alpha})`; ctx2.fillRect(0,0,1080,1920) }
+                                                  }
+
+                                                  // Bottom gradient + text overlay
+                                                  const grad = ctx2.createLinearGradient(0,1200,0,1920)
+                                                  grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.88)')
+                                                  ctx2.fillStyle=grad; ctx2.fillRect(0,0,1080,1920)
+
+                                                  // Caption: narration line (if available)
+                                                  if (reelNarration) {
+                                                    const lines = reelNarration.split(/[.!?]+/).map(s=>s.trim()).filter(Boolean)
+                                                    const lineIdx = Math.floor((elapsed/totalDur)*lines.length)
+                                                    const line = lines[Math.min(lineIdx, lines.length-1)] || ''
+                                                    ctx2.fillStyle='rgba(255,255,255,0.85)'; ctx2.font='italic 34px Georgia,serif'
+                                                    ctx2.textAlign='center' as CanvasTextAlign
+                                                    // Word wrap
+                                                    const words = line.split(' '); let curLine=''; const wrapped: string[]=[]
+                                                    for (const w of words) {
+                                                      const test = curLine ? curLine+' '+w : w
+                                                      if (ctx2.measureText(test).width > 900) { wrapped.push(curLine); curLine=w }
+                                                      else curLine=test
+                                                    }
+                                                    if (curLine) wrapped.push(curLine)
+                                                    wrapped.forEach((l,li) => ctx2.fillText(l, 540, 1560+li*44))
+                                                  }
+
+                                                  // Title + brand
+                                                  ctx2.textAlign='center' as CanvasTextAlign
+                                                  ctx2.fillStyle='rgba(255,255,255,0.38)'; ctx2.font='26px sans-serif'
+                                                  ctx2.fillText('✦  Arquitetura & Design  ✦', 540, 1680)
+                                                  ctx2.fillStyle='#fff'; ctx2.font='bold 48px sans-serif'
+                                                  const title2 = humanTipo.charAt(0).toUpperCase()+humanTipo.slice(1)
+                                                  ctx2.fillText(title2.length>22?title2.slice(0,20)+'…':title2, 540, 1746)
+                                                  ctx2.fillStyle='rgba(255,255,255,0.6)'; ctx2.font='28px sans-serif'
+                                                  ctx2.fillText('Visualização Arquitetônica Premium', 540, 1800)
+                                                  ctx2.fillStyle='rgba(255,255,255,0.3)'; ctx2.font='20px sans-serif'
+                                                  ctx2.fillText('AI Construction Intelligence Platform', 540, 1852)
+
+                                                  // Segment indicator dots
+                                                  if (imgs.length > 1) {
+                                                    imgs.forEach((_, di) => {
+                                                      ctx2.beginPath()
+                                                      ctx2.arc(540 + (di - (imgs.length-1)/2)*20, 1882, di===segIdx?5:3, 0, Math.PI*2)
+                                                      ctx2.fillStyle = di===segIdx ? '#fff' : 'rgba(255,255,255,0.35)'
+                                                      ctx2.fill()
+                                                    })
+                                                  }
+                                                  requestAnimationFrame(frame)
+                                                }
+                                                requestAnimationFrame(frame)
+                                              })
+                                              await new Promise<void>(r => { recorder.onstop = () => r() })
+                                              if (audioCtx) audioCtx.close()
+                                              const blob = new Blob(chunks, { type:'video/webm' })
+                                              setReelVideoUrl(URL.createObjectURL(blob))
+                                            } catch(e: any) {
+                                              console.error('Reel error:', e)
+                                            } finally {
+                                              setReelGenerating(false)
+                                            }
+                                          }}
+                                          style={{ flex:1, padding:'10px 14px', background: reelGenerating?'#64748b':'#e11d48',
+                                            color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:600,
+                                            cursor: reelGenerating?'wait':'pointer', fontFamily:'inherit',
+                                            display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                                          {reelGenerating ? '⏳ Renderizando...' : `🎬 Gerar Vídeo${reelAudioB64?' + Voz':''}`}
+                                        </button>
+                                        {reelVideoUrl && (
+                                          <a href={reelVideoUrl} download={`reel-${humanTipo.replace(/ /g,'-')}.webm`}
+                                            style={{ padding:'10px 14px', background:'#16a34a', color:'#fff',
+                                              border:'none', borderRadius:8, fontSize:12, fontWeight:600,
+                                              textDecoration:'none', display:'flex', alignItems:'center', gap:5 }}>
+                                            ⬇️ .webm
+                                          </a>
+                                        )}
+                                      </div>
+
+                                      <div style={{ fontSize:9, color:'#8890a0', lineHeight:1.5, textAlign:'center' as const }}>
+                                        {imgCount} cena(s) × 5s = {imgCount*5}s • {reelAudioB64?'🎵 com narração':'sem áudio'} • 1080×1920 • CapCut / Premiere / Reels
+                                      </div>
+                                    </div>
+                                  </div>
+                                  )
+                                })()}
                               </div>
                             ) : (
-                              /* Empty state — shown only before analysis runs */
-                              !geminiRenderLoading && (
+                              /* Empty state — shown only before analysis runs, not when there is an error */
+                              !geminiRenderLoading && !geminiRenderError && (
                                 <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
                                   <div style={{ fontSize:48 }}>🎨</div>
                                   <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
@@ -1949,10 +2561,24 @@ Crie:
                                 </div>
                               </>
                             )}
-                            {!geminiPaletteLoading && geminiPalette.length === 0 && (
+                            {!geminiPaletteLoading && geminiPaletteError && (
+                              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'12px 14px', fontSize:11, color:'#7f1d1d' }}>
+                                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ Erro ao gerar paleta</div>
+                                <div style={{ marginBottom:8 }}>{geminiPaletteError.slice(0, 150)}</div>
+                                <button onClick={() => {
+                                  const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
+                                  if (!ctx) return
+                                  setGeminiPaletteLoading(true); setGeminiPaletteError(null)
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Based on this architectural analysis of a "${humanTipo}" building, suggest exactly 6 professional colors.\nAnalysis: ${ctx}\nReturn ONLY a JSON array: [{"name":"...","hex":"#...","usage":"..."},...]`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiPaletteError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; const m=t.match(/\[[\s\S]*?\]/); if(m){try{setGeminiPalette(JSON.parse(m[0]));setGeminiPaletteError(null)}catch{setGeminiPaletteError('Parse error')}}else setGeminiPaletteError('Sem resposta')}).catch((e:any)=>setGeminiPaletteError(e.message)).finally(()=>setGeminiPaletteLoading(false))
+                                }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  🔄 Tentar novamente
+                                </button>
+                              </div>
+                            )}
+                            {!geminiPaletteLoading && !geminiPaletteError && geminiPalette.length === 0 && (
                               <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
                                 <div style={{ fontSize:36 }}>🎭</div>
-                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.</div>
                               </div>
                             )}
                           </div>
@@ -1989,12 +2615,221 @@ Crie:
                                     .replace(/\n/g,'<br/>') }} />
                               </div>
                             )}
-                            {!geminiMarketingLoading && !geminiMarketing && (
-                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
-                                <div style={{ fontSize:36 }}>📣</div>
-                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                            {!geminiMarketingLoading && geminiMarketingError && (
+                              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'12px 14px', fontSize:11, color:'#7f1d1d' }}>
+                                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ Erro ao gerar marketing</div>
+                                <div style={{ marginBottom:8 }}>{geminiMarketingError.slice(0, 150)}</div>
+                                <button onClick={() => {
+                                  const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
+                                  if (!ctx) return
+                                  setGeminiMarketingLoading(true); setGeminiMarketingError(null)
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Você é copywriter imobiliário de alto padrão. Crie textos de marketing para um imóvel "${humanTipo}":\n${ctx}\n\nCrie: **Headline**, **Subtítulo**, **Descrição** (2 parágrafos), **Diferenciais** (5 bullet points com emojis), **Call to Action**`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiMarketingError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; if(t){setGeminiMarketing(t);setGeminiMarketingError(null)}else setGeminiMarketingError('Sem resposta')}).catch((e:any)=>setGeminiMarketingError(e.message)).finally(()=>setGeminiMarketingLoading(false))
+                                }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  🔄 Tentar novamente
+                                </button>
                               </div>
                             )}
+                            {!geminiMarketingLoading && !geminiMarketingError && !geminiMarketing && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:36 }}>📣</div>
+                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Ambientes ── */}
+                        {!humanLoading && humanTab === 'ambientes' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:12 }}>
+                            {Object.entries(humanResult).filter(([k]) => k.includes('AMBIENTES') || k.includes('PESSOAS') || k.includes('PEOPLE') || k.includes('SPACES')).length > 0
+                              ? Object.entries(humanResult)
+                                  .filter(([k]) => k.includes('AMBIENTES') || k.includes('PESSOAS') || k.includes('PEOPLE') || k.includes('SPACES'))
+                                  .map(([key, val]) => (
+                                    <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                      <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',
+                                        display:'flex', alignItems:'center', gap:8 }}>
+                                        <span style={{ fontSize:18 }}>🚶</span>
+                                        <span style={{ fontSize:12, fontWeight:700, color:'#166534' }}>{key}</span>
+                                      </div>
+                                      <div style={{ padding:'14px 16px' }}>
+                                        {val.split('\n').filter(Boolean).map((line, li) => {
+                                          const cols = line.split('|').map(s => s.trim()).filter(Boolean)
+                                          if (cols.length >= 2) return (
+                                            <div key={li} style={{ display:'grid', gridTemplateColumns:'2fr 1fr 2fr', gap:8,
+                                              padding:'6px 0', borderBottom:'1px solid #f0fdf4', fontSize:12, color:'#1a1f36' }}>
+                                              {cols.map((c, ci) => <div key={ci} style={{ fontWeight: li===0?700:400 }}>{c}</div>)}
+                                            </div>
+                                          )
+                                          return <div key={li} style={{ fontSize:12, lineHeight:1.75, color:'#5a6282', padding:'3px 0',
+                                            whiteSpace:'pre-wrap' as const }}>{line}</div>
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))
+                              : (
+                                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                  <div style={{ fontSize:40 }}>🚶</div>
+                                  <div style={{ fontSize:12, fontWeight:600, color:'#1a1f36' }}>Distribuição de ambientes</div>
+                                  <div style={{ fontSize:11 }}>Execute "✨ Gerar Análise" para ver a distribuição de pessoas por ambiente.</div>
+                                </div>
+                              )
+                            }
+                          </div>
+                        )}
+
+                        {/* ── Tab: Prompts ── */}
+                        {!humanLoading && humanTab === 'prompts' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {(() => {
+                              const geminiKey = Object.keys(humanResult).find(k => k.includes('GEMINI') || k.includes('PROMPT'))
+                              const basePrompt = geminiKey ? humanResult[geminiKey] : ''
+                              if (!basePrompt) return (
+                                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                  <div style={{ fontSize:40 }}>🎨</div>
+                                  <div style={{ fontSize:12, fontWeight:600, color:'#1a1f36' }}>Prompts para IA externa</div>
+                                  <div style={{ fontSize:11 }}>Execute "✨ Gerar Análise" para gerar prompts otimizados para DALL-E e Midjourney.</div>
+                                </div>
+                              )
+                              const dalle3 = ('Photorealistic architectural render, 8K, ultra-detailed, professional lighting: ' + basePrompt).slice(0, 950) + ' --quality hd'
+                              const mj = basePrompt.slice(0, 800) + ' --ar 4:3 --v 6.1 --style raw --q 2'
+                              const items = [
+                                { icon:'🤖', title:'Gemini 2.0 Flash Exp', sub:'image-to-image · preserva geometria original', color:'#185FA5', bg:'#eff6ff', prompt: basePrompt },
+                                { icon:'🎨', title:'DALL-E 3 (OpenAI)', sub:'text-to-image · qualidade HD · via ChatGPT ou API', color:'#10a37f', bg:'#f0fdf4', prompt: dalle3 },
+                                { icon:'🎭', title:'Midjourney v6.1', sub:'text-to-image · alta qualidade artística · /imagine', color:'#7c3aed', bg:'#f5f3ff', prompt: mj },
+                              ]
+                              return items.map(item => (
+                                <div key={item.title} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                  <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:item.bg,
+                                    display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                      <span style={{ fontSize:18 }}>{item.icon}</span>
+                                      <div>
+                                        <div style={{ fontSize:12, fontWeight:700, color:item.color }}>{item.title}</div>
+                                        <div style={{ fontSize:10, color:'#8890a0' }}>{item.sub}</div>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => {
+                                      navigator.clipboard.writeText(item.prompt)
+                                      const btn = document.getElementById('copy-btn-' + item.title.replace(/\s/g,''))
+                                      if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
+                                    }} id={'copy-btn-' + item.title.replace(/\s/g,'')}
+                                      style={{ fontSize:10, padding:'4px 10px', background:'#fff', border:'1px solid #e5e8f0',
+                                        borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit', fontWeight:600 }}>
+                                      📋 Copiar
+                                    </button>
+                                  </div>
+                                  <div style={{ padding:'12px 16px', background:'#f8f9fc', border:'none', margin:0 }}>
+                                    <div style={{ fontFamily:'monospace', fontSize:11, lineHeight:1.8, color:'#1a1f36',
+                                      whiteSpace:'pre-wrap' as const, maxHeight:180, overflowY:'auto' as const,
+                                      background:'#fff', border:'1px solid #e5e8f0', borderRadius:6, padding:'10px 12px' }}>
+                                      {item.prompt}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            })()}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Adicionais ── */}
+                        {!humanLoading && humanTab === 'adicionais' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            <div style={{ background:'linear-gradient(135deg,#1e293b,#0f172a)', borderRadius:10, padding:'14px 18px',
+                              display:'flex', alignItems:'center', gap:12 }}>
+                              <div style={{ width:36, height:36, background:'#7c3aed', borderRadius:8,
+                                display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>✏️</div>
+                              <div>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#fff' }}>Aditivos do Arquiteto</div>
+                                <div style={{ fontSize:10, color:'#94a3b8', marginTop:2 }}>Instruções adicionais aplicadas no próximo render</div>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                letterSpacing:'.08em', marginBottom:8 }}>Instruções específicas</div>
+                              <textarea
+                                value={humanAdicionalInput}
+                                onChange={e => setHumanAdicionalInput(e.target.value)}
+                                placeholder={`Exemplos:\n• Revestimento em bambu natural nas paredes laterais\n• Iluminação noturna — spots embutidos no teto, fita LED sob armários\n• Jardim vertical na parede sul, espelho grande na parede leste\n• Sofá em couro caramelo, mesa de jantar com tampo em mármore\n• Adicionar mezanino com escada metálica`}
+                                style={{ width:'100%', minHeight:140, borderRadius:8, border:'1px solid #e5e8f0',
+                                  padding:'10px 12px', fontSize:12, fontFamily:'inherit', resize:'vertical' as const,
+                                  outline:'none', lineHeight:1.65, color:'#1a1f36', background:'#fff' }} />
+                            </div>
+                            {humanIs3D && (
+                              <div style={{ background:'#fef3c7', border:'1px solid #f59e0b', borderRadius:8,
+                                padding:'10px 14px', fontSize:11, color:'#92400e', lineHeight:1.5 }}>
+                                ⚠️ Arquivo 3D detectado — para aplicar aditivos no render, exporte uma vista 2D (PNG/JPG) do projeto e importe no campo de projeto.
+                              </div>
+                            )}
+                            <div style={{ display:'flex', gap:8 }}>
+                              <button
+                                disabled={!humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream' || geminiRenderLoading}
+                                onClick={() => {
+                                  const curB64 = humanB64; const curMime = humanImgType
+                                  if (!curB64 || humanIs3D) return
+                                  setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                  setHumanTab('render')
+                                  const base = humanAnaliseTipo === 'planta'
+                                    ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, luxury car, overhead sunlight. Style: ${humanEstilo}.`
+                                    : humanAnaliseTipo === 'fachada'
+                                    ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nAdd: photorealistic wall materials, golden-hour sunlight, ${humanVeg}, luxury vehicle, dramatic sky. Style: ${humanEstilo}.`
+                                    : humanAnaliseTipo === 'interior'
+                                    ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nAdd: photorealistic flooring/walls/ceiling, LED recessed spots and strip lights, premium cabinets, ${humanNP} person at 1.70m. Style: ${humanEstilo}.`
+                                    : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials, interior spaces with furniture and people at 1.70m scale. Style: ${humanEstilo}.`
+                                  const fullP = base + `\n\nARCHITECT'S MANDATORY ADDITIONAL DIRECTIVES:\n${humanAdicionalInput}\n\nApply ALL directives precisely. No text overlays. Seed:${Date.now()}`
+                                  fetch('/api/gemini', { method:'POST', headers:{'Content-Type':'application/json'},
+                                    body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:curMime,data:curB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                  }).then(async r => {
+                                    const d = await r.json()
+                                    if (d?.error?.message) { setGeminiRenderError(d.error.message); return }
+                                    const ip = (d?.candidates?.[0]?.content?.parts ?? []).find((x: any) => x.inlineData?.data)
+                                    if (ip) { setGeminiRenderB64(ip.inlineData.data); setGeminiRenderError(null) }
+                                    else setGeminiRenderError('Gemini não retornou imagem.')
+                                  }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
+                                  .finally(() => setGeminiRenderLoading(false))
+                                }}
+                                style={{ flex:1, padding:'11px 16px',
+                                  background: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? '#e5e8f0' : 'linear-gradient(135deg,#534AB7,#7c3aed)',
+                                  color: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? '#aaa' : '#fff',
+                                  border:'none', borderRadius:8, fontSize:12, fontWeight:700,
+                                  cursor: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? 'not-allowed' : 'pointer',
+                                  fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                                🎨 Aplicar Aditivos no Render
+                              </button>
+                              {humanAdicionalInput && (
+                                <button onClick={() => setHumanAdicionalInput('')}
+                                  style={{ padding:'11px 14px', background:'#f3f4f6', color:'#5a6282', border:'1px solid #e5e8f0',
+                                    borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  Limpar
+                                </button>
+                              )}
+                            </div>
+                            {/* Suggestions */}
+                            <div>
+                              <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                letterSpacing:'.08em', marginBottom:8 }}>Sugestões rápidas</div>
+                              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:6 }}>
+                                {[
+                                  '🌿 Jardim vertical na parede',
+                                  '💡 Iluminação noturna com LED',
+                                  '🪵 Revestimento madeira natural',
+                                  '🏊 Piscina com borda infinita',
+                                  '🪞 Espelho do piso ao teto',
+                                  '🌊 Mármore carrara no piso',
+                                  '🌳 Vegetação exuberante',
+                                  '🎨 Parede de pedra bruta',
+                                ].map(s => (
+                                  <button key={s} onClick={() => setHumanAdicionalInput(prev => (prev ? prev + '\n' : '') + s.replace(/^[^\s]+ /,''))}
+                                    style={{ padding:'4px 10px', background:'#f8f9fc', border:'1px solid #e5e8f0',
+                                      borderRadius:16, fontSize:10, cursor:'pointer', fontFamily:'inherit', color:'#5a6282',
+                                      whiteSpace:'nowrap' as const }}>
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         )}
 
@@ -2019,7 +2854,7 @@ Crie:
                                 </div>
                               )}
                               {humanAssistantMsgs.map((msg, i) => (
-                                <div key={i} style={{ display:'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                <div key={i} style={{ display:'flex', flexDirection:'column' as const, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', gap:4 }}>
                                   <div style={{ maxWidth:'85%', padding:'9px 13px', borderRadius:12, fontSize:12, lineHeight:1.65,
                                     whiteSpace:'pre-wrap' as const,
                                     background: msg.role === 'user' ? '#534AB7' : '#f4f6fb',
@@ -2028,6 +2863,27 @@ Crie:
                                     borderBottomLeftRadius: msg.role === 'assistant' ? 2 : 12 }}>
                                     {msg.text}
                                   </div>
+                                  {msg.role === 'assistant' && humanB64 && humanImgType !== 'application/pdf' && (
+                                    <button onClick={() => {
+                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                      setHumanTab('render')
+                                      const assistantSuggestions = msg.text
+                                      const p = (humanAnaliseTipo === 'planta'
+                                        ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nBase render: realistic flooring per room, furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked luxury car, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}.`
+                                        : humanAnaliseTipo === 'fachada'
+                                        ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nBase render: photorealistic wall materials, roof covering, premium doors, golden-hour sunlight, ${humanVeg} along wall and sidewalk, luxury vehicle in driveway, sky with clouds. Style: ${humanEstilo}.`
+                                        : humanAnaliseTipo === 'interior'
+                                        ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nBase render: photorealistic flooring/walls/ceiling, LED recessed spots and strip lights, premium cabinets and stone countertops, stainless appliances, ${humanNP} person at 1.70m, elegant decor. Style: ${humanEstilo}.`
+                                        : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nBase render: photorealistic materials, interior spaces with furniture and people at scale. Style: ${humanEstilo}.`
+                                      ) + `\n\nADDITIONAL INSTRUCTIONS FROM CONSULTANT:\n${assistantSuggestions}\n\nApply these suggestions in the render. No text overlays. Seed:${Date.now()}`
+                                      fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
+                                        body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)}else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
+                                    }}
+                                      style={{ fontSize:10, padding:'3px 9px', background:'linear-gradient(135deg,#534AB7,#7c3aed)', color:'#fff', border:'none', borderRadius:6, cursor:'pointer', fontFamily:'inherit', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
+                                      🎨 Aplicar no Render
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                               {humanAssistantLoading && (
@@ -2223,14 +3079,85 @@ Crie:
                             <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📊 {activePf?.name}</div>
                             <div style={{ display:'flex', gap:6 }}>
                               <button onClick={() => {
-                                const w = window.open('','_blank','width=900,height=700')
+                                const w = window.open('','_blank','width=960,height=800')
                                 if (!w) return
-                                w.document.write(`<html><head><title>Análise BIM — ${activePf?.name}</title><style>body{font-family:monospace;padding:32px;font-size:13px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 Análise BIM — ${activePf?.name}</h1>${unifiedAnalysis}<br/><br/><button onclick="window.print()">🖨️ Imprimir</button></body></html>`)
+                                const now = new Date()
+                                const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
+                                // Build floor plan image HTML
+                                let plantImgHtml = ''
+                                if (activePfB64 && activePfMediaType !== 'application/pdf') {
+                                  try {
+                                    const bs = atob(activePfB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                    for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                    const blobUrl = URL.createObjectURL(new Blob([ab], { type: activePfMediaType }))
+                                    plantImgHtml = `<div class="section"><div class="sec-title">📐 PLANTA / PROJETO</div><img src="${blobUrl}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;page-break-inside:avoid;margin-top:10px"/></div>`
+                                  } catch {}
+                                } else if (activePf?.url && activePf?.ext && !['pdf','dwg','dxf','ifc','rvt'].includes(activePf.ext)) {
+                                  plantImgHtml = `<div class="section"><div class="sec-title">📐 PLANTA / PROJETO</div><img src="${activePf.url}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;page-break-inside:avoid;margin-top:10px"/></div>`
+                                }
+                                // Format analysis into sections
+                                const analysisFormatted = unifiedAnalysis
+                                  .replace(/^#+\s*(.+)$/gm, (_: string, t: string) => `<div class="sec-title">${t}</div>`)
+                                  .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                                  .replace(/\n/g, '<br/>')
+                                w.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"/><title>Memorial Descritivo — ${activePf?.name ?? 'Projeto'}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#1a1f36;background:#fff}
+.page{max-width:900px;margin:0 auto;padding:32px 40px}
+.header{border-bottom:3px solid #185FA5;padding-bottom:20px;margin-bottom:28px}
+.logo-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.title{font-size:22px;font-weight:700;color:#185FA5;letter-spacing:.5px}
+.subtitle{font-size:13px;color:#5a6282;margin-top:4px}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px;background:#f8f9fc;padding:14px;border-radius:8px;border:1px solid #e5e8f0}
+.meta-item .label{font-size:9px;font-weight:700;color:#8890a0;text-transform:uppercase;letter-spacing:.1em}
+.meta-item .value{font-size:12px;font-weight:600;color:#1a1f36;margin-top:2px}
+.section{margin-bottom:28px;page-break-inside:avoid}
+.sec-title{font-size:12px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.08em;padding:6px 12px;background:#eff6ff;border-left:3px solid #185FA5;border-radius:0 4px 4px 0;margin-bottom:10px;margin-top:20px}
+.analysis-body{font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap;background:#f8f9fc;padding:16px;border-radius:6px;border:1px solid #e5e8f0}
+.footer{border-top:1px solid #e5e8f0;margin-top:40px;padding-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#8890a0}
+.stamp{border:2px solid #185FA5;border-radius:8px;padding:10px 16px;text-align:center;font-size:10px;color:#185FA5;font-weight:600}
+@page{size:A4;margin:15mm}
+@media print{.no-print{display:none}.page{padding:0}}
+</style></head><body><div class="page">
+<div class="header">
+  <div class="logo-row">
+    <div><div class="title">🏛️ MEMORIAL DESCRITIVO</div><div class="subtitle">Relatório Técnico Completo · AI Construction Intelligence Platform</div></div>
+    <div class="stamp">🤖 AI BIM<br/>Intelligence</div>
+  </div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Arquivo / Projeto</div><div class="value">${activePf?.name ?? 'Projeto'}</div></div>
+    <div class="meta-item"><div class="label">Data de Emissão</div><div class="value">${dateStr}</div></div>
+    <div class="meta-item"><div class="label">Norma de Referência</div><div class="value">ABNT NBR 6492 · NBR 12721</div></div>
+  </div>
+</div>
+${plantImgHtml}
+<div class="section">
+  <div class="sec-title">📋 RELATÓRIO TÉCNICO COMPLETO</div>
+  <div class="analysis-body">${analysisFormatted}</div>
+</div>
+<div class="footer">
+  <div>Gerado em ${dateStr} · AI Construction Intelligence Platform</div>
+  <div>Memorial Descritivo · Quantitativo · BIM · ABNT NBR</div>
+</div>
+<br/><button class="no-print" onclick="window.print()" style="padding:10px 28px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600">🖨️ Imprimir Memorial Descritivo</button>
+</div></body></html>`)
                                 w.document.close()
                               }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 🖨️ Imprimir
                               </button>
-                              <button onClick={() => window.open('/juridico', '_self')}
+                              <button onClick={() => {
+                                // Save memorial context so Juridico page can pick it up
+                                try {
+                                  localStorage.setItem('acip_memorial_context', JSON.stringify({
+                                    analysis: unifiedAnalysis,
+                                    plantB64: activePfB64,
+                                    plantMime: activePfMediaType,
+                                    plantName: activePf?.name ?? 'Projeto',
+                                    createdAt: Date.now()
+                                  }))
+                                } catch {}
+                                window.open('/juridico', '_blank')
+                              }}
                                 style={{ padding:'5px 11px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                 ⚖️ Jurídico
                               </button>
