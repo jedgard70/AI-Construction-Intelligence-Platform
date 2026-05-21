@@ -343,6 +343,16 @@ export default function BimOpsPage() {
   const [reportRunning, setReportRunning] = useState(false)
   const [reportResult, setReportResult] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  // Vision analysis state
+  const [uploadBase64, setUploadBase64] = useState('')
+  const [uploadMediaType, setUploadMediaType] = useState('image/jpeg')
+  const [uploadIsPDF, setUploadIsPDF] = useState(false)
+  const [clashVisionResult, setClashVisionResult] = useState('')
+  const [clashVisionLoading, setClashVisionLoading] = useState(false)
+  const clashFileRef = useRef<HTMLInputElement>(null)
+  const [qtyVisionResult, setQtyVisionResult] = useState('')
+  const [qtyVisionLoading, setQtyVisionLoading] = useState(false)
+  const qtyFileRef = useRef<HTMLInputElement>(null)
 
   const criticalClashes = CLASH_DATA.filter(c => c.severity === 'Critical').length
   const openClashes = CLASH_DATA.filter(c => c.status === 'Open').length
@@ -375,21 +385,69 @@ Respond in English. Be technically precise, cite US building codes and standards
 
   async function handleBIMUpload(file: File) {
     setUploading(true)
-    await new Promise(r => setTimeout(r, 1500))
-    setUploadedFile({ name: file.name, size: `${(file.size/1048576).toFixed(1)} MB` })
-    setUploading(false)
-    setActiveModule('clash')
-    runAIAnalysis('BIM Upload Analysis',
-      `A BIM file was uploaded: "${file.name}" (${(file.size/1048576).toFixed(1)} MB).
-Simulate a comprehensive BIM model analysis for a US commercial construction project. Provide:
-1. Model Health Score (0-100) with breakdown by discipline
-2. Clash Detection Summary — estimated clashes by discipline pair
-3. LOD Assessment — current Level of Development vs. required
-4. IFC Export Readiness
-5. COBie Data Completeness
-6. Revit Model Warnings estimate
-7. Recommended immediate actions before permit submission
-Be specific and technical.`)
+    const isImage = file.type.startsWith('image/')
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+
+    if (isImage || isPDF) {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve((reader.result as string).split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      const mt = isImage ? (file.type || 'image/jpeg') : 'application/pdf'
+      setUploadBase64(base64)
+      setUploadMediaType(mt)
+      setUploadIsPDF(isPDF)
+      setUploadedFile({ name: file.name, size: `${(file.size/1048576).toFixed(1)} MB` })
+      setUploading(false)
+      setActiveModule('clash')
+      setAnalyzing(true); setAiResult(''); setAiContext('BIM Upload Analysis')
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6', max_tokens: 2000,
+            system: `You are BIMForge AI — advanced AI BIM Operations platform for US construction. You specialize in clash detection, quantity takeoff, LOD assessment, permit readiness, and COBie compliance. Be technically precise and cite US building codes.`,
+            messages: [{ role: 'user', content: [
+              { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mt, data: base64 } } as any,
+              { type: 'text', text: `Analyze this construction document/drawing: "${file.name}".
+
+Provide a complete BIM analysis:
+
+### MODEL HEALTH
+Overall score (0-100) with breakdown by discipline.
+
+### CLASH DETECTION
+Identify ALL visible clashes between disciplines (Structural, MEP, Architectural). For each clash: ID, disciplines, severity (Critical/Major/Minor), exact description, location.
+
+### QUANTITY TAKEOFF
+Estimate major quantities from the drawing (concrete CY, masonry SF, steel TON, framing LF, roofing SF, MEP rough-in allowance) with unit costs USD.
+
+### LOD ASSESSMENT
+Current Level of Development per discipline vs. required LOD 300+.
+
+### PERMIT READINESS
+Checklist items complete vs. missing. Critical path blockers.
+
+### IMMEDIATE ACTIONS
+Top 5 actions before permit submission.` }
+            ]}]
+          })
+        })
+        const data = await res.json()
+        setAiResult(data?.content?.[0]?.text || 'Analysis complete — no content returned.')
+      } catch { setAiResult('Connection error. Check ANTHROPIC_API_KEY configuration.') }
+      setAnalyzing(false)
+    } else {
+      setUploadedFile({ name: file.name, size: `${(file.size/1048576).toFixed(1)} MB` })
+      setUploading(false)
+      setActiveModule('clash')
+      runAIAnalysis('BIM Upload Analysis',
+        `A BIM file was uploaded: "${file.name}" (${(file.size/1048576).toFixed(1)} MB).
+For best AI analysis, upload a PDF or image (JPG/PNG) of your floor plan or BIM screenshot.
+Provide analysis for a US commercial project: 1) Model Health Score; 2) Clash Detection Summary by discipline; 3) LOD Assessment; 4) IFC Export Readiness; 5) COBie Completeness; 6) Recommended actions before permit submission.`)
+    }
   }
 
   async function generatePermitReport() {
@@ -747,7 +805,7 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                       ))}
                     </div>
                     <input ref={fileRef} type="file" style={{ display:'none' }}
-                      accept=".rvt,.ifc,.nwd,.nwc,.dwg,.dxf,.fbx,.obj,.stl,.step"
+                      accept=".rvt,.ifc,.nwd,.nwc,.dwg,.dxf,.fbx,.obj,.stl,.step,.pdf,image/*"
                       onChange={e => { const f = e.target.files?.[0]; if(f) handleBIMUpload(f) }} />
                   </div>
 
@@ -806,7 +864,7 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
             {/* ── CLASH DETECTION ── */}
             {activeModule === 'clash' && (
               <>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                   <div>
                     <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:2 }}>⚡ Clash Detection</div>
                     <div style={{ fontSize:12, color:'#8b93a7' }}>{CLASH_DATA.length} clashes detected · AI-powered resolution guidance</div>
@@ -815,6 +873,81 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                     `Analyze these BIM clashes for a US commercial project and provide: 1) Priority resolution matrix ranked by impact and cost-to-fix; 2) Specific RFI language for each critical clash; 3) Coordination meeting agenda; 4) Estimated resolution cost per clash; 5) BCF issue markup recommendations. Clashes: ${CLASH_DATA.map(c=>`${c.id}: ${c.severity} — ${c.description} at ${c.location}`).join('; ')}`)}>
                     🤖 AI Clash Analysis
                   </button>
+                </div>
+
+                {/* Real Vision Analysis Panel */}
+                <div style={{ background:'#0d2137', border:'1px solid #185FA5', borderRadius:10, padding:'14px 16px', marginBottom:14 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#58a6ff', marginBottom:8, textTransform:'uppercase' as const, letterSpacing:'.08em' }}>
+                    🔍 Analyze Real Drawing / BIM Screenshot
+                  </div>
+                  <div style={{ fontSize:11, color:'#8b93a7', marginBottom:10 }}>
+                    Upload a floor plan image or PDF — Claude Vision detects real clashes, conflicts and code violations.
+                  </div>
+                  <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                    <button style={{ ...s.btn, background:'#238636' }} onClick={() => clashFileRef.current?.click()}>
+                      📁 Upload Floor Plan / BIM Image
+                    </button>
+                    <input ref={clashFileRef} type="file" style={{ display:'none' }}
+                      accept="image/*,.pdf"
+                      onChange={async e => {
+                        const f = e.target.files?.[0]; if (!f) return
+                        if (clashFileRef.current) clashFileRef.current.value = ''
+                        setClashVisionLoading(true); setClashVisionResult('')
+                        const isImage = f.type.startsWith('image/')
+                        const isPDF = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                        const base64 = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader()
+                          reader.onload = () => resolve((reader.result as string).split(',')[1])
+                          reader.onerror = reject; reader.readAsDataURL(f)
+                        })
+                        const mt = isImage ? (f.type || 'image/jpeg') : 'application/pdf'
+                        try {
+                          const res = await fetch('/api/chat', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              model: 'claude-sonnet-4-6', max_tokens: 2000,
+                              system: `You are BIMForge AI — expert BIM clash detection specialist. Analyze construction drawings with precision, citing US building codes (IBC, NFPA, ADA, NEC).`,
+                              messages: [{ role: 'user', content: [
+                                { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mt, data: base64 } } as any,
+                                { type: 'text', text: `Perform detailed clash detection analysis on this drawing "${f.name}".
+
+For each clash found:
+- **ID**: CLH-XXX
+- **Disciplines**: (e.g., MEP vs Structural)
+- **Severity**: Critical / Major / Minor
+- **Description**: Exact conflict description with dimensions if visible
+- **Location**: Grid reference or room name
+- **Code Reference**: Applicable IBC/NFPA/ADA section
+- **Resolution**: Recommended fix
+
+Also provide:
+### SUMMARY
+Total clashes by severity and discipline pair.
+
+### PRIORITY MATRIX
+Ranked list of clashes by urgency and cost impact.
+
+### COORDINATION NOTES
+Items requiring immediate RFI or design team coordination.` }
+                              ]}]
+                            })
+                          })
+                          const data = await res.json()
+                          setClashVisionResult(data?.content?.[0]?.text || 'No analysis returned.')
+                        } catch { setClashVisionResult('Connection error. Check ANTHROPIC_API_KEY.') }
+                        setClashVisionLoading(false)
+                      }} />
+                    {clashVisionLoading && <span style={{ fontSize:12, color:'#58a6ff' }}>⏳ Claude Vision analyzing...</span>}
+                  </div>
+                  {clashVisionResult && !clashVisionLoading && (
+                    <>
+                      <div style={{ ...s.pre, marginTop:12, maxHeight:500 }}>{clashVisionResult}</div>
+                      <button onClick={() => setPrintData({ title:'BIMForge AI — Real Clash Detection Report', content: clashVisionResult })}
+                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* Clash summary */}
@@ -1720,6 +1853,81 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                       🖨️ Imprimir Takeoff
                     </button>
                   </div>
+                </div>
+
+                {/* Real Vision Takeoff */}
+                <div style={{ background:'#0d2137', border:'1px solid #185FA5', borderRadius:10, padding:'14px 16px', marginBottom:14 }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#58a6ff', marginBottom:8, textTransform:'uppercase' as const, letterSpacing:'.08em' }}>
+                    📐 Extract Real Quantities from Drawing
+                  </div>
+                  <div style={{ fontSize:11, color:'#8b93a7', marginBottom:10 }}>
+                    Upload a floor plan or PDF — Claude Vision reads dimensions and extracts real quantity takeoff.
+                  </div>
+                  <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                    <button style={{ ...s.btn, background:'#238636' }} onClick={() => qtyFileRef.current?.click()}>
+                      📁 Upload Drawing for Real Takeoff
+                    </button>
+                    <input ref={qtyFileRef} type="file" style={{ display:'none' }}
+                      accept="image/*,.pdf"
+                      onChange={async e => {
+                        const f = e.target.files?.[0]; if (!f) return
+                        if (qtyFileRef.current) qtyFileRef.current.value = ''
+                        setQtyVisionLoading(true); setQtyVisionResult('')
+                        const isImage = f.type.startsWith('image/')
+                        const isPDF = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                        const base64 = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader()
+                          reader.onload = () => resolve((reader.result as string).split(',')[1])
+                          reader.onerror = reject; reader.readAsDataURL(f)
+                        })
+                        const mt = isImage ? (f.type || 'image/jpeg') : 'application/pdf'
+                        try {
+                          const res = await fetch('/api/chat', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              model: 'claude-sonnet-4-6', max_tokens: 2000,
+                              system: `You are BIMForge AI — expert quantity surveyor and cost estimator for US construction. Analyze drawings and extract precise quantities with CSI MasterFormat division codes and current US market unit costs.`,
+                              messages: [{ role: 'user', content: [
+                                { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mt, data: base64 } } as any,
+                                { type: 'text', text: `Perform a full quantity takeoff from this drawing "${f.name}".
+
+Extract all quantities visible in the drawing and format as:
+
+### QUANTITY TAKEOFF
+| CSI Div | Description | Unit | Qty | Unit Cost USD | Total |
+|---------|-------------|------|-----|---------------|-------|
+(fill all rows from drawing)
+
+### COST SUMMARY
+- Total Direct Cost: $XXX
+- With 15% GC Markup: $XXX
+- Contingency (10%): $XXX
+- **Total Project Estimate: $XXX**
+
+### ASSUMPTIONS & NOTES
+List any estimates made, areas where dimensions weren't visible, and recommended clarifications.
+
+### VALUE ENGINEERING
+Top 3 opportunities to reduce cost without compromising quality.` }
+                              ]}]
+                            })
+                          })
+                          const data = await res.json()
+                          setQtyVisionResult(data?.content?.[0]?.text || 'No analysis returned.')
+                        } catch { setQtyVisionResult('Connection error. Check ANTHROPIC_API_KEY.') }
+                        setQtyVisionLoading(false)
+                      }} />
+                    {qtyVisionLoading && <span style={{ fontSize:12, color:'#58a6ff' }}>⏳ Claude Vision extracting quantities...</span>}
+                  </div>
+                  {qtyVisionResult && !qtyVisionLoading && (
+                    <>
+                      <div style={{ ...s.pre, marginTop:12, maxHeight:500 }}>{qtyVisionResult}</div>
+                      <button onClick={() => setPrintData({ title:'BIMForge AI — Real Quantity Takeoff', content: qtyVisionResult })}
+                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                        🖨️ Imprimir / Compartilhar
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {/* AI Quantity Survey */}

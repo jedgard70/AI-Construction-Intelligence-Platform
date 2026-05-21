@@ -239,10 +239,16 @@ export default function PlantasPage() {
   const [tab, setTab] = useState('findings') // findings | chat
   const [zoom, setZoom] = useState(1)
   const [messages, setMessages] = useState([
-    { role:'assistant', content:'👋 Olá! Sou o BIM_Coordinator_AI. Tenho 7 achados identificados na folha A-201. Qual gostaria de revisar primeiro?' }
+    { role:'assistant', content:'👋 Olá! Sou o BIM_Coordinator_AI. Envie sua planta (JPG, PNG ou PDF) para análise real com IA, ou pergunte sobre os achados do projeto demo.' }
   ])
   const [chatInput, setChatInput] = useState('')
   const [chatPending, setChatPending] = useState(false)
+  const [uploadedImageB64, setUploadedImageB64] = useState(null)
+  const [uploadedImageType, setUploadedImageType] = useState('image/jpeg')
+  const [uploadedIsPDF, setUploadedIsPDF] = useState(false)
+  const [uploadedFileName, setUploadedFileName] = useState(null)
+  const [analyzing, setAnalyzing] = useState(false)
+  const plantaFileRef = useRef(null)
 
   const filtered = findings.filter(f => {
     if (!activeCats.has(f.cat)) return false
@@ -256,6 +262,69 @@ export default function PlantasPage() {
     setFindings(fs => fs.map(f => f.id === id ? { ...f, x, y } : f))
   }, [])
 
+  const handlePlantaUpload = useCallback(async (file) => {
+    const isImage = file.type.startsWith('image/')
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+    if (!isImage && !isPDF) {
+      alert('Formato não suportado. Use JPG, PNG ou PDF.')
+      return
+    }
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result.split(',')[1])
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+    const mt = isImage ? (file.type || 'image/jpeg') : 'application/pdf'
+    setUploadedImageB64(base64)
+    setUploadedImageType(mt)
+    setUploadedIsPDF(isPDF)
+    setUploadedFileName(file.name)
+    setAnalyzing(true)
+    setTab('chat')
+    setMessages(m => [...m, { role:'assistant', content:`⏳ Analisando "${file.name}" com Claude Vision...` }])
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2000,
+          system: `Você é o BIM_Coordinator_AI — especialista em análise de plantas baixas, compatibilização BIM e verificação de normas técnicas brasileiras (NBR 9077, NBR 9050, NBR 15575). Analise plantas com precisão técnica.`,
+          messages: [{ role: 'user', content: [
+            { type: isPDF ? 'document' : 'image', source: { type: 'base64', media_type: mt, data: base64 } },
+            { type: 'text', text: `Analise esta planta baixa "${file.name}" e forneça:
+
+### IDENTIFICAÇÃO
+Tipo de edificação, pavimento, escala estimada, áreas identificadas com metragens.
+
+### ACHADOS — PROBLEMAS ENCONTRADOS
+Para cada problema:
+- **ID**: F-XXX
+- **Categoria**: código/estrutura/acessibilidade/dimensão/missing
+- **Severidade**: alta/média/baixa
+- **Descrição**: descrição técnica detalhada
+- **Ambiente**: qual cômodo/área
+- **Norma**: NBR ou legislação aplicável
+- **Resolução**: como corrigir
+
+### RESUMO
+Número de achados por severidade, pontuação geral de conformidade (0-100).
+
+### RECOMENDAÇÕES
+Top 3 ações prioritárias antes de submeter para aprovação.` }
+          ]}]
+        })
+      })
+      const data = await res.json()
+      const text = data?.content?.[0]?.text || 'Análise concluída.'
+      setMessages(m => [...m, { role:'assistant', content:`✅ Análise de "${file.name}" concluída:\n\n${text}` }])
+    } catch {
+      setMessages(m => [...m, { role:'assistant', content:'❌ Erro ao conectar. Verifique ANTHROPIC_API_KEY.' }])
+    }
+    setAnalyzing(false)
+  }, [])
+
   const acceptFinding = id => setFindings(fs => fs.map(f => f.id === id ? { ...f, status:'accepted' } : f))
   const dismissFinding = id => { setFindings(fs => fs.filter(f => f.id !== id)); if (modalId === id) setModalId(null) }
 
@@ -267,22 +336,27 @@ export default function PlantasPage() {
     setMessages(m => [...m, userMsg])
     setChatPending(true)
     try {
-      const allMsgs = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }))
-      const systemPrompt = `Você é o BIM_Coordinator_AI, revisando a folha A-201 (planta baixa, escala 1:100).
-Há ${findings.length} achados: ${findings.map(f => `${f.id} (${f.cat}, ${f.sev}): ${f.title}`).join('; ')}.
-Responda em pt-BR. Seja direto e técnico. Máximo 3 frases. Termine com "Posso ajudar com mais alguma dúvida sobre a plataforma?"`
+      const systemPrompt = uploadedFileName
+        ? `Você é o BIM_Coordinator_AI. Você acabou de analisar a planta "${uploadedFileName}". Responda perguntas sobre essa planta e seus achados. Seja técnico e preciso, cite normas NBR quando relevante.`
+        : `Você é o BIM_Coordinator_AI, revisando a folha A-201 (planta baixa demo, escala 1:100). Há ${findings.length} achados: ${findings.map(f => `${f.id} (${f.cat}, ${f.sev}): ${f.title}`).join('; ')}. Responda em pt-BR. Seja direto e técnico.`
+
+      const historyMsgs = messages
+        .filter(m => typeof m.content === 'string')
+        .slice(-6)
+        .map(m => ({ role: m.role, content: m.content }))
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type':'application/json' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 512,
+          model: 'claude-sonnet-4-6',
+          max_tokens: 800,
           system: systemPrompt,
-          messages: allMsgs,
+          messages: [...historyMsgs, { role: 'user', content: text }],
         }),
       })
       const data = await res.json()
-      const reply = data?.content?.[0]?.text || 'Erro ao conectar com o agente.'
+      const reply = data?.content?.[0]?.text || data?.error?.message || 'Erro ao conectar com o agente.'
       setMessages(m => [...m, { role:'assistant', content: reply }])
     } catch {
       setMessages(m => [...m, { role:'assistant', content:'[Erro de conexão — verifique ANTHROPIC_API_KEY]' }])
@@ -370,6 +444,13 @@ Responda em pt-BR. Seja direto e técnico. Máximo 3 frases. Termine com "Posso 
           </div>
 
           <div style={{ flex:1 }}/>
+          <label style={{ padding:'6px 14px', background:'#238636', color:'#fff', border:'none',
+            borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+            display:'flex', alignItems:'center', gap:6 }}>
+            {analyzing ? '⏳ Analisando...' : uploadedFileName ? `✅ ${uploadedFileName}` : '📁 Analisar Planta Real'}
+            <input ref={plantaFileRef} type="file" accept="image/*,.pdf" style={{ display:'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if(f) handlePlantaUpload(f) }} />
+          </label>
           <button style={{ padding:'6px 14px', background:'#185FA5', color:'#fff', border:'none',
             borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
             + Novo RFI

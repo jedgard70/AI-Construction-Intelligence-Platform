@@ -5,6 +5,7 @@ import NewClientModal from './NewClientModal'
 import { printDocument } from './PrintShareModal'
 import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 import type { Profile } from '../pages/dashboard'
@@ -271,7 +272,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [activePlanta, setActivePlanta] = useState(0)
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
-  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'>('viewer')
+  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'>('viewer')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
   const [humanEscala, setHumanEscala] = useState('50')
   const [humanNP, setHumanNP] = useState(6)
@@ -282,6 +283,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
+  const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
+  const [unifiedLoading, setUnifiedLoading] = useState(false)
+  const [activePfB64, setActivePfB64] = useState<string|null>(null)
+  const [activePfMediaType, setActivePfMediaType] = useState('image/jpeg')
   const [aiAgentModal, setAiAgentModal] = useState<string|null>(null)
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
@@ -416,7 +421,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   'Pitch Deck': '/investimentos',
                   'Investimentos': '/investimentos',
                   'Plantas': '/plantas',
-                  'BIM / Clash': '/plantas',
+                  'BIM / Clash': '/bim-ops',
                   'Cronograma': '/orcamento',
                   'Qualidade': '/qualidade',
                   'Sales Pipeline': '/vendas',
@@ -900,30 +905,99 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
 
       {/* ── VISUALIZADOR DE PLANTAS ── */}
       {showPlantasViewer && (() => {
-        const SUPPORTED_EXTS = ['pdf','dwg','dxf','dgn','ifc','rvt','dwf','dwfx','fbx','stl','step','stp','obj','sat','gbxml','nwc','nwd']
+        const IMAGE_EXTS = ['jpg','jpeg','png','webp','gif','bmp','tiff','tif','svg']
+        const SUPPORTED_EXTS = [...IMAGE_EXTS,'pdf','dwg','dxf','dgn','ifc','rvt','dwf','dwfx','fbx','stl','step','stp','obj','sat','gbxml','nwc','nwd']
         const EXT_META: Record<string, {icon:string,cat:string,color:string}> = {
-          pdf:   { icon:'📄', cat:'Documento',  color:'#E53E3E' },
-          dwg:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
-          dxf:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
-          dgn:   { icon:'📐', cat:'CAD',         color:'#185FA5' },
-          ifc:   { icon:'🏗️', cat:'BIM / IFC',   color:'#3B6D11' },
-          rvt:   { icon:'🏗️', cat:'Revit',       color:'#3B6D11' },
-          dwf:   { icon:'📦', cat:'DWF',         color:'#8A4E2F' },
-          dwfx:  { icon:'📦', cat:'DWFx',        color:'#8A4E2F' },
-          fbx:   { icon:'🎲', cat:'3D / FBX',    color:'#6B4EBF' },
-          stl:   { icon:'🖨️', cat:'3D / STL',    color:'#6B4EBF' },
-          step:  { icon:'🔩', cat:'STEP',        color:'#B45309' },
-          stp:   { icon:'🔩', cat:'STEP',        color:'#B45309' },
-          obj:   { icon:'🎲', cat:'3D / OBJ',    color:'#6B4EBF' },
-          sat:   { icon:'🔷', cat:'SAT / ACIS',  color:'#0E7490' },
-          gbxml: { icon:'🌿', cat:'gbXML / MEP', color:'#15803D' },
-          nwc:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
-          nwd:   { icon:'🔗', cat:'Navisworks',  color:'#7C3AED' },
+          jpg:   { icon:'🖼️', cat:'Imagem',      color:'#E57E32' },
+          jpeg:  { icon:'🖼️', cat:'Imagem',      color:'#E57E32' },
+          png:   { icon:'🖼️', cat:'Imagem PNG',  color:'#E57E32' },
+          webp:  { icon:'🖼️', cat:'Imagem WebP', color:'#E57E32' },
+          gif:   { icon:'🖼️', cat:'Imagem GIF',  color:'#E57E32' },
+          bmp:   { icon:'🖼️', cat:'Imagem BMP',  color:'#E57E32' },
+          tiff:  { icon:'🖼️', cat:'Imagem TIFF', color:'#E57E32' },
+          tif:   { icon:'🖼️', cat:'Imagem TIFF', color:'#E57E32' },
+          svg:   { icon:'🖼️', cat:'Imagem SVG',  color:'#E57E32' },
+          pdf:   { icon:'📄', cat:'Documento',   color:'#E53E3E' },
+          dwg:   { icon:'📐', cat:'CAD',          color:'#185FA5' },
+          dxf:   { icon:'📐', cat:'CAD',          color:'#185FA5' },
+          dgn:   { icon:'📐', cat:'CAD',          color:'#185FA5' },
+          ifc:   { icon:'🏗️', cat:'BIM / IFC',    color:'#3B6D11' },
+          rvt:   { icon:'🏗️', cat:'Revit',        color:'#3B6D11' },
+          dwf:   { icon:'📦', cat:'DWF',          color:'#8A4E2F' },
+          dwfx:  { icon:'📦', cat:'DWFx',         color:'#8A4E2F' },
+          fbx:   { icon:'🎲', cat:'3D / FBX',     color:'#6B4EBF' },
+          stl:   { icon:'🖨️', cat:'3D / STL',     color:'#6B4EBF' },
+          step:  { icon:'🔩', cat:'STEP',         color:'#B45309' },
+          stp:   { icon:'🔩', cat:'STEP',         color:'#B45309' },
+          obj:   { icon:'🎲', cat:'3D / OBJ',     color:'#6B4EBF' },
+          sat:   { icon:'🔷', cat:'SAT / ACIS',   color:'#0E7490' },
+          gbxml: { icon:'🌿', cat:'gbXML / MEP',  color:'#15803D' },
+          nwc:   { icon:'🔗', cat:'Navisworks',   color:'#7C3AED' },
+          nwd:   { icon:'🔗', cat:'Navisworks',   color:'#7C3AED' },
         }
+        const THREE_D_EXTS = ['ifc','rvt','dwg','dxf','dgn','dwf','dwfx','fbx','stl','obj','step','stp','sat','gbxml','nwc','nwd']
         const activePf = plantFiles[activePlanta] ?? null
         const isPDF = activePf?.ext === 'pdf'
+        const isImage = activePf ? IMAGE_EXTS.includes(activePf.ext) : false
+        const is3D = activePf ? THREE_D_EXTS.includes(activePf.ext) : false
+        const canAnalyze = activePf ? (isImage || isPDF) : false
 
-        function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+        async function autoRunAnalysis(b64: string, mediaType: string, pf: {name:string,ext:string}) {
+          setUnifiedLoading(true); setUnifiedAnalysis(''); setViewerTab('analysis')
+          const isPDFFile = pf.ext === 'pdf'
+          try {
+            const res = await fetch('/api/chat', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-6', max_tokens: 3000,
+                system: `Você é o Atlas BIM Intelligence — sistema integrado de análise de plantas e projetos de construção civil. Você combina análise BIM, quantitativos, memorial descritivo e conformidade normativa em uma única análise completa. Responda sempre em português do Brasil.`,
+                messages: [{ role: 'user', content: [
+                  { type: isPDFFile ? 'document' : 'image', source: { type: 'base64', media_type: mediaType, data: b64 } } as any,
+                  { type: 'text', text: `Analise esta planta/documento "${pf.name}" e gere um relatório técnico completo integrado.
+
+### 1. IDENTIFICAÇÃO DO PROJETO
+Tipo de edificação, pavimento, escala, descrição geral, ambientes identificados com áreas estimadas.
+
+### 2. MEMORIAL DESCRITIVO
+Descrição técnica completa da obra: fundação, estrutura, alvenaria, cobertura, revestimentos, instalações (hidráulica, elétrica, ar-condicionado), esquadrias, acabamentos. Use linguagem técnica profissional.
+
+### 3. QUANTITATIVO DE SERVIÇOS (ABNT NBR)
+| Item | Descrição | Unid | Quantidade | Custo Unit (R$) | Total (R$) |
+(liste todos os serviços identificáveis: escavação, concreto, alvenaria, cobertura, revestimento, instalações, pintura, etc.)
+
+### 4. COMPATIBILIZAÇÃO BIM
+Conflitos e interferências identificados entre sistemas (estrutural × hidráulico × elétrico). Para cada conflito: localização, disciplinas envolvidas, severidade, solução recomendada.
+
+### 5. CONFORMIDADE NORMATIVA
+Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), NBR 15575 (desempenho), ABNT NBR 6118 (concreto armado). Liste conformidades e não-conformidades.
+
+### 6. DADOS PARA CONTRATO
+- Área total construída estimada: ___ m²
+- Área do terreno estimada: ___ m²
+- Tipo de obra: ___
+- Classificação: ___
+- Valor estimado da obra: R$ ___
+- Prazo estimado de execução: ___ meses` }
+                ]}]
+              })
+            })
+            const data = await res.json()
+            const text = data?.content?.[0]?.text || 'Análise não disponível.'
+            setUnifiedAnalysis(text)
+            try {
+              localStorage.setItem('atlas_plant_analysis', JSON.stringify({
+                fileName: pf.name,
+                analysis: text,
+                date: new Date().toISOString()
+              }))
+            } catch {}
+          } catch (err: any) {
+            setUnifiedAnalysis(`Erro: ${err.message || 'Falha ao conectar. Verifique ANTHROPIC_API_KEY no Vercel.'}`)
+          }
+          setUnifiedLoading(false)
+        }
+
+        async function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
           const files = Array.from(e.target.files || [])
           if (!files.length) return
           setPlantUploading(true)
@@ -931,13 +1005,43 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
             const ext = f.name.split('.').pop()?.toLowerCase() ?? ''
             return { name: f.name, type: f.type || 'application/octet-stream', url: URL.createObjectURL(f), size: f.size, ext }
           })
-          setPlantFiles(prev => {
-            const merged = [...prev, ...newEntries]
-            setActivePlanta(merged.length - newEntries.length)
-            return merged
-          })
+          const newIdx = plantFiles.length
+          setPlantFiles(prev => [...prev, ...newEntries])
+          setActivePlanta(newIdx)
           setPlantUploading(false)
           e.target.value = ''
+
+          const firstNew = files[0]
+          const firstExt = firstNew.name.split('.').pop()?.toLowerCase() ?? ''
+          const firstEntry = newEntries[0]
+
+          if (THREE_D_EXTS.includes(firstExt)) {
+            // Open 3D viewer in new window
+            const url = URL.createObjectURL(firstNew)
+            try { localStorage.setItem('bim3d_file_url', url); localStorage.setItem('bim3d_file_name', firstNew.name); localStorage.setItem('bim3d_file_ext', firstExt) } catch {}
+            window.open(`/bim-3d?name=${encodeURIComponent(firstNew.name)}&ext=${firstExt}`, '_blank', 'width=1400,height=900')
+          } else if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
+            // Read base64 and auto-trigger AI analysis
+            const mediaType = firstNew.type || (firstExt === 'pdf' ? 'application/pdf' : 'image/jpeg')
+            const b64 = await new Promise<string>((res, rej) => {
+              const r = new FileReader()
+              r.onload = () => res((r.result as string).split(',')[1])
+              r.onerror = rej
+              r.readAsDataURL(firstNew)
+            })
+            setActivePfB64(b64)
+            setActivePfMediaType(mediaType)
+            setUnifiedAnalysis('')
+            // Auto-trigger analysis immediately, passing data directly (no state lag)
+            await autoRunAnalysis(b64, mediaType, firstEntry)
+          } else {
+            setActivePfB64(null)
+          }
+        }
+
+        function runUnifiedAnalysis() {
+          if (!activePfB64 || !activePf) return
+          autoRunAnalysis(activePfB64, activePfMediaType, activePf)
         }
 
         function removeFile(idx: number) {
@@ -955,14 +1059,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
           return (b/1048576).toFixed(1) + ' MB'
         }
 
-        return (
-        <div onClick={e => { if (e.target === e.currentTarget) setShowPlantasViewer(false) }}
-          style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999,
-            display:'flex', alignItems:'flex-start', justifyContent:'center',
-            padding:20, overflowY:'auto' }}>
-          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:1100,
-            margin:'auto', overflow:'hidden', boxShadow:'0 24px 72px rgba(0,0,0,.35)',
-            display:'flex', flexDirection:'column', maxHeight:'calc(100vh - 40px)' }}>
+        return createPortal(
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0,
+            background:'#fff', zIndex:2147483647,
+            display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
             {/* Header */}
             <div style={{ padding:'14px 20px', background:'#f8f9fc', borderBottom:'1px solid #e5e8f0',
@@ -989,7 +1089,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                 {/* Upload button */}
                 <label style={{ margin:'12px', display:'block', cursor:'pointer' }}>
                   <input type="file" multiple style={{ display:'none' }}
-                    accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
+                    accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
                     onChange={handleFileInput} />
                   <div style={{ padding:'9px 14px', background:'#185FA5', borderRadius:8,
                     color:'#fff', fontSize:12, fontWeight:600, textAlign:'center',
@@ -1082,8 +1182,28 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                     style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
                       background: viewerTab==='humanize' ? '#534AB7' : '#f0f4f8',
                       color: viewerTab==='humanize' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
-                    🤖 Humanizar com IA
+                    🎨 Humanizar
                   </button>
+                  {canAnalyze && (
+                    <button onClick={runUnifiedAnalysis}
+                      disabled={unifiedLoading}
+                      style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
+                        background: viewerTab==='analysis' ? '#3B6D11' : '#EAF3DE',
+                        color: viewerTab==='analysis' ? '#fff' : '#3B6D11', border:'1px solid #97C459', fontFamily:'inherit',
+                        opacity: unifiedLoading ? 0.7 : 1 }}>
+                      {unifiedLoading ? '⏳ Analisando com IA...' : '🤖 Analisar Tudo (BIM + Memorial + Quantitativo)'}
+                    </button>
+                  )}
+                  {is3D && activePf && (
+                    <button onClick={() => {
+                      try { localStorage.setItem('bim3d_file_url', activePf.url); localStorage.setItem('bim3d_file_name', activePf.name); localStorage.setItem('bim3d_file_ext', activePf.ext) } catch {}
+                      window.open(`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`, '_blank', 'width=1400,height=900')
+                    }}
+                      style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
+                        background:'#534AB7', color:'#fff', border:'none', fontFamily:'inherit' }}>
+                      🎲 Abrir Viewer 3D
+                    </button>
+                  )}
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
                   {activePf && isPDF && viewerTab==='viewer' && (
                     <>
@@ -1153,11 +1273,14 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                           </div>
                         ) : (
                           <label style={{ cursor:'pointer', display:'block' }}>
-                            <input type="file" accept="image/*" style={{ display:'none' }}
+                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt" style={{ display:'none' }}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (!f) return
-                                const mt = ['image/jpeg','image/png','image/gif','image/webp'].includes(f.type) ? f.type : 'image/jpeg'
+                                const isPDFFile = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                                const mt = isPDFFile ? 'application/pdf'
+                                  : ['image/jpeg','image/png','image/gif','image/webp'].includes(f.type) ? f.type
+                                  : f.type.startsWith('image/') ? f.type : 'image/jpeg'
                                 setHumanImgType(mt)
                                 const rd = new FileReader()
                                 rd.onload = ev => setHumanB64((ev.target?.result as string).split(',')[1])
@@ -1169,7 +1292,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                               <div style={{ fontSize:12, fontWeight:500, color:'#1a1f36', marginBottom:3 }}>
                                 Arraste ou clique para enviar
                               </div>
-                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · qualquer planta baixa</div>
+                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · PDF · DWG · IFC · qualquer formato</div>
                             </div>
                           </label>
                         )}
@@ -1285,7 +1408,8 @@ RETORNE EXATAMENTE neste formato markdown:
                                 messages: [{
                                   role: 'user',
                                   content: [
-                                    { type:'image', source:{ type:'base64', media_type: humanImgType, data: humanB64 } },
+                                    { type: humanImgType === 'application/pdf' ? 'document' : 'image',
+                                      source:{ type:'base64', media_type: humanImgType, data: humanB64 } } as any,
                                     { type:'text', text: prompt }
                                   ]
                                 }]
@@ -1391,70 +1515,103 @@ RETORNE EXATAMENTE neste formato markdown:
 
                 {/* Viewer canvas */}
                 {viewerTab === 'viewer' && (
-                <div style={{ flex:1, overflow:'hidden', background:'#f0f2f5', position:'relative' }}>
+                <div style={{ flex:1, overflow:'hidden', background:'#1a1a2e', position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   {!activePf ? (
-                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
-                      alignItems:'center', justifyContent:'center', gap:12 }}>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12 }}>
                       <div style={{ fontSize:56 }}>🏗️</div>
-                      <div style={{ fontSize:15, fontWeight:600, color:'#1a1f36' }}>
-                        Nenhum arquivo selecionado
+                      <div style={{ fontSize:15, fontWeight:600, color:'#e0e4f0' }}>Nenhum arquivo selecionado</div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center' as const, maxWidth:320, lineHeight:1.6 }}>
+                        Clique em <strong style={{ color:'#58a6ff' }}>"📂 Abrir arquivo(s)"</strong> na lateral para carregar uma planta.
                       </div>
-                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', maxWidth:320, lineHeight:1.6 }}>
-                        Use o botão <strong>"📂 Abrir arquivo(s)"</strong> na lateral<br/>
-                        para carregar plantas em PDF, DWG, IFC e outros formatos.
-                      </div>
-                      <label style={{ cursor:'pointer' }}>
-                        <input type="file" multiple style={{ display:'none' }}
-                          accept=".pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.dwf,.dwfx,.fbx,.stl,.step,.stp,.obj,.sat,.gbxml,.nwc,.nwd"
-                          onChange={handleFileInput} />
-                        <div style={{ padding:'10px 22px', background:'#185FA5', color:'#fff',
-                          borderRadius:8, fontSize:13, fontWeight:600 }}>
-                          📂 Abrir arquivo(s)
-                        </div>
-                      </label>
-                      <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4, textAlign:'center', lineHeight:1.8 }}>
-                        PDF · DWG · DXF · DGN · IFC · RVT · DWF · DWFx<br/>
-                        FBX · STL · STEP/STP · OBJ · SAT · gbXML · NWC · NWD
+                      <div style={{ fontSize:10, color:'#8890a0', textAlign:'center' as const, lineHeight:1.8, marginTop:8 }}>
+                        🖼️ Imagens (JPG · PNG · WebP) · 📄 PDF<br/>
+                        📐 CAD (DWG · DXF · DGN) · 🏗️ BIM (IFC · RVT)<br/>
+                        📦 DWF · 🎲 FBX · STL · OBJ · STEP · SAT · gbXML · NWC/NWD
                       </div>
                     </div>
                   ) : isPDF ? (
                     <iframe src={activePf.url} title={activePf.name}
                       style={{ width:'100%', height:'100%', border:'none', display:'block' }} />
+                  ) : isImage ? (
+                    <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', padding:16, background:'#1a1a2e' }}>
+                      <img src={activePf.url} alt={activePf.name}
+                        style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', borderRadius:6,
+                          boxShadow:'0 8px 32px rgba(0,0,0,.6)' }} />
+                    </div>
                   ) : (
-                    <div style={{ height:'100%', display:'flex', flexDirection:'column',
-                      alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
-                      <div style={{ fontSize:64 }}>
-                        {(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}
-                      </div>
-                      <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36', textAlign:'center' }}>
-                        {activePf.name}
-                      </div>
-                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center', lineHeight:1.6 }}>
-                        Formato <strong>.{activePf.ext.toUpperCase()}</strong> — {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat}
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
+                      <div style={{ fontSize:64 }}>{(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}</div>
+                      <div style={{ fontSize:16, fontWeight:700, color:'#e0e4f0', textAlign:'center' as const }}>{activePf.name}</div>
+                      <div style={{ fontSize:12, color:'#8890a0', textAlign:'center' as const, lineHeight:1.6 }}>
+                        Formato <strong style={{ color:'#58a6ff' }}>.{activePf.ext.toUpperCase()}</strong> — {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat}
                         <br/>Tamanho: {fmtSize(activePf.size)}
                         <br/><br/>
-                        Este formato requer software especializado para visualização 3D/CAD.<br/>
-                        Faça o download para abrir no AutoCAD, Revit, Navisworks ou software compatível.
+                        Este formato requer software CAD para renderização 3D.<br/>
+                        Exporte como PDF ou JPG no AutoCAD/Revit para visualizar aqui.
                       </div>
-                      <a href={activePf.url} download={activePf.name}
-                        style={{ padding:'11px 28px', background:'#185FA5', color:'#fff',
-                          borderRadius:8, fontSize:13, fontWeight:600, textDecoration:'none',
-                          display:'flex', alignItems:'center', gap:8 }}>
-                        ⬇️ Baixar {activePf.name}
-                      </a>
-                      <div style={{ padding:'10px 16px', background:'#EFF4FF', borderRadius:8,
-                        fontSize:11, color:'#185FA5', textAlign:'center', maxWidth:380 }}>
-                        💡 <strong>Dica:</strong> Exporte para PDF no AutoCAD / Revit para visualizar diretamente aqui.
+                      <div style={{ display:'flex', gap:10, flexWrap:'wrap' as const, justifyContent:'center' }}>
+                        <a href={activePf.url} download={activePf.name}
+                          style={{ padding:'10px 22px', background:'#185FA5', color:'#fff', borderRadius:8, fontSize:12, fontWeight:600, textDecoration:'none' }}>
+                          ⬇️ Baixar {activePf.name}
+                        </a>
                       </div>
                     </div>
                   )}
+                  {/* Overlay: Analisar Tudo button when file loaded */}
+                  {canAnalyze && !unifiedLoading && !unifiedAnalysis && (
+                    <button onClick={runUnifiedAnalysis}
+                      style={{ position:'absolute', bottom:24, right:24,
+                        padding:'12px 22px', background:'#3B6D11', color:'#fff', border:'none',
+                        borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer',
+                        fontFamily:'inherit', boxShadow:'0 4px 16px rgba(0,0,0,.4)',
+                        display:'flex', alignItems:'center', gap:8 }}>
+                      🤖 Analisar Tudo — BIM + Memorial + Quantitativo
+                    </button>
+                  )}
                 </div>
+                )}
+
+                {/* Analysis result tab */}
+                {viewerTab === 'analysis' && (
+                  <div style={{ flex:1, overflowY:'auto' as const, padding:24, background:'#f8f9fc' }}>
+                    {unifiedLoading ? (
+                      <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center', gap:16, padding:60 }}>
+                        <div style={{ width:44, height:44, borderRadius:'50%', border:'4px solid #e5e8f0', borderTopColor:'#3B6D11', animation:'spin .7s linear infinite' }} />
+                        <div style={{ fontSize:14, fontWeight:600, color:'#185FA5' }}>Atlas BIM Intelligence analisando...</div>
+                        <div style={{ fontSize:12, color:'#8890a0' }}>Gerando Memorial Descritivo · Quantitativo · BIM · Conformidade NBR</div>
+                      </div>
+                    ) : unifiedAnalysis ? (
+                      <>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                          <div>
+                            <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36' }}>📊 Análise Completa — {activePf?.name}</div>
+                            <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>Memorial Descritivo · Quantitativo · BIM · Conformidade · Dados para Contrato</div>
+                          </div>
+                          <div style={{ display:'flex', gap:8 }}>
+                            <button onClick={() => window.open('/juridico', '_self')}
+                              style={{ padding:'7px 14px', background:'#534AB7', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                              ⚖️ Usar no Jurídico
+                            </button>
+                          </div>
+                        </div>
+                        <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, padding:'18px 20px',
+                          fontSize:12, lineHeight:1.9, color:'#1a1f36', whiteSpace:'pre-wrap' as const, fontFamily:'monospace' }}>
+                          {unifiedAnalysis}
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
+                        <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Análise não iniciada</div>
+                        <div style={{ fontSize:12 }}>Carregue uma imagem ou PDF e clique em "Analisar Tudo"</div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
-          </div>
-        </div>
-        )
+        </div>,
+        document.body)
       })()}
 
       {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(proj) => {
