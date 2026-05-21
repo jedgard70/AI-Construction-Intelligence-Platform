@@ -283,6 +283,16 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
+  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'>('analise')
+  const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
+  const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
+  const [geminiPalette, setGeminiPalette] = useState<Array<{name:string,hex:string,usage:string}>>([])
+  const [geminiMarketing, setGeminiMarketing] = useState<string>('')
+  const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
+  const [geminiMarketingLoading, setGeminiMarketingLoading] = useState(false)
+  const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
+  const [humanAssistantInput, setHumanAssistantInput] = useState('')
+  const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
   const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
@@ -1375,6 +1385,10 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           if (!humanB64) return
                           setHumanLoading(true)
                           setHumanResult({})
+                          setGeminiRenderB64(null)
+                          setGeminiPalette([])
+                          setGeminiMarketing('')
+                          setHumanTab('analise')
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
                           const prompt = `Você é especialista em visualização arquitetônica. Analise esta planta baixa de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
 
@@ -1403,6 +1417,8 @@ RETORNE EXATAMENTE neste formato markdown:
 ### PASSOS REVIT
 [5 passos com famílias RPC, configuração 1700mm e renderização para esta planta]`
 
+                          let analysisText = ''
+                          let dallePrompt = ''
                           try {
                             const r = await fetch('/api/chat', {
                               method: 'POST',
@@ -1422,116 +1438,515 @@ RETORNE EXATAMENTE neste formato markdown:
                             })
                             const d = await r.json()
                             const txt = d.content?.[0]?.text || ''
+                            analysisText = txt
                             const secs: Record<string,string> = {}
-                            const rx = /###\s+([A-ZÇÁÉÍÓÚ\s\/E]+)\n([\s\S]*?)(?=###|$)/g
+                            const rx = /###\s+([^\n]+)\n([\s\S]*?)(?=###\s|$)/g
                             let m
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
                             setHumanResult(secs)
+                            const dalleKey = Object.keys(secs).find(k => k.includes('DALL'))
+                            dallePrompt = dalleKey ? secs[dalleKey] : ''
                           } catch (err: any) {
                             setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
                           }
                           setHumanLoading(false)
+
+                          // Auto-trigger Gemini render + palette + marketing in parallel
+                          const b64Snap = humanB64
+                          const imgTypeSnap = humanImgType
+                          const tipoSnap = humanTipo
+                          const estiloSnap = humanEstilo
+                          const loteSnap = humanLote
+                          const vegSnap = humanVeg
+
+                          // Gemini image-to-image render
+                          if (b64Snap && imgTypeSnap !== 'application/pdf') {
+                            setGeminiRenderLoading(true)
+                            const renderPrompt = dallePrompt
+                              ? `Render this architectural floor plan as a photorealistic ${estiloSnap} visualization. Style: ${estiloSnap}. Setting: ${loteSnap}. Vegetation: ${vegSnap}. Add people at 1.70m scale. High quality architectural render, natural lighting, warm atmosphere.`
+                              : `Render this floor plan as a photorealistic architectural visualization with natural lighting, professional quality, ${estiloSnap} style.`
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash-exp',
+                                contents: [{ role: 'user', parts: [
+                                  { inlineData: { mimeType: imgTypeSnap, data: b64Snap } },
+                                  { text: renderPrompt }
+                                ]}],
+                                generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const parts = data?.candidates?.[0]?.content?.parts ?? []
+                              const imgPart = parts.find((p: any) => p.inlineData?.data)
+                              if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
+                            }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                          }
+
+                          // Gemini palette
+                          if (analysisText) {
+                            setGeminiPaletteLoading(true)
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash',
+                                contents: [{ role: 'user', parts: [{ text:
+                                  `Based on this architectural analysis of a "${tipoSnap}" building, suggest a professional color palette with exactly 6 colors.
+Analysis: ${analysisText.slice(0, 600)}
+Return ONLY valid JSON array like: [{"name":"Warm White","hex":"#F5F0E8","usage":"Walls"},{"name":"Sage Green","hex":"#8FA888","usage":"Accents"},...]` }]}]
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                              const match = txt.match(/\[[\s\S]*\]/)
+                              if (match) {
+                                try { setGeminiPalette(JSON.parse(match[0])) } catch {}
+                              }
+                            }).catch(() => {}).finally(() => setGeminiPaletteLoading(false))
+                          }
+
+                          // Gemini marketing copy
+                          if (analysisText) {
+                            setGeminiMarketingLoading(true)
+                            fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                model: 'gemini-2.0-flash',
+                                contents: [{ role: 'user', parts: [{ text:
+                                  `Você é um copywriter especializado em marketing imobiliário de alto padrão. Com base nesta análise arquitetônica de um imóvel "${tipoSnap}", crie textos de marketing profissionais em português:
+
+Análise: ${analysisText.slice(0, 600)}
+
+Crie:
+1. **Headline** (até 10 palavras, impactante)
+2. **Subtítulo** (até 20 palavras)
+3. **Descrição** (2 parágrafos ricos e sedutores, 60-80 palavras cada)
+4. **Diferenciais** (5 bullet points com emojis)
+5. **Call to Action** (1 frase poderosa)` }]}]
+                              })
+                            }).then(r => r.json()).then(data => {
+                              const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
+                              if (txt) setGeminiMarketing(txt)
+                            }).catch(() => {}).finally(() => setGeminiMarketingLoading(false))
+                          }
                         }}
                         style={{ padding:'12px', background: humanB64 ? '#534AB7' : '#ccc',
                           color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:600,
                           cursor: humanB64 ? 'pointer' : 'not-allowed', fontFamily:'inherit',
                           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                        {humanLoading ? '⏳ Analisando...' : '✨ Gerar Análise e Prompts'}
+                        {humanLoading ? '⏳ Analisando...' : '✨ Gerar Análise Completa com IA'}
                       </button>
                     </div>
 
-                    {/* Right results */}
-                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
-                      {/* Print button when results exist */}
+                    {/* Right results — tabbed */}
+                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0 }}>
+
+                      {/* Tabs header */}
                       {!humanLoading && Object.keys(humanResult).length > 0 && (
-                        <button onClick={() => {
-                          const w = window.open('','_blank','width=900,height=700')
-                          if (!w) return
-                          const imgHtml = humanB64 ? `<img src="data:${humanImgType};base64,${humanB64}" style="max-width:100%;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
-                          const sections = Object.entries(humanResult).map(([k,v]) =>
-                            `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">${k}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px">${v}</pre>`
-                          ).join('')
-                          w.document.write(`<html><head><title>Humanização — ${humanTipo}</title><style>body{font-family:'Segoe UI',sans-serif;padding:32px;color:#1a1f36;max-width:900px;margin:0 auto}h1{font-size:20px;color:#185FA5;margin-bottom:4px}.sub{font-size:12px;color:#8890a0;margin-bottom:24px}@media print{.no-print{display:none}}</style></head><body><h1>🏛️ Humanização de Planta Baixa</h1><div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>${imgHtml}${sections}<br/><button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
-                          w.document.close()
-                        }}
-                          style={{ padding:'9px 18px', background:'#534AB7', color:'#fff', border:'none', borderRadius:8,
-                            fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
-                            display:'flex', alignItems:'center', gap:8, alignSelf:'flex-start' as const }}>
-                          🖨️ Imprimir Relatório Humanizado
-                        </button>
-                      )}
-                      {humanLoading && (
-                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
-                          justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
-                          <div style={{ width:36, height:36, border:'3px solid #e5e8f0', borderTopColor:'#534AB7',
-                            borderRadius:'50%', animation:'spin .7s linear infinite' }} />
-                          <div style={{ fontSize:13 }}>Analisando planta com IA...</div>
-                          <div style={{ fontSize:11, color:'#b0b8cc' }}>Identificando ambientes e calculando escala 1,70 m</div>
+                        <div style={{ display:'flex', gap:2, padding:'8px 12px', borderBottom:'1px solid #e5e8f0',
+                          background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
+                          {([
+                            ['analise','📊 Análise'],
+                            ['render','🎨 Render IA'],
+                            ['palette','🎭 Paleta'],
+                            ['marketing','📣 Marketing'],
+                            ['assistant','💬 Assistente'],
+                          ] as const).map(([t, lbl]) => (
+                            <button key={t} onClick={() => setHumanTab(t)}
+                              style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, border:'none',
+                                cursor:'pointer', fontFamily:'inherit',
+                                background: humanTab === t ? '#534AB7' : 'transparent',
+                                color: humanTab === t ? '#fff' : '#5a6282' }}>
+                              {lbl}{t === 'render' && geminiRenderLoading ? ' ⏳' : ''}
+                              {t === 'palette' && geminiPaletteLoading ? ' ⏳' : ''}
+                              {t === 'marketing' && geminiMarketingLoading ? ' ⏳' : ''}
+                            </button>
+                          ))}
+                          <button onClick={async () => {
+                            const w = window.open('','_blank','width=960,height=800')
+                            if (!w) return
+                            let plantImgUrl = ''
+                            if (humanB64 && humanImgType !== 'application/pdf') {
+                              try {
+                                const bs = atob(humanB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                plantImgUrl = URL.createObjectURL(new Blob([ab], { type: humanImgType }))
+                              } catch {}
+                            }
+                            let renderImgUrl = ''
+                            if (geminiRenderB64) {
+                              try {
+                                const bs = atob(geminiRenderB64); const ab = new ArrayBuffer(bs.length); const ia = new Uint8Array(ab)
+                                for (let i = 0; i < bs.length; i++) ia[i] = bs.charCodeAt(i)
+                                renderImgUrl = URL.createObjectURL(new Blob([ab], { type: 'image/jpeg' }))
+                              } catch {}
+                            }
+                            const imgHtml = plantImgUrl ? `<img src="${plantImgUrl}" style="width:100%;border-radius:8px;margin-bottom:16px;display:block;page-break-inside:avoid"/>` : ''
+                            const renderHtml = renderImgUrl ? `<h2>🎨 RENDERIZAÇÃO IA</h2><img src="${renderImgUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>` : ''
+                            const paletteHtml = geminiPalette.length ? `<h2>🎭 PALETA DE CORES</h2><div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px">${geminiPalette.map(c=>`<div style="display:flex;align-items:center;gap:8px;background:#f8f9fc;padding:8px 12px;border-radius:8px;border:1px solid #e5e8f0"><div style="width:32px;height:32px;border-radius:6px;background:${c.hex};border:1px solid rgba(0,0,0,.1)"></div><div><div style="font-size:12px;font-weight:700">${c.name}</div><div style="font-size:10px;color:#8890a0">${c.hex} · ${c.usage}</div></div></div>`).join('')}</div>` : ''
+                            const marketingHtml = geminiMarketing ? `<h2>📣 MARKETING</h2><div style="font-size:13px;line-height:1.8;white-space:pre-wrap">${geminiMarketing.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')}</div>` : ''
+                            const sections = Object.entries(humanResult).map(([k,v]) =>
+                              `<h2>${k.includes('DALL')?'🎨':k.includes('MIDJ')?'🎭':k.includes('REVIT')?'🏗️':k.includes('AMBIENTES')?'🚶':'📊'} ${k}</h2><pre>${v}</pre>`
+                            ).join('')
+                            w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Humanização — ${humanTipo}</title><style>*{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;padding:24px 32px;color:#1a1f36;margin:0}h1{font-size:20px;color:#185FA5;margin-bottom:4px}.sub{font-size:12px;color:#8890a0;margin-bottom:24px}h2{font-size:14px;color:#534AB7;margin:20px 0 8px;page-break-after:avoid}pre{white-space:pre-wrap;font-size:12px;line-height:1.85;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0;page-break-inside:avoid}img{width:100%;height:auto;border-radius:8px;display:block;page-break-inside:avoid}@page{size:auto;margin:15mm}@media print{.no-print{display:none}}</style></head><body><h1>🏛️ Humanização de Planta Baixa</h1><div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>${imgHtml}${renderHtml}${paletteHtml}${marketingHtml}${sections}<br/><button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
+                            w.document.close()
+                          }}
+                            style={{ marginLeft:'auto', padding:'5px 12px', background:'#3B6D11', color:'#fff',
+                              border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                            🖨️ Imprimir
+                          </button>
                         </div>
                       )}
-                      {!humanLoading && Object.keys(humanResult).length === 0 && (
-                        <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
-                          justifyContent:'center', gap:14, padding:48, color:'#8890a0', textAlign:'center' as const }}>
-                          <div style={{ fontSize:48 }}>🏛️</div>
-                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36' }}>Aguardando planta baixa</div>
-                          <div style={{ fontSize:12, maxWidth:280, lineHeight:1.6 }}>
-                            Envie uma imagem da planta e clique em "Gerar Análise e Prompts"
+
+                      {/* Scrollable content */}
+                      <div style={{ flex:1, overflowY:'auto' as const, padding:'16px', display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
+
+                        {/* Loading state */}
+                        {humanLoading && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                            justifyContent:'center', gap:14, padding:48, color:'#8890a0' }}>
+                            <div style={{ width:36, height:36, border:'3px solid #e5e8f0', borderTopColor:'#534AB7',
+                              borderRadius:'50%', animation:'spin .7s linear infinite' }} />
+                            <div style={{ fontSize:13 }}>Analisando planta com IA...</div>
+                            <div style={{ fontSize:11, color:'#b0b8cc' }}>Gemini + Claude: identificando ambientes, gerando paleta e marketing</div>
                           </div>
-                          <div style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:'12px 16px', fontSize:11, color:'#5a6282' }}>
-                            <div style={{ fontWeight:700, marginBottom:6 }}>Escala de referência (1,70 m)</div>
-                            {[['1:25','6,8 cm'],['1:50','3,4 cm'],['1:100','1,7 cm'],['1:200','0,85 cm']].map(([s,v]) => (
-                              <div key={s} style={{ display:'flex', justifyContent:'space-between', padding:'3px 0',
-                                borderBottom:'1px solid #e5e8f0' }}>
-                                <span>{s}</span><span style={{ color:'#3B6D11', fontWeight:600 }}>{v} na planta</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {!humanLoading && Object.keys(humanResult).map(key => {
-                        const val = humanResult[key]
-                        const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
-                        const promptId = `hprompt-${key.replace(/\s/g,'')}`
-                        return (
-                          <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
-                            <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
-                              display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>
-                                {key.includes('ANÁLISE') ? '📊' : key.includes('AMBIENTES') ? '🚶' : key.includes('DALL') ? '🎨' : key.includes('MIDJOURNEY') ? '🎭' : key.includes('REVIT') ? '🏗️' : '📋'} {key}
-                              </div>
-                              {isPrompt && (
-                                <button id={`btn-${promptId}`}
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(val)
-                                    const btn = document.getElementById(`btn-${promptId}`)
-                                    if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
-                                  }}
-                                  style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
-                                    borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
-                                  📋 Copiar
-                                </button>
-                              )}
+                        )}
+
+                        {/* Empty state */}
+                        {!humanLoading && Object.keys(humanResult).length === 0 && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center',
+                            justifyContent:'center', gap:14, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                            <div style={{ fontSize:48 }}>🏛️</div>
+                            <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36' }}>Humanizador Studio 3D</div>
+                            <div style={{ fontSize:12, maxWidth:300, lineHeight:1.6 }}>
+                              Envie uma imagem da planta e clique em <strong>"✨ Gerar Análise"</strong>.<br/>
+                              A IA (Claude + Gemini) gerará análise, render 3D, paleta de cores e textos de marketing.
                             </div>
-                            <div style={{ padding:'14px 16px' }}>
-                              {isPrompt ? (
-                                <div id={promptId} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:6,
-                                  padding:'10px 12px', fontFamily:'monospace', fontSize:11, lineHeight:1.8,
-                                  color:'#1a1f36', whiteSpace:'pre-wrap' as const }}>
-                                  {val}
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, width:'100%', maxWidth:280 }}>
+                              {[['📊','Análise de ambientes'],['🎨','Render IA (Gemini)'],['🎭','Paleta de cores'],['📣','Copy de marketing']].map(([ic,lb])=>(
+                                <div key={lb} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8,
+                                  padding:'10px', textAlign:'center' as const, fontSize:11, color:'#5a6282' }}>
+                                  <div style={{ fontSize:20, marginBottom:4 }}>{ic}</div>{lb}
                                 </div>
-                              ) : (
-                                <div style={{ fontSize:12, lineHeight:1.75, color:'#5a6282',
-                                  whiteSpace:'pre-wrap' as const }}
-                                  dangerouslySetInnerHTML={{ __html: val
-                                    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-                                    .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid #e5e8f0">$1</div>')
-                                    .replace(/\n/g,'<br/>') }} />
-                              )}
+                              ))}
                             </div>
                           </div>
-                        )
-                      })}
+                        )}
+
+                        {/* ── Tab: Análise ── */}
+                        {!humanLoading && humanTab === 'analise' && Object.keys(humanResult).map(key => {
+                          const val = humanResult[key]
+                          const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
+                          const promptId = `hprompt-${key.replace(/\s/g,'')}`
+                          return (
+                            <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                              <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>
+                                  {key.includes('ANÁLISE') ? '📊' : key.includes('AMBIENTES') ? '🚶' : key.includes('DALL') ? '🎨' : key.includes('MIDJOURNEY') ? '🎭' : key.includes('REVIT') ? '🏗️' : '📋'} {key}
+                                </div>
+                                {isPrompt && (
+                                  <button id={`btn-${promptId}`}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(val)
+                                      const btn = document.getElementById(`btn-${promptId}`)
+                                      if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
+                                    }}
+                                    style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
+                                      borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                    📋 Copiar
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ padding:'14px 16px' }}>
+                                {isPrompt ? (
+                                  <div id={promptId} style={{ background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:6,
+                                    padding:'10px 12px', fontFamily:'monospace', fontSize:11, lineHeight:1.8,
+                                    color:'#1a1f36', whiteSpace:'pre-wrap' as const }}>{val}</div>
+                                ) : (
+                                  <div style={{ fontSize:12, lineHeight:1.75, color:'#5a6282', whiteSpace:'pre-wrap' as const }}
+                                    dangerouslySetInnerHTML={{ __html: val
+                                      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+                                      .replace(/^[-•]\s+(.+)$/gm,'<div style="padding:2px 0 2px 12px;border-left:2px solid #e5e8f0">$1</div>')
+                                      .replace(/\n/g,'<br/>') }} />
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* ── Tab: Render IA ── */}
+                        {!humanLoading && humanTab === 'render' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {geminiRenderLoading && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:40, color:'#8890a0' }}>
+                                <div style={{ width:40, height:40, border:'3px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:13, fontWeight:600, color:'#534AB7' }}>Gemini gerando renderização...</div>
+                                <div style={{ fontSize:11, color:'#b0b8cc' }}>Transformando planta baixa em visualização 3D realista</div>
+                              </div>
+                            )}
+                            {!geminiRenderLoading && geminiRenderB64 && (
+                              <div style={{ background:'#fff', border:'2px solid #534AB7', borderRadius:12, overflow:'hidden' as const }}>
+                                <div style={{ padding:'10px 16px', background:'linear-gradient(135deg,#534AB7,#3d37a0)',
+                                  display:'flex', alignItems:'center', gap:8 }}>
+                                  <span style={{ fontSize:16 }}>🎨</span>
+                                  <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização IA — Gemini Vision</div>
+                                  <div style={{ fontSize:10, color:'rgba(255,255,255,.7)' }}>Gemini 2.0 Flash</div>
+                                </div>
+                                <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Renderização Gemini"
+                                  style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }} />
+                                <div style={{ padding:'10px 14px', display:'flex', gap:8, background:'#f8f9fc', borderTop:'1px solid #e5e8f0' }}>
+                                  <a href={`data:image/jpeg;base64,${geminiRenderB64}`} download="render-gemini.jpg"
+                                    style={{ padding:'6px 14px', background:'#534AB7', color:'#fff', border:'none',
+                                      borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+                                      textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6 }}>
+                                    ⬇️ Baixar Render
+                                  </a>
+                                  <button onClick={() => {
+                                    if (!humanB64 || humanImgType === 'application/pdf') return
+                                    setGeminiRenderB64(null)
+                                    setGeminiRenderLoading(true)
+                                    const renderPrompt = `Render this architectural floor plan as a photorealistic ${humanEstilo} visualization. Style: ${humanEstilo}. Setting: ${humanLote}. Vegetation: ${humanVeg}. Add people at 1.70m scale. High quality architectural render, natural lighting, warm atmosphere. Seed: ${Date.now()}`
+                                    fetch('/api/gemini', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        model: 'gemini-2.0-flash-exp',
+                                        contents: [{ role: 'user', parts: [
+                                          { inlineData: { mimeType: humanImgType, data: humanB64 } },
+                                          { text: renderPrompt }
+                                        ]}],
+                                        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+                                      })
+                                    }).then(r => r.json()).then(data => {
+                                      const parts = data?.candidates?.[0]?.content?.parts ?? []
+                                      const imgPart = parts.find((p: any) => p.inlineData?.data)
+                                      if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
+                                    }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                                  }}
+                                    style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
+                                      borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                    🔄 Gerar outra versão
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {!geminiRenderLoading && !geminiRenderB64 && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:40 }}>🎨</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>Renderização IA não disponível</div>
+                                <div style={{ fontSize:11, lineHeight:1.6, maxWidth:260 }}>
+                                  O Gemini precisa de <strong>GEMINI_API_KEY</strong> configurada no servidor.<br/>
+                                  Verifique as variáveis de ambiente no Vercel.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Paleta ── */}
+                        {!humanLoading && humanTab === 'palette' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {geminiPaletteLoading && (
+                              <div style={{ display:'flex', alignItems:'center', gap:12, padding:32, color:'#8890a0' }}>
+                                <div style={{ width:24, height:24, border:'2px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:12 }}>Gemini sugerindo paleta de cores...</div>
+                              </div>
+                            )}
+                            {!geminiPaletteLoading && geminiPalette.length > 0 && (
+                              <>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>🎭 Paleta de Cores Recomendada</div>
+                                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                                  {geminiPalette.map((c,i) => (
+                                    <div key={i} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' as const }}>
+                                      <div style={{ height:64, background:c.hex }} />
+                                      <div style={{ padding:'10px 12px' }}>
+                                        <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:2 }}>{c.name}</div>
+                                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                          <div style={{ fontSize:11, color:'#8890a0', fontFamily:'monospace' }}>{c.hex}</div>
+                                          <button onClick={() => navigator.clipboard.writeText(c.hex)}
+                                            style={{ fontSize:10, padding:'2px 7px', background:'#f0f4f8', border:'none',
+                                              borderRadius:4, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                            Copiar
+                                          </button>
+                                        </div>
+                                        <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4 }}>{c.usage}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                            {!geminiPaletteLoading && geminiPalette.length === 0 && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:36 }}>🎭</div>
+                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Marketing ── */}
+                        {!humanLoading && humanTab === 'marketing' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {geminiMarketingLoading && (
+                              <div style={{ display:'flex', alignItems:'center', gap:12, padding:32, color:'#8890a0' }}>
+                                <div style={{ width:24, height:24, border:'2px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:12 }}>Gemini criando textos de marketing...</div>
+                              </div>
+                            )}
+                            {!geminiMarketingLoading && geminiMarketing && (
+                              <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' as const }}>
+                                <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'#f8f9fc',
+                                  display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                  <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36' }}>📣 Copy de Marketing Imobiliário</div>
+                                  <button onClick={() => navigator.clipboard.writeText(geminiMarketing)}
+                                    style={{ fontSize:10, padding:'3px 9px', background:'#fff', border:'1px solid #e5e8f0',
+                                      borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit' }}>
+                                    📋 Copiar tudo
+                                  </button>
+                                </div>
+                                <div style={{ padding:'16px', fontSize:12, lineHeight:1.85, color:'#1a1f36' }}
+                                  dangerouslySetInnerHTML={{ __html: geminiMarketing
+                                    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#185FA5">$1</strong>')
+                                    .replace(/^##\s+(.+)$/gm,'<h3 style="color:#534AB7;font-size:13px;margin:16px 0 6px">$1</h3>')
+                                    .replace(/^###\s+(.+)$/gm,'<h4 style="color:#534AB7;font-size:12px;margin:12px 0 4px">$1</h4>')
+                                    .replace(/^[-•*]\s+(.+)$/gm,'<div style="padding:4px 0 4px 16px;border-left:3px solid #534AB7;margin:3px 0">$1</div>')
+                                    .replace(/\n\n/g,'<br/><br/>')
+                                    .replace(/\n/g,'<br/>') }} />
+                              </div>
+                            )}
+                            {!geminiMarketingLoading && !geminiMarketing && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:36 }}>📣</div>
+                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Assistente ── */}
+                        {!humanLoading && humanTab === 'assistant' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:10 }}>
+                            <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:4 }}>
+                              💬 Assistente do Projeto
+                            </div>
+                            <div style={{ fontSize:11, color:'#8890a0', lineHeight:1.5, marginBottom:8 }}>
+                              Tire dúvidas sobre a planta, pede sugestões de layout, materiais, cores ou acabamentos.
+                            </div>
+                            {/* Messages */}
+                            <div style={{ display:'flex', flexDirection:'column' as const, gap:8, maxHeight:320, overflowY:'auto' as const }}>
+                              {humanAssistantMsgs.length === 0 && (
+                                <div style={{ background:'#f0f4f8', borderRadius:10, padding:'12px 14px', fontSize:12, color:'#5a6282', lineHeight:1.6 }}>
+                                  Olá! Sou seu assistente de projeto. Posso responder sobre:<br/>
+                                  • Sugestões de layout e circulação<br/>
+                                  • Materiais e acabamentos<br/>
+                                  • Normas ABNT para o ambiente<br/>
+                                  • Melhorias de iluminação e ventilação
+                                </div>
+                              )}
+                              {humanAssistantMsgs.map((msg, i) => (
+                                <div key={i} style={{ display:'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                  <div style={{ maxWidth:'85%', padding:'9px 13px', borderRadius:12, fontSize:12, lineHeight:1.65,
+                                    whiteSpace:'pre-wrap' as const,
+                                    background: msg.role === 'user' ? '#534AB7' : '#f4f6fb',
+                                    color: msg.role === 'user' ? '#fff' : '#1a1f36',
+                                    borderBottomRightRadius: msg.role === 'user' ? 2 : 12,
+                                    borderBottomLeftRadius: msg.role === 'assistant' ? 2 : 12 }}>
+                                    {msg.text}
+                                  </div>
+                                </div>
+                              ))}
+                              {humanAssistantLoading && (
+                                <div style={{ display:'flex', gap:6, padding:'8px 12px' }}>
+                                  {[0,1,2].map(i => (
+                                    <div key={i} style={{ width:6, height:6, borderRadius:'50%', background:'#534AB7',
+                                      animation:`bounce .9s ease-in-out ${i*0.15}s infinite` }} />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            {/* Input */}
+                            <div style={{ display:'flex', gap:8, marginTop:4 }}>
+                              <input
+                                value={humanAssistantInput}
+                                onChange={e => setHumanAssistantInput(e.target.value)}
+                                onKeyDown={async e => {
+                                  if (e.key !== 'Enter' || !humanAssistantInput.trim() || humanAssistantLoading) return
+                                  const q = humanAssistantInput.trim()
+                                  setHumanAssistantInput('')
+                                  const newMsgs = [...humanAssistantMsgs, { role: 'user' as const, text: q }]
+                                  setHumanAssistantMsgs(newMsgs)
+                                  setHumanAssistantLoading(true)
+                                  const ctx = Object.entries(humanResult).map(([k,v])=>`${k}:\n${v}`).join('\n\n')
+                                  try {
+                                    const r = await fetch('/api/chat', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        model: 'claude-sonnet-4-6',
+                                        max_tokens: 600,
+                                        system: `Você é um assistente especialista em arquitetura e design de interiores. O contexto do projeto é:\n\n${ctx}\n\nResponda de forma concisa e prática em português.`,
+                                        messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
+                                      })
+                                    })
+                                    const d = await r.json()
+                                    const reply = d?.content?.[0]?.text || 'Desculpe, não consegui responder.'
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: reply }])
+                                  } catch {
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: '⚠️ Erro de conexão.' }])
+                                  }
+                                  setHumanAssistantLoading(false)
+                                }}
+                                placeholder="Pergunte sobre o projeto..."
+                                disabled={humanAssistantLoading || Object.keys(humanResult).length === 0}
+                                style={{ flex:1, padding:'9px 12px', border:'1px solid #e5e8f0', borderRadius:8,
+                                  fontSize:12, outline:'none', fontFamily:'inherit', color:'#1a1f36' }} />
+                              <button
+                                disabled={!humanAssistantInput.trim() || humanAssistantLoading || Object.keys(humanResult).length === 0}
+                                onClick={async () => {
+                                  const q = humanAssistantInput.trim()
+                                  if (!q || humanAssistantLoading) return
+                                  setHumanAssistantInput('')
+                                  const newMsgs = [...humanAssistantMsgs, { role: 'user' as const, text: q }]
+                                  setHumanAssistantMsgs(newMsgs)
+                                  setHumanAssistantLoading(true)
+                                  const ctx = Object.entries(humanResult).map(([k,v])=>`${k}:\n${v}`).join('\n\n')
+                                  try {
+                                    const r = await fetch('/api/chat', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        model: 'claude-sonnet-4-6',
+                                        max_tokens: 600,
+                                        system: `Você é um assistente especialista em arquitetura e design de interiores. O contexto do projeto é:\n\n${ctx}\n\nResponda de forma concisa e prática em português.`,
+                                        messages: newMsgs.map(m => ({ role: m.role, content: m.text }))
+                                      })
+                                    })
+                                    const d = await r.json()
+                                    const reply = d?.content?.[0]?.text || 'Desculpe, não consegui responder.'
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: reply }])
+                                  } catch {
+                                    setHumanAssistantMsgs(prev => [...prev, { role: 'assistant', text: '⚠️ Erro de conexão.' }])
+                                  }
+                                  setHumanAssistantLoading(false)
+                                }}
+                                style={{ width:36, height:36, borderRadius:8, border:'none',
+                                  background: humanAssistantInput.trim() && !humanAssistantLoading ? '#534AB7' : '#e5e8f0',
+                                  color:'#fff', fontSize:16, cursor: humanAssistantInput.trim() && !humanAssistantLoading ? 'pointer' : 'default',
+                                  display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                ➤
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                      </div>
                     </div>
                   </div>
                 )}
