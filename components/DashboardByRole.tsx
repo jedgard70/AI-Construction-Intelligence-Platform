@@ -1555,19 +1555,14 @@ RETORNE EXATAMENTE neste formato markdown:
                           const loteSnap = humanLote
                           const vegSnap = humanVeg
 
-                          // ── Render: Pollinations PRIMARY (instant) + Gemini background upgrade ──
-                          if (dallePrompt) {
-                            // Show Pollinations immediately — always works, no API key needed
-                            const encoded = encodeURIComponent(
-                              `${dallePrompt} bird's-eye architectural floor plan render, luxury real estate, top-down view`.slice(0, 500)
-                            )
-                            setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
-                          }
-
-                          // Try Gemini image-to-image in background — replaces Pollinations if successful
+                          // ── Render: Gemini image-to-image PRIMARY ──
+                          // Preserves exact floor plan geometry — true humanization, not text-to-image
                           if (b64Snap && imgTypeSnap !== 'application/pdf') {
+                            setPollinationsUrl(null)
+                            setGeminiRenderB64(null)
+                            setGeminiRenderError(null)
                             setGeminiRenderLoading(true)
-                            const renderPrompt = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. CRITICAL: Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring (hardwood, tiles, marble), high-end modern furniture in each room, ${humanNP} people doing activities, plants, decor. EXTERIOR: ${loteSnap}, ${vegSnap}, sidewalk, natural overhead sunlight. Premium luxury real estate marketing render.`
+                            const renderPrompt = `You are an architectural visualization expert. Humanize this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a stunning photorealistic render. CRITICAL RULES: (1) Keep EXACTLY the same perspective, scale, walls, and room layout as the original drawing — do NOT invent new geometry. (2) Add realistic flooring materials (hardwood, marble, tiles) per room type. (3) Furnish every room with high-end modern furniture at correct scale (1:${humanEscala}). (4) Add ${humanNP} people naturally doing activities. (5) Add indoor plants, artwork, decorative objects. (6) EXTERIOR: ${loteSnap} lot type, ${vegSnap} vegetation, paved sidewalk, parked cars. (7) Lighting: golden-hour natural sunlight from above. Style: ${estiloSnap}, premium luxury real estate marketing render. No text overlays.`
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
@@ -1588,6 +1583,12 @@ RETORNE EXATAMENTE neste formato markdown:
                               else setGeminiRenderError('Gemini não retornou imagem.')
                             }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
                             .finally(() => setGeminiRenderLoading(false))
+                          } else if (dallePrompt) {
+                            // PDF or no image: fall back to Pollinations text-to-image
+                            const encoded = encodeURIComponent(
+                              `${dallePrompt} bird's-eye architectural floor plan render, luxury real estate, top-down view`.slice(0, 500)
+                            )
+                            setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
                           }
 
                           // Gemini palette
@@ -1791,18 +1792,33 @@ Crie:
                         {!humanLoading && humanTab === 'render' && (
                           <div style={{ display:'flex', flexDirection:'column' as const, gap:16 }}>
 
-                            {/* Gemini upgrade badge while loading */}
+                            {/* Loading card — shown while Gemini processes */}
                             {geminiRenderLoading && !geminiRenderB64 && (
-                              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px',
-                                background:'#eff6ff', borderRadius:8, border:'1px solid #93c5fd', fontSize:11, color:'#1d4ed8' }}>
-                                <div style={{ width:14, height:14, border:'2px solid #3b82f6', borderTopColor:'transparent',
-                                  borderRadius:'50%', animation:'spin .8s linear infinite', flexShrink:0 }} />
-                                Gemini processando versão image-to-image…
+                              <div style={{ background:'linear-gradient(135deg,#1e1b4b,#312e81)', borderRadius:12,
+                                padding:'40px 24px', display:'flex', flexDirection:'column' as const, alignItems:'center', gap:16, textAlign:'center' as const }}>
+                                <div style={{ position:'relative' as const, width:56, height:56 }}>
+                                  <div style={{ position:'absolute' as const, inset:0, border:'3px solid rgba(167,139,250,.3)', borderRadius:'50%' }} />
+                                  <div style={{ position:'absolute' as const, inset:0, border:'3px solid transparent',
+                                    borderTopColor:'#a78bfa', borderRadius:'50%', animation:'spin .9s linear infinite' }} />
+                                  <div style={{ position:'absolute' as const, inset:8, background:'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                                    borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🎨</div>
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:14, fontWeight:700, color:'#e0e7ff', marginBottom:6 }}>
+                                    {humanLang==='pt-BR'?'Humanizando a planta...':'Humanizing floor plan...'}
+                                  </div>
+                                  <div style={{ fontSize:11, color:'rgba(167,139,250,.8)', lineHeight:1.6 }}>
+                                    Gemini 2.0 Flash Exp — image-to-image<br/>
+                                    {humanLang==='pt-BR'
+                                      ?'Preservando geometria e adicionando mobiliário, pessoas e paisagismo'
+                                      :'Preserving geometry, adding furniture, people & landscaping'}
+                                  </div>
+                                </div>
                               </div>
                             )}
 
-                            {/* Primary render: Pollinations (always shown when available) */}
-                            {(pollinationsUrl || geminiRenderB64) ? (
+                            {/* Render result */}
+                            {(geminiRenderB64 || pollinationsUrl) ? (
                               <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
                                 {/* Main render card */}
                                 <div style={{ background:'#fff', border:`2px solid ${geminiRenderB64?'#534AB7':'#3b82f6'}`, borderRadius:12, overflow:'hidden' as const }}>
@@ -1820,7 +1836,7 @@ Crie:
                                   </div>
                                   {geminiRenderB64 ? (
                                     <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render Gemini"
-                                      style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }} />
+                                      style={{ width:'100%', display:'block', maxHeight:480, objectFit:'contain', background:'#f0f4f8' }} />
                                   ) : (
                                     <img src={pollinationsUrl!} alt="Render"
                                       style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }}
@@ -1840,18 +1856,19 @@ Crie:
                                         ⬇️ {humanLang==='pt-BR'?'Baixar':'Download'}
                                       </a>
                                     )}
+                                    {humanB64 && humanImgType !== 'application/pdf' && (
                                     <button onClick={() => {
-                                      if (!humanB64 || humanImgType==='application/pdf') return
                                       setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true)
-                                      const p = `Transform this architectural floor plan into a photorealistic bird's-eye view humanized visualization. Keep EXACTLY the same top-down perspective and geometry. Add: realistic flooring, high-end furniture, ${humanNP} people, plants. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk. Premium luxury real estate. Seed:${Date.now()}`
+                                      const p = `You are an architectural visualization expert. Humanize this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a stunning photorealistic render. CRITICAL RULES: (1) Keep EXACTLY the same perspective, scale, walls, and room layout — do NOT invent new geometry. (2) Realistic flooring materials (hardwood, marble, tiles) per room. (3) High-end modern furniture at correct scale. (4) Add ${humanNP} people doing activities. (5) Indoor plants, artwork, decor. (6) EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk. (7) Golden-hour sunlight. Style: ${humanEstilo}, premium luxury. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
                                         body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
-                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip)setGeminiRenderB64(ip.inlineData.data); else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
+                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)} else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
                                     }}
                                       style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
                                         borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                       🔄 {humanLang==='pt-BR'?'Nova versão':'New version'}
                                     </button>
+                                    )}
                                   </div>
                                 </div>
 
