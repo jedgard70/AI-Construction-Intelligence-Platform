@@ -63,9 +63,22 @@ export default function BIM3DViewer() {
         controls.enableDamping = true
         controls.dampingFactor = 0.08
 
-        // Load model
-        const fileUrl = typeof window !== 'undefined' ? localStorage.getItem('bim3d_file_url') : null
-        const ext = (typeof window !== 'undefined' ? localStorage.getItem('bim3d_file_ext') : null) || fileExt
+        // Load model from IndexedDB
+        const ext = (localStorage.getItem('bim3d_file_ext') || fileExt).toLowerCase()
+
+        const getFileBuffer = (): Promise<ArrayBuffer | null> =>
+          new Promise(resolve => {
+            const req = indexedDB.open('bim3d', 1)
+            req.onsuccess = (ev: any) => {
+              const db = ev.target.result
+              if (!db.objectStoreNames.contains('files')) { db.close(); resolve(null); return }
+              const tx = db.transaction('files', 'readonly')
+              const r2 = tx.objectStore('files').get('current')
+              r2.onsuccess = (e: any) => { db.close(); resolve(e.target.result ?? null) }
+              r2.onerror = () => { db.close(); resolve(null) }
+            }
+            req.onerror = () => resolve(null)
+          })
 
         const addMesh = (geometry: any, color: number) => {
           geometry.computeVertexNormals?.()
@@ -74,18 +87,17 @@ export default function BIM3DViewer() {
           mesh.castShadow = true
           geometry.computeBoundingBox()
           const box = geometry.boundingBox
-          const center = new THREE.Vector3()
-          box.getCenter(center)
+          const center = new THREE.Vector3(); box.getCenter(center)
           mesh.position.sub(center)
-          const size = new THREE.Vector3()
-          box.getSize(size)
+          const size = new THREE.Vector3(); box.getSize(size)
           const maxDim = Math.max(size.x, size.y, size.z) || 1
           mesh.scale.setScalar(10 / maxDim)
           scene.add(mesh)
-          camera.position.set(12, 12, 18)
-          controls.target.set(0, 0, 0)
-          controls.update()
+          camera.position.set(12, 12, 18); controls.target.set(0, 0, 0); controls.update()
         }
+
+        const fileBuffer = await getFileBuffer()
+        const fileUrl = fileBuffer ? URL.createObjectURL(new Blob([fileBuffer])) : null
 
         if (fileUrl && ext === 'stl') {
           const { STLLoader } = await import('three/examples/jsm/loaders/STLLoader.js' as any)
@@ -227,7 +239,25 @@ Top 5 ações prioritárias para aprovação e execução.` }]
               background:showPanel?accent:'#2a3050',color:'#fff',border:'none' }}>
             {showPanel?'📊 Ocultar análise':'📊 Ver análise'}
           </button>
-          <button onClick={() => window.print()}
+          <button onClick={() => {
+            // Capture WebGL canvas as image before printing
+            const canvas = mountRef.current?.querySelector('canvas')
+            let imgEl: HTMLImageElement | null = null
+            if (canvas) {
+              const dataUrl = canvas.toDataURL('image/png')
+              imgEl = document.createElement('img')
+              imgEl.src = dataUrl
+              imgEl.id = '__print_canvas__'
+              imgEl.style.cssText = 'display:none;width:100%;max-width:700px;border-radius:8px;margin-bottom:16px'
+              mountRef.current?.appendChild(imgEl)
+            }
+            const st = document.createElement('style')
+            st.id = '__print_style__'
+            st.textContent = '@media print{canvas{display:none!important}#__print_canvas__{display:block!important}}'
+            document.head.appendChild(st)
+            window.print()
+            setTimeout(() => { imgEl?.remove(); st.remove() }, 500)
+          }}
             style={{ padding:'5px 12px',borderRadius:6,fontSize:11,fontWeight:600,cursor:'pointer',
               background:'#534AB7',color:'#fff',border:'none' }}>
             🖨️ Imprimir
@@ -281,9 +311,12 @@ Top 5 ações prioritárias para aprovação e execução.` }]
               </div>
               {aiAnalysis && !aiLoading && (
                 <button onClick={() => {
-                  const w = window.open('','_blank','width=800,height=700')
+                  // Capture 3D canvas + analysis into a print window
+                  const canvas = mountRef.current?.querySelector('canvas')
+                  const canvasImg = canvas ? `<img src="${canvas.toDataURL('image/png')}" style="width:100%;max-width:680px;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
+                  const w = window.open('','_blank','width=900,height=750')
                   if (!w) return
-                  w.document.write(`<html><head><title>Análise BIM — ${fileName}</title><style>body{font-family:monospace;padding:32px;font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap}h1{font-size:18px;font-family:sans-serif;margin-bottom:16px}@media print{button{display:none}}</style></head><body><h1>📊 ${EXT_ICON[fileExt]||''} ${fileName}</h1>${aiAnalysis}<br/><br/><button onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
+                  w.document.write(`<html><head><title>BIM — ${fileName}</title><style>body{font-family:monospace;padding:32px;font-size:12px;line-height:1.9;color:#1a1f36;white-space:pre-wrap;max-width:900px;margin:0 auto}h1{font-size:18px;font-family:sans-serif;margin-bottom:16px}@media print{.noprint{display:none}}</style></head><body><h1>📊 ${EXT_ICON[fileExt]||''} ${fileName}</h1>${canvasImg}${aiAnalysis}<br/><br/><button class="noprint" onclick="window.print()" style="padding:10px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px">🖨️ Imprimir</button></body></html>`)
                   w.document.close()
                 }} style={{ padding:'4px 10px',background:'#185FA5',color:'#fff',border:'none',
                   borderRadius:5,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit' }}>

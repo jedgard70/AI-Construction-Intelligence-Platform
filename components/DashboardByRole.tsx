@@ -1017,9 +1017,24 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
           const firstEntry = newEntries[0]
 
           if (THREE_D_EXTS.includes(firstExt)) {
-            // Open 3D viewer in new window
-            const url = URL.createObjectURL(firstNew)
-            try { localStorage.setItem('bim3d_file_url', url); localStorage.setItem('bim3d_file_name', firstNew.name); localStorage.setItem('bim3d_file_ext', firstExt) } catch {}
+            // Store file in IndexedDB (works across browser windows, unlike blob URLs)
+            try {
+              localStorage.setItem('bim3d_file_name', firstNew.name)
+              localStorage.setItem('bim3d_file_ext', firstExt)
+              const ab = await firstNew.arrayBuffer()
+              await new Promise<void>((res, rej) => {
+                const req = indexedDB.open('bim3d', 1)
+                req.onupgradeneeded = (ev: any) => ev.target.result.createObjectStore('files')
+                req.onsuccess = (ev: any) => {
+                  const db = ev.target.result
+                  const tx = db.transaction('files', 'readwrite')
+                  tx.objectStore('files').put(ab, 'current')
+                  tx.oncomplete = () => { db.close(); res() }
+                  tx.onerror = rej
+                }
+                req.onerror = rej
+              })
+            } catch {}
             window.open(`/bim-3d?name=${encodeURIComponent(firstNew.name)}&ext=${firstExt}`, '_blank', 'width=1400,height=900')
           } else if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
             // Read base64 and auto-trigger AI analysis
@@ -1200,8 +1215,24 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                     </button>
                   )}
                   {is3D && activePf && (
-                    <button onClick={() => {
-                      try { localStorage.setItem('bim3d_file_url', activePf.url); localStorage.setItem('bim3d_file_name', activePf.name); localStorage.setItem('bim3d_file_ext', activePf.ext) } catch {}
+                    <button onClick={async () => {
+                      try {
+                        localStorage.setItem('bim3d_file_name', activePf.name)
+                        localStorage.setItem('bim3d_file_ext', activePf.ext)
+                        const ab = await fetch(activePf.url).then(r => r.arrayBuffer())
+                        await new Promise<void>((res, rej) => {
+                          const req = indexedDB.open('bim3d', 1)
+                          req.onupgradeneeded = (ev: any) => ev.target.result.createObjectStore('files')
+                          req.onsuccess = (ev: any) => {
+                            const db = ev.target.result
+                            const tx = db.transaction('files', 'readwrite')
+                            tx.objectStore('files').put(ab, 'current')
+                            tx.oncomplete = () => { db.close(); res() }
+                            tx.onerror = rej
+                          }
+                          req.onerror = rej
+                        })
+                      } catch {}
                       window.open(`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`, '_blank', 'width=1400,height=900')
                     }}
                       style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
@@ -1250,8 +1281,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
 
                 {/* Humanize Panel */}
                 {viewerTab === 'humanize' && (
-                  <div style={{ flex:1, overflow:'auto', background:'#f8f9fc', display:'grid',
-                    gridTemplateColumns:'340px 1fr', gap:0 }}>
+                  <div style={{ flex:1, overflow:'hidden', background:'#f8f9fc', display:'grid',
+                    gridTemplateColumns:'340px 1fr', gap:0, minHeight:0 }}>
                     {/* Left controls */}
                     <div style={{ borderRight:'1px solid #e5e8f0', padding:'20px 18px', display:'flex',
                       flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff' }}>
@@ -1278,7 +1309,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           </div>
                         ) : (
                           <label style={{ cursor:'pointer', display:'block' }}>
-                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt" style={{ display:'none' }}
+                            <input type="file" accept="image/*,.pdf" style={{ display:'none' }}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (!f) return
@@ -1297,7 +1328,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                               <div style={{ fontSize:12, fontWeight:500, color:'#1a1f36', marginBottom:3 }}>
                                 Arraste ou clique para enviar
                               </div>
-                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · PDF · DWG · IFC · qualquer formato</div>
+                              <div style={{ fontSize:11, color:'#8890a0' }}>JPG · PNG · WebP · PDF</div>
+                              <div style={{ fontSize:10, color:'#b0b8cc', marginTop:4 }}>Para IFC/RVT/DWG, exporte como PDF ou imagem primeiro</div>
                             </div>
                           </label>
                         )}
@@ -1442,7 +1474,7 @@ RETORNE EXATAMENTE neste formato markdown:
                     </div>
 
                     {/* Right results */}
-                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14 }}>
+                    <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
                       {/* Print button when results exist */}
                       {!humanLoading && Object.keys(humanResult).length > 0 && (
                         <button onClick={() => {
