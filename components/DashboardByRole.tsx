@@ -1312,6 +1312,51 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                         </div>
                       </div>
 
+                      {/* Gallery strip */}
+                      {humanGallery.length > 0 && (
+                        <div style={{ padding:'8px 12px', borderBottom:'1px solid #e5e8f0', flexShrink:0 }}>
+                          <div style={{ fontSize:10, fontWeight:600, color:'#8890a0', marginBottom:6 }}>
+                            📁 Galeria ({humanGallery.length})
+                          </div>
+                          <div style={{ display:'flex', gap:6, overflowX:'auto' as const, paddingBottom:4 }}>
+                            {humanGallery.map(item => (
+                              <div key={item.id}
+                                title={`${item.type === 'planta' ? '📐 Planta' : '🎨 Render'}: ${item.label}`}
+                                onClick={() => {
+                                  if (item.type === 'planta') {
+                                    setHumanB64(item.b64)
+                                    setHumanImgType(item.mime)
+                                  } else {
+                                    setGeminiRenderB64(item.b64)
+                                    setHumanTab('render')
+                                  }
+                                }}
+                                style={{ flexShrink:0, position:'relative' as const, width:52, height:52, cursor:'pointer',
+                                  borderRadius:6, overflow:'hidden', border:'2px solid #e5e8f0',
+                                  transition:'border-color .15s' }}>
+                                <img src={`data:${item.mime};base64,${item.b64}`} alt={item.label}
+                                  style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+                                  onError={e => { (e.target as HTMLImageElement).style.display='none' }} />
+                                <div style={{ position:'absolute' as const, bottom:0, left:0, right:0,
+                                  background:'rgba(0,0,0,.55)', fontSize:8, color:'#fff', textAlign:'center', padding:'1px 0' }}>
+                                  {item.type === 'planta' ? '📐' : '🎨'}
+                                </div>
+                              </div>
+                            ))}
+                            <button onClick={() => {
+                              if (!confirm('Limpar galeria?')) return
+                              localStorage.removeItem('acip_humanizer_gallery')
+                              setHumanGallery([])
+                            }} title="Limpar galeria"
+                              style={{ flexShrink:0, width:52, height:52, border:'1px dashed #e5e8f0', background:'#f8f9fc',
+                                borderRadius:6, cursor:'pointer', fontSize:16, color:'#b0b8cc', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Image upload + preview */}
                       <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column' as const, gap:14 }}>
 
                       {/* Tipo de imagem */}
@@ -2025,10 +2070,24 @@ Crie:
                                 </div>
                               </>
                             )}
-                            {!geminiPaletteLoading && geminiPalette.length === 0 && (
+                            {!geminiPaletteLoading && geminiPaletteError && (
+                              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'12px 14px', fontSize:11, color:'#7f1d1d' }}>
+                                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ Erro ao gerar paleta</div>
+                                <div style={{ marginBottom:8 }}>{geminiPaletteError.slice(0, 150)}</div>
+                                <button onClick={() => {
+                                  const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
+                                  if (!ctx) return
+                                  setGeminiPaletteLoading(true); setGeminiPaletteError(null)
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Based on this architectural analysis of a "${humanTipo}" building, suggest exactly 6 professional colors.\nAnalysis: ${ctx}\nReturn ONLY a JSON array: [{"name":"...","hex":"#...","usage":"..."},...]`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiPaletteError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; const m=t.match(/\[[\s\S]*?\]/); if(m){try{setGeminiPalette(JSON.parse(m[0]));setGeminiPaletteError(null)}catch{setGeminiPaletteError('Parse error')}}else setGeminiPaletteError('Sem resposta')}).catch((e:any)=>setGeminiPaletteError(e.message)).finally(()=>setGeminiPaletteLoading(false))
+                                }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  🔄 Tentar novamente
+                                </button>
+                              </div>
+                            )}
+                            {!geminiPaletteLoading && !geminiPaletteError && geminiPalette.length === 0 && (
                               <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
                                 <div style={{ fontSize:36 }}>🎭</div>
-                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                                <div style={{ fontSize:12 }}>Paleta será gerada automaticamente após análise.</div>
                               </div>
                             )}
                           </div>
@@ -2065,10 +2124,24 @@ Crie:
                                     .replace(/\n/g,'<br/>') }} />
                               </div>
                             )}
-                            {!geminiMarketingLoading && !geminiMarketing && (
+                            {!geminiMarketingLoading && geminiMarketingError && (
+                              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'12px 14px', fontSize:11, color:'#7f1d1d' }}>
+                                <div style={{ fontWeight:600, marginBottom:4 }}>⚠️ Erro ao gerar marketing</div>
+                                <div style={{ marginBottom:8 }}>{geminiMarketingError.slice(0, 150)}</div>
+                                <button onClick={() => {
+                                  const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
+                                  if (!ctx) return
+                                  setGeminiMarketingLoading(true); setGeminiMarketingError(null)
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Você é copywriter imobiliário de alto padrão. Crie textos de marketing para um imóvel "${humanTipo}":\n${ctx}\n\nCrie: **Headline**, **Subtítulo**, **Descrição** (2 parágrafos), **Diferenciais** (5 bullet points com emojis), **Call to Action**`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiMarketingError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; if(t){setGeminiMarketing(t);setGeminiMarketingError(null)}else setGeminiMarketingError('Sem resposta')}).catch((e:any)=>setGeminiMarketingError(e.message)).finally(()=>setGeminiMarketingLoading(false))
+                                }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  🔄 Tentar novamente
+                                </button>
+                              </div>
+                            )}
+                            {!geminiMarketingLoading && !geminiMarketingError && !geminiMarketing && (
                               <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
                                 <div style={{ fontSize:36 }}>📣</div>
-                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.<br/>Requer GEMINI_API_KEY configurada.</div>
+                                <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.</div>
                               </div>
                             )}
                           </div>
@@ -2095,7 +2168,7 @@ Crie:
                                 </div>
                               )}
                               {humanAssistantMsgs.map((msg, i) => (
-                                <div key={i} style={{ display:'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                                <div key={i} style={{ display:'flex', flexDirection:'column' as const, alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start', gap:4 }}>
                                   <div style={{ maxWidth:'85%', padding:'9px 13px', borderRadius:12, fontSize:12, lineHeight:1.65,
                                     whiteSpace:'pre-wrap' as const,
                                     background: msg.role === 'user' ? '#534AB7' : '#f4f6fb',
@@ -2104,6 +2177,20 @@ Crie:
                                     borderBottomLeftRadius: msg.role === 'assistant' ? 2 : 12 }}>
                                     {msg.text}
                                   </div>
+                                  {msg.role === 'assistant' && humanB64 && humanImgType !== 'application/pdf' && (
+                                    <button onClick={() => {
+                                      setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                      setHumanTab('render')
+                                      const assistantSuggestions = msg.text
+                                      const p = `You are an expert architectural visualizer. Transform this ${humanAnaliseTipo === 'planta' ? 'floor plan' : humanAnaliseTipo === 'fachada' ? 'building facade' : 'cross-section'} into a photorealistic bird's-eye view humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nBase render settings: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people, indoor plants & decor, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, parked cars, shadow projection. Natural overhead sunlight. Style: ${humanEstilo}.\n\nADDITIONAL INSTRUCTIONS FROM CONSULTANT:\n${assistantSuggestions}\n\nApply these suggestions in the render. No text overlays. Variation seed:${Date.now()}`
+                                      fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
+                                        body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                      }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)}else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
+                                    }}
+                                      style={{ fontSize:10, padding:'3px 9px', background:'linear-gradient(135deg,#534AB7,#7c3aed)', color:'#fff', border:'none', borderRadius:6, cursor:'pointer', fontFamily:'inherit', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
+                                      🎨 Aplicar no Render
+                                    </button>
+                                  )}
                                 </div>
                               ))}
                               {humanAssistantLoading && (
