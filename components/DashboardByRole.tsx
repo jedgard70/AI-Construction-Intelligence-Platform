@@ -1500,7 +1500,7 @@ RETORNE EXATAMENTE neste formato markdown:
                             const d = await r.json()
                             const txt = d.content?.[0]?.text || ''
                             const secs: Record<string,string> = {}
-                            const rx = /###\s+([A-ZÇÁÉÍÓÚ\s\/E]+)\n([\s\S]*?)(?=###|$)/g
+                            const rx = /###\s+([^\n]+)\n([\s\S]*?)(?=###\s|$)/g
                             let m
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
@@ -1530,25 +1530,37 @@ RETORNE EXATAMENTE neste formato markdown:
                     <div style={{ padding:'20px', overflowY:'auto' as const, display:'flex', flexDirection:'column' as const, gap:14, minHeight:0 }}>
                       {/* Print button when results exist */}
                       {!humanLoading && Object.keys(humanResult).length > 0 && (
-                        <button onClick={() => {
-                          const w = window.open('','_blank','width=900,height=700')
+                        <button onClick={async () => {
+                          const w = window.open('','_blank','width=960,height=800')
                           if (!w) return
-                          const imgHtml = humanB64 ? `<img src="data:${humanImgType};base64,${humanB64}" style="max-width:100%;border-radius:8px;margin-bottom:16px;display:block"/>` : ''
-                          const renderHtml = humanRenderUrl && !humanRenderLoading ? `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">🎨 RENDERIZAÇÃO HUMANIZADA</h2><img src="${humanRenderUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
+                          // Convert base64 to Blob URL so Chrome doesn't block it in document.write
+                          let plantImgUrl = ''
+                          if (humanB64) {
+                            try {
+                              const byteStr = atob(humanB64)
+                              const ab = new ArrayBuffer(byteStr.length)
+                              const ia = new Uint8Array(ab)
+                              for (let i = 0; i < byteStr.length; i++) ia[i] = byteStr.charCodeAt(i)
+                              plantImgUrl = URL.createObjectURL(new Blob([ab], { type: humanImgType }))
+                            } catch { plantImgUrl = '' }
+                          }
+                          const imgHtml = plantImgUrl ? `<img src="${plantImgUrl}" style="width:100%;border-radius:8px;margin-bottom:16px;display:block;page-break-inside:avoid"/>` : ''
+                          const renderHtml = humanRenderUrl && !humanRenderLoading
+                            ? `<h2>🎨 RENDERIZAÇÃO HUMANIZADA</h2><img src="${humanRenderUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid"/>`
+                            : ''
                           const sections = Object.entries(humanResult).map(([k,v]) =>
-                            `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">${k}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px">${v}</pre>`
+                            `<h2>${k.includes('DALL') ? '🎨' : k.includes('MIDJ') ? '🎭' : k.includes('REVIT') ? '🏗️' : k.includes('AMBIENTES') ? '🚶' : '📊'} ${k}</h2><pre>${v}</pre>`
                           ).join('')
-                          w.document.write(`<html><head><title>Humanização — ${humanTipo}</title><style>
+                          w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Humanização — ${humanTipo}</title><style>
 *{box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
 h1{font-size:20px;color:#185FA5;margin-bottom:4px}
 .sub{font-size:12px;color:#8890a0;margin-bottom:24px}
 h2{font-size:14px;color:#534AB7;margin:20px 0 8px;page-break-after:avoid}
-pre{white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0}
-img{width:100%;max-width:100%;height:auto;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid}
-section{page-break-inside:avoid;margin-bottom:16px}
+pre{white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.85;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0;page-break-inside:avoid}
+img{width:100%;height:auto;border-radius:8px;display:block;page-break-inside:avoid}
 @page{size:auto;margin:15mm}
-@media print{.no-print{display:none}body{padding:0}img{page-break-inside:avoid;max-height:297mm}}
+@media print{.no-print{display:none}body{padding:0}}
 </style></head><body>
 <h1>🏛️ Humanização de Planta Baixa</h1>
 <div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>
