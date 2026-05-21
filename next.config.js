@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// v7.1 — autonomous brain active
 const nextConfig = {
   reactStrictMode: true,
   typescript: { ignoreBuildErrors: true },
