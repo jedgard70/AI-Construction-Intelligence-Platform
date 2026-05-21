@@ -283,6 +283,8 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
+  const [humanRenderUrl, setHumanRenderUrl] = useState<string|null>(null)
+  const [humanRenderLoading, setHumanRenderLoading] = useState(false)
   const [unifiedAnalysis, setUnifiedAnalysis] = useState('')
   const [unifiedLoading, setUnifiedLoading] = useState(false)
   const [activePfB64, setActivePfB64] = useState<string|null>(null)
@@ -1096,7 +1098,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   color:'#8890a0', lineHeight:1, padding:'4px 8px' }}>✕</button>
             </div>
 
-            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', flex:1, overflow:'hidden', minHeight:0 }}>
 
               {/* Sidebar — lista de arquivos */}
               <div style={{ borderRight:'1px solid #e5e8f0', display:'flex', flexDirection:'column',
@@ -1183,7 +1185,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
               </div>
 
               {/* Main viewer area */}
-              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+              <div style={{ display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0 }}>
                 {/* Toolbar */}
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
                   display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
@@ -1402,6 +1404,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           if (!humanB64) return
                           setHumanLoading(true)
                           setHumanResult({})
+                          setHumanRenderUrl(null)
+                          setHumanRenderLoading(false)
                           const cmFig = ((1.70/parseInt(humanEscala))*100).toFixed(2)
                           const prompt = `Você é especialista em visualização arquitetônica. Analise esta planta baixa de uma edificação do tipo "${humanTipo}" e gere uma análise completa em português.
 
@@ -1455,6 +1459,14 @@ RETORNE EXATAMENTE neste formato markdown:
                             while ((m = rx.exec(txt)) !== null) secs[m[1].trim()] = m[2].trim()
                             if (!Object.keys(secs).length) secs['RESULTADO'] = txt
                             setHumanResult(secs)
+                            // Generate render image from DALL-E prompt via Pollinations.ai (free, no API key)
+                            const dallePromptKey = Object.keys(secs).find(k => k.includes('DALL'))
+                            const dallePromptText = dallePromptKey ? secs[dallePromptKey] : ''
+                            if (dallePromptText) {
+                              setHumanRenderLoading(true)
+                              const encoded = encodeURIComponent(dallePromptText.slice(0, 500))
+                              setHumanRenderUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1024&height=768&nologo=true&seed=${Date.now()}`)
+                            }
                           } catch (err: any) {
                             setHumanResult({ 'ERRO': err?.message || 'Falha na análise.' })
                           }
@@ -1475,7 +1487,8 @@ RETORNE EXATAMENTE neste formato markdown:
                         <button onClick={() => {
                           const w = window.open('','_blank','width=900,height=700')
                           if (!w) return
-                          const imgHtml = humanB64 ? `<img src="data:${humanImgType};base64,${humanB64}" style="max-width:100%;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
+                          const imgHtml = humanB64 ? `<img src="data:${humanImgType};base64,${humanB64}" style="max-width:100%;border-radius:8px;margin-bottom:16px;display:block"/>` : ''
+                          const renderHtml = humanRenderUrl && !humanRenderLoading ? `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">🎨 RENDERIZAÇÃO HUMANIZADA</h2><img src="${humanRenderUrl}" style="width:100%;border-radius:8px;margin-bottom:24px;display:block"/>` : ''
                           const sections = Object.entries(humanResult).map(([k,v]) =>
                             `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">${k}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px">${v}</pre>`
                           ).join('')
@@ -1493,7 +1506,7 @@ section{page-break-inside:avoid;margin-bottom:16px}
 </style></head><body>
 <h1>🏛️ Humanização de Planta Baixa</h1>
 <div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>
-${imgHtml}${sections}
+${imgHtml}${renderHtml}${sections}
 <br/>
 <button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button>
 </body></html>`)
@@ -1534,69 +1547,52 @@ ${imgHtml}${sections}
                         </div>
                       )}
 
-                      {/* Rendering preview card — shown when DALL-E prompt is ready */}
-                      {!humanLoading && (() => {
-                        const dalleKey = Object.keys(humanResult).find(k => k.includes('DALL'))
-                        const dallePrompt = dalleKey ? humanResult[dalleKey] : ''
-                        if (!dallePrompt) return null
-                        return (
-                          <div style={{ background:'linear-gradient(135deg,#f0f4ff,#faf0ff)', border:'2px solid #534AB7',
-                            borderRadius:12, overflow:'hidden' as const }}>
-                            <div style={{ padding:'10px 16px', background:'#534AB7', display:'flex', alignItems:'center', gap:8 }}>
-                              <span style={{ fontSize:16 }}>🎨</span>
-                              <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização — Visualização Humanizada</div>
-                              <div style={{ fontSize:10, color:'rgba(255,255,255,.75)' }}>Gerado com IA externa</div>
-                            </div>
-                            {/* Placeholder canvas */}
-                            <div style={{ margin:'14px 16px 0', background:'#1a1a2e', borderRadius:8, minHeight:160,
-                              display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center',
-                              gap:10, border:'1px dashed #534AB7', position:'relative' as const, overflow:'hidden' as const }}>
-                              {/* Grid overlay */}
-                              <div style={{ position:'absolute' as const, inset:0, opacity:.07,
-                                backgroundImage:'linear-gradient(#534AB7 1px,transparent 1px),linear-gradient(90deg,#534AB7 1px,transparent 1px)',
-                                backgroundSize:'24px 24px' }} />
-                              <div style={{ fontSize:36, zIndex:1 }}>🏛️</div>
-                              <div style={{ fontSize:12, fontWeight:700, color:'#c0b8f0', zIndex:1 }}>Renderização disponível via DALL-E</div>
-                              <div style={{ fontSize:10, color:'#8880c0', textAlign:'center' as const, maxWidth:260, lineHeight:1.5, zIndex:1 }}>
-                                Copie o prompt abaixo e cole no DALL-E (ChatGPT) ou Midjourney para gerar a imagem renderizada
-                              </div>
-                              <div style={{ display:'flex', gap:8, zIndex:1, flexWrap:'wrap' as const, justifyContent:'center' }}>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(dallePrompt)
-                                    const t = document.getElementById('dalle-copy-btn')
-                                    if (t) { t.textContent = '✓ Prompt copiado!'; setTimeout(() => { if(t) t.textContent = '📋 Copiar Prompt DALL-E' }, 2500) }
-                                  }}
-                                  id="dalle-copy-btn"
-                                  style={{ padding:'7px 14px', background:'#534AB7', color:'#fff', border:'none',
-                                    borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                                  📋 Copiar Prompt DALL-E
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(dallePrompt)
-                                    window.open('https://chatgpt.com', '_blank')
-                                  }}
-                                  style={{ padding:'7px 14px', background:'#3B6D11', color:'#fff', border:'none',
-                                    borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                                  🚀 Abrir ChatGPT / DALL-E
-                                </button>
-                              </div>
-                            </div>
-                            {/* Prompt preview */}
-                            <div style={{ padding:'12px 16px 14px' }}>
-                              <div style={{ fontSize:10, fontWeight:700, color:'#534AB7', marginBottom:6, textTransform:'uppercase' as const, letterSpacing:'.06em' }}>
-                                Prompt gerado para DALL-E / GPT-4o
-                              </div>
-                              <div style={{ background:'#fff', border:'1px solid #d0c8f0', borderRadius:6,
-                                padding:'10px 12px', fontFamily:'monospace', fontSize:10, lineHeight:1.7,
-                                color:'#1a1f36', whiteSpace:'pre-wrap' as const, maxHeight:100, overflowY:'auto' as const }}>
-                                {dallePrompt}
-                              </div>
-                            </div>
+                      {/* Rendering card — real image from Pollinations.ai */}
+                      {!humanLoading && humanRenderUrl && (
+                        <div style={{ background:'#fff', border:'2px solid #534AB7', borderRadius:12, overflow:'hidden' as const }}>
+                          <div style={{ padding:'10px 16px', background:'#534AB7', display:'flex', alignItems:'center', gap:8 }}>
+                            <span style={{ fontSize:16 }}>🎨</span>
+                            <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização — Visualização Humanizada</div>
+                            <div style={{ fontSize:10, color:'rgba(255,255,255,.75)' }}>Gerado por IA</div>
                           </div>
-                        )
-                      })()}
+                          <div style={{ position:'relative' as const, background:'#0d0d1a', minHeight:200,
+                            display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            {humanRenderLoading && (
+                              <div style={{ position:'absolute' as const, inset:0, display:'flex', flexDirection:'column' as const,
+                                alignItems:'center', justifyContent:'center', gap:10, color:'#8880c0', zIndex:1 }}>
+                                <div style={{ width:32, height:32, border:'3px solid #534AB7', borderTopColor:'transparent',
+                                  borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+                                <div style={{ fontSize:11 }}>Gerando renderização...</div>
+                              </div>
+                            )}
+                            <img
+                              src={humanRenderUrl}
+                              alt="Renderização humanizada"
+                              onLoad={() => setHumanRenderLoading(false)}
+                              onError={() => { setHumanRenderLoading(false); setHumanRenderUrl(null) }}
+                              style={{ width:'100%', display:'block', borderRadius:0,
+                                opacity: humanRenderLoading ? 0 : 1, transition:'opacity .4s' }}
+                            />
+                          </div>
+                          <div style={{ padding:'10px 14px', display:'flex', gap:8, flexWrap:'wrap' as const,
+                            borderTop:'1px solid #e5e8f0', background:'#f8f9fc' }}>
+                            <button onClick={() => {
+                              setHumanRenderLoading(true)
+                              setHumanRenderUrl(prev => prev ? prev.replace(/seed=\d+/, `seed=${Date.now()}`) : prev)
+                            }}
+                              style={{ padding:'6px 12px', background:'#534AB7', color:'#fff', border:'none',
+                                borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                              🔄 Gerar outra versão
+                            </button>
+                            <a href={humanRenderUrl} download="renderizacao-humanizada.png" target="_blank" rel="noreferrer"
+                              style={{ padding:'6px 12px', background:'#3B6D11', color:'#fff', border:'none',
+                                borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+                                textDecoration:'none', display:'inline-flex', alignItems:'center' }}>
+                              ⬇️ Baixar imagem
+                            </a>
+                          </div>
+                        </div>
+                      )}
 
                       {!humanLoading && Object.keys(humanResult).map(key => {
                         const val = humanResult[key]
