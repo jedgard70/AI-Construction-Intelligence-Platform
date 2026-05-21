@@ -302,6 +302,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [variantsLoading, setVariantsLoading] = useState<Record<string, boolean>>({})
   const [reelGenerating, setReelGenerating] = useState(false)
   const [reelVideoUrl, setReelVideoUrl] = useState<string|null>(null)
+  const [reelEffect, setReelEffect] = useState<string>('auto')
+  const [reelNarration, setReelNarration] = useState<string>('')
+  const [reelNarrationLoading, setReelNarrationLoading] = useState(false)
+  const [reelAudioB64, setReelAudioB64] = useState<string|null>(null)
   const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
   const [humanAssistantInput, setHumanAssistantInput] = useState('')
   const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
@@ -1519,6 +1523,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           setGeminiVariants({})
                           setVariantsLoading({})
                           setReelVideoUrl(null)
+                          setReelNarration('')
+                          setReelAudioB64(null)
                           setHumanTab('analise')
                           // Save uploaded floor plan to gallery
                           if (humanB64 && humanImgType !== 'application/pdf') {
@@ -2128,167 +2134,320 @@ Crie:
                                   </div>
                                 )}
 
-                                {/* ── Video Reel Generator ── */}
-                                {(geminiRenderB64 || pollinationsUrl) && (
+                                {/* ── Video Reel Generator (full featured) ── */}
+                                {(geminiRenderB64 || pollinationsUrl) && (() => {
+                                  // helper: draw image centered+scaled to fill canvas
+                                  function applyTransform(ctx2: CanvasRenderingContext2D, img2: HTMLImageElement,
+                                    scale: number, panX: number, panY: number, rotation = 0) {
+                                    const iA = img2.width / img2.height
+                                    let dW = 1080, dH = 1080 / iA
+                                    if (dH < 1920) { dH = 1920; dW = 1920 * iA }
+                                    ctx2.save()
+                                    ctx2.translate(540 + panX, 960 + panY)
+                                    if (rotation !== 0) ctx2.rotate(rotation)
+                                    ctx2.scale(scale, scale)
+                                    ctx2.drawImage(img2, -dW/2, -dH/2, dW, dH)
+                                    ctx2.restore()
+                                  }
+                                  const EFFECTS = [
+                                    { key:'kenburns-in',  label: 'Ken Burns ↗', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1+0.16*t, -50*t, -25*t) },
+                                    { key:'kenburns-out', label: 'Zoom Out ↙', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.16-0.16*t, 50*(1-t), 25*(1-t)) },
+                                    { key:'pan-right',    label: 'Pan → Dir',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, -120+240*t, 0) },
+                                    { key:'pan-left',     label: 'Pan ← Esq',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, 120-240*t, 0) },
+                                    { key:'pan-down',     label: 'Pan ↓ Des',  fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1.12, 0, -100+200*t) },
+                                    { key:'rotate-zoom',  label: 'Rotate+Zoom', fn: (ctx2: CanvasRenderingContext2D, img2: HTMLImageElement, t: number) => applyTransform(ctx2, img2, 1+0.1*t, 0, 0, (-0.04+0.08*t)*Math.PI) },
+                                  ]
+                                  const imgCount = 1 + Object.values(geminiVariants).filter(Boolean).length
+                                  return (
                                   <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, overflow:'hidden' as const }}>
                                     <div style={{ padding:'10px 16px', background:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
                                       <span style={{ fontSize:14 }}>🎬</span>
                                       <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>
                                         {humanLang==='pt-BR' ? 'Vídeo Reel — Instagram / TikTok' : 'Video Reel — Instagram / TikTok'}
                                       </div>
-                                      <div style={{ fontSize:9, color:'#64748b' }}>9:16 • 15s</div>
+                                      <div style={{ fontSize:9, color:'#475569' }}>9:16 • {imgCount * 5}s</div>
                                     </div>
+
                                     <div style={{ padding:'14px', display:'flex', flexDirection:'column' as const, gap:12 }}>
-                                      {/* Preview phone mockup */}
+
+                                      {/* Phone preview */}
                                       <div style={{ display:'flex', justifyContent:'center', background:'#0f172a', borderRadius:8, padding:'14px' }}>
-                                        <div style={{ width:140, aspectRatio:'9/16' as any, overflow:'hidden', position:'relative' as const,
-                                          borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.6)', background:'#000' }}>
-                                          <img
-                                            src={geminiRenderB64 ? `data:image/jpeg;base64,${geminiRenderB64}` : pollinationsUrl!}
+                                        <div style={{ width:130, aspectRatio:'9/16' as any, overflow:'hidden', position:'relative' as const,
+                                          borderRadius:16, boxShadow:'0 12px 32px rgba(0,0,0,.7)', background:'#000' }}>
+                                          <img src={geminiRenderB64 ? `data:image/jpeg;base64,${geminiRenderB64}` : pollinationsUrl!}
                                             alt="Reel" className="reel-kenburns"
                                             key={(geminiRenderB64 ?? pollinationsUrl ?? '').slice(-20)}
-                                            style={{ width:'100%', height:'100%', objectFit:'cover' as const, display:'block' }}
-                                          />
-                                          <div style={{ position:'absolute' as const, inset:0, background:'linear-gradient(to top,rgba(0,0,0,.8) 0%,transparent 55%)',
-                                            display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'12px 10px' }}>
-                                            <div style={{ fontSize:10, fontWeight:700, color:'#fff', lineHeight:1.3 }}>
+                                            style={{ width:'100%', height:'100%', objectFit:'cover' as const, display:'block' }} />
+                                          <div style={{ position:'absolute' as const, inset:0,
+                                            background:'linear-gradient(to top,rgba(0,0,0,.85) 0%,transparent 50%)',
+                                            display:'flex', flexDirection:'column' as const, justifyContent:'flex-end', padding:'10px 8px' }}>
+                                            <div style={{ fontSize:9, fontWeight:700, color:'#fff', lineHeight:1.3 }}>
                                               {humanTipo.charAt(0).toUpperCase()+humanTipo.slice(1)}
                                             </div>
-                                            <div style={{ fontSize:8, color:'rgba(255,255,255,.7)', marginTop:2 }}>
-                                              Visualização Arquitetônica
+                                            <div style={{ fontSize:7, color:'rgba(255,255,255,.65)', marginTop:2 }}>
+                                              Visualização Arquitetônica Premium
                                             </div>
                                           </div>
                                         </div>
                                       </div>
-                                      {/* Generate + download buttons */}
-                                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' as const }}>
-                                        <button
-                                          disabled={reelGenerating}
+
+                                      {/* Camera Effect selector */}
+                                      <div>
+                                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                          letterSpacing:'.08em', marginBottom:6 }}>
+                                          {humanLang==='pt-BR' ? '🎥 Efeito de Câmera' : '🎥 Camera Effect'}
+                                        </div>
+                                        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5 }}>
+                                          {[{key:'auto', label:'🎲 Auto'}, ...EFFECTS.map(e => ({key:e.key, label: e.label}))].map(ef => (
+                                            <button key={ef.key} onClick={() => setReelEffect(ef.key)}
+                                              style={{ padding:'6px 4px', border:`1.5px solid ${reelEffect===ef.key?'#3b82f6':'#e5e8f0'}`,
+                                                borderRadius:6, background: reelEffect===ef.key?'#eff6ff':'#fafafa',
+                                                cursor:'pointer', fontFamily:'inherit', fontSize:9, fontWeight:600,
+                                                color: reelEffect===ef.key?'#3b82f6':'#5a6282', lineHeight:1.3, textAlign:'center' as const }}>
+                                              {ef.label}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* AI Narration section */}
+                                      <div style={{ background:'#f8f9fc', borderRadius:8, padding:'10px 12px', display:'flex', flexDirection:'column' as const, gap:8 }}>
+                                        <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const, letterSpacing:'.08em' }}>
+                                          🎙️ {humanLang==='pt-BR' ? 'Narração com IA' : 'AI Narration'}
+                                        </div>
+                                        {reelNarration ? (
+                                          <textarea value={reelNarration} onChange={e => setReelNarration(e.target.value)}
+                                            rows={4} style={{ width:'100%', padding:'8px', border:'1px solid #e5e8f0', borderRadius:6,
+                                              fontSize:11, fontFamily:'inherit', resize:'vertical' as const, color:'#1a1f36', background:'#fff', boxSizing:'border-box' as const }} />
+                                        ) : (
+                                          <div style={{ fontSize:10, color:'#8890a0', lineHeight:1.5 }}>
+                                            {humanLang==='pt-BR'
+                                              ? 'Gere um roteiro de vendas em PT-BR com narração por voz Gemini (áudio .webm)'
+                                              : 'Generate a sales script in PT-BR with Gemini voice narration (audio .webm)'}
+                                          </div>
+                                        )}
+                                        <div style={{ display:'flex', gap:8 }}>
+                                          <button disabled={reelNarrationLoading}
+                                            onClick={async () => {
+                                              setReelNarrationLoading(true)
+                                              setReelAudioB64(null)
+                                              try {
+                                                // 1. Generate script text via Gemini
+                                                const scriptR = await fetch('/api/gemini', {
+                                                  method:'POST', headers:{'Content-Type':'application/json'},
+                                                  body: JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:
+                                                    `Escreva um roteiro de narração de vídeo de 15 segundos em português brasileiro profissional e elegante para um vídeo de marketing imobiliário de um projeto "${humanTipo}" de estilo "${humanEstilo}". Máximo 5 frases curtas. Linguagem premium, inspiradora. Sem hashtags. Apenas o texto da narração.`
+                                                  }]}] })
+                                                })
+                                                const scriptD = await scriptR.json()
+                                                const scriptText = scriptD?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || `Descubra o projeto premium ${humanTipo}. Design exclusivo com acabamentos de alto padrão. Um espaço que une elegância e funcionalidade. Viva a experiência da arquitetura de excelência.`
+                                                setReelNarration(scriptText)
+
+                                                // 2. Generate audio via Gemini TTS
+                                                const audioR = await fetch('/api/gemini', {
+                                                  method:'POST', headers:{'Content-Type':'application/json'},
+                                                  body: JSON.stringify({
+                                                    model:'gemini-2.0-flash-exp',
+                                                    contents:[{role:'user',parts:[{text: scriptText}]}],
+                                                    generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:'Aoede' } } } }
+                                                  })
+                                                })
+                                                const audioD = await audioR.json()
+                                                const audioPart = (audioD?.candidates?.[0]?.content?.parts??[]).find((p: any) => p.inlineData?.data)
+                                                if (audioPart) setReelAudioB64(audioPart.inlineData.data)
+                                              } catch(e: any) {
+                                                console.error('Narration error:', e)
+                                              } finally {
+                                                setReelNarrationLoading(false)
+                                              }
+                                            }}
+                                            style={{ flex:1, padding:'7px 10px', background: reelNarrationLoading ? '#64748b' : '#4f46e5',
+                                              color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600,
+                                              cursor: reelNarrationLoading ? 'wait' : 'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
+                                            {reelNarrationLoading ? '⏳ Gerando...' : '✨ Gerar Roteiro + Voz'}
+                                          </button>
+                                          {reelAudioB64 && (
+                                            <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:10, color:'#16a34a', fontWeight:600 }}>
+                                              🎵 Voz pronta
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Generate + download */}
+                                      <div style={{ display:'flex', gap:8 }}>
+                                        <button disabled={reelGenerating}
                                           onClick={async () => {
                                             if (reelVideoUrl) { URL.revokeObjectURL(reelVideoUrl); setReelVideoUrl(null) }
                                             setReelGenerating(true)
                                             try {
-                                              const srcB64 = geminiRenderB64 ?? null
-                                              // Collect all available images (main + variants)
-                                              const allImages: string[] = []
-                                              if (srcB64) allImages.push(srcB64)
-                                              if (geminiVariants['night']) allImages.push(geminiVariants['night']!)
-                                              if (geminiVariants['minimal']) allImages.push(geminiVariants['minimal']!)
-                                              if (geminiVariants['watercolor']) allImages.push(geminiVariants['watercolor']!)
+                                              // Collect images
+                                              const allB64: string[] = []
+                                              if (geminiRenderB64) allB64.push(geminiRenderB64)
+                                              ;(['night','minimal','watercolor'] as const).forEach(k => { if (geminiVariants[k]) allB64.push(geminiVariants[k]!) })
 
                                               const canvas = document.createElement('canvas')
                                               canvas.width = 1080; canvas.height = 1920
-                                              const ctx = canvas.getContext('2d')!
+                                              const ctx2 = canvas.getContext('2d')!
 
-                                              // Load all images
-                                              const imgs = await Promise.all(allImages.slice(0,4).map(b64 => new Promise<HTMLImageElement>((res, rej) => {
-                                                const img = new Image(); img.onload = () => res(img); img.onerror = rej
-                                                img.src = `data:image/jpeg;base64,${b64}`
+                                              const imgs = await Promise.all(allB64.slice(0,4).map(b64 => new Promise<HTMLImageElement>((res, rej) => {
+                                                const im = new Image(); im.onload = () => res(im); im.onerror = rej
+                                                im.src = `data:image/jpeg;base64,${b64}`
                                               })))
                                               if (!imgs.length) { setReelGenerating(false); return }
 
-                                              const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
-                                              const stream = canvas.captureStream(30)
-                                              const recorder = new MediaRecorder(stream, { mimeType })
+                                              // Build per-segment effect list
+                                              const effectFns = imgs.map((_, i) => {
+                                                if (reelEffect === 'auto') {
+                                                  return EFFECTS[i % EFFECTS.length].fn
+                                                }
+                                                return (EFFECTS.find(e => e.key === reelEffect) || EFFECTS[0]).fn
+                                              })
+
+                                              // Audio setup
+                                              let audioCtx: AudioContext|null = null
+                                              let audioDestination: MediaStreamAudioDestinationNode|null = null
+                                              if (reelAudioB64) {
+                                                try {
+                                                  audioCtx = new AudioContext({ sampleRate: 24000 })
+                                                  audioDestination = audioCtx.createMediaStreamDestination()
+                                                  // Decode PCM-16 at 24kHz
+                                                  const raw = atob(reelAudioB64)
+                                                  const bytes = new Uint8Array(raw.length)
+                                                  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i)
+                                                  const int16 = new Int16Array(bytes.buffer)
+                                                  const audioBuffer = audioCtx.createBuffer(1, int16.length, 24000)
+                                                  const ch = audioBuffer.getChannelData(0)
+                                                  for (let i = 0; i < int16.length; i++) ch[i] = int16[i] / 32768.0
+                                                  const src = audioCtx.createBufferSource()
+                                                  src.buffer = audioBuffer
+                                                  src.connect(audioDestination)
+                                                  src.start(0)
+                                                } catch(e) { audioCtx = null; audioDestination = null }
+                                              }
+
+                                              // MediaRecorder setup
+                                              const videoStream = canvas.captureStream(30)
+                                              const allTracks = [...videoStream.getTracks()]
+                                              if (audioDestination) allTracks.push(...audioDestination.stream.getAudioTracks())
+                                              const combinedStream = new MediaStream(allTracks)
+                                              const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus') ? 'video/webm;codecs=vp9,opus'
+                                                : MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm'
+                                              const recorder = new MediaRecorder(combinedStream, { mimeType })
                                               const chunks: BlobPart[] = []
                                               recorder.ondataavailable = (e: BlobEvent) => { if (e.data.size > 0) chunks.push(e.data) }
 
-                                              const totalDuration = imgs.length > 1 ? imgs.length * 4000 : 15000
-                                              const segmentDuration = totalDuration / imgs.length
-                                              const fps = 30; const frameDuration = 1000 / fps
-
+                                              const segDur = 5000 // 5s per image
+                                              const totalDur = imgs.length * segDur
+                                              const fps = 30; const frameMs = 1000/fps
                                               recorder.start(100)
-                                              const startTime = performance.now()
-                                              let lastFrame = startTime
+                                              const t0 = performance.now()
+                                              let lastF = t0
 
                                               await new Promise<void>(resolve => {
-                                                function drawFrame() {
+                                                function frame() {
                                                   const now = performance.now()
-                                                  if (now - lastFrame < frameDuration - 2) { requestAnimationFrame(drawFrame); return }
-                                                  lastFrame = now
-                                                  const elapsed = now - startTime
-                                                  if (elapsed >= totalDuration) { recorder.stop(); resolve(); return }
+                                                  if (now - lastF < frameMs - 2) { requestAnimationFrame(frame); return }
+                                                  lastF = now
+                                                  const elapsed = now - t0
+                                                  if (elapsed >= totalDur) { recorder.stop(); resolve(); return }
 
-                                                  const segIdx = Math.min(Math.floor(elapsed / segmentDuration), imgs.length - 1)
-                                                  const segProgress = (elapsed % segmentDuration) / segmentDuration
-                                                  const img = imgs[segIdx]
+                                                  const segIdx = Math.min(Math.floor(elapsed / segDur), imgs.length-1)
+                                                  const segT = (elapsed % segDur) / segDur
+                                                  const img2 = imgs[segIdx]
 
-                                                  // Ken Burns effect
-                                                  const scale = 1 + 0.12 * segProgress
-                                                  const panX = -40 * segProgress
-                                                  const panY = -20 * segProgress
+                                                  ctx2.clearRect(0,0,1080,1920)
+                                                  effectFns[segIdx](ctx2, img2, segT)
 
-                                                  ctx.clearRect(0, 0, 1080, 1920)
-                                                  ctx.save()
-                                                  const iAspect = img.width / img.height
-                                                  let dW = 1080, dH = 1080 / iAspect
-                                                  if (dH < 1920) { dH = 1920; dW = 1920 * iAspect }
-                                                  ctx.translate(540 + panX, 960 + panY)
-                                                  ctx.scale(scale, scale)
-                                                  ctx.drawImage(img, -dW/2, -dH/2, dW, dH)
-                                                  ctx.restore()
-
-                                                  // Fade in/out between segments
+                                                  // Cross-fade transition at segment boundaries
                                                   if (imgs.length > 1) {
-                                                    const fadeIn = segProgress < 0.15 ? segProgress / 0.15 : 1
-                                                    const fadeOut = segProgress > 0.85 ? 1 - (segProgress - 0.85) / 0.15 : 1
-                                                    const alpha = 1 - Math.min(fadeIn, fadeOut)
-                                                    if (alpha > 0) { ctx.fillStyle = `rgba(0,0,0,${alpha})`; ctx.fillRect(0,0,1080,1920) }
+                                                    const fadeIn  = segT < 0.12 ? 1 - segT/0.12 : 0
+                                                    const fadeOut = segT > 0.88 ? (segT-0.88)/0.12 : 0
+                                                    const alpha = Math.max(fadeIn, fadeOut)
+                                                    if (alpha > 0) { ctx2.fillStyle=`rgba(0,0,0,${alpha})`; ctx2.fillRect(0,0,1080,1920) }
                                                   }
 
-                                                  // Gradient overlay + text
-                                                  const grad = ctx.createLinearGradient(0, 1300, 0, 1920)
-                                                  grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.82)')
-                                                  ctx.fillStyle = grad; ctx.fillRect(0, 0, 1080, 1920)
+                                                  // Bottom gradient + text overlay
+                                                  const grad = ctx2.createLinearGradient(0,1200,0,1920)
+                                                  grad.addColorStop(0,'rgba(0,0,0,0)'); grad.addColorStop(1,'rgba(0,0,0,0.88)')
+                                                  ctx2.fillStyle=grad; ctx2.fillRect(0,0,1080,1920)
 
-                                                  ctx.textAlign = 'center' as CanvasTextAlign
-                                                  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '28px sans-serif'
-                                                  ctx.fillText('✦  Arquitetura & Design  ✦', 540, 1600)
-                                                  ctx.fillStyle = '#fff'; ctx.font = 'bold 52px sans-serif'
-                                                  const title = humanTipo.charAt(0).toUpperCase() + humanTipo.slice(1)
-                                                  ctx.fillText(title.length > 24 ? title.slice(0,22)+'…' : title, 540, 1680)
-                                                  ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.font = '32px sans-serif'
-                                                  ctx.fillText('Visualização Arquitetônica Premium', 540, 1740)
-                                                  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = '22px sans-serif'
-                                                  ctx.fillText('AI Construction Intelligence Platform', 540, 1800)
+                                                  // Caption: narration line (if available)
+                                                  if (reelNarration) {
+                                                    const lines = reelNarration.split(/[.!?]+/).map(s=>s.trim()).filter(Boolean)
+                                                    const lineIdx = Math.floor((elapsed/totalDur)*lines.length)
+                                                    const line = lines[Math.min(lineIdx, lines.length-1)] || ''
+                                                    ctx2.fillStyle='rgba(255,255,255,0.85)'; ctx2.font='italic 34px Georgia,serif'
+                                                    ctx2.textAlign='center' as CanvasTextAlign
+                                                    // Word wrap
+                                                    const words = line.split(' '); let curLine=''; const wrapped: string[]=[]
+                                                    for (const w of words) {
+                                                      const test = curLine ? curLine+' '+w : w
+                                                      if (ctx2.measureText(test).width > 900) { wrapped.push(curLine); curLine=w }
+                                                      else curLine=test
+                                                    }
+                                                    if (curLine) wrapped.push(curLine)
+                                                    wrapped.forEach((l,li) => ctx2.fillText(l, 540, 1560+li*44))
+                                                  }
 
-                                                  requestAnimationFrame(drawFrame)
+                                                  // Title + brand
+                                                  ctx2.textAlign='center' as CanvasTextAlign
+                                                  ctx2.fillStyle='rgba(255,255,255,0.38)'; ctx2.font='26px sans-serif'
+                                                  ctx2.fillText('✦  Arquitetura & Design  ✦', 540, 1680)
+                                                  ctx2.fillStyle='#fff'; ctx2.font='bold 48px sans-serif'
+                                                  const title2 = humanTipo.charAt(0).toUpperCase()+humanTipo.slice(1)
+                                                  ctx2.fillText(title2.length>22?title2.slice(0,20)+'…':title2, 540, 1746)
+                                                  ctx2.fillStyle='rgba(255,255,255,0.6)'; ctx2.font='28px sans-serif'
+                                                  ctx2.fillText('Visualização Arquitetônica Premium', 540, 1800)
+                                                  ctx2.fillStyle='rgba(255,255,255,0.3)'; ctx2.font='20px sans-serif'
+                                                  ctx2.fillText('AI Construction Intelligence Platform', 540, 1852)
+
+                                                  // Segment indicator dots
+                                                  if (imgs.length > 1) {
+                                                    imgs.forEach((_, di) => {
+                                                      ctx2.beginPath()
+                                                      ctx2.arc(540 + (di - (imgs.length-1)/2)*20, 1882, di===segIdx?5:3, 0, Math.PI*2)
+                                                      ctx2.fillStyle = di===segIdx ? '#fff' : 'rgba(255,255,255,0.35)'
+                                                      ctx2.fill()
+                                                    })
+                                                  }
+                                                  requestAnimationFrame(frame)
                                                 }
-                                                requestAnimationFrame(drawFrame)
+                                                requestAnimationFrame(frame)
                                               })
-
                                               await new Promise<void>(r => { recorder.onstop = () => r() })
-                                              const blob = new Blob(chunks, { type: 'video/webm' })
+                                              if (audioCtx) audioCtx.close()
+                                              const blob = new Blob(chunks, { type:'video/webm' })
                                               setReelVideoUrl(URL.createObjectURL(blob))
                                             } catch(e: any) {
-                                              console.error('Reel generation error:', e)
+                                              console.error('Reel error:', e)
                                             } finally {
                                               setReelGenerating(false)
                                             }
                                           }}
-                                          style={{ flex:1, padding:'9px 14px', background: reelGenerating ? '#64748b' : '#e11d48',
+                                          style={{ flex:1, padding:'10px 14px', background: reelGenerating?'#64748b':'#e11d48',
                                             color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:600,
-                                            cursor: reelGenerating ? 'wait' : 'pointer', fontFamily:'inherit',
+                                            cursor: reelGenerating?'wait':'pointer', fontFamily:'inherit',
                                             display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                                          {reelGenerating ? '⏳ Gerando...' : '🎬 Gerar Vídeo Reel'}
+                                          {reelGenerating ? '⏳ Renderizando...' : `🎬 Gerar Vídeo${reelAudioB64?' + Voz':''}`}
                                         </button>
                                         {reelVideoUrl && (
                                           <a href={reelVideoUrl} download={`reel-${humanTipo.replace(/ /g,'-')}.webm`}
-                                            style={{ flex:1, padding:'9px 14px', background:'#16a34a', color:'#fff',
+                                            style={{ padding:'10px 14px', background:'#16a34a', color:'#fff',
                                               border:'none', borderRadius:8, fontSize:12, fontWeight:600,
-                                              textDecoration:'none', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                                            ⬇️ {humanLang==='pt-BR'?'Baixar .webm':'Download .webm'}
+                                              textDecoration:'none', display:'flex', alignItems:'center', gap:5 }}>
+                                            ⬇️ .webm
                                           </a>
                                         )}
                                       </div>
-                                      <div style={{ fontSize:9, color:'#8890a0', lineHeight:1.5 }}>
-                                        {humanLang==='pt-BR'
-                                          ? `Ken Burns effect • ${Object.values(geminiVariants).filter(Boolean).length + 1} imagem(ns) • 9:16 para Reels & Stories`
-                                          : `Ken Burns effect • ${Object.values(geminiVariants).filter(Boolean).length + 1} image(s) • 9:16 for Reels & Stories`}
+
+                                      <div style={{ fontSize:9, color:'#8890a0', lineHeight:1.5, textAlign:'center' as const }}>
+                                        {imgCount} cena(s) × 5s = {imgCount*5}s • {reelAudioB64?'🎵 com narração':'sem áudio'} • 1080×1920 • CapCut / Premiere / Reels
                                       </div>
                                     </div>
                                   </div>
-                                )}
+                                  )
+                                })()}
                               </div>
                             ) : (
                               /* Empty state — shown only before analysis runs, not when there is an error */
