@@ -288,6 +288,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'>('analise')
   const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
   const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
+  const [geminiRenderError, setGeminiRenderError] = useState<string|null>(null)
   const [geminiPalette, setGeminiPalette] = useState<Array<{name:string,hex:string,usage:string}>>([])
   const [geminiMarketing, setGeminiMarketing] = useState<string>('')
   const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
@@ -1444,6 +1445,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           setHumanLoading(true)
                           setHumanResult({})
                           setGeminiRenderB64(null)
+                          setGeminiRenderError(null)
                           setGeminiPalette([])
                           setGeminiMarketing('')
                           setHumanTab('analise')
@@ -1572,18 +1574,23 @@ Transform the plan by adding:
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                model: 'gemini-2.0-flash-exp',
+                                model: 'gemini-2.0-flash-preview-image-generation',
                                 contents: [{ role: 'user', parts: [
                                   { inlineData: { mimeType: imgTypeSnap, data: b64Snap } },
                                   { text: renderPrompt }
                                 ]}],
                                 generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
                               })
-                            }).then(r => r.json()).then(data => {
+                            }).then(async r => {
+                              const data = await r.json()
+                              const apiErr = data?.error?.message
+                              if (apiErr) { setGeminiRenderError(apiErr); return }
                               const parts = data?.candidates?.[0]?.content?.parts ?? []
                               const imgPart = parts.find((p: any) => p.inlineData?.data)
-                              if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
-                            }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                              if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
+                              else setGeminiRenderError('Gemini não retornou imagem. Tente novamente.')
+                            }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
+                            .finally(() => setGeminiRenderLoading(false))
                           }
 
                           // Gemini palette
@@ -1822,35 +1829,34 @@ Crie:
                                     <button onClick={() => {
                                       if (!humanB64 || humanImgType === 'application/pdf') return
                                       setGeminiRenderB64(null)
+                                      setGeminiRenderError(null)
                                       setGeminiRenderLoading(true)
+                                      const regenPrompt = `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
+
+CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
+
+Transform by adding: realistic flooring (hardwood, tiles, marble), high-end modern furniture, ${humanNP} people doing activities, plants, decor. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, natural overhead sunlight. Premium luxury real estate marketing render. Seed: ${Date.now()}`
                                       fetch('/api/gemini', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
-                                          model: 'gemini-2.0-flash-exp',
+                                          model: 'gemini-2.0-flash-preview-image-generation',
                                           contents: [{ role: 'user', parts: [
                                             { inlineData: { mimeType: humanImgType, data: humanB64 } },
-                                            { text: `You are an expert architectural visualizer. Transform this floor plan / architectural drawing into a photorealistic bird's-eye view humanized visualization.
-
-CRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry as the original image. Do NOT create a 3D exterior perspective.
-
-Transform the plan by adding:
-- Realistic flooring: hardwood, large-format porcelain tiles, marble, carpets in each room
-- High-end modern furniture placed exactly inside each room
-- ${humanEstilo} interior rendering style
-- ${humanNP} people doing realistic activities in different rooms (1.70m scale reference)
-- Plants, decor, lighting fixtures
-- EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk with paving, street markings, natural overhead sunlight
-- The result must look like a premium architectural bird's-eye render for luxury real estate marketing
-- New variation seed: ${Date.now()}` }
+                                            { text: regenPrompt }
                                           ]}],
                                           generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
                                         })
-                                      }).then(r => r.json()).then(data => {
+                                      }).then(async r => {
+                                        const data = await r.json()
+                                        const apiErr = data?.error?.message
+                                        if (apiErr) { setGeminiRenderError(apiErr); return }
                                         const parts = data?.candidates?.[0]?.content?.parts ?? []
                                         const imgPart = parts.find((p: any) => p.inlineData?.data)
-                                        if (imgPart) setGeminiRenderB64(imgPart.inlineData.data)
-                                      }).catch(() => {}).finally(() => setGeminiRenderLoading(false))
+                                        if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
+                                        else setGeminiRenderError('Gemini não retornou imagem. Tente novamente.')
+                                      }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
+                                      .finally(() => setGeminiRenderLoading(false))
                                     }}
                                       style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
                                         borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
@@ -1905,16 +1911,28 @@ Transform the plan by adding:
                               </div>
                             )}
                             {!geminiRenderLoading && !geminiRenderB64 && (
-                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:48, color:'#8890a0', textAlign:'center' as const }}>
-                                <div style={{ fontSize:48 }}>🎨</div>
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:12, padding:40, color:'#8890a0', textAlign:'center' as const }}>
+                                <div style={{ fontSize:40 }}>🎨</div>
                                 <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
                                   {humanLang==='pt-BR'?'Renderização IA':'AI Render'}
                                 </div>
-                                <div style={{ fontSize:11, lineHeight:1.6, maxWidth:280 }}>
-                                  {humanLang==='pt-BR'
-                                    ?<>O render será gerado automaticamente ao analisar.<br/>Requer <strong>GEMINI_API_KEY</strong> no Vercel.</>
-                                    :<>Render is generated automatically after analysis.<br/>Requires <strong>GEMINI_API_KEY</strong> in Vercel.</>}
-                                </div>
+                                {geminiRenderError ? (
+                                  <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8,
+                                    padding:'12px 16px', maxWidth:360, textAlign:'left' as const }}>
+                                    <div style={{ fontSize:11, fontWeight:700, color:'#dc2626', marginBottom:6 }}>
+                                      ⚠️ Erro Gemini API
+                                    </div>
+                                    <div style={{ fontSize:11, color:'#7f1d1d', lineHeight:1.6, fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
+                                      {geminiRenderError}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize:11, lineHeight:1.6, maxWidth:280 }}>
+                                    {humanLang==='pt-BR'
+                                      ?<>O render é gerado automaticamente ao analisar.<br/>Certifique-se que <strong>GEMINI_API_KEY</strong> está no Vercel e que o site foi redesplantado após salvar a chave.</>
+                                      :<>Render is generated automatically after analysis.<br/>Make sure <strong>GEMINI_API_KEY</strong> is saved in Vercel and the site was redeployed after saving.</>}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
