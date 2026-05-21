@@ -285,7 +285,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [humanImgType, setHumanImgType] = useState('image/jpeg')
   const [humanResult, setHumanResult] = useState<Record<string,string>>({})
   const [humanLoading, setHumanLoading] = useState(false)
-  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'>('analise')
+  const [humanTab, setHumanTab] = useState<'analise'|'render'|'palette'|'marketing'|'assistant'|'ambientes'|'prompts'|'adicionais'>('analise')
   const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
   const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
   const [geminiRenderError, setGeminiRenderError] = useState<string|null>(null)
@@ -306,6 +306,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [reelNarration, setReelNarration] = useState<string>('')
   const [reelNarrationLoading, setReelNarrationLoading] = useState(false)
   const [reelAudioB64, setReelAudioB64] = useState<string|null>(null)
+  const [humanIs3D, setHumanIs3D] = useState(false)
+  const [humanFileName, setHumanFileName] = useState('')
+  const [humanAdicionalInput, setHumanAdicionalInput] = useState('')
   const [humanAssistantMsgs, setHumanAssistantMsgs] = useState<Array<{role:'user'|'assistant',text:string}>>([])
   const [humanAssistantInput, setHumanAssistantInput] = useState('')
   const [humanAssistantLoading, setHumanAssistantLoading] = useState(false)
@@ -1396,13 +1399,26 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                       <div>
                         <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
                           letterSpacing:'.08em', marginBottom:8 }}>
-                          {humanLang === 'pt-BR' ? '2 — Projeto 2D' : '2 — 2D Project'}
+                          {humanLang === 'pt-BR' ? '2 — Projeto 2D / 3D' : '2 — 2D / 3D Project'}
                         </div>
-                        {humanB64 ? (
+                        {humanIs3D && humanB64 ? (
+                          <div style={{ border:'2px solid #7c3aed', borderRadius:10, padding:'14px', background:'#f5f3ff',
+                            display:'flex', alignItems:'center', gap:12 }}>
+                            <div style={{ fontSize:28 }}>🏗️</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'#7c3aed' }}>Projeto 3D carregado</div>
+                              <div style={{ fontSize:10, color:'#5a6282', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{humanFileName}</div>
+                            </div>
+                            <button onClick={() => { setHumanB64(null); setHumanIs3D(false); setHumanFileName(''); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
+                              style={{ background:'rgba(124,58,237,.15)', color:'#7c3aed', border:'none', borderRadius:4, fontSize:10, padding:'4px 8px', cursor:'pointer', whiteSpace:'nowrap' }}>
+                              ✕ Remover
+                            </button>
+                          </div>
+                        ) : humanB64 ? (
                           <div style={{ position:'relative', borderRadius:10, overflow:'hidden', border:'2px solid #3b82f6' }}>
                             <img src={`data:${humanImgType};base64,${humanB64}`} alt="Planta"
                               style={{ width:'100%', maxHeight:160, objectFit:'contain', display:'block', background:'#f8faff', padding:4 }} />
-                            <button onClick={() => { setHumanB64(null); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
+                            <button onClick={() => { setHumanB64(null); setHumanIs3D(false); setHumanFileName(''); setHumanResult({}); setGeminiRenderB64(null); setGeminiPalette([]); setGeminiMarketing('') }}
                               style={{ position:'absolute', top:6, right:6, background:'rgba(0,0,0,.65)',
                                 color:'#fff', border:'none', borderRadius:4, fontSize:10, padding:'3px 7px', cursor:'pointer' }}>
                               ✕ {humanLang==='pt-BR'?'Remover':'Remove'}
@@ -1410,11 +1426,22 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           </div>
                         ) : (
                           <label style={{ cursor:'pointer', display:'block' }}>
-                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt" style={{ display:'none' }}
+                            <input type="file" accept="image/*,.pdf,.dwg,.dxf,.dgn,.ifc,.rvt,.fbx,.stl,.step,.stp,.obj,.nwd,.nwc" style={{ display:'none' }}
                               onChange={e => {
                                 const f = e.target.files?.[0]
                                 if (!f) return
-                                const isPDFFile = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+                                const ext = f.name.toLowerCase().split('.').pop() || ''
+                                const is3DType = ['ifc','rvt','fbx','stl','obj','step','stp','dwg','dxf','dgn','nwd','nwc'].includes(ext)
+                                if (is3DType) {
+                                  setHumanIs3D(true)
+                                  setHumanFileName(f.name)
+                                  setHumanImgType('application/octet-stream')
+                                  setHumanB64('3d:' + f.name)
+                                  return
+                                }
+                                setHumanIs3D(false)
+                                setHumanFileName('')
+                                const isPDFFile = f.type === 'application/pdf' || ext === 'pdf'
                                 const mt = isPDFFile ? 'application/pdf'
                                   : ['image/jpeg','image/png','image/gif','image/webp'].includes(f.type) ? f.type
                                   : f.type.startsWith('image/') ? f.type : 'image/jpeg'
@@ -1431,7 +1458,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                               <div style={{ fontSize:12, fontWeight:600, color:'#1e40af', marginBottom:3 }}>
                                 {humanLang==='pt-BR'?'Arraste ou clique aqui':'Drag or click to upload'}
                               </div>
-                              <div style={{ fontSize:10, color:'#60a5fa' }}>JPG · PNG · PDF · DWG · IFC</div>
+                              <div style={{ fontSize:10, color:'#60a5fa' }}>JPG · PNG · PDF · DWG · IFC · FBX · OBJ</div>
                             </div>
                           </label>
                         )}
@@ -1598,6 +1625,24 @@ RETORNE EXATAMENTE neste formato markdown:
 
                           let analysisText = ''
                           let dallePrompt = ''
+                          // 3D file path: text-only analysis (no image data to send)
+                          const is3DAnalysis = humanIs3D || humanImgType === 'application/octet-stream'
+                          const text3DPrompt = `Você é especialista em BIM, CAD e Arquitetura. Analise este arquivo de projeto 3D: "${humanFileName || humanB64?.replace('3d:','') || 'projeto.ifc'}".
+Tipo de edificação: ${humanTipo}. Escala: 1:${humanEscala}. Estilo: ${humanEstilo}.
+
+RETORNE EXATAMENTE neste formato:
+
+### ANÁLISE
+[Tipo de arquivo, uso típico, compatibilidade BIM, estrutura esperada do projeto para "${humanTipo}"]
+
+### AMBIENTES E PESSOAS
+[Ambientes típicos para ${humanTipo}, distribuição de ${humanNP} pessoas: Ambiente | Pessoas | Atividade esperada]
+
+### PROMPT GEMINI RENDER
+[Prompt em inglês para renderização após exportar vista 2D do projeto: descreva a visualização ideal para este tipo de projeto, estilo ${humanEstilo}, com materiais fotorrealistas, iluminação dramática, ${humanNP} pessoas em escala]
+
+### MELHORIAS SUGERIDAS
+[5 boas práticas BIM/CAD e de projeto para "${humanTipo}": coordenação de disciplinas, LOD recomendado, compatibilização, clash detection, entregáveis]`
                           try {
                             const r = await fetch('/api/chat', {
                               method: 'POST',
@@ -1607,11 +1652,13 @@ RETORNE EXATAMENTE neste formato markdown:
                                 max_tokens: 1500,
                                 messages: [{
                                   role: 'user',
-                                  content: [
-                                    { type: humanImgType === 'application/pdf' ? 'document' : 'image',
-                                      source:{ type:'base64', media_type: humanImgType, data: humanB64 } } as any,
-                                    { type:'text', text: prompt }
-                                  ]
+                                  content: is3DAnalysis
+                                    ? [{ type:'text', text: text3DPrompt }]
+                                    : [
+                                        { type: humanImgType === 'application/pdf' ? 'document' : 'image',
+                                          source:{ type:'base64', media_type: humanImgType, data: humanB64 } } as any,
+                                        { type:'text', text: prompt }
+                                      ]
                                 }]
                               })
                             })
@@ -1640,8 +1687,8 @@ RETORNE EXATAMENTE neste formato markdown:
                           const vegSnap = humanVeg
 
                           // ── Render: Gemini image-to-image PRIMARY ──
-                          // Preserves exact floor plan geometry — true humanization, not text-to-image
-                          if (b64Snap && imgTypeSnap !== 'application/pdf') {
+                          // Skip 3D files (no visual data to render); requires 2D image export
+                          if (b64Snap && imgTypeSnap !== 'application/pdf' && imgTypeSnap !== 'application/octet-stream' && !is3DAnalysis) {
                             setPollinationsUrl(null)
                             setGeminiRenderB64(null)
                             setGeminiRenderError(null)
@@ -1829,10 +1876,13 @@ Crie:
                           background:'#f8f9fc', flexShrink:0, flexWrap:'wrap' as const }}>
                           {([
                             ['analise','📊 Análise'],
-                            ['render','🎨 Render IA'],
+                            ['ambientes','🚶 Ambientes'],
+                            ['prompts','🎨 Prompts'],
+                            ['render','🖼️ Render IA'],
                             ['palette','🎭 Paleta'],
                             ['marketing','📣 Marketing'],
                             ['assistant','💬 Assistente'],
+                            ['adicionais','✏️ Adicionais'],
                           ] as const).map(([t, lbl]) => (
                             <button key={t} onClick={() => setHumanTab(t)}
                               style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, border:'none',
@@ -2585,6 +2635,201 @@ Crie:
                                 <div style={{ fontSize:12 }}>Textos de marketing serão gerados automaticamente após análise.</div>
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Ambientes ── */}
+                        {!humanLoading && humanTab === 'ambientes' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:12 }}>
+                            {Object.entries(humanResult).filter(([k]) => k.includes('AMBIENTES') || k.includes('PESSOAS') || k.includes('PEOPLE') || k.includes('SPACES')).length > 0
+                              ? Object.entries(humanResult)
+                                  .filter(([k]) => k.includes('AMBIENTES') || k.includes('PESSOAS') || k.includes('PEOPLE') || k.includes('SPACES'))
+                                  .map(([key, val]) => (
+                                    <div key={key} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                      <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:'linear-gradient(135deg,#f0fdf4,#dcfce7)',
+                                        display:'flex', alignItems:'center', gap:8 }}>
+                                        <span style={{ fontSize:18 }}>🚶</span>
+                                        <span style={{ fontSize:12, fontWeight:700, color:'#166534' }}>{key}</span>
+                                      </div>
+                                      <div style={{ padding:'14px 16px' }}>
+                                        {val.split('\n').filter(Boolean).map((line, li) => {
+                                          const cols = line.split('|').map(s => s.trim()).filter(Boolean)
+                                          if (cols.length >= 2) return (
+                                            <div key={li} style={{ display:'grid', gridTemplateColumns:'2fr 1fr 2fr', gap:8,
+                                              padding:'6px 0', borderBottom:'1px solid #f0fdf4', fontSize:12, color:'#1a1f36' }}>
+                                              {cols.map((c, ci) => <div key={ci} style={{ fontWeight: li===0?700:400 }}>{c}</div>)}
+                                            </div>
+                                          )
+                                          return <div key={li} style={{ fontSize:12, lineHeight:1.75, color:'#5a6282', padding:'3px 0',
+                                            whiteSpace:'pre-wrap' as const }}>{line}</div>
+                                        })}
+                                      </div>
+                                    </div>
+                                  ))
+                              : (
+                                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                  <div style={{ fontSize:40 }}>🚶</div>
+                                  <div style={{ fontSize:12, fontWeight:600, color:'#1a1f36' }}>Distribuição de ambientes</div>
+                                  <div style={{ fontSize:11 }}>Execute "✨ Gerar Análise" para ver a distribuição de pessoas por ambiente.</div>
+                                </div>
+                              )
+                            }
+                          </div>
+                        )}
+
+                        {/* ── Tab: Prompts ── */}
+                        {!humanLoading && humanTab === 'prompts' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            {(() => {
+                              const geminiKey = Object.keys(humanResult).find(k => k.includes('GEMINI') || k.includes('PROMPT'))
+                              const basePrompt = geminiKey ? humanResult[geminiKey] : ''
+                              if (!basePrompt) return (
+                                <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:10, padding:48, color:'#8890a0', textAlign:'center' as const }}>
+                                  <div style={{ fontSize:40 }}>🎨</div>
+                                  <div style={{ fontSize:12, fontWeight:600, color:'#1a1f36' }}>Prompts para IA externa</div>
+                                  <div style={{ fontSize:11 }}>Execute "✨ Gerar Análise" para gerar prompts otimizados para DALL-E e Midjourney.</div>
+                                </div>
+                              )
+                              const dalle3 = ('Photorealistic architectural render, 8K, ultra-detailed, professional lighting: ' + basePrompt).slice(0, 950) + ' --quality hd'
+                              const mj = basePrompt.slice(0, 800) + ' --ar 4:3 --v 6.1 --style raw --q 2'
+                              const items = [
+                                { icon:'🤖', title:'Gemini 2.0 Flash Exp', sub:'image-to-image · preserva geometria original', color:'#185FA5', bg:'#eff6ff', prompt: basePrompt },
+                                { icon:'🎨', title:'DALL-E 3 (OpenAI)', sub:'text-to-image · qualidade HD · via ChatGPT ou API', color:'#10a37f', bg:'#f0fdf4', prompt: dalle3 },
+                                { icon:'🎭', title:'Midjourney v6.1', sub:'text-to-image · alta qualidade artística · /imagine', color:'#7c3aed', bg:'#f5f3ff', prompt: mj },
+                              ]
+                              return items.map(item => (
+                                <div key={item.title} style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, overflow:'hidden' }}>
+                                  <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', background:item.bg,
+                                    display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                      <span style={{ fontSize:18 }}>{item.icon}</span>
+                                      <div>
+                                        <div style={{ fontSize:12, fontWeight:700, color:item.color }}>{item.title}</div>
+                                        <div style={{ fontSize:10, color:'#8890a0' }}>{item.sub}</div>
+                                      </div>
+                                    </div>
+                                    <button onClick={() => {
+                                      navigator.clipboard.writeText(item.prompt)
+                                      const btn = document.getElementById('copy-btn-' + item.title.replace(/\s/g,''))
+                                      if (btn) { btn.textContent = '✓ Copiado!'; setTimeout(() => { if(btn) btn.textContent = '📋 Copiar' }, 2000) }
+                                    }} id={'copy-btn-' + item.title.replace(/\s/g,'')}
+                                      style={{ fontSize:10, padding:'4px 10px', background:'#fff', border:'1px solid #e5e8f0',
+                                        borderRadius:5, cursor:'pointer', color:'#5a6282', fontFamily:'inherit', fontWeight:600 }}>
+                                      📋 Copiar
+                                    </button>
+                                  </div>
+                                  <div style={{ padding:'12px 16px', background:'#f8f9fc', border:'none', margin:0 }}>
+                                    <div style={{ fontFamily:'monospace', fontSize:11, lineHeight:1.8, color:'#1a1f36',
+                                      whiteSpace:'pre-wrap' as const, maxHeight:180, overflowY:'auto' as const,
+                                      background:'#fff', border:'1px solid #e5e8f0', borderRadius:6, padding:'10px 12px' }}>
+                                      {item.prompt}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            })()}
+                          </div>
+                        )}
+
+                        {/* ── Tab: Adicionais ── */}
+                        {!humanLoading && humanTab === 'adicionais' && (
+                          <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
+                            <div style={{ background:'linear-gradient(135deg,#1e293b,#0f172a)', borderRadius:10, padding:'14px 18px',
+                              display:'flex', alignItems:'center', gap:12 }}>
+                              <div style={{ width:36, height:36, background:'#7c3aed', borderRadius:8,
+                                display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>✏️</div>
+                              <div>
+                                <div style={{ fontSize:12, fontWeight:700, color:'#fff' }}>Aditivos do Arquiteto</div>
+                                <div style={{ fontSize:10, color:'#94a3b8', marginTop:2 }}>Instruções adicionais aplicadas no próximo render</div>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                letterSpacing:'.08em', marginBottom:8 }}>Instruções específicas</div>
+                              <textarea
+                                value={humanAdicionalInput}
+                                onChange={e => setHumanAdicionalInput(e.target.value)}
+                                placeholder={`Exemplos:\n• Revestimento em bambu natural nas paredes laterais\n• Iluminação noturna — spots embutidos no teto, fita LED sob armários\n• Jardim vertical na parede sul, espelho grande na parede leste\n• Sofá em couro caramelo, mesa de jantar com tampo em mármore\n• Adicionar mezanino com escada metálica`}
+                                style={{ width:'100%', minHeight:140, borderRadius:8, border:'1px solid #e5e8f0',
+                                  padding:'10px 12px', fontSize:12, fontFamily:'inherit', resize:'vertical' as const,
+                                  outline:'none', lineHeight:1.65, color:'#1a1f36', background:'#fff' }} />
+                            </div>
+                            {humanIs3D && (
+                              <div style={{ background:'#fef3c7', border:'1px solid #f59e0b', borderRadius:8,
+                                padding:'10px 14px', fontSize:11, color:'#92400e', lineHeight:1.5 }}>
+                                ⚠️ Arquivo 3D detectado — para aplicar aditivos no render, exporte uma vista 2D (PNG/JPG) do projeto e importe no campo de projeto.
+                              </div>
+                            )}
+                            <div style={{ display:'flex', gap:8 }}>
+                              <button
+                                disabled={!humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream' || geminiRenderLoading}
+                                onClick={() => {
+                                  const curB64 = humanB64; const curMime = humanImgType
+                                  if (!curB64 || humanIs3D) return
+                                  setGeminiRenderB64(null); setGeminiRenderError(null); setGeminiRenderLoading(true); setPollinationsUrl(null)
+                                  setHumanTab('render')
+                                  const base = humanAnaliseTipo === 'planta'
+                                    ? `You are an expert architectural visualizer. Transform this top-down floor plan into a photorealistic bird's-eye humanized visualization.\n\nCRITICAL: Keep EXACTLY the same top-down perspective and floor plan geometry. Do NOT invent new walls or rooms.\n\nAdd: realistic flooring per room, high-end furniture scale 1:${humanEscala}, ${humanNP} people at 1.70m, swimming pool if space allows. EXTERIOR: ${humanLote}, ${humanVeg}, sidewalk, luxury car, overhead sunlight. Style: ${humanEstilo}.`
+                                    : humanAnaliseTipo === 'fachada'
+                                    ? `You are an expert architectural visualizer. Transform this building facade into a photorealistic exterior render.\n\nCRITICAL: Keep EXACTLY the same camera angle and facade geometry.\n\nAdd: photorealistic wall materials, golden-hour sunlight, ${humanVeg}, luxury vehicle, dramatic sky. Style: ${humanEstilo}.`
+                                    : humanAnaliseTipo === 'interior'
+                                    ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nAdd: photorealistic flooring/walls/ceiling, LED recessed spots and strip lights, premium cabinets, ${humanNP} person at 1.70m. Style: ${humanEstilo}.`
+                                    : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials, interior spaces with furniture and people at 1.70m scale. Style: ${humanEstilo}.`
+                                  const fullP = base + `\n\nARCHITECT'S MANDATORY ADDITIONAL DIRECTIVES:\n${humanAdicionalInput}\n\nApply ALL directives precisely. No text overlays. Seed:${Date.now()}`
+                                  fetch('/api/gemini', { method:'POST', headers:{'Content-Type':'application/json'},
+                                    body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:curMime,data:curB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                  }).then(async r => {
+                                    const d = await r.json()
+                                    if (d?.error?.message) { setGeminiRenderError(d.error.message); return }
+                                    const ip = (d?.candidates?.[0]?.content?.parts ?? []).find((x: any) => x.inlineData?.data)
+                                    if (ip) { setGeminiRenderB64(ip.inlineData.data); setGeminiRenderError(null) }
+                                    else setGeminiRenderError('Gemini não retornou imagem.')
+                                  }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
+                                  .finally(() => setGeminiRenderLoading(false))
+                                }}
+                                style={{ flex:1, padding:'11px 16px',
+                                  background: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? '#e5e8f0' : 'linear-gradient(135deg,#534AB7,#7c3aed)',
+                                  color: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? '#aaa' : '#fff',
+                                  border:'none', borderRadius:8, fontSize:12, fontWeight:700,
+                                  cursor: !humanAdicionalInput.trim() || !humanB64 || humanIs3D || humanImgType === 'application/pdf' || humanImgType === 'application/octet-stream'
+                                    ? 'not-allowed' : 'pointer',
+                                  fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                                🎨 Aplicar Aditivos no Render
+                              </button>
+                              {humanAdicionalInput && (
+                                <button onClick={() => setHumanAdicionalInput('')}
+                                  style={{ padding:'11px 14px', background:'#f3f4f6', color:'#5a6282', border:'1px solid #e5e8f0',
+                                    borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  Limpar
+                                </button>
+                              )}
+                            </div>
+                            {/* Suggestions */}
+                            <div>
+                              <div style={{ fontSize:10, fontWeight:700, color:'#8890a0', textTransform:'uppercase' as const,
+                                letterSpacing:'.08em', marginBottom:8 }}>Sugestões rápidas</div>
+                              <div style={{ display:'flex', flexWrap:'wrap' as const, gap:6 }}>
+                                {[
+                                  '🌿 Jardim vertical na parede',
+                                  '💡 Iluminação noturna com LED',
+                                  '🪵 Revestimento madeira natural',
+                                  '🏊 Piscina com borda infinita',
+                                  '🪞 Espelho do piso ao teto',
+                                  '🌊 Mármore carrara no piso',
+                                  '🌳 Vegetação exuberante',
+                                  '🎨 Parede de pedra bruta',
+                                ].map(s => (
+                                  <button key={s} onClick={() => setHumanAdicionalInput(prev => (prev ? prev + '\n' : '') + s.replace(/^[^\s]+ /,''))}
+                                    style={{ padding:'4px 10px', background:'#f8f9fc', border:'1px solid #e5e8f0',
+                                      borderRadius:16, fontSize:10, cursor:'pointer', fontFamily:'inherit', color:'#5a6282',
+                                      whiteSpace:'nowrap' as const }}>
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                           </div>
                         )}
 
