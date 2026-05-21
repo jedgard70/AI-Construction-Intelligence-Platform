@@ -200,19 +200,16 @@ export async function deleteDocChunks(docId: string, tenantId: string): Promise<
   return data?.length ?? 0
 }
 
-// ─── Persistent Memory (usa memory_long_term existente) ───────────────────────
+// ─── Persistent Memory (tabela agent_memory — migration 010) ─────────────────
 
 export async function memorySet(key: string, value: unknown, projectId?: string): Promise<void> {
   const db = getClient()
   if (!db) return
-  await db.from('memory_long_term').upsert({
+  await db.from('agent_memory').upsert({
     key,
-    title: key,
-    content: { value },
-    type: 'agent_context',
-    tags: ['autonomous', 'runtime'],
-    ...(projectId ? { project_id: projectId } : {}),
-    review_status: 'aprovado',
+    value: { v: value },
+    project_id: projectId ?? null,
+    updated_at: new Date().toISOString(),
   }, { onConflict: 'key' })
 }
 
@@ -220,22 +217,22 @@ export async function memoryGet(key: string): Promise<unknown> {
   const db = getClient()
   if (!db) return null
   const { data } = await db
-    .from('memory_long_term')
-    .select('content')
+    .from('agent_memory')
+    .select('value')
     .eq('key', key)
     .single()
-  return (data?.content as Record<string, unknown>)?.value ?? null
+  return (data?.value as Record<string, unknown>)?.v ?? null
 }
 
 export async function memoryGetAll(prefix?: string): Promise<Record<string, unknown>> {
   const db = getClient()
   if (!db) return {}
-  let q = db.from('memory_long_term').select('key, content').eq('type', 'agent_context')
+  let q = db.from('agent_memory').select('key, value')
   if (prefix) q = q.like('key', `${prefix}%`)
   const { data } = await q.limit(200)
   const result: Record<string, unknown> = {}
-  for (const row of data ?? []) {
-    result[row.key] = (row.content as Record<string, unknown>)?.value
+  for (const row of (data ?? []) as Array<{ key: string; value: Record<string, unknown> }>) {
+    result[row.key] = row.value?.v
   }
   return result
 }
