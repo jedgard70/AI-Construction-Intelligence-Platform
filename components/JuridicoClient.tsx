@@ -1286,6 +1286,67 @@ RG:   ________________________________            RG:   ________________________
           {/* ─── ETAPA 3 (EN-US): Project Info ────────────── */}
           {etapa === 3 && idioma === 'en-US' && (
             <>
+              {/* Import from plant analysis — EN-US */}
+              {(() => {
+                let plantData: { fileName: string; analysis: string } | null = null
+                let plantImg: { b64: string; mediaType: string; fileName: string } | null = null
+                try { plantData = JSON.parse(localStorage.getItem('atlas_plant_analysis') || 'null') } catch {}
+                try { plantImg = JSON.parse(localStorage.getItem('atlas_plant_image') || 'null') } catch {}
+                if (!plantData) return null
+                return (
+                  <div style={{ background:'#E6F1FB', border:'1px solid #185FA5', borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
+                    <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+                      {plantImg && (
+                        <img src={`data:${plantImg.mediaType};base64,${plantImg.b64}`} alt="Floor plan"
+                          style={{ width:80, height:60, objectFit:'cover', borderRadius:6, border:'1px solid #b8d4f0', flexShrink:0 }} />
+                      )}
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#0F4C81', marginBottom:4 }}>
+                          📐 Floor Plan Available: <strong>{plantData.fileName}</strong>
+                        </div>
+                        <div style={{ fontSize:11, color:'#5a6282', marginBottom:10 }}>
+                          Import floor plan data into this American contract — areas converted to sq ft, description in English.
+                        </div>
+                        <button style={{ ...s.btnPrimary, background:'#0F4C81', fontSize:12 }}
+                          onClick={async () => {
+                            setAnaliseIA('⏳ Extracting floor plan data for US contract...')
+                            try {
+                              const res = await fetch('/api/chat', {
+                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  model: 'claude-sonnet-4-6', max_tokens: 800,
+                                  system: 'You extract structured data from architectural floor plan analyses. Reply ONLY with valid JSON.',
+                                  messages: [{ role: 'user', content: `From the analysis below, extract ONLY this JSON (no extra text). Convert all areas from m² to sq ft (1 m² = 10.764 sq ft). Write description and scope in English:
+{"description":"...(e.g. New residential construction, 2,450 SF, 3 bed / 2 bath)","constructionType":"new_residential|renovation|addition|commercial","scope":"...(full English scope)","area_sqft":"...","contractValue":""}
+
+Analysis: ${plantData!.analysis.substring(0, 3000)}` }]
+                                })
+                              })
+                              const data = await res.json()
+                              const txt = data?.content?.[0]?.text || ''
+                              const match = txt.match(/\{[\s\S]*\}/)
+                              if (match) {
+                                const d = JSON.parse(match[0])
+                                if (d.description) setUsProject(p => ({...p, description: d.description}))
+                                if (d.constructionType) setUsProject(p => ({...p, constructionType: d.constructionType}))
+                                if (d.scope) setUsProject(p => ({...p, scope: d.scope}))
+                                if (d.contractValue) setUsFinancial(p => ({...p, contractValue: d.contractValue}))
+                                setAnaliseIA('✅ Floor plan data imported successfully!')
+                              } else {
+                                setAnaliseIA('❌ Could not extract data. Check the analysis.')
+                              }
+                            } catch { setAnaliseIA('❌ Error extracting data.') }
+                            setTimeout(() => setAnaliseIA(''), 4000)
+                          }}>
+                          📐 Import Floor Plan → US Contract
+                        </button>
+                        {analiseIA && <div style={{ marginTop:8, fontSize:12, color:'#185FA5', fontWeight:600 }}>{analiseIA}</div>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })()}
+
               <div style={s.card}>
                 <div style={s.sectionTitle}>🏗️ Project Information</div>
                 <div style={s.field}><label style={s.label}>Project Description *</label>
@@ -1436,10 +1497,18 @@ RG:   ________________________________            RG:   ________________________
               {/* Import from plant analysis */}
               {(() => {
                 let plantData: { fileName: string; analysis: string } | null = null
+                let plantImg: { b64: string; mediaType: string } | null = null
                 try { plantData = JSON.parse(localStorage.getItem('atlas_plant_analysis') || 'null') } catch {}
+                try { plantImg = JSON.parse(localStorage.getItem('atlas_plant_image') || 'null') } catch {}
                 if (!plantData) return null
                 return (
                   <div style={{ background:'#EAF3DE', border:'1px solid #97C459', borderRadius:10, padding:'12px 16px', marginBottom:14 }}>
+                    <div style={{ display:'flex', gap:12, alignItems:'flex-start' }}>
+                      {plantImg && (
+                        <img src={`data:${plantImg.mediaType};base64,${plantImg.b64}`} alt="Planta"
+                          style={{ width:80, height:60, objectFit:'cover', borderRadius:6, border:'1px solid #97C459', flexShrink:0 }} />
+                      )}
+                      <div style={{ flex:1 }}>
                     <div style={{ fontSize:12, fontWeight:700, color:'#3B6D11', marginBottom:6 }}>
                       📁 Análise disponível: <strong>{plantData.fileName}</strong>
                     </div>
@@ -1482,6 +1551,8 @@ Análise: ${plantData!.analysis.substring(0, 3000)}` }]
                       📐 Importar dados da planta para este contrato
                     </button>
                     {analiseIA && <div style={{ marginTop:8, fontSize:12, color:'#185FA5', fontWeight:600 }}>{analiseIA}</div>}
+                      </div>
+                    </div>
                   </div>
                 )
               })()}

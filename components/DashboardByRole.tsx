@@ -993,6 +993,14 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                 analysis: text,
                 date: new Date().toISOString()
               }))
+              // Also save the image so Juridico/US-Brand can show it
+              if (b64 && mediaType) {
+                try {
+                  localStorage.setItem('atlas_plant_image', JSON.stringify({
+                    b64, mediaType, fileName: pf.name
+                  }))
+                } catch {}
+              }
             } catch {}
           } catch (err: any) {
             setUnifiedAnalysis(`Erro: ${err.message || 'Falha ao conectar. Verifique ANTHROPIC_API_KEY no Vercel.'}`)
