@@ -289,6 +289,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [geminiRenderB64, setGeminiRenderB64] = useState<string|null>(null)
   const [geminiRenderLoading, setGeminiRenderLoading] = useState(false)
   const [geminiRenderError, setGeminiRenderError] = useState<string|null>(null)
+  const [pollinationsUrl, setPollinationsUrl] = useState<string|null>(null)
   const [geminiPalette, setGeminiPalette] = useState<Array<{name:string,hex:string,usage:string}>>([])
   const [geminiMarketing, setGeminiMarketing] = useState<string>('')
   const [geminiPaletteLoading, setGeminiPaletteLoading] = useState(false)
@@ -1446,6 +1447,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                           setHumanResult({})
                           setGeminiRenderB64(null)
                           setGeminiRenderError(null)
+                          setPollinationsUrl(null)
                           setGeminiPalette([])
                           setGeminiMarketing('')
                           setHumanTab('analise')
@@ -1570,11 +1572,15 @@ Transform the plan by adding:
 - EXTERIOR (outside the building walls): ${loteSnap}, ${vegSnap}, sidewalk with paving, street markings, shadow projection from vegetation
 - Natural overhead sunlight with soft shadows
 - The result must look like a premium architectural bird's-eye render as used in luxury real estate marketing`
+                            const fallbackToPollinationsSnap = (prompt: string) => {
+                              const encoded = encodeURIComponent(prompt.slice(0, 500))
+                              setPollinationsUrl(`https://image.pollinations.ai/prompt/${encoded}?width=1280&height=960&nologo=true&seed=${Date.now()}`)
+                            }
                             fetch('/api/gemini', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                model: 'gemini-2.0-flash-preview-image-generation',
+                                model: 'gemini-2.0-flash-exp',
                                 contents: [{ role: 'user', parts: [
                                   { inlineData: { mimeType: imgTypeSnap, data: b64Snap } },
                                   { text: renderPrompt }
@@ -1584,12 +1590,25 @@ Transform the plan by adding:
                             }).then(async r => {
                               const data = await r.json()
                               const apiErr = data?.error?.message
-                              if (apiErr) { setGeminiRenderError(apiErr); return }
+                              if (apiErr) {
+                                setGeminiRenderError(apiErr)
+                                // Fallback: use Pollinations with DALL-E prompt
+                                if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
+                                return
+                              }
                               const parts = data?.candidates?.[0]?.content?.parts ?? []
                               const imgPart = parts.find((p: any) => p.inlineData?.data)
-                              if (imgPart) { setGeminiRenderB64(imgPart.inlineData.data); setGeminiRenderError(null) }
-                              else setGeminiRenderError('Gemini não retornou imagem. Tente novamente.')
-                            }).catch((e: any) => setGeminiRenderError(e?.message || 'Erro de rede'))
+                              if (imgPart) {
+                                setGeminiRenderB64(imgPart.inlineData.data)
+                                setGeminiRenderError(null)
+                              } else {
+                                setGeminiRenderError('Gemini não retornou imagem — usando Pollinations como alternativa.')
+                                if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
+                              }
+                            }).catch((e: any) => {
+                              setGeminiRenderError(e?.message || 'Erro de rede')
+                              if (dallePrompt) fallbackToPollinationsSnap(dallePrompt)
+                            })
                             .finally(() => setGeminiRenderLoading(false))
                           }
 
@@ -1840,7 +1859,7 @@ Transform by adding: realistic flooring (hardwood, tiles, marble), high-end mode
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({
-                                          model: 'gemini-2.0-flash-preview-image-generation',
+                                          model: 'gemini-2.0-flash-exp',
                                           contents: [{ role: 'user', parts: [
                                             { inlineData: { mimeType: humanImgType, data: humanB64 } },
                                             { text: regenPrompt }
@@ -1916,20 +1935,37 @@ Transform by adding: realistic flooring (hardwood, tiles, marble), high-end mode
                                 <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
                                   {humanLang==='pt-BR'?'Renderização IA':'AI Render'}
                                 </div>
-                                {geminiRenderError ? (
+                                {geminiRenderError && (
                                   <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8,
-                                    padding:'12px 16px', maxWidth:360, textAlign:'left' as const }}>
-                                    <div style={{ fontSize:11, fontWeight:700, color:'#dc2626', marginBottom:6 }}>
-                                      ⚠️ Erro Gemini API
+                                    padding:'10px 14px', maxWidth:400, textAlign:'left' as const }}>
+                                    <div style={{ fontSize:11, fontWeight:700, color:'#dc2626', marginBottom:4 }}>
+                                      ⚠️ Gemini image-to-image indisponível
                                     </div>
-                                    <div style={{ fontSize:11, color:'#7f1d1d', lineHeight:1.6, fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
+                                    <div style={{ fontSize:10, color:'#7f1d1d', lineHeight:1.6, fontFamily:'monospace', whiteSpace:'pre-wrap' as const }}>
                                       {geminiRenderError}
                                     </div>
                                   </div>
-                                ) : (
+                                )}
+                                {pollinationsUrl && (
+                                  <div style={{ width:'100%', maxWidth:480 }}>
+                                    <div style={{ fontSize:11, color:'#8890a0', marginBottom:8, textAlign:'left' as const }}>
+                                      🎨 Render alternativo via Pollinations.ai (a partir do prompt DALL-E gerado):
+                                    </div>
+                                    <img src={pollinationsUrl} alt="Render Pollinations"
+                                      style={{ width:'100%', borderRadius:10, display:'block', border:'1px solid #e5e8f0' }}
+                                      onLoad={() => {}}
+                                      onError={() => setPollinationsUrl(null)} />
+                                    <a href={pollinationsUrl} download="render-pollinations.jpg" target="_blank" rel="noreferrer"
+                                      style={{ display:'inline-block', marginTop:8, padding:'6px 14px', background:'#534AB7',
+                                        color:'#fff', borderRadius:6, fontSize:11, fontWeight:600, textDecoration:'none' }}>
+                                      ⬇️ Baixar
+                                    </a>
+                                  </div>
+                                )}
+                                {!geminiRenderError && !pollinationsUrl && (
                                   <div style={{ fontSize:11, lineHeight:1.6, maxWidth:280 }}>
                                     {humanLang==='pt-BR'
-                                      ?<>O render é gerado automaticamente ao analisar.<br/>Certifique-se que <strong>GEMINI_API_KEY</strong> está no Vercel e que o site foi redesplantado após salvar a chave.</>
+                                      ?<>O render é gerado automaticamente ao analisar.<br/>Certifique-se que <strong>GEMINI_API_KEY</strong> está no Vercel e o site foi redesplantado após salvar a chave.</>
                                       :<>Render is generated automatically after analysis.<br/>Make sure <strong>GEMINI_API_KEY</strong> is saved in Vercel and the site was redeployed after saving.</>}
                                   </div>
                                 )}
