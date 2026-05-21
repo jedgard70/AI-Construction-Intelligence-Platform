@@ -1244,13 +1244,8 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                   {activePf && isPDF && viewerTab==='viewer' && (
                     <>
                       <button onClick={() => {
-                        const iframe = document.querySelector('iframe[title="' + activePf.name + '"]') as HTMLIFrameElement | null
-                        if (iframe?.contentWindow) {
-                          iframe.contentWindow.focus()
-                          iframe.contentWindow.print()
-                        } else {
-                          window.open(activePf.url, '_blank')
-                        }
+                        const pw = window.open(activePf.url, '_blank', 'width=1200,height=900')
+                        if (pw) setTimeout(() => pw.print(), 1500)
                       }} style={{ padding:'5px 10px', border:'1px solid #e5e8f0', borderRadius:6,
                         background:'#fff', fontSize:11, cursor:'pointer', fontFamily:'inherit', color:'#5a6282' }}>
                         🖨️ Imprimir
@@ -1285,7 +1280,7 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                     gridTemplateColumns:'340px 1fr', gap:0, minHeight:0 }}>
                     {/* Left controls */}
                     <div style={{ borderRight:'1px solid #e5e8f0', padding:'20px 18px', display:'flex',
-                      flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff' }}>
+                      flexDirection:'column' as const, gap:14, overflowY:'auto' as const, background:'#fff', minHeight:0 }}>
                       <div style={{ fontSize:12, fontWeight:700, color:'#185FA5', marginBottom:4 }}>
                         🤖 Humanizador de Plantas Baixas
                       </div>
@@ -1484,7 +1479,24 @@ RETORNE EXATAMENTE neste formato markdown:
                           const sections = Object.entries(humanResult).map(([k,v]) =>
                             `<h2 style="color:#534AB7;font-size:15px;margin:20px 0 8px">${k}</h2><pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px">${v}</pre>`
                           ).join('')
-                          w.document.write(`<html><head><title>Humanização — ${humanTipo}</title><style>body{font-family:'Segoe UI',sans-serif;padding:32px;color:#1a1f36;max-width:900px;margin:0 auto}h1{font-size:20px;color:#185FA5;margin-bottom:4px}.sub{font-size:12px;color:#8890a0;margin-bottom:24px}@media print{.no-print{display:none}}</style></head><body><h1>🏛️ Humanização de Planta Baixa</h1><div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>${imgHtml}${sections}<br/><button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button></body></html>`)
+                          w.document.write(`<html><head><title>Humanização — ${humanTipo}</title><style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px 32px;color:#1a1f36;margin:0}
+h1{font-size:20px;color:#185FA5;margin-bottom:4px}
+.sub{font-size:12px;color:#8890a0;margin-bottom:24px}
+h2{font-size:14px;color:#534AB7;margin:20px 0 8px;page-break-after:avoid}
+pre{white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.8;background:#f8f9fc;padding:12px;border-radius:6px;border:1px solid #e5e8f0;margin:0}
+img{width:100%;max-width:100%;height:auto;border-radius:8px;margin-bottom:24px;display:block;page-break-inside:avoid}
+section{page-break-inside:avoid;margin-bottom:16px}
+@page{size:auto;margin:15mm}
+@media print{.no-print{display:none}body{padding:0}img{page-break-inside:avoid;max-height:297mm}}
+</style></head><body>
+<h1>🏛️ Humanização de Planta Baixa</h1>
+<div class="sub">${humanTipo} · Escala 1:${humanEscala} · ${humanNP} pessoas · ${humanEstilo}</div>
+${imgHtml}${sections}
+<br/>
+<button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">🖨️ Imprimir</button>
+</body></html>`)
                           w.document.close()
                         }}
                           style={{ padding:'9px 18px', background:'#534AB7', color:'#fff', border:'none', borderRadius:8,
@@ -1521,6 +1533,71 @@ RETORNE EXATAMENTE neste formato markdown:
                           </div>
                         </div>
                       )}
+
+                      {/* Rendering preview card — shown when DALL-E prompt is ready */}
+                      {!humanLoading && (() => {
+                        const dalleKey = Object.keys(humanResult).find(k => k.includes('DALL'))
+                        const dallePrompt = dalleKey ? humanResult[dalleKey] : ''
+                        if (!dallePrompt) return null
+                        return (
+                          <div style={{ background:'linear-gradient(135deg,#f0f4ff,#faf0ff)', border:'2px solid #534AB7',
+                            borderRadius:12, overflow:'hidden' as const }}>
+                            <div style={{ padding:'10px 16px', background:'#534AB7', display:'flex', alignItems:'center', gap:8 }}>
+                              <span style={{ fontSize:16 }}>🎨</span>
+                              <div style={{ flex:1, fontSize:12, fontWeight:700, color:'#fff' }}>Renderização — Visualização Humanizada</div>
+                              <div style={{ fontSize:10, color:'rgba(255,255,255,.75)' }}>Gerado com IA externa</div>
+                            </div>
+                            {/* Placeholder canvas */}
+                            <div style={{ margin:'14px 16px 0', background:'#1a1a2e', borderRadius:8, minHeight:160,
+                              display:'flex', flexDirection:'column' as const, alignItems:'center', justifyContent:'center',
+                              gap:10, border:'1px dashed #534AB7', position:'relative' as const, overflow:'hidden' as const }}>
+                              {/* Grid overlay */}
+                              <div style={{ position:'absolute' as const, inset:0, opacity:.07,
+                                backgroundImage:'linear-gradient(#534AB7 1px,transparent 1px),linear-gradient(90deg,#534AB7 1px,transparent 1px)',
+                                backgroundSize:'24px 24px' }} />
+                              <div style={{ fontSize:36, zIndex:1 }}>🏛️</div>
+                              <div style={{ fontSize:12, fontWeight:700, color:'#c0b8f0', zIndex:1 }}>Renderização disponível via DALL-E</div>
+                              <div style={{ fontSize:10, color:'#8880c0', textAlign:'center' as const, maxWidth:260, lineHeight:1.5, zIndex:1 }}>
+                                Copie o prompt abaixo e cole no DALL-E (ChatGPT) ou Midjourney para gerar a imagem renderizada
+                              </div>
+                              <div style={{ display:'flex', gap:8, zIndex:1, flexWrap:'wrap' as const, justifyContent:'center' }}>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(dallePrompt)
+                                    const t = document.getElementById('dalle-copy-btn')
+                                    if (t) { t.textContent = '✓ Prompt copiado!'; setTimeout(() => { if(t) t.textContent = '📋 Copiar Prompt DALL-E' }, 2500) }
+                                  }}
+                                  id="dalle-copy-btn"
+                                  style={{ padding:'7px 14px', background:'#534AB7', color:'#fff', border:'none',
+                                    borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  📋 Copiar Prompt DALL-E
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(dallePrompt)
+                                    window.open('https://chatgpt.com', '_blank')
+                                  }}
+                                  style={{ padding:'7px 14px', background:'#3B6D11', color:'#fff', border:'none',
+                                    borderRadius:7, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                  🚀 Abrir ChatGPT / DALL-E
+                                </button>
+                              </div>
+                            </div>
+                            {/* Prompt preview */}
+                            <div style={{ padding:'12px 16px 14px' }}>
+                              <div style={{ fontSize:10, fontWeight:700, color:'#534AB7', marginBottom:6, textTransform:'uppercase' as const, letterSpacing:'.06em' }}>
+                                Prompt gerado para DALL-E / GPT-4o
+                              </div>
+                              <div style={{ background:'#fff', border:'1px solid #d0c8f0', borderRadius:6,
+                                padding:'10px 12px', fontFamily:'monospace', fontSize:10, lineHeight:1.7,
+                                color:'#1a1f36', whiteSpace:'pre-wrap' as const, maxHeight:100, overflowY:'auto' as const }}>
+                                {dallePrompt}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
                       {!humanLoading && Object.keys(humanResult).map(key => {
                         const val = humanResult[key]
                         const isPrompt = key.includes('DALL') || key.includes('MIDJOURNEY') || key.includes('PROMPT')
