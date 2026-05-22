@@ -4,6 +4,8 @@
  * Document_Intelligence_AI — análise jurídica de contratos de construção/investimento.
  */
 
+import { recordApiCall } from '../../../../lib/observability'
+
 const CONTRACT_TYPES = [
   'empreitada','fornecimento','prestacao_servicos','compra_venda_imovel',
   'investimento_imobiliario','locacao','parceria','administracao_obra',
@@ -102,9 +104,21 @@ Projeto: ${body.project_id}
 ${source}`
 }
 
-async function analyzeWithAI(body) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const errors = validate(req.body)
+  if (errors.length > 0) return res.status(400).json({ status: 'validation_error', errors })
+
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!apiKey || apiKey.includes('placeholder')) {
+    return res.status(500).json({ status: 'error', message: 'ANTHROPIC_API_KEY não configurada no servidor.' })
+  }
+
+  const startedAt = new Date()
+  let inputTokens = 0
+  let outputTokens = 0
+  let success = false
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -117,54 +131,92 @@ async function analyzeWithAI(body) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
-        messages: [{ role: 'user', content: buildPrompt(body) }],
+        messages: [{ role: 'user', content: buildPrompt(req.body) }],
       }),
     })
+
     const data = await resp.json()
+
+    inputTokens = data.usage?.input_tokens || 0
+    outputTokens = data.usage?.output_tokens || 0
+
+    if (!resp.ok) {
+      recordApiCall({
+        agentId: 'document-intelligence-ai',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: 0,
+        success: false,
+        metadata: { status: resp.status, error: data?.error?.message },
+      })
+      return res.status(resp.status).json({ status: 'error', message: data?.error?.message || 'Erro na API Claude' })
+    }
+
     const text = data?.content?.[0]?.text || ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return null
+    if (!jsonMatch) {
+      recordApiCall({
+        agentId: 'document-intelligence-ai',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+        success: false,
+        metadata: { error: 'JSON parse failed', raw: text.slice(0, 200) },
+      })
+      return res.status(500).json({ status: 'error', message: 'Resposta inválida do modelo — tente novamente' })
+    }
+
+    const analysis = JSON.parse(jsonMatch[0])
+    success = true
+
+    recordApiCall({
+      agentId: 'document-intelligence-ai',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+      success: true,
+      metadata: {
+        contract_type: req.body.contract_type,
+        score: analysis.score_risco_geral,
+        recomendacao: analysis.recomendacao_final,
+        duration_ms: Date.now() - startedAt.getTime(),
+      },
+    })
+
+    return res.status(200).json({
+      status: 'success',
+      agent: 'Document_Intelligence_AI',
+      contract_id: req.body.contract_id,
+      project_id: req.body.project_id,
+      contract_type: req.body.contract_type,
+      analyzed_at: new Date().toISOString(),
+      analysis,
+    })
+  } catch (err) {
+    recordApiCall({
+      agentId: 'document-intelligence-ai',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: 0,
+      success: false,
+      metadata: { error: err.message },
+    })
+    return res.status(500).json({ status: 'error', message: err.message || 'Erro interno do servidor' })
   }
-}
-
-function fallbackAnalysis(body) {
-  return {
-    resumo_executivo: `Contrato do tipo ${body.contract_type} recebido. ANTHROPIC_API_KEY não configurada — análise IA indisponível.`,
-    partes_identificadas: { contratante: null, contratado: null, intervenientes: [] },
-    clausulas_criticas: [],
-    alertas_vencimento: [],
-    inconsistencias: ['Análise automática indisponível — configure ANTHROPIC_API_KEY'],
-    riscos_juridicos: [],
-    checklist_conformidade: {
-      tem_objeto_definido: false, tem_prazo_definido: false, tem_valor_definido: false,
-      tem_clausula_rescisao: false, tem_clausula_reajuste: false, tem_clausula_garantia: false,
-      tem_foro_definido: false, tem_assinaturas_previstas: false,
-      menciona_art_rrt: false, menciona_nr18: false, menciona_seguro_obra: false, menciona_subcontratacao: false,
-    },
-    pontos_de_atencao: [],
-    score_risco_geral: 0,
-    recomendacao_final: 'revisar_clausulas',
-  }
-}
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-
-  const errors = validate(req.body)
-  if (errors.length > 0) return res.status(400).json({ status: 'validation_error', errors })
-
-  const analysis = (await analyzeWithAI(req.body)) ?? fallbackAnalysis(req.body)
-
-  return res.status(200).json({
-    status: 'success',
-    agent: 'Document_Intelligence_AI',
-    contract_id: req.body.contract_id,
-    project_id: req.body.project_id,
-    contract_type: req.body.contract_type,
-    analyzed_at: new Date().toISOString(),
-    analysis,
-  })
 }

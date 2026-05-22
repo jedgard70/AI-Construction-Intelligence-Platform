@@ -3,14 +3,9 @@
  *
  * Gera relatório automático de due diligence jurídica e financeira
  * para investidores em projetos de construção/imobiliário.
- *
- * Analisa:
- *   - situação jurídica da empresa e do projeto
- *   - regularidade fiscal e trabalhista
- *   - riscos contratuais e passivos ocultos
- *   - conformidade documental
- *   - recomendação de investimento
  */
+
+import { recordApiCall } from '../../../../lib/observability'
 
 const PROJECT_STAGES = [
   'pre_lancamento',
@@ -38,7 +33,7 @@ function buildPrompt(body) {
 
 Gere um relatório completo de due diligence para um investidor considerando os dados abaixo.
 
-Retorne JSON com estrutura exata:
+Retorne JSON com estrutura exata (sem texto fora do JSON):
 {
   "headline": "string — título executivo do relatório",
   "data_relatorio": "string",
@@ -92,9 +87,24 @@ DADOS DO PROJETO:
 ${JSON.stringify(body.project_data, null, 2)}`
 }
 
-async function generateWithAI(body) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const errors = validate(req.body)
+  if (errors.length > 0) {
+    return res.status(400).json({ status: 'validation_error', errors })
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!apiKey || apiKey.includes('placeholder')) {
+    return res.status(500).json({ status: 'error', message: 'ANTHROPIC_API_KEY não configurada no servidor.' })
+  }
+
+  const startedAt = new Date()
+  let inputTokens = 0
+  let outputTokens = 0
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -107,73 +117,92 @@ async function generateWithAI(body) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3000,
-        messages: [{ role: 'user', content: buildPrompt(body) }],
+        messages: [{ role: 'user', content: buildPrompt(req.body) }],
       }),
     })
+
     const data = await resp.json()
+    inputTokens = data.usage?.input_tokens || 0
+    outputTokens = data.usage?.output_tokens || 0
+
+    if (!resp.ok) {
+      recordApiCall({
+        agentId: 'investment-analyst-ai',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: 0,
+        success: false,
+        metadata: { status: resp.status, error: data?.error?.message },
+      })
+      return res.status(resp.status).json({ status: 'error', message: data?.error?.message || 'Erro na API Claude' })
+    }
+
     const text = data?.content?.[0]?.text || ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return null
+    if (!jsonMatch) {
+      recordApiCall({
+        agentId: 'investment-analyst-ai',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+        success: false,
+        metadata: { error: 'JSON parse failed' },
+      })
+      return res.status(500).json({ status: 'error', message: 'Resposta inválida do modelo — tente novamente' })
+    }
+
+    const report = JSON.parse(jsonMatch[0])
+
+    recordApiCall({
+      agentId: 'investment-analyst-ai',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+      success: true,
+      metadata: {
+        project_stage: req.body.project_stage,
+        score: report.score_due_diligence,
+        rating: report.rating,
+        recomendacao: report.recomendacao,
+        duration_ms: Date.now() - startedAt.getTime(),
+      },
+    })
+
+    return res.status(200).json({
+      status: 'success',
+      agent: 'Investment_Analyst_AI',
+      report_id: `DD-${Date.now()}`,
+      project_id: req.body.project_id,
+      investor_id: req.body.investor_id,
+      project_stage: req.body.project_stage,
+      generated_at: new Date().toISOString(),
+      report,
+    })
+  } catch (err) {
+    recordApiCall({
+      agentId: 'investment-analyst-ai',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: 0,
+      success: false,
+      metadata: { error: err.message },
+    })
+    return res.status(500).json({ status: 'error', message: err.message || 'Erro interno do servidor' })
   }
-}
-
-function fallbackReport(body) {
-  return {
-    headline: `Due Diligence — ${body.project_id} (análise IA indisponível)`,
-    data_relatorio: new Date().toISOString(),
-    situacao_juridica: {
-      status: 'pendente',
-      certidoes: [],
-      litigios_identificados: [],
-      passivos_ocultos_estimados: 'indisponível',
-    },
-    regularidade_fiscal_trabalhista: {
-      status: 'pendente',
-      pontos_atencao: ['Configure ANTHROPIC_API_KEY para análise automática'],
-    },
-    analise_documental: {
-      documentos_ok: [],
-      documentos_pendentes: [],
-      documentos_criticos_ausentes: ['Análise indisponível'],
-    },
-    riscos_identificados: [],
-    indicadores_financeiros: {
-      vgv_estimado: body.project_data?.vgv ?? 'não informado',
-      roi_projetado: body.project_data?.expected_roi ? `${body.project_data.expected_roi}%` : 'não informado',
-      cap_rate: 'não calculado',
-      payback_estimado: 'não calculado',
-    },
-    score_due_diligence: 0,
-    rating: 'C',
-    recomendacao: 'aguardar_regularizacao',
-    condicoes_para_investimento: ['Configure ANTHROPIC_API_KEY para gerar análise completa'],
-    proximos_passos: ['Configurar variáveis de ambiente', 'Reprocessar due diligence'],
-  }
-}
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  const errors = validate(req.body)
-  if (errors.length > 0) {
-    return res.status(400).json({ status: 'validation_error', errors })
-  }
-
-  const report = (await generateWithAI(req.body)) ?? fallbackReport(req.body)
-
-  return res.status(200).json({
-    status: 'success',
-    agent: 'Investment_Analyst_AI',
-    report_id: `DD-${Date.now()}`,
-    project_id: req.body.project_id,
-    investor_id: req.body.investor_id,
-    project_stage: req.body.project_stage,
-    generated_at: new Date().toISOString(),
-    report,
-  })
 }
