@@ -23,18 +23,33 @@ export default function LoginClient() {
     e.preventDefault()
     setLoading(true)
     setError('')
-    // Mark demo session so dashboard skips Supabase auth check
-    try { localStorage.setItem('atlas_authed', '1') } catch {}
     try {
-      if (supabase) {
-        if (tab === 'login') {
-          await supabase.auth.signInWithPassword({ email, password }).catch(() => {})
-        } else {
-          await supabase.auth.signUp({ email, password }).catch(() => {})
+      if (tab === 'login') {
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+        if (authError) {
+          setError(authError.message === 'Invalid login credentials'
+            ? 'E-mail ou senha incorretos.'
+            : authError.message)
+          setLoading(false)
+          return
         }
+      } else {
+        const { error: authError } = await supabase.auth.signUp({ email, password })
+        if (authError) {
+          setError(authError.message)
+          setLoading(false)
+          return
+        }
+        setError('')
+        alert('Conta criada! Verifique seu e-mail para confirmar o cadastro.')
+        setLoading(false)
+        return
       }
-    } catch {}
-    window.location.href = '/dashboard'
+      window.location.href = '/dashboard'
+    } catch (err: unknown) {
+      setError('Erro de conexão. Tente novamente.')
+      setLoading(false)
+    }
   }
 
   return (
@@ -170,13 +185,6 @@ export default function LoginClient() {
               }
             </button>
           </form>
-
-          {/* Demo mode notice */}
-          {!supabase && (
-            <div className="acip-demo-note">
-              <strong>⚡ Modo Demo</strong> — clique em Entrar para acessar sem autenticação real.
-            </div>
-          )}
 
           <p className="acip-access-note">
             Acesso restrito a usuários autorizados
@@ -487,14 +495,4 @@ const CSS = `
 
 .acip-access-note {
   margin-top: 1.25rem;
-  text-align: center;
-  font-size: 11px;
-  color: #9a9890;
-}
-
-@media (max-width: 640px) {
-  .acip-wrapper { padding: 1rem; }
-  .acip-card { grid-template-columns: 1fr; }
-  .acip-brand { display: none; }
-}
-`
+  text-

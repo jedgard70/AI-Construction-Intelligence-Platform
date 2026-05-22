@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import PrintShareModal from '../components/PrintShareModal'
+import { getSupabase } from '../lib/supabase'
 
 // ─── Types ──────────────────────────────────────────────────────
 type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential' | 'coordination' | 'quantities' | 'feasibility'
@@ -322,7 +323,12 @@ export default function BimOpsPage() {
   const [projectCtx, setProjectCtx] = useState<{id:string;name:string;code:string}|null>(null)
   const [printData, setPrintData] = useState<{title:string;content:string}|null>(null)
 
-  // Read tab and projectId from URL on mount
+  // Live data state — initialized from demo constants, updated by Supabase
+  const [clashData, setClashData] = useState<ClashItem[]>(CLASH_DATA)
+  const [permitData, setPermitData] = useState<typeof PERMIT_CHECKLIST>(PERMIT_CHECKLIST)
+  const [workflowData, setWorkflowData] = useState<typeof WORKFLOW_TASKS>(WORKFLOW_TASKS)
+
+  // Read tab and projectId from URL on mount + fetch Supabase data
   useEffect(() => {
     if (!router.isReady) return
     if (router.query.tab) setActiveModule(router.query.tab as Module)
@@ -334,6 +340,25 @@ export default function BimOpsPage() {
         if (found) setProjectCtx({ id: found.id, name: found.name, code: found.code })
       } catch {}
     }
+    // Fetch real data from Supabase (falls back to demo data if empty)
+    async function fetchBimData() {
+      const sb = getSupabase()
+      if (!sb) return
+      const projectFilter = pid ? { project_id: pid } : {}
+      const [
+        { data: clashes },
+        { data: permits },
+        { data: tasks },
+      ] = await Promise.all([
+        sb.from('clash_items').select('*').order('created_at', { ascending: false }),
+        sb.from('permit_checklist').select('*').order('id', { ascending: true }),
+        sb.from('workflow_tasks').select('*').order('created_at', { ascending: false }),
+      ])
+      if (clashes && clashes.length > 0) setClashData(clashes as ClashItem[])
+      if (permits && permits.length > 0) setPermitData(permits as typeof PERMIT_CHECKLIST)
+      if (tasks && tasks.length > 0) setWorkflowData(tasks as typeof WORKFLOW_TASKS)
+    }
+    fetchBimData()
   }, [router.isReady, router.query.tab, router.query.projectId])
   const [analyzing, setAnalyzing] = useState(false)
   const [aiResult, setAiResult] = useState('')
@@ -354,10 +379,10 @@ export default function BimOpsPage() {
   const [qtyVisionLoading, setQtyVisionLoading] = useState(false)
   const qtyFileRef = useRef<HTMLInputElement>(null)
 
-  const criticalClashes = CLASH_DATA.filter(c => c.severity === 'Critical').length
-  const openClashes = CLASH_DATA.filter(c => c.status === 'Open').length
-  const permitDone = PERMIT_CHECKLIST.filter(p => p.status === 'Complete').length
-  const overdueTask = WORKFLOW_TASKS.filter(t => t.status === 'Overdue').length
+  const criticalClashes = clashData.filter(c => c.severity === 'Critical').length
+  const openClashes = clashData.filter(c => c.status === 'Open').length
+  const permitDone = permitData.filter(p => p.status === 'Complete').length
+  const overdueTask = workflowData.filter(t => t.status === 'Overdue').length
 
   async function runAIAnalysis(context: string, prompt: string) {
     setAnalyzing(true); setAiResult(''); setAiContext(context)
@@ -459,10 +484,10 @@ Provide analysis for a US commercial project: 1) Model Health Score; 2) Clash De
           model:'claude-sonnet-4-6', max_tokens:1200,
           system:`You are BIMForge AI — US permit documentation specialist. Generate precise, professional permit submission reports citing IBC, ADA, NFPA, and local codes.`,
           messages:[{ role:'user', content:`Generate an AI Permit Readiness Report for a commercial project:
-- ${permitDone}/${PERMIT_CHECKLIST.length} checklist items complete
-- ${PERMIT_CHECKLIST.filter(p=>p.status==='In Review').length} items in review
-- ${PERMIT_CHECKLIST.filter(p=>p.status==='Pending').length} items pending
-- ${PERMIT_CHECKLIST.filter(p=>p.status==='Not Started').length} items not started
+- ${permitDone}/${permitData.length} checklist items complete
+- ${permitData.filter(p=>p.status==='In Review').length} items in review
+- ${permitData.filter(p=>p.status==='Pending').length} items pending
+- ${permitData.filter(p=>p.status==='Not Started').length} items not started
 
 Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items blocking submission; 3) Estimated review timeline by department; 4) Common AHJ (Authority Having Jurisdiction) comments to anticipate; 5) Recommended submission strategy.` }]
         })
@@ -700,7 +725,7 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
                   {[
                     { v:String(openClashes), l:'Open Clashes', c:'#A32D2D', icon:'⚡' },
                     { v:`${criticalClashes}`, l:'Critical Issues', c:'#BA7517', icon:'🔴' },
-                    { v:`${permitDone}/${PERMIT_CHECKLIST.length}`, l:'Permit Items Done', c:'#3B6D11', icon:'📋' },
+                    { v:`${permitDone}/${permitData.length}`, l:'Permit Items Done', c:'#3B6D11', icon:'📋' },
                     { v:`${overdueTask}`, l:'Overdue Tasks', c:'#A32D2D', icon:'⏰' },
                   ].map(k => (
                     <div key={k.l} style={s.kpi}>
@@ -743,7 +768,7 @@ Provide: 1) Overall permit readiness score (0-100%); 2) Critical path items bloc
                       <button style={s.btn} onClick={() => runAIAnalysis('dashboard',
                         `Perform a comprehensive AI project intelligence analysis for a US commercial construction project in San Francisco, CA:
 - ${openClashes} open BIM clashes (${criticalClashes} critical)
-- Permit progress: ${permitDone}/${PERMIT_CHECKLIST.length} items complete
+- Permit progress: ${permitDone}/${permitData.length} items complete
 - ${overdueTask} overdue workflow tasks
 - Budget: $12.4M | Schedule: 18 months | Phase: Construction Documents (50% CD)
 
@@ -867,10 +892,10 @@ Provide executive-level analysis with: 1) Overall Project Health Score (0-100); 
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                   <div>
                     <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3', marginBottom:2 }}>⚡ Clash Detection</div>
-                    <div style={{ fontSize:12, color:'#8b93a7' }}>{CLASH_DATA.length} clashes detected · AI-powered resolution guidance</div>
+                    <div style={{ fontSize:12, color:'#8b93a7' }}>{clashData.length} clashes detected · AI-powered resolution guidance</div>
                   </div>
                   <button style={s.btn} onClick={() => runAIAnalysis('clash',
-                    `Analyze these BIM clashes for a US commercial project and provide: 1) Priority resolution matrix ranked by impact and cost-to-fix; 2) Specific RFI language for each critical clash; 3) Coordination meeting agenda; 4) Estimated resolution cost per clash; 5) BCF issue markup recommendations. Clashes: ${CLASH_DATA.map(c=>`${c.id}: ${c.severity} — ${c.description} at ${c.location}`).join('; ')}`)}>
+                    `Analyze these BIM clashes for a US commercial project and provide: 1) Priority resolution matrix ranked by impact and cost-to-fix; 2) Specific RFI language for each critical clash; 3) Coordination meeting agenda; 4) Estimated resolution cost per clash; 5) BCF issue markup recommendations. Clashes: ${clashData.map(c=>`${c.id}: ${c.severity} — ${c.description} at ${c.location}`).join('; ')}`)}>
                     🤖 AI Clash Analysis
                   </button>
                 </div>
@@ -953,7 +978,7 @@ Items requiring immediate RFI or design team coordination.` }
                 {/* Clash summary */}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:14 }}>
                   {(['Critical','Major','Minor'] as const).map(sev => {
-                    const cnt = CLASH_DATA.filter(c=>c.severity===sev).length
+                    const cnt = clashData.filter(c=>c.severity===sev).length
                     return (
                       <div key={sev} style={{ ...s.kpi, borderLeft:`3px solid ${SEV_COLOR[sev]}` }}>
                         <div style={{ ...s.kpiV, color:SEV_COLOR[sev] }}>{cnt}</div>
@@ -967,7 +992,7 @@ Items requiring immediate RFI or design team coordination.` }
                 <div style={s.card}>
                   <div style={s.secTit}>Clash Report</div>
                   <div style={{ display:'flex', flexDirection:'column' as const, gap:8 }}>
-                    {CLASH_DATA.map(cl => (
+                    {clashData.map(cl => (
                       <div key={cl.id} style={{ background:'#0d1117', border:`1px solid ${SEV_COLOR[cl.severity]}33`,
                         borderLeft:`3px solid ${SEV_COLOR[cl.severity]}`, borderRadius:8, padding:'12px 14px' }}>
                         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:6 }}>
@@ -1024,18 +1049,18 @@ Items requiring immediate RFI or design team coordination.` }
                 <div style={s.card}>
                   <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8, fontSize:12, color:'#e6edf3' }}>
                     <span style={{ fontWeight:600 }}>Overall Permit Readiness</span>
-                    <span style={{ color:'#3B6D11', fontWeight:700 }}>{Math.round((permitDone/PERMIT_CHECKLIST.length)*100)}%</span>
+                    <span style={{ color:'#3B6D11', fontWeight:700 }}>{Math.round((permitDone/permitData.length)*100)}%</span>
                   </div>
                   <div style={{ height:8, background:'#30363d', borderRadius:4, overflow:'hidden', marginBottom:14 }}>
-                    <div style={{ width:`${(permitDone/PERMIT_CHECKLIST.length)*100}%`, height:'100%',
+                    <div style={{ width:`${(permitDone/permitData.length)*100}%`, height:'100%',
                       background:'linear-gradient(90deg,#3B6D11,#97C459)', borderRadius:4, transition:'width .5s' }} />
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
                     {[
                       { l:'Complete', v:permitDone, c:'#3B6D11' },
-                      { l:'In Review', v:PERMIT_CHECKLIST.filter(p=>p.status==='In Review').length, c:'#185FA5' },
-                      { l:'Pending', v:PERMIT_CHECKLIST.filter(p=>p.status==='Pending').length, c:'#BA7517' },
-                      { l:'Not Started', v:PERMIT_CHECKLIST.filter(p=>p.status==='Not Started').length, c:'#8890a0' },
+                      { l:'In Review', v:permitData.filter(p=>p.status==='In Review').length, c:'#185FA5' },
+                      { l:'Pending', v:permitData.filter(p=>p.status==='Pending').length, c:'#BA7517' },
+                      { l:'Not Started', v:permitData.filter(p=>p.status==='Not Started').length, c:'#8890a0' },
                     ].map(k => (
                       <div key={k.l} style={{ textAlign:'center' as const, padding:'8px',
                         background:'#0d1117', borderRadius:8, border:'1px solid #30363d' }}>
@@ -1050,7 +1075,7 @@ Items requiring immediate RFI or design team coordination.` }
                 <div style={s.card}>
                   <div style={s.secTit}>Permit Submittal Checklist</div>
                   <div style={{ display:'flex', flexDirection:'column' as const, gap:6 }}>
-                    {PERMIT_CHECKLIST.map(p => (
+                    {permitData.map(p => (
                       <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12,
                         padding:'10px 12px', background:'#0d1117', borderRadius:8, border:'1px solid #30363d' }}>
                         <div style={{ width:20, height:20, borderRadius:'50%', flexShrink:0,
@@ -1435,17 +1460,17 @@ Items requiring immediate RFI or design team coordination.` }
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                   <div style={{ fontSize:20, fontWeight:700, color:'#e6edf3' }}>🔄 AI Workflow Automation</div>
                   <button style={s.btn} onClick={() => runAIAnalysis('workflow',
-                    `Analyze this construction workflow and provide AI automation recommendations: Tasks: ${WORKFLOW_TASKS.map(t=>`${t.id}: ${t.title} (${t.status}, priority: ${t.priority}, due: ${t.due}, assignee: ${t.assignee})`).join('; ')}. Provide: 1) Critical path analysis; 2) Resource reallocation recommendations; 3) Automated notification triggers; 4) Risk-adjusted schedule; 5) 3-day sprint plan to clear backlog. Reference industry standard BIM execution plan practices.`)}>
+                    `Analyze this construction workflow and provide AI automation recommendations: Tasks: ${workflowData.map(t=>`${t.id}: ${t.title} (${t.status}, priority: ${t.priority}, due: ${t.due}, assignee: ${t.assignee})`).join('; ')}. Provide: 1) Critical path analysis; 2) Resource reallocation recommendations; 3) Automated notification triggers; 4) Risk-adjusted schedule; 5) 3-day sprint plan to clear backlog. Reference industry standard BIM execution plan practices.`)}>
                     🤖 AI Workflow Optimizer
                   </button>
                 </div>
 
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:14 }}>
                   {[
-                    { l:'Total Tasks', v:WORKFLOW_TASKS.length, c:'#58a6ff' },
-                    { l:'In Progress', v:WORKFLOW_TASKS.filter(t=>t.status==='In Progress').length, c:'#185FA5' },
+                    { l:'Total Tasks', v:workflowData.length, c:'#58a6ff' },
+                    { l:'In Progress', v:workflowData.filter(t=>t.status==='In Progress').length, c:'#185FA5' },
                     { l:'Overdue', v:overdueTask, c:'#A32D2D' },
-                    { l:'Under Review', v:WORKFLOW_TASKS.filter(t=>t.status==='Under Review').length, c:'#BA7517' },
+                    { l:'Under Review', v:workflowData.filter(t=>t.status==='Under Review').length, c:'#BA7517' },
                   ].map(k => (
                     <div key={k.l} style={s.kpi}>
                       <div style={{ ...s.kpiV, color:k.c }}>{k.v}</div>
@@ -1457,7 +1482,7 @@ Items requiring immediate RFI or design team coordination.` }
                 <div style={s.card}>
                   <div style={s.secTit}>Active Tasks</div>
                   <div style={{ display:'flex', flexDirection:'column' as const, gap:8 }}>
-                    {WORKFLOW_TASKS.map(t => (
+                    {workflowData.map(t => (
                       <div key={t.id} style={{ display:'grid', gridTemplateColumns:'1fr auto auto auto',
                         alignItems:'center', gap:12, padding:'12px 14px', background:'#0d1117',
                         borderRadius:8, border:`1px solid ${STATUS_COLOR[t.status]||'#30363d'}33`,
@@ -2122,31 +2147,4 @@ Top 3 opportunities to reduce cost without compromising quality.` }
                       }}>🤖 {btn.label}</button>
                     ))}
                   </div>
-                  {feasAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ AI generating feasibility report...</div>}
-                  {feasAI && !feasAILoading && (
-                    <>
-                      <div style={s.pre}>{feasAI}</div>
-                      <button onClick={() => setPrintData({ title:'AI Feasibility Analysis Report', content: feasAI })}
-                        style={{ marginTop:8, padding:'5px 12px', background:'#185FA520', border:'1px solid #185FA540', borderRadius:7, color:'#58a6ff', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                        🖨️ Imprimir / Compartilhar
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
-          </div>
-        </div>
-      </div>
-      {printData && (
-        <PrintShareModal
-          title={printData.title}
-          onClose={() => setPrintData(null)}
-          buildHtml={() => `<h2>Report</h2><div class="text-area">${printData.content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>')}</div>`}
-          buildText={() => printData.content}
-        />
-      )}
-    </>
-  )
-}
+                  {feasAILoading && <div style={{ textAlign:'cen
