@@ -171,6 +171,7 @@ export default function PlantasPage() {
   const [renderImg, setRenderImg] = useState(null)
   const [rendering, setRendering] = useState(false)
   const [renderError, setRenderError] = useState(null)
+  const [renderErrorHint, setRenderErrorHint] = useState(null)
   const [camera, setCamera] = useState('bird')
   const [light, setLight] = useState('golden')
   const [variation, setVariation] = useState('lush')
@@ -290,6 +291,7 @@ export default function PlantasPage() {
     if (rendering) return
     setRendering(true)
     setRenderError(null)
+    setRenderErrorHint(null)
     const camEn = CAMERA_OPTS.find(c => c.id === camera)?.en || ''
     const litEn = LIGHT_OPTS.find(l => l.id === light)?.en || ''
     const varEn = VARIATION_OPTS.find(v => v.id === variation)?.en || ''
@@ -304,7 +306,8 @@ export default function PlantasPage() {
       if (data.imageData) {
         setRenderImg(`data:${data.mimeType || 'image/jpeg'};base64,${data.imageData}`)
       } else {
-        setRenderError(data.hint || data.error || 'API de render não configurada. Configure GEMINI_API_KEY no .env.local.')
+        setRenderError(data.error || 'Não foi possível gerar o render.')
+        setRenderErrorHint(data.hint || null)
       }
     } catch {
       setRenderError('Erro de conexão. Verifique GEMINI_API_KEY no .env.local.')
@@ -695,10 +698,15 @@ export default function PlantasPage() {
                           : 'Configure os parâmetros na aba Análise e gere o render.'}
                       </div>
                       {renderError && (
-                        <div style={{ background: '#fff8f0', border: '1px solid #fbd38d', borderRadius: 10, padding: '12px 20px', maxWidth: 520, margin: '0 auto 20px', fontSize: 12, color: '#744210', textAlign: 'left' }}>
-                          <strong>Para gerar renders reais:</strong><br />
-                          Configure <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>GEMINI_API_KEY</code> no arquivo <code style={{ background: '#fef3c7', padding: '1px 5px', borderRadius: 3 }}>.env.local</code><br />
-                          O prompt DALL-E gerado pode ser usado diretamente em DALL-E 3, Midjourney ou Stable Diffusion.
+                        <div style={{ background: '#fff8f0', border: '1px solid #fbd38d', borderRadius: 10, padding: '16px 20px', maxWidth: 540, margin: '0 auto 20px', fontSize: 13, color: '#744210', textAlign: 'left', lineHeight: 1.7 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 8 }}>⚠️ {renderError}</div>
+                          {renderErrorHint && <div style={{ fontSize: 12, color: '#92400e', marginBottom: 12 }}>{renderErrorHint}</div>}
+                          <div style={{ fontSize: 12, background: '#fef3c7', borderRadius: 8, padding: '10px 12px', color: '#78350f' }}>
+                            <strong>Alternativa gratuita:</strong> Copie o prompt DALL-E na aba <strong>Análise</strong> e cole em:<br />
+                            • <strong>DALL-E 3</strong> (chat.openai.com)<br />
+                            • <strong>Midjourney</strong> (midjourney.com)<br />
+                            • <strong>Ideogram</strong> (ideogram.ai) — gratuito
+                          </div>
                         </div>
                       )}
                       <button onClick={handleRender} style={{ padding: '12px 32px', background: 'linear-gradient(135deg, #38a169, #2f855a)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>
