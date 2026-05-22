@@ -1,10 +1,8 @@
 /**
- * GET /api/metrics        — JSON metrics snapshot (agent_latency, token_usage, etc.)
+ * GET /api/metrics              — JSON snapshot (tokens, custo, latência, traces)
  * GET /api/metrics?format=prometheus — Prometheus text exposition
- *
- * Tracks: agent_latency, token_usage, hallucination_rate, task_success_rate,
- *         cost_per_workflow, decision_accuracy.
- * OpenTelemetry-compatible span metadata. LangSmith trace export via ?format=langsmith.
+ * GET /api/metrics?format=langsmith  — LangSmith-compatible run list
+ * GET /api/metrics?traceId=xxx  — trace individual
  */
 
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -15,7 +13,6 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const { format, traceId, limit } = req.query
 
-  // Single trace
   if (traceId) {
     const trace = getTrace(traceId as string)
     if (!trace) return res.status(404).json({ error: 'Trace not found' })
@@ -34,7 +31,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const runs = traces.flatMap(t =>
       t.spans.map(s => ({
         id: s.spanId,
-        parent_run_id: s.parentSpanId,
+        parent_run_id: s.parentSpanId ?? t.traceId,
         name: `${s.agentId} (${s.taskType})`,
         run_type: 'llm',
         start_time: s.startedAt,
@@ -55,5 +52,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json({
     metrics: snapshot,
     recentTraces: getRecentTraces(Number(limit ?? 10)),
+    remoteFlush: snapshot.remoteFlush,
+    _links: {
+      prometheus: '/api/metrics?format=prometheus',
+      langsmith:  '/api/metrics?format=langsmith',
+    },
   })
 }

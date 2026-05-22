@@ -4,9 +4,9 @@
  * Valida um projeto/documento contra os padrões de compliance da plataforma:
  *   ISO_19650, ISO_9001, ISO_14001, ISO_45001, LGPD, NR-18, NR-35, NR-10,
  *   NR-06, NR-33, ABNT_NBR_15575, SOC_2_Type_II
- *
- * Retorna lista de conformidades, não-conformidades e plano de ação.
  */
+
+import { recordApiCall } from '../../../../lib/observability'
 
 const COMPLIANCE_STANDARDS = {
   ISO_19650: { label: 'ISO 19650 — Gestão de Informação BIM', domain: 'bim' },
@@ -52,7 +52,7 @@ function buildPrompt(body, standardsToCheck) {
 
 Para cada padrão, determine se está CONFORME, NÃO_CONFORME ou PARCIALMENTE_CONFORME com base nas informações fornecidas.
 
-Retorne JSON com estrutura exata:
+Retorne JSON com estrutura exata (sem texto fora do JSON):
 {
   "resultado_geral": "conforme|parcialmente_conforme|nao_conforme",
   "score_compliance": 0,
@@ -81,9 +81,25 @@ ESCOPO DO PROJETO:
 ${JSON.stringify(body.scope, null, 2)}`
 }
 
-async function checkWithAI(body, standardsToCheck) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const errors = validate(req.body)
+  if (errors.length > 0) {
+    return res.status(400).json({ status: 'validation_error', errors })
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) return null
+  if (!apiKey || apiKey.includes('placeholder')) {
+    return res.status(500).json({ status: 'error', message: 'ANTHROPIC_API_KEY não configurada no servidor.' })
+  }
+
+  const standardsToCheck = req.body.standards ?? ALL_STANDARDS
+  const startedAt = new Date()
+  let inputTokens = 0
+  let outputTokens = 0
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -96,57 +112,89 @@ async function checkWithAI(body, standardsToCheck) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 3000,
-        messages: [{ role: 'user', content: buildPrompt(body, standardsToCheck) }],
+        messages: [{ role: 'user', content: buildPrompt(req.body, standardsToCheck) }],
       }),
     })
+
     const data = await resp.json()
+    inputTokens = data.usage?.input_tokens || 0
+    outputTokens = data.usage?.output_tokens || 0
+
+    if (!resp.ok) {
+      recordApiCall({
+        agentId: 'compliance-agent',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: 0,
+        success: false,
+        metadata: { status: resp.status, error: data?.error?.message },
+      })
+      return res.status(resp.status).json({ status: 'error', message: data?.error?.message || 'Erro na API Claude' })
+    }
+
     const text = data?.content?.[0]?.text || ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return null
-    return JSON.parse(jsonMatch[0])
-  } catch {
-    return null
+    if (!jsonMatch) {
+      recordApiCall({
+        agentId: 'compliance-agent',
+        taskType: 'legal_analysis',
+        model: 'claude-sonnet-4-6',
+        provider: 'anthropic',
+        startedAt,
+        inputTokens,
+        outputTokens,
+        costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+        success: false,
+        metadata: { error: 'JSON parse failed' },
+      })
+      return res.status(500).json({ status: 'error', message: 'Resposta inválida do modelo — tente novamente' })
+    }
+
+    const result = JSON.parse(jsonMatch[0])
+
+    recordApiCall({
+      agentId: 'compliance-agent',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: (inputTokens * 3 + outputTokens * 15) / 1_000_000,
+      success: true,
+      metadata: {
+        standards_count: standardsToCheck.length,
+        score: result.score_compliance,
+        resultado_geral: result.resultado_geral,
+        duration_ms: Date.now() - startedAt.getTime(),
+      },
+    })
+
+    return res.status(200).json({
+      status: 'success',
+      agent: 'Compliance_Agent',
+      project_id: req.body.project_id,
+      standards_checked: standardsToCheck,
+      checked_at: new Date().toISOString(),
+      result,
+    })
+  } catch (err) {
+    recordApiCall({
+      agentId: 'compliance-agent',
+      taskType: 'legal_analysis',
+      model: 'claude-sonnet-4-6',
+      provider: 'anthropic',
+      startedAt,
+      inputTokens,
+      outputTokens,
+      costUSD: 0,
+      success: false,
+      metadata: { error: err.message },
+    })
+    return res.status(500).json({ status: 'error', message: err.message || 'Erro interno do servidor' })
   }
-}
-
-function fallbackCheck(standardsToCheck) {
-  return {
-    resultado_geral: 'parcialmente_conforme',
-    score_compliance: 0,
-    resultados: standardsToCheck.map(s => ({
-      standard: s,
-      status: 'informacao_insuficiente',
-      evidencias: [],
-      nao_conformidades: ['ANTHROPIC_API_KEY não configurada — análise IA indisponível'],
-      plano_acao: ['Configure ANTHROPIC_API_KEY para análise automática'],
-      prazo_regularizacao: null,
-    })),
-    nao_conformidades_criticas: ['Análise automática indisponível'],
-    acoes_imediatas: ['Configure ANTHROPIC_API_KEY'],
-    proxima_auditoria_recomendada: 'Imediato após configuração da API key',
-  }
-}
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  const errors = validate(req.body)
-  if (errors.length > 0) {
-    return res.status(400).json({ status: 'validation_error', errors })
-  }
-
-  const standardsToCheck = req.body.standards ?? ALL_STANDARDS
-
-  const result = (await checkWithAI(req.body, standardsToCheck)) ?? fallbackCheck(standardsToCheck)
-
-  return res.status(200).json({
-    status: 'success',
-    agent: 'Compliance_Agent',
-    project_id: req.body.project_id,
-    standards_checked: standardsToCheck,
-    checked_at: new Date().toISOString(),
-    result,
-  })
 }

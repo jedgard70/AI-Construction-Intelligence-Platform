@@ -21,18 +21,31 @@ export default function NewClientModal({ onClose, onCreated }: Props) {
   async function handleSubmit() {
     if (!nome.trim()) { setError('Nome é obrigatório'); return }
     setLoading(true)
+
+    const client = {
+      id: crypto.randomUUID(),
+      name: nome.trim(),
+      company: empresa.trim(),
+      segment: segmento,
+      email: email.trim(),
+      phone: telefone.trim(),
+      status: 'active',
+      created_at: new Date().toISOString(),
+    }
+
     const sb = getSupabase()
     if (sb) {
-      const { error: err } = await sb.from('clients').insert({
-        name: nome,
-        company: empresa,
-        segment: segmento,
-        email,
-        phone: telefone,
-        status: 'active',
-      })
-      if (err) { setError(err.message); setLoading(false); return }
+      const { error: err } = await sb.from('clients').insert(client)
+      if (err) setError(`Supabase: ${err.message} — cliente salvo localmente.`)
     }
+
+    // Sempre salva no localStorage (funciona sem Supabase)
+    try {
+      const existing = JSON.parse(localStorage.getItem('atlas_clients') || '[]')
+      localStorage.setItem('atlas_clients', JSON.stringify([client, ...existing]))
+    } catch {}
+
+    setLoading(false)
     onCreated()
     onClose()
   }

@@ -529,6 +529,14 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               </div>
               <div style={{ fontSize: 10, color: '#8b93a7' }}>{cfg.icon} {cfg.label}</div>
             </div>
+            <button onClick={() => {
+                localStorage.removeItem('atlas_profile')
+                window.location.reload()
+              }} title="Editar perfil"
+              style={{ background: 'none', border: 'none', cursor: 'pointer',
+                color: '#a0a8bb', fontSize: 13, padding: 4, borderRadius: 4 }}>
+              ✏️
+            </button>
             <button onClick={handleLogout} title="Sair"
               style={{ background: 'none', border: 'none', cursor: 'pointer',
                 color: '#a0a8bb', fontSize: 16, padding: 4, borderRadius: 4 }}>
