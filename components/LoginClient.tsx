@@ -1,6 +1,6 @@
 import { useState, FormEvent, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
-import { supabase } from '../frontend/lib/supabase'
+import { getSupabase } from '../lib/supabase'
 
 const FEATURES = [
   { icon: '⬡', label: 'Inteligência BIM',       sub: 'IFC, RVT, NWD, DWG · Clash Detection' },
@@ -24,6 +24,7 @@ export default function LoginClient() {
       setError('Preencha e-mail e senha.')
       return
     }
+    const supabase = getSupabase()
     if (!supabase) {
       setError('Configuração do servidor incompleta. Contate o suporte.')
       return
@@ -52,7 +53,9 @@ export default function LoginClient() {
         setLoading(false)
         return
       }
-      router.push('/dashboard')
+      // Full page navigation so the browser sends the fresh session cookie
+      // to middleware — avoids the flicker/redirect loop
+      window.location.href = '/dashboard'
     } catch (err: unknown) {
       setError('Erro de conexão. Tente novamente.')
       setLoading(false)
@@ -493,11 +496,4 @@ const CSS = `
   animation: acip-spin 0.7s linear infinite;
   display: inline-block;
 }
-@keyframes acip-spin { to { transform: rotate(360deg); } }
-
-.acip-demo-note {
-  margin-top: 1rem;
-  padding: 10px 14px;
-  background: rgba(186,117,23,.08);
-  border: 1px solid rgba(186,117,23,.25);
-  border-radius: var(--r
+@keyframes acip-spin { to { transform: rotate(3
