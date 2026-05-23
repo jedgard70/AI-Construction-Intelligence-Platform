@@ -15,7 +15,10 @@
     "@supabase/supabase-js": "^2.47.10",
     "@supabase/ssr": "^0.5.2",
     "@anthropic-ai/sdk": "^0.37.0",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "lucide-react": "^0.511.0",
+    "recharts": "^2.15.3",
+    "react-is": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",
