@@ -144,6 +144,17 @@ export default function LoginClient() {
               <button type="submit" className="lp-btn-gold" disabled={loading}>
                 {loading ? 'CARREGANDO...' : tab === 'login' ? 'Entrar →' : 'Criar conta →'}
               </button>
+
+              {tab === 'login' && (
+                <div style={{ textAlign:'center', marginTop:14 }}>
+                  <a href="/forgot-password"
+                    style={{ color:'#6b7a99', fontSize:'13px', textDecoration:'none' }}
+                    onMouseOver={e => e.target.style.color='#f0a500'}
+                    onMouseOut={e  => e.target.style.color='#6b7a99'}>
+                    Esqueceu a senha?
+                  </a>
+                </div>
+              )}
             </form>
 
             <div style={{ marginTop:'24px', padding:'14px 16px', background:'#111520',
@@ -180,16 +191,4 @@ function LpBrandMark() {
       <g fill="none" stroke="#0a0d12" strokeLinejoin="miter" strokeLinecap="square" strokeMiterlimit="8">
         <path d="M 9 40 L 24 10"      strokeWidth="3.4"/>
         <path d="M 39 40 L 24 10"     strokeWidth="3.4"/>
-        <path d="M 15.5 27 L 32.5 27" strokeWidth="2.4"/>
-        <path d="M 17 24 L 24 33 L 31 24" strokeWidth="1.6" strokeOpacity="0.55"/>
-      </g>
-      <circle cx="24" cy="10" r="5.2" fill="#A32D2D" fillOpacity="0.18"/>
-      <circle cx="24" cy="10" r="3"   fill="#A32D2D"/>
-      <circle cx="24" cy="10" r="1.2" fill="#ffe6a8"/>
-      <g fill="#A32D2D" fillOpacity="0.55">
-        <circle cx="14" cy="7" r="1"/>
-        <circle cx="34" cy="7" r="1"/>
-      </g>
-    </svg>
-  )
-}
+       
