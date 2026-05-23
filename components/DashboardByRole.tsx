@@ -3340,4 +3340,118 @@ body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#1a1f36;ba
 .footer{border-top:1px solid #e5e8f0;margin-top:40px;padding-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#8890a0}
 .stamp{border:2px solid #185FA5;border-radius:8px;padding:10px 16px;text-align:center;font-size:10px;color:#185FA5;font-weight:600}
 @page{size:A4;margin:15mm}
-@media p
+@media print{.no-print{display:none}.page{padding:0}}
+</style></head><body><div class="page">
+<div class="header">
+  <div class="logo-row">
+    <div><div class="title">🏛️ MEMORIAL DESCRITIVO</div><div class="subtitle">Relatório Técnico Completo · AI Construction Intelligence Platform</div></div>
+    <div class="stamp">🤖 AI BIM<br/>Intelligence</div>
+  </div>
+  <div class="meta-grid">
+    <div class="meta-item"><div class="label">Arquivo / Projeto</div><div class="value">${activePf?.name ?? 'Projeto'}</div></div>
+    <div class="meta-item"><div class="label">Data de Emissão</div><div class="value">${dateStr}</div></div>
+    <div class="meta-item"><div class="label">Norma de Referência</div><div class="value">ABNT NBR 6492 · NBR 12721</div></div>
+  </div>
+</div>
+${plantImgHtml}
+<div class="section">
+  <div class="sec-title">📋 RELATÓRIO TÉCNICO COMPLETO</div>
+  <div class="analysis-body">${analysisFormatted}</div>
+</div>
+<div class="footer">
+  <div>Gerado em ${dateStr} · AI Construction Intelligence Platform</div>
+  <div>Memorial Descritivo · Quantitativo · BIM · ABNT NBR</div>
+</div>
+<br/><button class="no-print" onclick="window.print()" style="padding:10px 28px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600">🖨️ Imprimir Memorial Descritivo</button>
+</div></body></html>`)
+                                w.document.close()
+                              }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                🖨️ Imprimir
+                              </button>
+                              <button onClick={() => {
+                                try {
+                                  localStorage.setItem('acip_memorial_context', JSON.stringify({
+                                    analysis: unifiedAnalysis,
+                                    plantB64: activePfB64,
+                                    plantMime: activePfMediaType,
+                                    plantName: activePf?.name ?? 'Projeto',
+                                    createdAt: Date.now()
+                                  }))
+                                } catch {}
+                                window.open('/juridico', '_blank')
+                              }}
+                                style={{ padding:'5px 11px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                                ⚖️ Jurídico
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, padding:'16px 18px',
+                            fontSize:11, lineHeight:1.9, color:'#1a1f36', whiteSpace:'pre-wrap' as const, fontFamily:'monospace' }}>
+                            {unifiedAnalysis}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
+                          <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
+                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Análise não iniciada</div>
+                          <div style={{ fontSize:12 }}>Carregue uma imagem ou PDF — a análise inicia automaticamente</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Documentos tab ── */}
+                {viewerTab === 'documentos' && (
+                  <div style={{ flex:1, overflowY:'auto', padding:20, background:'#f8f9fc' }}>
+                    {/* Header */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                      <div style={{ fontSize:15, fontWeight:700, color:'#1a1f36' }}>📄 Documentos do Projeto</div>
+                      <span style={{ fontSize:11, color:'#8890a0' }}>{plantFiles.length} arquivo{plantFiles.length !== 1 ? 's' : ''}</span>
+                    </div>
+
+                    {/* Document list */}
+                    {plantFiles.length === 0 ? (
+                      <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
+                        <div style={{ fontSize:40, marginBottom:12 }}>📂</div>
+                        <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Nenhum arquivo carregado</div>
+                        <div style={{ fontSize:12 }}>Use "📂 Abrir arquivo(s)" para carregar plantas e documentos</div>
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', flexDirection:'column' as const, gap:10 }}>
+                        {plantFiles.map((f, i) => (
+                          <div key={f.name + i} onClick={() => { setActivePlanta(i); setViewerTab('viewer') }}
+                            style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px',
+                              background: activePlanta === i ? '#eff6ff' : '#fff',
+                              border: activePlanta === i ? '1.5px solid #185FA5' : '1px solid #e5e8f0',
+                              borderRadius:10, cursor:'pointer', transition:'all .15s' }}>
+                            <div style={{ fontSize:28, flexShrink:0 }}>{(EXT_META[f.ext] ?? { icon:'📎' }).icon}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36',
+                                overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{f.name}</div>
+                              <div style={{ fontSize:11, color:'#8890a0', marginTop:2 }}>
+                                {(EXT_META[f.ext] ?? { cat:'Arquivo' }).cat} · {fmtSize(f.size)}
+                              </div>
+                            </div>
+                            <a href={f.url} download={f.name} onClick={e => e.stopPropagation()}
+                              style={{ padding:'5px 10px', background:'#f0f4f8', border:'1px solid #e5e8f0',
+                                borderRadius:6, fontSize:10, fontWeight:600, color:'#5a6282',
+                                textDecoration:'none', flexShrink:0 }}>
+                              ⬇️ Baixar
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      })()}
+    </>
+  )
+}
