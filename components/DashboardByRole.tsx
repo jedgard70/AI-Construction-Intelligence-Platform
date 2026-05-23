@@ -267,12 +267,17 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [loading, setLoading]         = useState(true)
   const [showNewProject, setShowNewProject] = useState(false)
   const [showNewClient, setShowNewClient] = useState(false)
+  const [autoUploadName, setAutoUploadName] = useState('')
+  const [autoUploadType, setAutoUploadType] = useState('')
+  const [uploadToast, setUploadToast] = useState<string|null>(null)
+  const [lastCreatedProject, setLastCreatedProject] = useState<any>(null)
   const [showPlantasViewer, setShowPlantasViewer] = useState(false)
   const [activeNav, setActiveNav]     = useState(0)
   const [activePlanta, setActivePlanta] = useState(0)
   const [plantFiles, setPlantFiles]   = useState<Array<{name:string,type:string,url:string,size:number,ext:string}>>([])
   const [plantUploading, setPlantUploading] = useState(false)
-  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'>('viewer')
+  const [viewerTab, setViewerTab] = useState<'viewer'|'humanize'|'analysis'|'documentos'>('viewer')
+  const [docCategory, setDocCategory] = useState<string>('')
   const [humanAnaliseTipo, setHumanAnaliseTipo] = useState<'planta'|'fachada'|'corte'|'interior'>('planta')
   const [humanLang, setHumanLang] = useState<'pt-BR'|'en-US'>('pt-BR')
   const [humanTipo, setHumanTipo] = useState('residencial unifamiliar')
@@ -1057,11 +1062,52 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
           const firstExt = firstNew.name.split('.').pop()?.toLowerCase() ?? ''
           const firstEntry = newEntries[0]
 
+          // ── Helper: guess project type from extension ─────────────────
+          function guessProjectType(ext: string): string {
+            if (['ifc','rvt','dwg','dxf','dgn','nwc','nwd'].includes(ext)) return 'BIM / CAD'
+            if (['fbx','obj','stl','step','stp'].includes(ext)) return 'Modelo 3D'
+            if (['pdf'].includes(ext)) return 'Documento Técnico'
+            return 'Residencial Unifamiliar'
+          }
+
+          // ── Helper: trigger project+client chain after upload ──────────
+          function triggerProjectChain(fileName: string, ext: string) {
+            const baseName = fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+            const projType = guessProjectType(ext)
+            setAutoUploadName(baseName)
+            setAutoUploadType(projType)
+            setUploadToast(`📁 Arquivo "${fileName}" detectado — criando projeto automaticamente...`)
+            setTimeout(() => setUploadToast(null), 4000)
+            // Close the overlay FIRST so the modal doesn't appear behind it (overlay z-index > modal z-index)
+            setShowPlantasViewer(false)
+            setTimeout(() => setShowNewProject(true), 700)
+          }
+
           if (THREE_D_EXTS.includes(firstExt)) {
-            // Open 3D viewer in new window
-            const url = URL.createObjectURL(firstNew)
-            try { localStorage.setItem('bim3d_file_url', url); localStorage.setItem('bim3d_file_name', firstNew.name); localStorage.setItem('bim3d_file_ext', firstExt) } catch {}
-            window.open(`/bim-3d?name=${encodeURIComponent(firstNew.name)}&ext=${firstExt}`, '_blank', 'width=1400,height=900')
+            // Write file bytes to IndexedDB so the inline /bim-3d iframe can read them
+            // (blob URLs are context-specific and can't be read cross-frame)
+            try {
+              const buf = await firstNew.arrayBuffer()
+              await new Promise<void>((resolve) => {
+                const req = indexedDB.open('bim3d', 1)
+                req.onupgradeneeded = (ev: any) => {
+                  const db = ev.target.result
+                  if (!db.objectStoreNames.contains('files')) db.createObjectStore('files')
+                }
+                req.onsuccess = (ev: any) => {
+                  const db = ev.target.result
+                  const tx = db.transaction('files', 'readwrite')
+                  tx.objectStore('files').put(buf, 'current')
+                  tx.oncomplete = () => { db.close(); resolve() }
+                  tx.onerror = () => { db.close(); resolve() }
+                }
+                req.onerror = () => resolve()
+              })
+              localStorage.setItem('bim3d_file_name', firstNew.name)
+              localStorage.setItem('bim3d_file_ext', firstExt)
+            } catch {}
+            setViewerTab('viewer')
+            triggerProjectChain(firstNew.name, firstExt)
           } else if ([...IMAGE_EXTS, 'pdf'].includes(firstExt)) {
             // Read base64 and auto-trigger AI analysis
             const mediaType = firstNew.type || (firstExt === 'pdf' ? 'application/pdf' : 'image/jpeg')
@@ -1074,10 +1120,16 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
             setActivePfB64(b64)
             setActivePfMediaType(mediaType)
             setUnifiedAnalysis('')
+            // Route PDFs to Documentos tab, images to viewer
+            if (firstExt === 'pdf') {
+              setViewerTab('documentos')
+            }
             // Auto-trigger analysis immediately, passing data directly (no state lag)
             await autoRunAnalysis(b64, mediaType, firstEntry)
+            triggerProjectChain(firstNew.name, firstExt)
           } else {
             setActivePfB64(null)
+            triggerProjectChain(firstNew.name, firstExt)
           }
         }
 
@@ -1214,6 +1266,12 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                 <div style={{ padding:'10px 16px', borderBottom:'1px solid #e5e8f0', flexShrink:0,
                   display:'flex', alignItems:'center', gap:8, background:'#fff', flexWrap:'wrap' as const }}>
                   {/* Tabs */}
+                  <button onClick={() => setViewerTab('documentos')}
+                    style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
+                      background: viewerTab==='documentos' ? '#E53E3E' : '#f0f4f8',
+                      color: viewerTab==='documentos' ? '#fff' : '#5a6282', border:'none', fontFamily:'inherit' }}>
+                    📄 Documentos
+                  </button>
                   <button onClick={() => setViewerTab('viewer')}
                     style={{ padding:'5px 12px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer',
                       background: viewerTab==='viewer' ? '#185FA5' : '#f0f4f8',
@@ -1241,13 +1299,25 @@ Verificação de: NBR 9077 (saídas de emergência), NBR 9050 (acessibilidade), 
                     </button>
                   )}
                   {is3D && activePf && (
-                    <button onClick={() => {
-                      try { localStorage.setItem('bim3d_file_url', activePf.url); localStorage.setItem('bim3d_file_name', activePf.name); localStorage.setItem('bim3d_file_ext', activePf.ext) } catch {}
-                      window.open(`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`, '_blank', 'width=1400,height=900')
+                    <button onClick={async () => {
+                      // Re-write this file to IndexedDB (covers file-switch case)
+                      try {
+                        const resp = await fetch(activePf.url)
+                        const buf = await resp.arrayBuffer()
+                        await new Promise<void>((resolve) => {
+                          const req = indexedDB.open('bim3d', 1)
+                          req.onupgradeneeded = (ev: any) => { const db = ev.target.result; if (!db.objectStoreNames.contains('files')) db.createObjectStore('files') }
+                          req.onsuccess = (ev: any) => { const db = ev.target.result; const tx = db.transaction('files', 'readwrite'); tx.objectStore('files').put(buf, 'current'); tx.oncomplete = () => { db.close(); resolve() }; tx.onerror = () => { db.close(); resolve() } }
+                          req.onerror = () => resolve()
+                        })
+                        localStorage.setItem('bim3d_file_name', activePf.name)
+                        localStorage.setItem('bim3d_file_ext', activePf.ext)
+                      } catch {}
+                      setViewerTab('viewer')
                     }}
                       style={{ padding:'5px 14px', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer',
                         background:'#534AB7', color:'#fff', border:'none', fontFamily:'inherit' }}>
-                      🎲 Abrir Viewer 3D
+                      🎲 Ver Viewer 3D
                     </button>
                   )}
                   <div style={{ width:1, height:20, background:'#e5e8f0', margin:'0 4px' }} />
@@ -1762,7 +1832,7 @@ Result: premium photorealistic architectural section render. No text overlays.`
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                model: 'gemini-2.0-flash-exp',
+                                model: 'gemini-2.0-flash-preview-image-generation',
                                 contents: [{ role: 'user', parts: [
                                   { inlineData: { mimeType: imgTypeSnap, data: b64Snap } },
                                   { text: renderPrompt }
@@ -1806,7 +1876,7 @@ Result: premium photorealistic architectural section render. No text overlays.`
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                model: 'gemini-2.0-flash',
+                                model: 'gemini-2.5-flash-preview-05-20',
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Based on this architectural analysis of a "${tipoSnap}" building, suggest a professional color palette with exactly 6 colors.
 Analysis: ${analysisText.slice(0, 1200)}
@@ -1832,7 +1902,7 @@ Return ONLY a valid JSON array (no markdown, no extra text): [{"name":"Warm Whit
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({
-                                model: 'gemini-2.0-flash',
+                                model: 'gemini-2.5-flash-preview-05-20',
                                 contents: [{ role: 'user', parts: [{ text:
                                   `Você é um copywriter especializado em marketing imobiliário de alto padrão. Com base nesta análise arquitetônica de um imóvel "${tipoSnap}", crie textos de marketing profissionais em português:
 
@@ -1868,7 +1938,7 @@ Crie:
                     </div>
 
                     {/* Right results — tabbed */}
-                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0, height:'100%' }}>
+                    <div style={{ display:'flex', flexDirection:'column' as const, overflow:'hidden', minHeight:0, alignSelf:'stretch' as const }}>
 
                       {/* Tabs header — always visible */}
                       <div style={{ display:'flex', gap:2, padding:'8px 12px', borderBottom:'1px solid #e5e8f0',
@@ -2047,6 +2117,63 @@ Crie:
                               </div>
                             )}
 
+                            {/* Empty state — no render yet */}
+                            {!geminiRenderLoading && !geminiRenderB64 && !pollinationsUrl && (
+                              <div style={{ display:'flex', flexDirection:'column' as const, alignItems:'center', gap:20,
+                                padding:'48px 24px', background:'linear-gradient(135deg,#0f172a,#1e1b4b)',
+                                borderRadius:16, border:'1px dashed rgba(167,139,250,.35)', textAlign:'center' as const }}>
+                                {/* Icon */}
+                                <div style={{ width:72, height:72, borderRadius:'50%',
+                                  background:'linear-gradient(135deg,#7c3aed22,#4f46e522)',
+                                  border:'2px solid rgba(167,139,250,.3)',
+                                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:32 }}>
+                                  🎨
+                                </div>
+                                <div>
+                                  <div style={{ fontSize:16, fontWeight:700, color:'#e0e7ff', marginBottom:8 }}>
+                                    {humanLang==='pt-BR' ? 'Nenhum render gerado ainda' : 'No render generated yet'}
+                                  </div>
+                                  <div style={{ fontSize:12, color:'rgba(167,139,250,.75)', lineHeight:1.7, maxWidth:280 }}>
+                                    {humanLang==='pt-BR'
+                                      ? humanB64
+                                        ? 'Clique em "Humanizar" na aba Humanizar para gerar seu render IA'
+                                        : 'Primeiro envie uma imagem na aba Humanizar e clique em "Humanizar"'
+                                      : humanB64
+                                        ? 'Click "Humanizar" in the Humanizar tab to generate your AI render'
+                                        : 'First upload an image in the Humanizar tab and click "Humanizar"'}
+                                  </div>
+                                </div>
+                                {/* Steps */}
+                                <div style={{ display:'flex', flexDirection:'column' as const, gap:10, width:'100%', maxWidth:300 }}>
+                                  {[
+                                    { n:'1', label: humanLang==='pt-BR' ? 'Vá para a aba Humanizar' : 'Go to the Humanizar tab', done: false },
+                                    { n:'2', label: humanLang==='pt-BR' ? 'Envie sua planta, fachada ou interior' : 'Upload your floor plan, facade or interior', done: !!humanB64 },
+                                    { n:'3', label: humanLang==='pt-BR' ? 'Clique em "Humanizar"' : 'Click "Humanizar"', done: false },
+                                    { n:'4', label: humanLang==='pt-BR' ? 'Volte aqui para ver o render' : 'Come back here to see the render', done: false },
+                                  ].map(s => (
+                                    <div key={s.n} style={{ display:'flex', alignItems:'center', gap:10,
+                                      padding:'8px 12px', background: s.done ? 'rgba(52,211,153,.1)' : 'rgba(255,255,255,.04)',
+                                      borderRadius:8, border:`1px solid ${s.done ? 'rgba(52,211,153,.3)' : 'rgba(255,255,255,.08)'}` }}>
+                                      <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0,
+                                        background: s.done ? '#34d399' : 'rgba(167,139,250,.2)',
+                                        display:'flex', alignItems:'center', justifyContent:'center',
+                                        fontSize:10, fontWeight:700, color: s.done ? '#fff' : '#a78bfa' }}>
+                                        {s.done ? '✓' : s.n}
+                                      </div>
+                                      <span style={{ fontSize:11, color: s.done ? '#6ee7b7' : '#cbd5e1', textAlign:'left' as const }}>{s.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {/* Quick action button — jump to Humanizar tab */}
+                                <button onClick={() => setHumanTab('analise')}
+                                  style={{ padding:'10px 24px', background:'linear-gradient(135deg,#7c3aed,#4f46e5)',
+                                    color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700,
+                                    cursor:'pointer', fontFamily:'inherit', boxShadow:'0 4px 20px rgba(124,58,237,.4)' }}>
+                                  {humanLang==='pt-BR' ? '→ Ir para Humanizar' : '→ Go to Humanizar'}
+                                </button>
+                              </div>
+                            )}
+
                             {/* Render result */}
                             {(geminiRenderB64 || pollinationsUrl) ? (
                               <div style={{ display:'flex', flexDirection:'column' as const, gap:14 }}>
@@ -2066,10 +2193,10 @@ Crie:
                                   </div>
                                   {geminiRenderB64 ? (
                                     <img src={`data:image/jpeg;base64,${geminiRenderB64}`} alt="Render Gemini"
-                                      style={{ width:'100%', display:'block', maxHeight:480, objectFit:'cover' }} />
+                                      style={{ width:'100%', display:'block', objectFit:'contain' }} />
                                   ) : (
                                     <img src={pollinationsUrl!} alt="Render"
-                                      style={{ width:'100%', display:'block', maxHeight:420, objectFit:'cover' }}
+                                      style={{ width:'100%', display:'block', objectFit:'contain' }}
                                       onError={() => setPollinationsUrl(null)} />
                                   )}
                                   <div style={{ padding:'10px 14px', display:'flex', gap:8, background:'#f8f9fc', borderTop:'1px solid #e5e8f0', flexWrap:'wrap' as const }}>
@@ -2097,7 +2224,7 @@ Crie:
                                         ? `You are an expert architectural visualizer. Transform this 3D interior into a photorealistic render.\n\nCRITICAL: Keep EXACTLY the same camera position and room layout.\n\nAdd: photorealistic flooring, painted walls, gypsum ceiling with LED recessed spots and strip lights, premium cabinets with stone countertops, stainless appliances, natural light from windows, ${humanNP} person at 1.70m doing activity, elegant decor. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
                                         : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials on cut surfaces, interior spaces with furniture and people at scale 1.70m, natural light, ${humanVeg}. Style: ${humanEstilo}. No text overlays. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
-                                        body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                        body:JSON.stringify({ model:'gemini-2.0-flash-preview-image-generation', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                       }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)} else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
                                     }}
                                       style={{ padding:'6px 14px', background:'#3B6D11', color:'#fff', border:'none',
@@ -2107,6 +2234,100 @@ Crie:
                                     )}
                                   </div>
                                 </div>
+
+                                {/* ── Phone Mockup — Reel Preview ── */}
+                                {(geminiRenderB64 || pollinationsUrl) && (
+                                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:12, padding:'24px 0' }}>
+                                    <div style={{ fontSize:11, fontWeight:700, color:'#6b7280', letterSpacing:'1.5px', textTransform:'uppercase' as const }}>
+                                      {humanLang==='pt-BR' ? '📱 Prévia do Reel' : '📱 Reel Preview'}
+                                    </div>
+                                    {/* Phone frame */}
+                                    <div style={{
+                                      position:'relative' as const,
+                                      width:220,
+                                      height:476,
+                                      background:'#1a1a2e',
+                                      borderRadius:36,
+                                      boxShadow:'0 0 0 3px #333, 0 0 0 6px #111, 0 20px 60px rgba(0,0,0,.6)',
+                                      overflow:'hidden' as const,
+                                      border:'2px solid #444',
+                                    }}>
+                                      {/* Notch */}
+                                      <div style={{
+                                        position:'absolute' as const, top:0, left:'50%', transform:'translateX(-50%)',
+                                        width:80, height:22, background:'#111', borderRadius:'0 0 18px 18px', zIndex:10,
+                                      }} />
+                                      {/* Screen — 9:16 render image */}
+                                      <img
+                                        src={geminiRenderB64
+                                          ? `data:image/jpeg;base64,${geminiRenderB64}`
+                                          : pollinationsUrl!}
+                                        alt="Reel preview"
+                                        style={{ width:'100%', height:'100%', objectFit:'cover' as const, display:'block' }}
+                                      />
+                                      {/* Reel UI overlay */}
+                                      <div style={{
+                                        position:'absolute' as const, inset:0,
+                                        background:'linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 50%)',
+                                        pointerEvents:'none' as const,
+                                      }} />
+                                      {/* Instagram-style side actions */}
+                                      <div style={{
+                                        position:'absolute' as const, right:10, bottom:80,
+                                        display:'flex', flexDirection:'column', alignItems:'center', gap:14,
+                                      }}>
+                                        {[
+                                          { icon:'❤️', label:'1.2k' },
+                                          { icon:'💬', label:'48' },
+                                          { icon:'➤', label:'Enviar' },
+                                          { icon:'⊕', label:'' },
+                                        ].map((item, i) => (
+                                          <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                                            <span style={{ fontSize:20 }}>{item.icon}</span>
+                                            {item.label && <span style={{ fontSize:9, color:'#fff', fontWeight:700, textShadow:'0 1px 4px rgba(0,0,0,.8)' }}>{item.label}</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {/* Bottom info */}
+                                      <div style={{
+                                        position:'absolute' as const, left:10, bottom:50, right:50,
+                                      }}>
+                                        <div style={{ fontSize:11, fontWeight:700, color:'#fff', textShadow:'0 1px 4px rgba(0,0,0,.8)' }}>
+                                          @jedgardengenharia
+                                        </div>
+                                        <div style={{ fontSize:9, color:'rgba(255,255,255,.85)', marginTop:3, textShadow:'0 1px 3px rgba(0,0,0,.7)', lineHeight:1.4 }}>
+                                          {humanTipo ? `✨ ${humanTipo.charAt(0).toUpperCase() + humanTipo.slice(1)} premium` : '✨ Projeto premium'}
+                                          {' · Design exclusivo · '}
+                                          <span style={{ color:'#f0a500' }}>#arquitetura</span>
+                                          {' '}
+                                          <span style={{ color:'#f0a500' }}>#render</span>
+                                        </div>
+                                      </div>
+                                      {/* Play button center */}
+                                      {!reelAudioB64 && (
+                                        <div style={{
+                                          position:'absolute' as const, top:'50%', left:'50%', transform:'translate(-50%,-50%)',
+                                          width:48, height:48, borderRadius:'50%',
+                                          background:'rgba(255,255,255,.25)', backdropFilter:'blur(4px)',
+                                          display:'flex', alignItems:'center', justifyContent:'center',
+                                          fontSize:22, pointerEvents:'none' as const,
+                                        }}>
+                                          ▶
+                                        </div>
+                                      )}
+                                      {/* Home bar */}
+                                      <div style={{
+                                        position:'absolute' as const, bottom:8, left:'50%', transform:'translateX(-50%)',
+                                        width:80, height:4, background:'rgba(255,255,255,.4)', borderRadius:4,
+                                      }} />
+                                    </div>
+                                    <div style={{ fontSize:10, color:'#9ca3af', textAlign:'center' as const, maxWidth:220 }}>
+                                      {humanLang==='pt-BR'
+                                        ? 'Prévia de como o reel vai aparecer no Instagram'
+                                        : 'Preview of how the reel will appear on Instagram'}
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* ── Style Variants for Marketing ── */}
                                 {geminiRenderB64 && humanB64 && humanImgType !== 'application/pdf' && (
@@ -2148,7 +2369,7 @@ Crie:
                                                   : `Transform this cross-section into a photorealistic rendered section. CRITICAL: Keep EXACTLY the same geometry. Add: photorealistic materials, interior spaces with furniture and people at scale.`
                                                 const fullP = `You are an expert architectural visualizer. ${baseP}\n\n${style.suffix}\n\nNo text overlays. Seed:${Date.now()}`
                                                 fetch('/api/gemini', { method:'POST', headers:{'Content-Type':'application/json'},
-                                                  body: JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                                  body: JSON.stringify({ model:'gemini-2.0-flash-preview-image-generation', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                                 }).then(async r => {
                                                   const d = await r.json()
                                                   const ip = (d?.candidates?.[0]?.content?.parts??[]).find((x: any) => x.inlineData?.data)
@@ -2283,7 +2504,7 @@ Crie:
                                                 // 1. Generate script text via Gemini
                                                 const scriptR = await fetch('/api/gemini', {
                                                   method:'POST', headers:{'Content-Type':'application/json'},
-                                                  body: JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:
+                                                  body: JSON.stringify({ model:'gemini-2.5-flash-preview-05-20', contents:[{role:'user',parts:[{text:
                                                     `Escreva um roteiro de narração de vídeo de 15 segundos em português brasileiro profissional e elegante para um vídeo de marketing imobiliário de um projeto "${humanTipo}" de estilo "${humanEstilo}". Máximo 5 frases curtas. Linguagem premium, inspiradora. Sem hashtags. Apenas o texto da narração.`
                                                   }]}] })
                                                 })
@@ -2295,7 +2516,7 @@ Crie:
                                                 const audioR = await fetch('/api/gemini', {
                                                   method:'POST', headers:{'Content-Type':'application/json'},
                                                   body: JSON.stringify({
-                                                    model:'gemini-2.0-flash-exp',
+                                                    model:'gemini-2.5-flash-preview-tts',
                                                     contents:[{role:'user',parts:[{text: scriptText}]}],
                                                     generationConfig:{ responseModalities:['AUDIO'], speechConfig:{ voiceConfig:{ prebuiltVoiceConfig:{ voiceName:'Aoede' } } } }
                                                   })
@@ -2567,7 +2788,7 @@ Crie:
                                   const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
                                   if (!ctx) return
                                   setGeminiPaletteLoading(true); setGeminiPaletteError(null)
-                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Based on this architectural analysis of a "${humanTipo}" building, suggest exactly 6 professional colors.\nAnalysis: ${ctx}\nReturn ONLY a JSON array: [{"name":"...","hex":"#...","usage":"..."},...]`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiPaletteError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; const m=t.match(/\[[\s\S]*?\]/); if(m){try{setGeminiPalette(JSON.parse(m[0]));setGeminiPaletteError(null)}catch{setGeminiPaletteError('Parse error')}}else setGeminiPaletteError('Sem resposta')}).catch((e:any)=>setGeminiPaletteError(e.message)).finally(()=>setGeminiPaletteLoading(false))
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.5-flash-preview-05-20', contents:[{role:'user',parts:[{text:`Based on this architectural analysis of a "${humanTipo}" building, suggest exactly 6 professional colors.\nAnalysis: ${ctx}\nReturn ONLY a JSON array: [{"name":"...","hex":"#...","usage":"..."},...]`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiPaletteError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; const m=t.match(/\[[\s\S]*?\]/); if(m){try{setGeminiPalette(JSON.parse(m[0]));setGeminiPaletteError(null)}catch{setGeminiPaletteError('Parse error')}}else setGeminiPaletteError('Sem resposta')}).catch((e:any)=>setGeminiPaletteError(e.message)).finally(()=>setGeminiPaletteLoading(false))
                                 }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                   🔄 Tentar novamente
                                 </button>
@@ -2621,7 +2842,7 @@ Crie:
                                   const ctx = Object.values(humanResult).join('\n').slice(0, 1200)
                                   if (!ctx) return
                                   setGeminiMarketingLoading(true); setGeminiMarketingError(null)
-                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.0-flash', contents:[{role:'user',parts:[{text:`Você é copywriter imobiliário de alto padrão. Crie textos de marketing para um imóvel "${humanTipo}":\n${ctx}\n\nCrie: **Headline**, **Subtítulo**, **Descrição** (2 parágrafos), **Diferenciais** (5 bullet points com emojis), **Call to Action**`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiMarketingError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; if(t){setGeminiMarketing(t);setGeminiMarketingError(null)}else setGeminiMarketingError('Sem resposta')}).catch((e:any)=>setGeminiMarketingError(e.message)).finally(()=>setGeminiMarketingLoading(false))
+                                  fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ model:'gemini-2.5-flash-preview-05-20', contents:[{role:'user',parts:[{text:`Você é copywriter imobiliário de alto padrão. Crie textos de marketing para um imóvel "${humanTipo}":\n${ctx}\n\nCrie: **Headline**, **Subtítulo**, **Descrição** (2 parágrafos), **Diferenciais** (5 bullet points com emojis), **Call to Action**`}]}] }) }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiMarketingError(d.error.message);return} const t=d?.candidates?.[0]?.content?.parts?.[0]?.text||''; if(t){setGeminiMarketing(t);setGeminiMarketingError(null)}else setGeminiMarketingError('Sem resposta')}).catch((e:any)=>setGeminiMarketingError(e.message)).finally(()=>setGeminiMarketingLoading(false))
                                 }} style={{ padding:'5px 12px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                                   🔄 Tentar novamente
                                 </button>
@@ -2775,7 +2996,7 @@ Crie:
                                     : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nAdd: photorealistic materials, interior spaces with furniture and people at 1.70m scale. Style: ${humanEstilo}.`
                                   const fullP = base + `\n\nARCHITECT'S MANDATORY ADDITIONAL DIRECTIVES:\n${humanAdicionalInput}\n\nApply ALL directives precisely. No text overlays. Seed:${Date.now()}`
                                   fetch('/api/gemini', { method:'POST', headers:{'Content-Type':'application/json'},
-                                    body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:curMime,data:curB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                    body:JSON.stringify({ model:'gemini-2.0-flash-preview-image-generation', contents:[{role:'user',parts:[{inlineData:{mimeType:curMime,data:curB64}},{text:fullP}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                   }).then(async r => {
                                     const d = await r.json()
                                     if (d?.error?.message) { setGeminiRenderError(d.error.message); return }
@@ -2875,7 +3096,7 @@ Crie:
                                         : `You are an expert architectural visualizer. Transform this cross-section into a photorealistic rendered section.\n\nCRITICAL: Keep EXACTLY the same geometry.\n\nBase render: photorealistic materials, interior spaces with furniture and people at scale. Style: ${humanEstilo}.`
                                       ) + `\n\nADDITIONAL INSTRUCTIONS FROM CONSULTANT:\n${assistantSuggestions}\n\nApply these suggestions in the render. No text overlays. Seed:${Date.now()}`
                                       fetch('/api/gemini',{ method:'POST', headers:{'Content-Type':'application/json'},
-                                        body:JSON.stringify({ model:'gemini-2.0-flash-exp', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
+                                        body:JSON.stringify({ model:'gemini-2.0-flash-preview-image-generation', contents:[{role:'user',parts:[{inlineData:{mimeType:humanImgType,data:humanB64}},{text:p}]}], generationConfig:{responseModalities:['TEXT','IMAGE']} })
                                       }).then(async r=>{const d=await r.json(); if(d?.error?.message){setGeminiRenderError(d.error.message);return} const ip=(d?.candidates?.[0]?.content?.parts??[]).find((x:any)=>x.inlineData?.data); if(ip){setGeminiRenderB64(ip.inlineData.data);setGeminiRenderError(null)}else setGeminiRenderError('Sem imagem.')}).catch((e:any)=>setGeminiRenderError(e.message)).finally(()=>setGeminiRenderLoading(false))
                                     }}
                                       style={{ fontSize:10, padding:'3px 9px', background:'linear-gradient(135deg,#534AB7,#7c3aed)', color:'#fff', border:'none', borderRadius:6, cursor:'pointer', fontFamily:'inherit', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
@@ -2998,6 +3219,12 @@ Crie:
                         style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain', borderRadius:6,
                           boxShadow:'0 8px 32px rgba(0,0,0,.6)' }} />
                     </div>
+                  ) : is3D ? (
+                    <iframe
+                      src={`/bim-3d?name=${encodeURIComponent(activePf.name)}&ext=${activePf.ext}`}
+                      style={{ width:'100%', height:'100%', border:'none', display:'block' }}
+                      title={activePf.name}
+                    />
                   ) : (
                     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16, padding:32 }}>
                       <div style={{ fontSize:64 }}>{(EXT_META[activePf.ext] ?? { icon:'📎' }).icon}</div>
@@ -3006,8 +3233,8 @@ Crie:
                         Formato <strong style={{ color:'#58a6ff' }}>.{activePf.ext.toUpperCase()}</strong> — {(EXT_META[activePf.ext] ?? { cat:'Arquivo' }).cat}
                         <br/>Tamanho: {fmtSize(activePf.size)}
                         <br/><br/>
-                        Este formato requer software CAD para renderização 3D.<br/>
-                        Exporte como PDF ou JPG no AutoCAD/Revit para visualizar aqui.
+                        Este formato não possui visualização direta no navegador.<br/>
+                        Exporte como PDF ou imagem para visualizar aqui.
                       </div>
                       <div style={{ display:'flex', gap:10, flexWrap:'wrap' as const, justifyContent:'center' }}>
                         <a href={activePf.url} download={activePf.name}
@@ -3081,7 +3308,6 @@ Crie:
                                 if (!w) return
                                 const now = new Date()
                                 const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' })
-                                // Build floor plan image HTML
                                 let plantImgHtml = ''
                                 if (activePfB64 && activePfMediaType !== 'application/pdf') {
                                   try {
@@ -3093,7 +3319,6 @@ Crie:
                                 } else if (activePf?.url && activePf?.ext && !['pdf','dwg','dxf','ifc','rvt'].includes(activePf.ext)) {
                                   plantImgHtml = `<div class="section"><div class="sec-title">📐 PLANTA / PROJETO</div><img src="${activePf.url}" style="width:100%;border-radius:8px;border:1px solid #e5e8f0;display:block;page-break-inside:avoid;margin-top:10px"/></div>`
                                 }
-                                // Format analysis into sections
                                 const analysisFormatted = unifiedAnalysis
                                   .replace(/^#+\s*(.+)$/gm, (_: string, t: string) => `<div class="sec-title">${t}</div>`)
                                   .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -3115,82 +3340,4 @@ body{font-family:'Segoe UI',Arial,sans-serif;padding:0;margin:0;color:#1a1f36;ba
 .footer{border-top:1px solid #e5e8f0;margin-top:40px;padding-top:14px;display:flex;justify-content:space-between;font-size:10px;color:#8890a0}
 .stamp{border:2px solid #185FA5;border-radius:8px;padding:10px 16px;text-align:center;font-size:10px;color:#185FA5;font-weight:600}
 @page{size:A4;margin:15mm}
-@media print{.no-print{display:none}.page{padding:0}}
-</style></head><body><div class="page">
-<div class="header">
-  <div class="logo-row">
-    <div><div class="title">🏛️ MEMORIAL DESCRITIVO</div><div class="subtitle">Relatório Técnico Completo · AI Construction Intelligence Platform</div></div>
-    <div class="stamp">🤖 AI BIM<br/>Intelligence</div>
-  </div>
-  <div class="meta-grid">
-    <div class="meta-item"><div class="label">Arquivo / Projeto</div><div class="value">${activePf?.name ?? 'Projeto'}</div></div>
-    <div class="meta-item"><div class="label">Data de Emissão</div><div class="value">${dateStr}</div></div>
-    <div class="meta-item"><div class="label">Norma de Referência</div><div class="value">ABNT NBR 6492 · NBR 12721</div></div>
-  </div>
-</div>
-${plantImgHtml}
-<div class="section">
-  <div class="sec-title">📋 RELATÓRIO TÉCNICO COMPLETO</div>
-  <div class="analysis-body">${analysisFormatted}</div>
-</div>
-<div class="footer">
-  <div>Gerado em ${dateStr} · AI Construction Intelligence Platform</div>
-  <div>Memorial Descritivo · Quantitativo · BIM · ABNT NBR</div>
-</div>
-<br/><button class="no-print" onclick="window.print()" style="padding:10px 28px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;font-weight:600">🖨️ Imprimir Memorial Descritivo</button>
-</div></body></html>`)
-                                w.document.close()
-                              }} style={{ padding:'5px 11px', background:'#185FA5', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                                🖨️ Imprimir
-                              </button>
-                              <button onClick={() => {
-                                // Save memorial context so Juridico page can pick it up
-                                try {
-                                  localStorage.setItem('acip_memorial_context', JSON.stringify({
-                                    analysis: unifiedAnalysis,
-                                    plantB64: activePfB64,
-                                    plantMime: activePfMediaType,
-                                    plantName: activePf?.name ?? 'Projeto',
-                                    createdAt: Date.now()
-                                  }))
-                                } catch {}
-                                window.open('/juridico', '_blank')
-                              }}
-                                style={{ padding:'5px 11px', background:'#534AB7', color:'#fff', border:'none', borderRadius:6, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                                ⚖️ Jurídico
-                              </button>
-                            </div>
-                          </div>
-                          <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, padding:'16px 18px',
-                            fontSize:11, lineHeight:1.9, color:'#1a1f36', whiteSpace:'pre-wrap' as const, fontFamily:'monospace' }}>
-                            {unifiedAnalysis}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ textAlign:'center' as const, padding:60, color:'#8890a0' }}>
-                          <div style={{ fontSize:40, marginBottom:12 }}>🤖</div>
-                          <div style={{ fontSize:14, fontWeight:600, color:'#1a1f36', marginBottom:8 }}>Análise não iniciada</div>
-                          <div style={{ fontSize:12 }}>Carregue uma imagem ou PDF — a análise inicia automaticamente</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-        </div>,
-        document.body)
-      })()}
-
-      {showNewProject && <NewProjectModal onClose={() => setShowNewProject(false)} onCreated={(proj) => {
-        setProjects(prev => {
-          const filtered = prev.filter(p => p.id.startsWith('example-'))
-          return [proj, ...(filtered.length === prev.length ? [] : prev.filter(p => !p.id.startsWith('example-')))]
-        })
-        setShowNewProject(false)
-      }} />}
-      {showNewClient && <NewClientModal onClose={() => setShowNewClient(false)} onCreated={loadData} />}
-      <HelpButton />
-    </>
-  )
-}
+@media p

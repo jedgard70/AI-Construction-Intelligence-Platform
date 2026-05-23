@@ -19,7 +19,9 @@
     "lucide-react": "^0.511.0",
     "recharts": "^2.15.3",
     "react-is": "^19.0.0",
-    "@vercel/speed-insights": "^1.1.0"
+    "@vercel/speed-insights": "^1.1.0",
+    "web-ifc": "^0.0.68",
+    "fflate": "^0.8.0"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -28,8 +30,3 @@
     "typescript": "^5",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.2.6"
-  },
-  "engines": {
-    "node": ">=20.x"
-  }
-}
