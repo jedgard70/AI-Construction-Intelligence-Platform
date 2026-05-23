@@ -206,4 +206,145 @@ export default function DocumentosPage() {
       background: dragging ? 'rgba(24,95,165,.04)' : '#fafafa',
     },
     errBanner: {
-  
+      background: '#FEE8E8', border: '1px solid #F09595', borderRadius: 8,
+      padding: '10px 14px', color: '#A32D2D', fontSize: 12, marginBottom: 16,
+    },
+    tag: {
+      display: 'inline-block', padding: '2px 8px', borderRadius: 20, fontSize: 10,
+      fontWeight: 600, background: '#EAF3DE', color: '#3B6D11', marginRight: 4, marginBottom: 2,
+    },
+    analysisBox: {
+      background: '#f8f9fc', border: '1px solid #e5e8f0', borderRadius: 8,
+      padding: '12px 14px', fontSize: 12, color: '#1a1f36', lineHeight: 1.6,
+      whiteSpace: 'pre-wrap' as const, fontFamily: 'monospace',
+    },
+    tipoChip: {
+      display:'inline-block', padding:'2px 8px', borderRadius:20, fontSize:10,
+      fontWeight:700, marginRight:6,
+    },
+    statusChip: {
+      display:'inline-block', padding:'2px 8px', borderRadius:20, fontSize:10,
+      fontWeight:600, background:'#EAF3DE', color:'#3B6D11',
+    },
+  }
+
+  return (
+    <>
+      <Head><title>Documentos — AI Construction Platform</title></Head>
+      <div style={s.page}>
+        {/* Topbar */}
+        <div style={s.topbar}>
+          <button style={s.back} onClick={() => router.back()}>← Voltar ao Dashboard</button>
+          <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📁 Inteligência de Documentos</div>
+          <div style={{ fontSize:11, color:'#8890a0', fontFamily:'monospace' }}>Doc AI Engine v5.3</div>
+        </div>
+
+        <div style={s.body}>
+          {loadErr && <div style={s.errBanner}>⚠ {loadErr}</div>}
+
+          {/* Upload / Drop zone */}
+          <div style={s.card}>
+            <div style={s.secTitle}>📤 Upload & Análise com IA</div>
+            <div
+              style={s.dropzone}
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => { e.preventDefault(); setDragging(true) }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => {
+                e.preventDefault(); setDragging(false)
+                const f = e.dataTransfer.files?.[0]
+                if (f) analyzeFile(f)
+              }}
+            >
+              <div style={{ fontSize:32, marginBottom:8 }}>📎</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'#185FA5', marginBottom:4 }}>
+                Arraste um documento ou clique para selecionar
+              </div>
+              <div style={{ fontSize:11, color:'#8890a0' }}>
+                PDF, DOCX, TXT, DWG — análise automática por IA
+              </div>
+              <input
+                ref={fileRef} type="file" style={{ display:'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) analyzeFile(f) }}
+              />
+            </div>
+
+            {analyzing && (
+              <div style={{ textAlign:'center', padding:'20px 0', color:'#185FA5', fontSize:13 }}>
+                ⏳ Analisando documento com IA...
+              </div>
+            )}
+            {result && !analyzing && (
+              <div style={{ marginTop:16 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#8890a0',
+                  textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>
+                  Resultado da análise
+                </div>
+                <div style={s.analysisBox}>{result}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Lista de documentos */}
+          <div style={s.card}>
+            <div style={s.secTitle}>📋 Documentos Recentes ({docs.length})</div>
+            {docs.length === 0 && !loadErr && (
+              <div style={{ color:'#8890a0', fontSize:13, padding:'8px 0' }}>
+                Nenhum documento encontrado. Faça o upload acima para começar.
+              </div>
+            )}
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {docs.map(d => (
+                <div
+                  key={d.id}
+                  style={{
+                    border: selectedDoc?.id === d.id ? '1.5px solid #185FA5' : '1px solid #e5e8f0',
+                    borderRadius:10, padding:'12px 16px', cursor:'pointer',
+                    background: selectedDoc?.id === d.id ? '#f0f6ff' : '#fff',
+                    transition:'all .15s',
+                  }}
+                  onClick={() => setSelectedDoc(prev => prev?.id === d.id ? null : d)}
+                >
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36',
+                        overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:4 }}>
+                        {d.nome}
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                        <span style={{
+                          ...s.tipoChip,
+                          background: (TIPO_COLOR[d.tipo] ?? '#534AB7') + '18',
+                          color: TIPO_COLOR[d.tipo] ?? '#534AB7',
+                          border: `1px solid ${(TIPO_COLOR[d.tipo] ?? '#534AB7')}44`,
+                        }}>{d.tipo}</span>
+                        <span style={s.statusChip}>{d.status}</span>
+                        <span style={{ fontSize:10, color:'#8890a0' }}>{d.tamanho}</span>
+                        <span style={{ fontSize:10, color:'#8890a0' }}>{d.data}</span>
+                      </div>
+                      {d.tags.length > 0 && (
+                        <div style={{ marginTop:4 }}>
+                          {d.tags.map(t => <span key={t} style={s.tag}>{t}</span>)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {selectedDoc?.id === d.id && d.analysis_result && (
+                    <div style={{ marginTop:12, borderTop:'1px solid #e5e8f0', paddingTop:12 }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:'#8890a0',
+                        textTransform:'uppercase', letterSpacing:'.08em', marginBottom:6 }}>
+                        Análise IA
+                      </div>
+                      <div style={s.analysisBox}>{d.analysis_result}</div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}

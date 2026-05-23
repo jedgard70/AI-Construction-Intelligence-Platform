@@ -183,4 +183,63 @@ export default function QualidadePage() {
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 {[['todas','Todas'],['pendente','Pendentes'],['em_andamento','Em andamento'],['concluido','Concluídos']].map(([v,l]) => (
                   <button key={v} onClick={() => setFiltro(v)} style={{
-                    padding:'4px 12px', b
+                    padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:600,
+                    cursor:'pointer', fontFamily:'inherit', border:'1px solid',
+                    background: filtro===v ? '#185FA5' : '#f4f5f7',
+                    color: filtro===v ? '#fff' : '#5a6282',
+                    borderColor: filtro===v ? '#185FA5' : '#e5e8f0',
+                  }}>{l}</button>
+                ))}
+              </div>
+
+              {/* Lista Checklists */}
+              {loading && <div style={{ color:'#8890a0', fontSize:13, padding:8 }}>Carregando checklists...</div>}
+              {!loading && filtered.length === 0 && (
+                <div style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12,
+                  padding:'20px 22px', color:'#8890a0', fontSize:13 }}>
+                  Nenhum checklist encontrado para o filtro selecionado.
+                </div>
+              )}
+              {filtered.map(c => {
+                const okCount = c.itens.filter(i => i.ok).length
+                const pct = c.itens.length > 0 ? Math.round((okCount / c.itens.length) * 100) : 0
+                return (
+                  <div key={c.id} style={{ background:'#fff', border:'1px solid #e5e8f0',
+                    borderRadius:12, padding:'16px 20px' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36', marginBottom:2 }}>{c.titulo}</div>
+                        <div style={{ fontSize:11, color:'#8890a0' }}>
+                          {c.categoria} {c.norma ? `· ${c.norma}` : ''} {c.responsavel ? `· ${c.responsavel}` : ''}
+                        </div>
+                      </div>
+                      <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px',
+                        borderRadius:20, background: (stColor[c.status] ?? '#888')+'18',
+                        color: stColor[c.status] ?? '#888',
+                        border:`1px solid ${(stColor[c.status] ?? '#888')}44`,
+                        whiteSpace:'nowrap' }}>
+                        {stLabel[c.status] ?? c.status}
+                      </span>
+                    </div>
+                    {/* Barra de progresso */}
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <div style={{ flex:1, height:6, background:'#e5e8f0', borderRadius:3, overflow:'hidden' }}>
+                        <div style={{ width:`${pct}%`, height:'100%',
+                          background: pct >= 80 ? '#3B6D11' : pct >= 50 ? '#BA7517' : '#A32D2D',
+                          borderRadius:3, transition:'width .3s' }} />
+                      </div>
+                      <div style={{ fontSize:11, fontFamily:'monospace', color:'#5a6282', whiteSpace:'nowrap' }}>
+                        {okCount}/{c.itens.length} ({pct}%)
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </>
+  )
+}

@@ -1,0 +1,274 @@
+/* ─────────────────────────────────────────────────────────────────
+ * ConstructAI Design System — Foundations
+ * ConstructAI / Construction Intelligence Platform v5.3
+ * Operator: Apex Global Ltda · Eng. José Edgard de Oliveira
+ *
+ * The brand has TWO surfaces:
+ *   1. LOGIN / MARKETING / "v5.3 ENTERPRISE COGNITIVE INFRASTRUCTURE"
+ *      → near-black navy + amber gold + Sora
+ *   2. APP / DASHBOARD / WORK SURFACES
+ *      → light gray + corporate blue + earthy semantic palette + Geist
+ *
+ * Tokens below are namespaced so a single file can power both.
+ * ───────────────────────────────────────────────────────────────── */
+
+/* ── Webfonts ───────────────────────────────────────────────────── */
+/* Geist + Sora still pulled from Google (matches production). */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap');
+
+/* Noto Sans Mono — variable-weight, variable-width, self-hosted.
+ * This is the licensed brand mono; replaces Geist Mono everywhere. */
+@font-face {
+  font-family: 'Noto Sans Mono';
+  src: url('fonts/NotoSansMono-VariableFont_wdth_wght.ttf') format('truetype-variations'),
+       url('fonts/NotoSansMono-VariableFont_wdth_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-stretch: 62.5% 100%;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ===== BRAND CORE ============================================= */
+  --brand-blue:        #185FA5;   /* Primary action / chart Previsto */
+  --brand-blue-deep:   #0C447C;   /* Pressed / hover-on-blue */
+  --brand-blue-tint:   #EFF4FF;   /* Selected nav row, soft chip bg */
+  --brand-blue-mid:    #B5D4F4;   /* FAQ pill border */
+  --brand-amber:       #f0a500;   /* Marketing CTA, login accent */
+  --brand-red:         #A32D2D;   /* Logo accent shard / destructive */
+  --brand-navy:        #1a2a4a;   /* Logo background field */
+
+  /* ===== NEUTRAL — DARK (login / marketing surface) ============= */
+  --dark-bg:           #0a0d12;
+  --dark-bg-2:         #111520;   /* card / input fill */
+  --dark-bg-3:         #0f1a2e;   /* gradient stop */
+  --dark-border:       #1e2535;
+  --dark-fg-1:         #e8ecf5;   /* primary text on dark */
+  --dark-fg-2:         #9ca3c4;   /* labels, caps */
+  --dark-fg-3:         #6b7a99;   /* secondary body, hints */
+
+  /* ===== NEUTRAL — LIGHT (app surface) ========================== */
+  --app-bg:            #f4f5f7;   /* page */
+  --app-surface:       #ffffff;   /* card */
+  --app-surface-2:     #f8f9fc;   /* input, table header, hover */
+  --app-surface-3:     #fafbfd;   /* zebra row */
+  --app-surface-4:     #f0f2f7;   /* locked input, soft chip bg */
+  --app-border:        #e5e8f0;
+  --app-border-strong: #d0d5e0;   /* scrollbar */
+  --fg-1:              #1a1f36;   /* primary text */
+  --fg-2:              #3a4166;   /* body */
+  --fg-3:              #5a6282;   /* secondary */
+  --fg-4:              #8b93a7;   /* labels, hints */
+  --fg-5:              #a0a8bb;   /* disabled / tertiary */
+
+  /* ===== SEMANTIC — KPI / STATUS ================================
+   * These are earthy, slightly desaturated. They're used both as
+   * solid text colors AND as 18 % tinted backgrounds for chips.
+   * ============================================================= */
+  --success:           #3B6D11;   /* CPI ≥ meta, EV gradient, "concluido" */
+  --success-soft-bg:   #EAF3DE;
+  --success-soft-border:#97C459;
+  --warning:           #BA7517;   /* "pausado", warn trend, "Hoje" ref */
+  --warning-soft-bg:   #FAEEDA;
+  --warning-text:      #854F0B;   /* darker copy on warning surfaces */
+  --info:              #185FA5;   /* === --brand-blue; restated for semantic use */
+  --info-soft-bg:      #E6F1FB;
+  --danger:            #A32D2D;   /* atrasado, NCI vencida, AC gradient */
+  --danger-soft-bg:    #FCEBEB;
+  --danger-soft-border:#F09595;
+  --purple:            #534AB7;   /* planejamento, Director Cut, Jurídico */
+  --purple-deep:       #4338A0;
+  --orange-deep:       #854F0B;   /* investidor, valor projetado */
+  --neutral-status:    #5F5E5A;   /* cancelado */
+
+  /* ===== ROLE ACCENTS (DashboardByRole) =========================
+   * Each user role gets a tinted accent for avatar + chart hues.
+   * ============================================================= */
+  --role-diretor:      #534AB7;
+  --role-financeiro:   #3B6D11;
+  --role-coordenador:  #185FA5;
+  --role-engenheiro:   #BA7517;
+  --role-qualidade:    #A32D2D;
+  --role-investidor:   #854F0B;
+
+  /* ===== TYPE — FAMILIES ========================================
+   * Geist = workhorse for the app (numeric, dense data, tables).
+   * Sora  = display / marketing / login.
+   * Mono  = code, KPI codes (e.g. "OBR-2026-001"), system loaders
+   *         ("CARREGANDO..."), contract preview blocks.
+   * ============================================================= */
+  --font-sans-app:     'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans-display: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:         'Noto Sans Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ===== TYPE — SCALE (rooted in the app, which uses tight sizes) */
+  --fs-9:   9px;   --fs-10: 10px;  --fs-11: 11px;  --fs-12: 12px;
+  --fs-13: 13px;   --fs-14: 14px;  --fs-15: 15px;  --fs-16: 16px;
+  --fs-18: 18px;   --fs-20: 20px;  --fs-22: 22px;  --fs-26: 26px;
+  --fs-30: 30px;   --fs-36: 36px;
+
+  /* ===== TYPE — TRACKING / LEADING ============================== */
+  --tracking-tight:    -0.01em;
+  --tracking-normal:   0;
+  --tracking-wide:     0.06em;   /* table headers, KPI labels */
+  --tracking-wider:    0.08em;   /* UPPERCASE eyebrows */
+  --tracking-mono:     2px;      /* "CARREGANDO..." */
+  --leading-tight:     1.2;
+  --leading-snug:      1.5;
+  --leading-body:      1.6;
+  --leading-loose:     1.75;
+
+  /* ===== RADIUS ================================================= */
+  --radius-xs:   4px;   /* scrollbar, tiny tag corners */
+  --radius-sm:   6px;   /* chips, nav row */
+  --radius-md:   8px;   /* default — inputs, buttons, cards in dark */
+  --radius-lg:   10px;  /* logo box, modo cards */
+  --radius-xl:   12px;  /* KPI cards, alert cards (app default) */
+  --radius-2xl:  16px;  /* modal, help panel */
+  --radius-pill: 20px;  /* status pills, badges */
+  --radius-full: 999px;
+
+  /* ===== SPACING (4 px base) ==================================== */
+  --space-1:   4px;   --space-2:   8px;   --space-3:  12px;
+  --space-4:  16px;   --space-5:  20px;   --space-6:  24px;
+  --space-7:  32px;   --space-8:  48px;   --space-9:  64px;
+
+  /* ===== SHADOWS ================================================
+   * Cards in the app are flat: 1 px border, no shadow. Shadow is
+   * reserved for floating layers (modal, help panel, login CTA).
+   * ============================================================= */
+  --shadow-cta:    0 0 0 3px rgba(240, 165, 0, 0.12);      /* amber focus ring */
+  --shadow-focus:  0 0 0 3px rgba(24, 95, 165, 0.18);      /* blue focus ring */
+  --shadow-help:   0 4px 16px rgba(24, 95, 165, 0.40);     /* FAB */
+  --shadow-panel:  0 8px 40px rgba(0, 0, 0, 0.18);         /* help panel, popovers */
+  --shadow-modal:  0 16px 48px rgba(0, 0, 0, 0.20);        /* New Project modal */
+
+  /* ===== GRADIENTS ============================================== */
+  --gradient-login-stage:
+    linear-gradient(160deg, #0a0d12 0%, #111520 60%, #0f1a2e 100%);
+  --gradient-modal-veil:
+    rgba(0, 0, 0, 0.45);
+
+  /* ===== MOTION ================================================= */
+  --motion-fast:    0.10s ease;
+  --motion-base:    0.15s ease;
+  --motion-slow:    0.20s ease;
+  --motion-color:   color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * SEMANTIC TEXT STYLES
+ * Use these as class names in mockups — they encode the actual
+ * combinations the product ships with.
+ * ───────────────────────────────────────────────────────────────── */
+
+/* Marketing / hero (dark surface) */
+.h-hero-display {
+  font-family: var(--font-sans-display);
+  font-size: var(--fs-36);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  color: var(--dark-fg-1);
+}
+.h-hero-lede {
+  font-family: var(--font-sans-display);
+  font-size: var(--fs-15);
+  font-weight: 400;
+  line-height: var(--leading-loose);
+  color: var(--dark-fg-3);
+}
+.h-login-h2 {
+  font-family: var(--font-sans-display);
+  font-size: var(--fs-26);
+  font-weight: 700;
+  color: var(--dark-fg-1);
+}
+
+/* App headings */
+.h-app-page-title {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-16);
+  font-weight: 600;
+  color: var(--fg-1);
+}
+.h-app-card-title {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-13);
+  font-weight: 600;
+  color: var(--fg-1);
+}
+.h-app-kpi-value {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-22);
+  font-weight: 600;
+  color: var(--fg-1);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Eyebrows / labels */
+.h-eyebrow {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-11);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--dark-fg-2);
+}
+.h-app-eyebrow {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-4);
+}
+.h-app-section {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-11);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg-4);
+}
+
+/* Body */
+.p-body {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-13);
+  font-weight: 400;
+  line-height: var(--leading-body);
+  color: var(--fg-2);
+}
+.p-secondary {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-12);
+  color: var(--fg-4);
+}
+.p-helper {
+  font-family: var(--font-sans-app);
+  font-size: var(--fs-11);
+  color: var(--fg-4);
+}
+
+/* Mono — the "system speaks" voice */
+.mono-loader {
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  font-weight: 500;
+  letter-spacing: var(--tracking-mono);
+  color: var(--brand-amber);
+  text-transform: uppercase;
+}
+.mono-version {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  font-weight: 600;
+  letter-spacing: var(--tracking-mono);
+  color: var(--brand-amber);
+  text-transform: uppercase;
+}
+.mono-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-10);
+  color: var(--fg-5);
+}

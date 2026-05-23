@@ -2147,4 +2147,38 @@ Top 3 opportunities to reduce cost without compromising quality.` }
                       }}>🤖 {btn.label}</button>
                     ))}
                   </div>
-                  {feasAILoading && <div style={{ textAlign:'cen
+                  {feasAILoading && <div style={{ textAlign:'center' as const, color:'#58a6ff', padding:16 }}>⏳ Generating AI feasibility report...</div>}
+                  {feasAI && !feasAILoading && (
+                    <>
+                      <div style={{ background:'#0d1117', border:'1px solid #30363d', borderRadius:8,
+                        padding:'16px 18px', fontSize:12, color:'#e6edf3', lineHeight:1.7,
+                        whiteSpace:'pre-wrap' as const, fontFamily:'monospace', maxHeight:480, overflowY:'auto' as const }}>
+                        {feasAI}
+                      </div>
+                      <button style={{ ...s.btn, marginTop:10, fontSize:11, padding:'6px 14px' }}
+                        onClick={() => setPrintData({ title:'AI Feasibility Report', content: feasAI })}>
+                        🖨 Print / Share
+                      </button>
+                    </>
+                  )}
+                </div>
+
+              </>
+            )}
+
+          </div>{/* end main content */}
+
+        </div>{/* end page */}
+
+        {printData && (
+          <PrintShareModal
+            title={printData.title}
+            content={printData.content}
+            onClose={() => setPrintData(null)}
+          />
+        )}
+
+      </div>
+    </>
+  )
+}

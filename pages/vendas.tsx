@@ -179,4 +179,25 @@ export default function VendasPage() {
               <select style={s.select} value={trigger} onChange={e => setTrigger(e.target.value)}>
                 <option value="roi_and_valuation_locked">ROI e Valuation definidos</option>
                 <option value="cinematic_assets_approved">Assets cinematográficos aprovados</option>
-     
+                <option value="regulatory_approved">Aprovação regulatória concluída</option>
+              </select>
+              <button
+                style={{ ...s.btn, opacity: launching ? 0.6 : 1 }}
+                disabled={launching}
+                onClick={launchCampaign}
+              >
+                {launching ? '⏳ Lançando...' : launched ? '✓ Lançada!' : '🚀 Lançar Campanha'}
+              </button>
+              {launched && (
+                <div style={{ fontSize:12, color:'#3B6D11', fontWeight:600 }}>
+                  ✓ Campanha enviada com sucesso para os canais configurados.
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </>
+  )
+}
