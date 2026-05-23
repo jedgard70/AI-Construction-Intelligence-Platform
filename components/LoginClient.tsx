@@ -495,4 +495,24 @@ const CSS = `
 
 .acip-access-note {
   margin-top: 1.25rem;
-  text-
+  text-align: center;
+  font-size: 11px;
+  color: #9a9890;
+}
+
+@media (max-width: 640px) {
+  .acip-card {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+  .acip-brand {
+    padding: 1.75rem 1.5rem;
+  }
+  .acip-features {
+    display: none;
+  }
+  .acip-form {
+    padding: 1.75rem 1.5rem;
+  }
+}
+`
