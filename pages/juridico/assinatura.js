@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getSupabase } from '../../lib/supabase'
 import Head from 'next/head'
 import { JuriHeader, JuriNav, Card, Row, Field, ErrorBox, SubmitBtn, Chip, inputStyle, selectStyle } from './contratos'
 
@@ -34,7 +35,23 @@ export default function Assinatura() {
       })
       const data = await resp.json()
       if (!resp.ok) setError(data.errors?.join('\n') || data.message)
-      else { setResult(data); if (data.lumin?.signature_request_id) setStatusId(data.lumin.signature_request_id) }
+      else {
+        setResult(data)
+        if (data.lumin?.signature_request_id) setStatusId(data.lumin.signature_request_id)
+        // Persist to Supabase
+        try {
+          const sb = getSupabase()
+          if (sb) {
+            await sb.from('contracts').insert({
+              project_id: form.project_id || null,
+              tipo: 'signature_request',
+              status: data.lumin?.status || 'pending',
+              signature_request_id: data.lumin?.signature_request_id || null,
+              parte_nome: signers.filter(s => s.name && s.email).map(s => s.name).join(', '),
+            })
+          }
+        } catch (_) {}
+      }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
@@ -46,7 +63,18 @@ export default function Assinatura() {
       const resp = await fetch(`/api/juridico/assinatura/status?signature_request_id=${encodeURIComponent(statusId)}`)
       const data = await resp.json()
       if (!resp.ok) setError(data.message)
-      else setStatusResult(data)
+      else {
+        setStatusResult(data)
+        // Update contract status in Supabase
+        try {
+          const sb = getSupabase()
+          if (sb && statusId && data.lumin_status) {
+            await sb.from('contracts')
+              .update({ status: data.lumin_status })
+              .eq('signature_request_id', statusId)
+          }
+        } catch (_) {}
+      }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }

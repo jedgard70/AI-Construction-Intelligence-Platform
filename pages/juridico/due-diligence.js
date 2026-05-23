@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getSupabase } from '../../lib/supabase'
 import Head from 'next/head'
 import { JuriHeader, JuriNav, Card, Row, Field, ErrorBox, SubmitBtn, ScoreBar, RecomBadge, Chip, inputStyle, selectStyle } from './contratos'
 
@@ -34,7 +35,22 @@ export default function DueDiligence() {
       const resp = await fetch('/api/juridico/due-diligence/relatorio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await resp.json()
       if (!resp.ok) setError(data.errors?.join('\n') || data.message)
-      else setResult(data)
+      else {
+        setResult(data)
+        try {
+          const sb = getSupabase()
+          if (sb && data.report) {
+            await sb.from('due_diligence').insert({
+              project_id: body.project_id,
+              investor_id: body.investor_id,
+              project_stage: body.project_stage,
+              rating_geral: data.report.rating_geral || null,
+              recomendacao: data.report.recomendacao || null,
+              report_json: data.report,
+            })
+          }
+        } catch (_) {}
+      }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }

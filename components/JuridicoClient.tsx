@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { getSupabase } from '../lib/supabase'
 
 interface Parte {
   nome: string; nacionalidade: string; estado_civil: string
@@ -190,6 +191,7 @@ export default function JuridicoClient() {
   useEffect(() => {
     if (etapa !== 7 || contractSavedRef.current) return
     contractSavedRef.current = true
+    ;(async () => {
     try {
       const projectId = (router.query.projectId as string) || null
       const meta = {
@@ -203,9 +205,26 @@ export default function JuridicoClient() {
         date: new Date().toISOString(),
         status: 'draft',
       }
+      // Persist to Supabase contracts table
+      try {
+        const sb = getSupabase()
+        if (sb) {
+          await sb.from('contracts').insert({
+            project_id: meta.projectId,
+            tipo: meta.type,
+            parte_nome: meta.party,
+            estado: meta.state,
+            valor_total: parseFloat(meta.value) || 0,
+            idioma: meta.idioma,
+            status: 'draft',
+          })
+        }
+      } catch (_) {}
+      // Keep localStorage as fallback
       const existing = JSON.parse(localStorage.getItem('atlas_contracts') || '[]')
       localStorage.setItem('atlas_contracts', JSON.stringify([meta, ...existing].slice(0, 200)))
     } catch {}
+    })()
   }, [etapa, idioma, usTipoContrato, tipoContrato, usParty.name, parte.nome,
       usProject.state, usFinancial.contractValue, financeiro.valor_total, router.query.projectId])
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getSupabase } from '../../lib/supabase'
 import Head from 'next/head'
 import Link from 'next/link'
 
@@ -37,7 +38,22 @@ export default function AnalisarContrato() {
       const resp = await fetch('/api/juridico/contratos/analisar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await resp.json()
       if (!resp.ok) setError(data.errors?.join('\n') || data.message)
-      else setResult(data)
+      else {
+        setResult(data)
+        // Persist analysis to Supabase
+        try {
+          const sb = getSupabase()
+          if (sb && data.analysis) {
+            await sb.from('contracts').insert({
+              project_id: body.project_id,
+              tipo: body.contract_type,
+              status: data.analysis.recomendacao_final || 'analysed',
+              score_risco: data.analysis.score_risco_geral ?? null,
+              analysis_json: data.analysis,
+            })
+          }
+        } catch (_) {}
+      }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }

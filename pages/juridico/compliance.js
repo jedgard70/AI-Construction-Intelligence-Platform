@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getSupabase } from '../../lib/supabase'
 import Head from 'next/head'
 import { JuriHeader, JuriNav, Card, Row, Field, ErrorBox, SubmitBtn, ScoreBar, Chip, inputStyle, selectStyle } from './contratos'
 
@@ -40,7 +41,21 @@ export default function Compliance() {
       })
       const data = await resp.json()
       if (!resp.ok) setError(data.errors?.join('\n') || data.message)
-      else setResult(data)
+      else {
+        setResult(data)
+        try {
+          const sb = getSupabase()
+          if (sb && data.result) {
+            await sb.from('compliance_checks').insert({
+              project_id: form.project_id || null,
+              standards: [...selected],
+              score_compliance: data.result.score_compliance ?? null,
+              resultado_geral: data.result.resultado_geral || null,
+              result_json: data.result,
+            })
+          }
+        } catch (_) {}
+      }
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
