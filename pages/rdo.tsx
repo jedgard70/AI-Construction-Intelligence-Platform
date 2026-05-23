@@ -134,14 +134,11 @@ export default function RDOPage() {
       '📌 ATIVIDADES:',
       form.atividades || '—',
       '',
-      form.ocorrencias ? '⚠️ OCORRÊNCIAS:
-' + form.ocorrencias : '',
-      form.observacoes ? '📝 OBSERVAÇÕES:
-' + form.observacoes : '',
+      form.ocorrencias ? '⚠️ OCORRÊNCIAS:\n' + form.ocorrencias : '',
+      form.observacoes ? '📝 OBSERVAÇÕES:\n' + form.observacoes : '',
       '',
       '✍️ Responsável: ' + (form.responsavel || '—'),
-    ].filter(l => l !== undefined).join('
-')
+    ].filter(l => l !== undefined).join('\n')
   }
 
   async function handleSalvar() {
