@@ -1,5 +1,4 @@
-'use client'
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../frontend/lib/supabase'
 
@@ -19,8 +18,16 @@ export default function LoginClient() {
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent | KeyboardEvent) {
     e.preventDefault()
+    if (!email || !password) {
+      setError('Preencha e-mail e senha.')
+      return
+    }
+    if (!supabase) {
+      setError('Configuração do servidor incompleta. Contate o suporte.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -45,11 +52,15 @@ export default function LoginClient() {
         setLoading(false)
         return
       }
-      window.location.href = '/dashboard'
+      router.push('/dashboard')
     } catch (err: unknown) {
       setError('Erro de conexão. Tente novamente.')
       setLoading(false)
     }
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') handleSubmit(e)
   }
 
   return (
@@ -136,6 +147,7 @@ export default function LoginClient() {
                 <input id="email" type="email" autoComplete="email"
                   placeholder="nome@empresa.com.br" className="acip-input"
                   value={email} onChange={e => setEmail(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   required disabled={loading} />
               </div>
             </div>
@@ -155,6 +167,7 @@ export default function LoginClient() {
                   autoComplete="current-password" placeholder="••••••••••"
                   className="acip-input acip-input--pwd"
                   value={password} onChange={e => setPassword(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   required disabled={loading} />
                 <button type="button" className="acip-eye-btn"
                   onClick={() => setShowPwd(v => !v)}
@@ -487,32 +500,4 @@ const CSS = `
   padding: 10px 14px;
   background: rgba(186,117,23,.08);
   border: 1px solid rgba(186,117,23,.25);
-  border-radius: var(--radius);
-  font-size: 12px;
-  color: #7a5010;
-  line-height: 1.5;
-}
-
-.acip-access-note {
-  margin-top: 1.25rem;
-  text-align: center;
-  font-size: 11px;
-  color: #9a9890;
-}
-
-@media (max-width: 640px) {
-  .acip-card {
-    grid-template-columns: 1fr;
-    max-width: 420px;
-  }
-  .acip-brand {
-    padding: 1.75rem 1.5rem;
-  }
-  .acip-features {
-    display: none;
-  }
-  .acip-form {
-    padding: 1.75rem 1.5rem;
-  }
-}
-`
+  border-radius: var(--r
