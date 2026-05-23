@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { getSupabase } from '../lib/supabase'
 
 // ─── Brand palette ───────────────────────────────────────────────
 const BRAND = {
@@ -139,6 +140,53 @@ export default function USBrand() {
   const [tab, setTab] = useState<'brand'|'icp'|'value'|'compete'|'pricing'|'market'|'messaging'>('brand')
   const [selectedTagline, setSelectedTagline] = useState(0)
 
+  // ── Supabase live data (fallback to hardcoded arrays) ──
+  const [taglines, setTaglines] = useState(TAGLINES)
+  const [personas, setPersonas] = useState(PERSONAS)
+  const [valueProps, setValueProps] = useState(VALUE_PROPS)
+  const [competitors, setCompetitors] = useState(COMPETITORS)
+  const [pricing, setPricing] = useState(PRICING)
+
+  const loadBrandAssets = useCallback(async () => {
+    const sb = getSupabase()
+    if (!sb) return
+    const { data } = await sb.from('brand_assets').select('*').order('created_at', { ascending: true })
+    if (!data || data.length === 0) return
+
+    const tl = data.filter((d: any) => d.tipo === 'tagline')
+    if (tl.length > 0) setTaglines(tl.map((d: any) => ({ line: d.conteudo, score: d.score || 90, why: d.descricao || '' })))
+
+    const ps = data.filter((d: any) => d.tipo === 'persona')
+    if (ps.length > 0) setPersonas(ps.map((d: any) => {
+      const meta = d.metadata || {}
+      return {
+        icon: meta.icon || '🏗️', name: d.nome || d.conteudo,
+        title: meta.title || '', company: meta.company || '',
+        location: meta.location || '', pain: meta.pain || [],
+        gain: meta.gain || [], budget: meta.budget || '',
+        urgency: meta.urgency || 'Medium',
+        color: meta.color || BRAND.primary, bg: meta.bg || '#E8F0F9',
+      }
+    }))
+
+    const vp = data.filter((d: any) => d.tipo === 'value_prop')
+    if (vp.length > 0) setValueProps(vp.map((d: any) => ({ icon: d.metadata?.icon || '⚡', title: d.nome || d.conteudo, desc: d.descricao || '', metric: d.metadata?.metric || '' })))
+
+    const cp = data.filter((d: any) => d.tipo === 'competitor')
+    if (cp.length > 0) setCompetitors(cp.map((d: any) => {
+      const meta = d.metadata || {}
+      return { name: d.nome, category: meta.category || '', price: meta.price || '', strengths: meta.strengths || [], weaknesses: meta.weaknesses || [], ourEdge: meta.ourEdge || '' }
+    }))
+
+    const pr = data.filter((d: any) => d.tipo === 'pricing')
+    if (pr.length > 0) setPricing(pr.map((d: any) => {
+      const meta = d.metadata || {}
+      return { name: d.nome, price: meta.price || 0, unit: meta.unit || '/mo', target: meta.target || '', features: meta.features || [], color: meta.color || BRAND.primary, bg: meta.bg || '#E8F0F9' }
+    }))
+  }, [])
+
+  useEffect(() => { loadBrandAssets() }, [loadBrandAssets])
+
   const TABS = [
     { id: 'brand',     label: '🎨 Brand' },
     { id: 'icp',       label: '👤 ICP' },
@@ -187,7 +235,7 @@ export default function USBrand() {
                   Atlas Construction Intelligence
                 </div>
                 <div style={{ fontSize: 16, color: '#a8c4e0', marginBottom: 24, fontStyle: 'italic' }}>
-                  "{TAGLINES[selectedTagline].line}"
+                  "{taglines[selectedTagline].line}"
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ background: BRAND.accent, color: BRAND.dark, borderRadius: 8, padding: '6px 16px', fontSize: 12, fontWeight: 700 }}>
@@ -206,7 +254,7 @@ export default function USBrand() {
               <div style={{ background: '#fff', borderRadius: 12, padding: '24px', marginBottom: 16, border: '1px solid #e0e6ef' }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>🏷️ Taglines — Escolha a principal</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {TAGLINES.map((t, i) => (
+                  {taglines.map((t, i) => (
                     <div key={i} onClick={() => setSelectedTagline(i)} style={{
                       padding: '14px 18px', borderRadius: 10, cursor: 'pointer',
                       border: `2px solid ${selectedTagline === i ? BRAND.primary : '#e0e6ef'}`,
@@ -279,7 +327,7 @@ export default function USBrand() {
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>👤 Ideal Customer Profile (ICP)</div>
               <div style={{ fontSize: 13, color: BRAND.muted, marginBottom: 20 }}>4 personas prioritárias para o mercado americano</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                {PERSONAS.map(p => (
+                {personas.map(p => (
                   <div key={p.name} style={{ background: '#fff', borderRadius: 12, border: `2px solid ${p.color}33`, overflow: 'hidden' }}>
                     <div style={{ background: p.bg, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'center' }}>
                       <div style={{ fontSize: 32 }}>{p.icon}</div>
@@ -344,7 +392,7 @@ export default function USBrand() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-                {VALUE_PROPS.map(v => (
+                {valueProps.map(v => (
                   <div key={v.title} style={{ background: '#fff', borderRadius: 12, padding: '20px', border: '1px solid #e0e6ef' }}>
                     <div style={{ fontSize: 28, marginBottom: 10 }}>{v.icon}</div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: BRAND.text, marginBottom: 6 }}>{v.title}</div>
@@ -377,7 +425,7 @@ export default function USBrand() {
                     </tr>
                   </thead>
                   <tbody>
-                    {COMPETITORS.map((c, i) => (
+                    {competitors.map((c, i) => (
                       <tr key={c.name} style={{ background: i % 2 === 0 ? '#fafbfc' : '#fff' }}>
                         <td style={{ padding: '10px 14px', fontWeight: 600, color: BRAND.text }}>{c.name}</td>
                         <td style={{ padding: '10px 14px', color: '#A32D2D' }}>{c.weakness}</td>
@@ -413,7 +461,7 @@ export default function USBrand() {
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>💰 Estratégia de Pricing</div>
               <div style={{ fontSize: 13, color: BRAND.muted, marginBottom: 24 }}>Três tiers alinhados aos ICPs</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
-                {PRICING.map(p => (
+                {pricing.map(p => (
                   <div key={p.name} style={{
                     background: '#fff', borderRadius: 16,
                     border: `2px solid ${p.recommended ? p.color : '#e0e6ef'}`,

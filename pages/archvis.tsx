@@ -1,7 +1,8 @@
 'use client'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import { getSupabase } from '../lib/supabase'
 import PrintShareModal from '../components/PrintShareModal'
 import {
   LayoutDashboard, Box, Library, ImageIcon,
@@ -49,6 +50,8 @@ export default function ArchVisPage() {
   const router = useRouter()
   const [tab, setTab]             = useState<Tab>('dashboard')
   const [projects, setProjects]   = useState<Project[]>(INITIAL_PROJECTS)
+  const [loadingProjects, setLoadingProjects] = useState(true)
+  const [galleryImgs, setGalleryImgs] = useState(GALLERY_IMGS)
   const [showModal, setShowModal] = useState(false)
   const [newName, setNewName]     = useState('')
   const [newStyle, setNewStyle]   = useState('Contemporary')
@@ -66,7 +69,25 @@ export default function ArchVisPage() {
     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&q=80',
   ]
 
-  function createProject() {
+  const loadProjects = useCallback(async () => {
+    setLoadingProjects(true)
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb.from('archvis_projects').select('*').order('created_at', { ascending: false })
+      if (data && data.length > 0) {
+        setProjects(data.map(d => ({ name: d.nome || d.name, status: d.status || 'Project Created', date: new Date(d.created_at).toLocaleDateString('pt-BR'), img: d.img_url || PLACEHOLDER_IMGS[0], style: d.estilo || d.style || 'Contemporary' })))
+      }
+      const { data: renders } = await sb.from('archvis_renders').select('*').order('created_at', { ascending: false }).limit(6)
+      if (renders && renders.length > 0) {
+        setGalleryImgs(renders.map(r => ({ name: r.nome || r.name, style: r.estilo || 'Contemporary', img: r.img_url || GALLERY_IMGS[0].img })))
+      }
+    }
+    setLoadingProjects(false)
+  }, [])
+
+  useEffect(() => { loadProjects() }, [loadProjects])
+
+  async function createProject() {
     if (!newName.trim()) return
     const p: Project = {
       name: newName.trim(),
@@ -74,6 +95,10 @@ export default function ArchVisPage() {
       date: 'just now',
       img: PLACEHOLDER_IMGS[Math.floor(Math.random() * PLACEHOLDER_IMGS.length)],
       style: newStyle,
+    }
+    const sb = getSupabase()
+    if (sb) {
+      await sb.from('archvis_projects').insert({ nome: p.name, status: p.status, estilo: p.style, img_url: p.img })
     }
     setProjects(prev => [p, ...prev])
     setNewName(''); setShowModal(false)
@@ -94,6 +119,11 @@ export default function ArchVisPage() {
       const data = await res.json()
       setAiResult(data?.content?.[0]?.text || data.response || 'Análise concluída.')
     } catch { setAiResult('Erro ao conectar ao agente. Verifique a conexão.') }
+    // Save AI result to Supabase
+    const sb2 = getSupabase()
+    if (sb2 && proj && aiResult) {
+      await sb2.from('archvis_renders').insert({ nome: proj.name, estilo: proj.style, img_url: proj.img, analise_ia: aiResult })
+    }
     setAiRunning(false)
   }
 

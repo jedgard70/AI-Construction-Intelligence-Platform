@@ -1,7 +1,8 @@
 'use client'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import { getSupabase } from '../lib/supabase'
 import Image from 'next/image'
 import {
   LayoutDashboard, Film, Cuboid, FolderOpen, MessageSquareText,
@@ -68,9 +69,27 @@ export default function DirectorCutPage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiText, setAiText]       = useState('')
 
-  function createProject() {
+  // Supabase load
+  const loadData = useCallback(async () => {
+    const sb = getSupabase()
+    if (!sb) return
+    const { data: vp } = await sb.from('video_projects').select('*').order('created_at', { ascending: false })
+    if (vp && vp.length > 0) {
+      setProjects(vp.map(d => ({ title: d.titulo || d.title, phase: d.fase || 'Development', progress: d.progresso_pct || 0, active: false, img: d.thumbnail_url || INITIAL_PROJECTS[0].img })))
+    }
+    const { data: va } = await sb.from('video_analyses').select('*').order('created_at', { ascending: false }).limit(10)
+    if (va && va.length > 0) {
+      setReviews(va.map(d => ({ reviewer: d.analisado_por || 'Team', role: d.tipo_analise || 'Analysis', comment: d.resultado || '', status: 'resolved', time: new Date(d.created_at).toLocaleDateString('pt-BR') })))
+    }
+  }, [])
+
+  useEffect(() => { loadData() }, [loadData])
+
+  async function createProject() {
     if (!newTitle.trim()) return
     const p: Project = { title: newTitle.trim(), phase: newPhase, progress: 0, active: false, img: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&q=80' }
+    const sb = getSupabase()
+    if (sb) await sb.from('video_projects').insert({ titulo: p.title, fase: p.phase, progresso_pct: 0, thumbnail_url: p.img, status: 'Em Andamento' })
     setProjects(prev => [p, ...prev])
     setNewTitle(''); setShowNew(false)
   }
@@ -115,7 +134,10 @@ export default function DirectorCutPage() {
         }),
       })
       const data = await res.json()
-      setAiText(data?.content?.[0]?.text || data.response || 'Análise concluída.')
+      const result = data?.content?.[0]?.text || data.response || 'Análise concluída.'
+      setAiText(result)
+      const sb2 = getSupabase()
+      if (sb2 && p) await sb2.from('video_analyses').insert({ tipo_analise: 'Director Cut AI', resultado: result, analisado_por: 'IA Claude', confianca_pct: 92 })
     } catch { setAiText('Erro ao conectar ao agente.') }
     setAiLoading(false)
   }

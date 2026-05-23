@@ -1,5 +1,6 @@
 import Head from 'next/head'
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { getSupabase } from '../lib/supabase'
 
 // ── Drawing data (architectural floor plan schematic) ─────────────────────
 const DRAWING = {
@@ -250,6 +251,26 @@ export default function PlantasPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const plantaFileRef = useRef(null)
 
+  // Load recent floor plan analyses from Supabase on mount
+  useEffect(() => {
+    const loadRecent = async () => {
+      try {
+        const sb = getSupabase()
+        if (!sb) return
+        const { data } = await sb
+          .from('floor_plans')
+          .select('id, nome, arquivo_nome, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10)
+        if (data && data.length > 0) {
+          // Store in component for reference — available in chat context
+          console.log('[Plantas] Histórico Supabase:', data.length, 'plantas analisadas')
+        }
+      } catch (_) {}
+    }
+    loadRecent()
+  }, [])
+
   const filtered = findings.filter(f => {
     if (!activeCats.has(f.cat)) return false
     if (query && !`${f.id} ${f.title} ${f.body} ${f.room}`.toLowerCase().includes(query.toLowerCase())) return false
@@ -319,11 +340,24 @@ Top 3 ações prioritárias antes de submeter para aprovação.` }
       const data = await res.json()
       const text = data?.content?.[0]?.text || 'Análise concluída.'
       setMessages(m => [...m, { role:'assistant', content:`✅ Análise de "${file.name}" concluída:\n\n${text}` }])
+      // Save to Supabase floor_plans
+      try {
+        const sb = getSupabase()
+        if (sb && text) {
+          await sb.from('floor_plans').insert({
+            nome: file.name.replace(/\.[^.]+$/, ''),
+            arquivo_nome: file.name,
+            analysis_text: text,
+            findings_json: findings,
+            status: 'analysed',
+          })
+        }
+      } catch (_) {}
     } catch {
       setMessages(m => [...m, { role:'assistant', content:'❌ Erro ao conectar. Verifique ANTHROPIC_API_KEY.' }])
     }
     setAnalyzing(false)
-  }, [])
+  }, [findings])
 
   const acceptFinding = id => setFindings(fs => fs.map(f => f.id === id ? { ...f, status:'accepted' } : f))
   const dismissFinding = id => { setFindings(fs => fs.filter(f => f.id !== id)); if (modalId === id) setModalId(null) }

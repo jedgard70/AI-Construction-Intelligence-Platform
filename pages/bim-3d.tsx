@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Head from 'next/head'
+import { getSupabase } from '../lib/supabase'
 
 export default function BIM3DViewer() {
   const mountRef = useRef<HTMLDivElement>(null)
@@ -160,11 +161,34 @@ export default function BIM3DViewer() {
     }
   }, [fileExt])
 
+  // Load previous BIM analysis from Supabase cache
+  const loadPreviousAnalysis = useCallback(async (name: string, ext: string): Promise<boolean> => {
+    try {
+      const sb = getSupabase()
+      if (!sb) return false
+      const { data } = await sb
+        .from('bim3d_analyses')
+        .select('analysis_text')
+        .eq('file_name', name)
+        .eq('file_ext', ext)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (data && data.length > 0 && data[0].analysis_text) {
+        setAiAnalysis(data[0].analysis_text)
+        return true
+      }
+    } catch (_) {}
+    return false
+  }, [])
+
   // AI Analysis
   useEffect(() => {
     if (!fileName || !fileExt) return
     setAiLoading(true)
-    fetch('/api/chat', {
+    // Check Supabase for cached analysis first
+    loadPreviousAnalysis(fileName, fileExt).then(found => {
+      if (found) { setAiLoading(false); return }
+      fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6', max_tokens: 2000,
@@ -191,10 +215,25 @@ Top 5 ações prioritárias para aprovação e execução.` }]
       })
     })
       .then(r => r.json())
-      .then(d => setAiAnalysis(d?.content?.[0]?.text || 'Análise não disponível.'))
+      .then(async d => {
+        const text = d?.content?.[0]?.text || 'Análise não disponível.'
+        setAiAnalysis(text)
+        // Persist to Supabase
+        try {
+          const sb = getSupabase()
+          if (sb && text && text !== 'Análise não disponível.') {
+            await sb.from('bim3d_analyses').insert({
+              file_name: fileName,
+              file_ext: fileExt,
+              analysis_text: text,
+            })
+          }
+        } catch (_) {}
+      })
       .catch(() => setAiAnalysis('Erro ao conectar. Verifique ANTHROPIC_API_KEY no Vercel.'))
       .finally(() => setAiLoading(false))
-  }, [fileName, fileExt])
+    })
+  }, [fileName, fileExt, loadPreviousAnalysis])
 
   const EXT_COLOR: Record<string,string> = {
     ifc:'#3B6D11',rvt:'#3B6D11',stl:'#6B4EBF',obj:'#6B4EBF',

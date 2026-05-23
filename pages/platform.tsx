@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { getSupabase } from '../lib/supabase'
 
 // ─── Architecture layers ─────────────────────────────────────────
 const LAYERS = [
@@ -171,10 +172,26 @@ export default function PlatformVisualizer() {
   const router = useRouter()
   const [activeLayer, setActiveLayer] = useState<string | null>(null)
   const [view, setView] = useState<'layers' | 'modules' | 'roadmap'>('layers')
+  const [modules, setModules] = useState(MODULES)
+  const [loadingModules, setLoadingModules] = useState(false)
 
-  const live    = MODULES.filter(m => m.status === 'live').length
-  const next    = MODULES.filter(m => m.status === 'next').length
-  const n2      = MODULES.filter(m => m.status === 'nucleus2').length
+  const loadModules = useCallback(async () => {
+    setLoadingModules(true)
+    const sb = getSupabase()
+    if (sb) {
+      const { data } = await sb.from('platform_modules').select('*').order('ordem', { ascending: true })
+      if (data && data.length > 0) {
+        setModules(data.map(d => ({ id: d.code, label: d.label, icon: d.icon || '📦', page: '/' + d.code, status: d.status || 'live', desc: d.descricao || '' })))
+      }
+    }
+    setLoadingModules(false)
+  }, [])
+
+  useEffect(() => { loadModules() }, [loadModules])
+
+  const live    = modules.filter(m => m.status === 'live').length
+  const next    = modules.filter(m => m.status === 'next').length
+  const n2      = modules.filter(m => m.status === 'nucleus2').length
   const total   = MODULES.length
 
   return (
@@ -330,7 +347,7 @@ export default function PlatformVisualizer() {
                 Todos os módulos da plataforma — clique para navegar
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-                {MODULES.map(m => {
+                {modules.map(m => {
                   const sc = STATUS_CFG[m.status as keyof typeof STATUS_CFG]
                   return (
                     <div

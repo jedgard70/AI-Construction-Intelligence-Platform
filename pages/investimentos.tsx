@@ -1,229 +1,241 @@
-'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/router'
+import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
-import PrintShareModal from '../components/PrintShareModal'
+import Link from 'next/link'
+import { getSupabase } from '../lib/supabase'
 
-const PROJETOS = [
-  { nome:'Edifício Horizonte — Torre A', vgv:48.2, roi:24.3, tir:19.8, noi:3.2, capRate:6.7, esg:82, status:'em_andamento', fase:'Fundação — 34%' },
-  { nome:'Complexo Industrial Norte', vgv:87.5, roi:31.2, tir:22.1, noi:6.8, capRate:7.8, esg:71, status:'em_andamento', fase:'Estrutura — 58%' },
-  { nome:'Condomínio Vale Verde', vgv:29.4, roi:18.6, tir:15.3, noi:1.9, capRate:6.5, esg:91, status:'planejamento', fase:'Aprovação prefeitura' },
-  { nome:'Cerrado Sul Fase II', vgv:112.0, roi:28.9, tir:21.4, noi:8.4, capRate:7.5, esg:78, status:'planejamento', fase:'Terreno adquirido' },
-]
-
-const ESG_LABEL: Record<string,string> = { range0:'Insuficiente', range50:'Adequado', range70:'Bom', range85:'Excelente' }
-function esgLabel(v: number) {
-  if (v >= 85) return 'Excelente'
-  if (v >= 70) return 'Bom'
-  if (v >= 50) return 'Adequado'
-  return 'Insuficiente'
-}
-function esgColor(v: number) {
-  if (v >= 85) return '#3B6D11'
-  if (v >= 70) return '#185FA5'
-  if (v >= 50) return '#BA7517'
-  return '#A32D2D'
+interface Investment {
+  id: string
+  nome: string
+  vgv: number
+  roi: number
+  tir: number
+  noi: number
+  cap_rate: number
+  esg: number
+  status: string
+  fase: string
+  pitch_gerado: string | null
+  created_at: string
 }
 
-const fmt = (v: number) => `R$ ${v.toFixed(1)}M`
+const STATUS_COLORS: Record<string, string> = {
+  'Análise': '#f0a500',
+  'Em Andamento': '#3b82f6',
+  'Concluído': '#22c55e',
+  'Pausado': '#ef4444',
+}
 
-export default function InvestimentosPage() {
-  const router = useRouter()
-  const [selected, setSelected] = useState(0)
-  const [generating, setGenerating] = useState(false)
+export default function Investimentos() {
+  const [projetos, setProjetos] = useState<Investment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selected, setSelected] = useState<Investment | null>(null)
   const [pitch, setPitch] = useState('')
-  const [showPrint, setShowPrint] = useState(false)
+  const [loadingPitch, setLoadingPitch] = useState(false)
+  const [showAdd, setShowAdd] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [novo, setNovo] = useState({ nome: '', vgv: '', roi: '', tir: '', noi: '', cap_rate: '', esg: '', status: 'Análise', fase: 'Estudo de Viabilidade' })
 
-  const proj = PROJETOS[selected]
+  const loadProjetos = useCallback(async () => {
+    setLoading(true)
+    const sb = getSupabase()
+    if (!sb) { setLoading(false); return }
+    const { data } = await sb.from('investments').select('*').order('created_at', { ascending: false })
+    if (data) setProjetos(data)
+    setLoading(false)
+  }, [])
 
-  async function gerarPitch() {
-    setGenerating(true)
+  useEffect(() => { loadProjetos() }, [loadProjetos])
+
+  async function gerarPitch(proj: Investment) {
+    setSelected(proj)
     setPitch('')
+    setLoadingPitch(true)
     try {
-      const res = await fetch('/api/chat', {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model:'claude-sonnet-4-6',
-          max_tokens:900,
-          system:`Você é o Investment_Analyst_AI. Gere um pitch de investimento profissional e persuasivo para apresentação a investidores institucionais. Use dados reais fornecidos e formatação clara com seções: Tese de Investimento, Indicadores Financeiros, ESG, Análise Risco-Retorno e Recomendação.`,
-          messages:[{ role:'user', content:`Gere pitch para: ${proj.nome}
-VGV: ${fmt(proj.vgv)} | ROI: ${proj.roi}% | TIR: ${proj.tir}% | NOI: ${fmt(proj.noi)} | Cap Rate: ${proj.capRate}% | ESG: ${proj.esg}/100 (${esgLabel(proj.esg)})
-Status: ${proj.fase}` }]
+          prompt: `Gere um pitch de investimento profissional em português para o projeto "${proj.nome}". VGV: R$ ${proj.vgv.toLocaleString('pt-BR')}M, ROI: ${proj.roi}%, TIR: ${proj.tir}%, NOI: ${proj.noi}%, Cap Rate: ${proj.cap_rate}%, Score ESG: ${proj.esg}/100. Fase: ${proj.fase}. Seja conciso, convincente e profissional.`
         })
       })
-      const data = await res.json()
-      setPitch(data?.content?.[0]?.text || 'Erro ao gerar pitch.')
+      const json = await res.json()
+      const pitchText = json.result || 'Erro ao gerar pitch.'
+      setPitch(pitchText)
+      const sb = getSupabase()
+      if (sb) await sb.from('investments').update({ pitch_gerado: pitchText }).eq('id', proj.id)
     } catch {
-      setPitch('Erro ao conectar com o agente.')
+      setPitch('Erro ao conectar com IA.')
     }
-    setGenerating(false)
+    setLoadingPitch(false)
   }
 
-  const totalVGV = PROJETOS.reduce((a,p) => a+p.vgv, 0)
-  const avgROI = PROJETOS.reduce((a,p) => a+p.roi, 0) / PROJETOS.length
-  const avgTIR = PROJETOS.reduce((a,p) => a+p.tir, 0) / PROJETOS.length
-  const avgESG = PROJETOS.reduce((a,p) => a+p.esg, 0) / PROJETOS.length
+  async function salvarNovo() {
+    if (!novo.nome) return
+    setSaving(true)
+    const sb = getSupabase()
+    if (sb) {
+      await sb.from('investments').insert({
+        nome: novo.nome,
+        vgv: parseFloat(novo.vgv) || 0,
+        roi: parseFloat(novo.roi) || 0,
+        tir: parseFloat(novo.tir) || 0,
+        noi: parseFloat(novo.noi) || 0,
+        cap_rate: parseFloat(novo.cap_rate) || 0,
+        esg: parseInt(novo.esg) || 0,
+        status: novo.status,
+        fase: novo.fase,
+      })
+      await loadProjetos()
+    }
+    setShowAdd(false)
+    setNovo({ nome: '', vgv: '', roi: '', tir: '', noi: '', cap_rate: '', esg: '', status: 'Análise', fase: 'Estudo de Viabilidade' })
+    setSaving(false)
+  }
 
-  const s: Record<string, React.CSSProperties> = {
-    page: { minHeight:'100vh', background:'#f4f5f7', fontFamily:"'Geist',system-ui,sans-serif" },
-    topbar: { background:'#fff', borderBottom:'1px solid #e5e8f0', padding:'0 24px', height:52,
-      display:'flex', alignItems:'center', justifyContent:'space-between', position:'sticky', top:0, zIndex:10 },
-    back: { display:'flex', alignItems:'center', gap:8, color:'#185FA5', fontSize:13,
-      fontWeight:600, cursor:'pointer', background:'none', border:'none', fontFamily:'inherit' },
-    body: { maxWidth:1040, margin:'0 auto', padding:'28px 20px' },
-    kpiGrid: { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:22 },
-    kpi: { background:'#fff', border:'1px solid #e5e8f0', borderRadius:10, padding:'14px 16px' },
-    kpiVal: { fontSize:22, fontWeight:700, fontFamily:'monospace', marginBottom:2 },
-    kpiLbl: { fontSize:10, color:'#8890a0', fontWeight:600, textTransform:'uppercase', letterSpacing:'.08em' },
-    card: { background:'#fff', border:'1px solid #e5e8f0', borderRadius:12, padding:'20px 22px', marginBottom:16 },
-    secTitle: { fontSize:11, fontWeight:700, letterSpacing:'.1em', color:'#8890a0', textTransform:'uppercase', marginBottom:14 },
-    projBtn: { width:'100%', textAlign:'left', padding:'12px 14px', borderRadius:10, border:'1px solid',
-      cursor:'pointer', fontFamily:'inherit', transition:'all .15s', marginBottom:6 },
-    metricRow: { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:10 },
-    metric: { background:'#f8f9fc', borderRadius:8, padding:'10px 12px' },
-    metricVal: { fontSize:18, fontWeight:700, fontFamily:'monospace' },
-    metricLbl: { fontSize:10, color:'#8890a0', marginTop:1 },
-    genBtn: { padding:'10px 22px', background:'#534AB7', color:'#fff', border:'none', borderRadius:8,
-      fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit', transition:'opacity .15s' },
+  async function deletarProjeto(id: string) {
+    if (!confirm('Excluir este investimento?')) return
+    const sb = getSupabase()
+    if (sb) {
+      await sb.from('investments').delete().eq('id', id)
+      await loadProjetos()
+      if (selected?.id === id) setSelected(null)
+    }
   }
 
   return (
     <>
-      <Head><title>Investimentos — ROI, TIR, ESG</title></Head>
-      <div style={s.page}>
-        <div style={s.topbar}>
-          <button style={s.back} onClick={() => router.back()}>← Voltar ao Dashboard</button>
-          <div style={{ fontSize:13, fontWeight:700, color:'#1a1f36' }}>📈 Análise de Investimentos</div>
-          <div style={{ fontSize:11, color:'#8890a0', fontFamily:'monospace' }}>ROI · TIR · NOI · ESG</div>
+      <Head><title>Investimentos | AI Construction</title></Head>
+      <div style={{ minHeight: '100vh', background: '#0a0d12', color: '#e8ecf5', fontFamily: 'system-ui, sans-serif', padding: '24px' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Link href="/dashboard" style={{ color: '#6b7a99', textDecoration: 'none', fontSize: 14 }}>← Dashboard</Link>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#f0a500' }}>📈 Investimentos</h1>
+              <p style={{ margin: '4px 0 0', color: '#6b7a99', fontSize: 14 }}>Análise e Pitch de Projetos com IA</p>
+            </div>
+          </div>
+          <button onClick={() => setShowAdd(true)} style={{ background: '#f0a500', color: '#0a0d12', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+            + Novo Investimento
+          </button>
         </div>
 
-        <div style={s.body}>
-          {/* KPIs Portfólio */}
-          <div style={s.kpiGrid}>
-            {[
-              { val:`R$ ${totalVGV.toFixed(0)}M`, lbl:'VGV Total', color:'#185FA5' },
-              { val:`${avgROI.toFixed(1)}%`, lbl:'ROI Médio', color:'#3B6D11' },
-              { val:`${avgTIR.toFixed(1)}%`, lbl:'TIR Médio', color:'#534AB7' },
-              { val:`${avgESG.toFixed(0)}/100`, lbl:'ESG Médio', color:'#3B6D11' },
-            ].map(k => (
-              <div key={k.lbl} style={s.kpi}>
-                <div style={{ ...s.kpiVal, color:k.color }}>{k.val}</div>
-                <div style={s.kpiLbl}>{k.lbl}</div>
-              </div>
-            ))}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 80, color: '#6b7a99' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+            <p>Carregando investimentos...</p>
           </div>
+        )}
 
-          <div style={{ display:'grid', gridTemplateColumns:'280px 1fr', gap:16 }}>
-            {/* Seletor de projeto */}
-            <div>
-              <div style={s.card}>
-                <div style={s.secTitle}>Projetos</div>
-                {PROJETOS.map((p, i) => (
-                  <button key={i} style={{ ...s.projBtn,
-                    background: selected===i ? '#EFF4FF' : '#fff',
-                    borderColor: selected===i ? '#185FA5' : '#e5e8f0',
-                    color: '#1a1f36' }} onClick={() => { setSelected(i); setPitch('') }}>
-                    <div style={{ fontSize:12, fontWeight:600, marginBottom:2 }}>{p.nome}</div>
-                    <div style={{ fontSize:10, color:'#8890a0' }}>{p.fase}</div>
-                    <div style={{ fontSize:11, fontWeight:700, color:'#3B6D11', marginTop:4 }}>
-                      ROI {p.roi}%
+        {!loading && projetos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: 80, color: '#6b7a99' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+            <p style={{ fontSize: 18, marginBottom: 8 }}>Nenhum investimento cadastrado</p>
+            <p style={{ fontSize: 14 }}>Clique em "+ Novo Investimento" para começar</p>
+          </div>
+        )}
+
+        {!loading && projetos.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            {/* Left: project list */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {projetos.map(p => (
+                <div key={p.id} onClick={() => setSelected(p)}
+                  style={{ background: selected?.id === p.id ? '#1a1f2e' : '#0f1117', border: `1px solid ${selected?.id === p.id ? '#f0a500' : '#1e2330'}`, borderRadius: 12, padding: 20, cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: '#e8ecf5' }}>{p.nome}</h3>
+                      <p style={{ margin: '4px 0 0', color: '#6b7a99', fontSize: 13 }}>{p.fase}</p>
                     </div>
-                  </button>
-                ))}
-              </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ background: STATUS_COLORS[p.status] || '#6b7a99', color: '#fff', borderRadius: 6, padding: '2px 10px', fontSize: 12, fontWeight: 600 }}>{p.status}</span>
+                      <button onClick={e => { e.stopPropagation(); deletarProjeto(p.id) }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 16 }}>🗑</button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                    {[
+                      { label: 'VGV', value: `R$ ${p.vgv}M` },
+                      { label: 'ROI', value: `${p.roi}%` },
+                      { label: 'TIR', value: `${p.tir}%` },
+                      { label: 'NOI', value: `${p.noi}%` },
+                      { label: 'Cap Rate', value: `${p.cap_rate}%` },
+                      { label: 'ESG', value: `${p.esg}/100` },
+                    ].map(m => (
+                      <div key={m.label} style={{ background: '#161b27', borderRadius: 8, padding: '8px 12px', textAlign: 'center' }}>
+                        <div style={{ color: '#f0a500', fontSize: 15, fontWeight: 700 }}>{m.value}</div>
+                        <div style={{ color: '#6b7a99', fontSize: 11, marginTop: 2 }}>{m.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Detalhe do projeto */}
-            <div>
-              <div style={s.card}>
-                <div style={{ fontSize:16, fontWeight:700, color:'#1a1f36', marginBottom:4 }}>{proj.nome}</div>
-                <div style={{ fontSize:12, color:'#8890a0', marginBottom:18 }}>{proj.fase}</div>
-
-                <div style={s.metricRow}>
-                  {[
-                    { val:fmt(proj.vgv), lbl:'VGV', color:'#185FA5' },
-                    { val:`${proj.roi}%`, lbl:'ROI', color:'#3B6D11' },
-                    { val:`${proj.tir}%`, lbl:'TIR', color:'#534AB7' },
-                    { val:fmt(proj.noi), lbl:'NOI anual', color:'#185FA5' },
-                    { val:`${proj.capRate}%`, lbl:'Cap Rate', color:'#BA7517' },
-                    { val:`${proj.esg}/100`, lbl:`ESG — ${esgLabel(proj.esg)}`, color:esgColor(proj.esg) },
-                  ].map(m => (
-                    <div key={m.lbl} style={s.metric}>
-                      <div style={{ ...s.metricVal, color:m.color }}>{m.val}</div>
-                      <div style={s.metricLbl}>{m.lbl}</div>
-                    </div>
-                  ))}
+            {/* Right: pitch panel */}
+            <div style={{ background: '#0f1117', border: '1px solid #1e2330', borderRadius: 12, padding: 24, height: 'fit-content', position: 'sticky', top: 24 }}>
+              {!selected ? (
+                <div style={{ textAlign: 'center', padding: 40, color: '#6b7a99' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
+                  <p>Selecione um projeto para gerar pitch com IA</p>
                 </div>
-
-                {/* ESG bar */}
-                <div style={{ marginBottom:18 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#8890a0', marginBottom:5 }}>
-                    <span>ESG Score</span><span>{proj.esg}/100</span>
-                  </div>
-                  <div style={{ height:6, background:'#f0f0f0', borderRadius:3, overflow:'hidden' }}>
-                    <div style={{ height:'100%', width:`${proj.esg}%`, borderRadius:3,
-                      background:esgColor(proj.esg), transition:'width .5s' }} />
-                  </div>
-                </div>
-
-                {/* Gerar Pitch */}
-                <div style={{ borderTop:'1px solid #e5e8f0', paddingTop:16 }}>
-                  <div style={s.secTitle}>Pitch Deck com IA</div>
-                  <button style={{ ...s.genBtn, opacity: generating ? .6 : 1 }}
-                    onClick={gerarPitch} disabled={generating}>
-                    {generating ? '⏳ Gerando...' : '🎯 Gerar Pitch para Investidores'}
+              ) : (
+                <>
+                  <h2 style={{ margin: '0 0 4px', color: '#f0a500', fontSize: 20 }}>{selected.nome}</h2>
+                  <p style={{ margin: '0 0 20px', color: '#6b7a99', fontSize: 13 }}>{selected.fase} • {selected.status}</p>
+                  <button onClick={() => gerarPitch(selected)} disabled={loadingPitch}
+                    style={{ background: loadingPitch ? '#2a3040' : '#f0a500', color: loadingPitch ? '#6b7a99' : '#0a0d12', border: 'none', borderRadius: 8, padding: '12px 24px', fontWeight: 700, cursor: loadingPitch ? 'not-allowed' : 'pointer', width: '100%', fontSize: 15, marginBottom: 20 }}>
+                    {loadingPitch ? '⏳ Gerando pitch...' : '🤖 Gerar Pitch com IA'}
                   </button>
                   {pitch && (
-                    <>
-                      <div style={{ marginTop:16, padding:'16px', background:'#f8f9fc',
-                        borderRadius:10, border:'1px solid #e5e8f0', fontSize:12,
-                        lineHeight:1.75, color:'#1a1f36', whiteSpace:'pre-wrap' }}>
-                        {pitch}
-                      </div>
-                      <button onClick={() => setShowPrint(true)}
-                        style={{ marginTop:10, padding:'9px 18px', background:'#185FA5', color:'#fff',
-                          border:'none', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-                          fontFamily:'inherit', display:'flex', alignItems:'center', gap:6 }}>
-                        🖨️ Imprimir / Exportar Pitch
-                      </button>
-                    </>
+                    <div style={{ background: '#161b27', border: '1px solid #f0a500', borderRadius: 10, padding: 20 }}>
+                      <h4 style={{ margin: '0 0 12px', color: '#f0a500', fontSize: 14 }}>📄 Pitch Gerado</h4>
+                      <p style={{ margin: 0, color: '#e8ecf5', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{pitch}</p>
+                    </div>
                   )}
-                </div>
+                  {!pitch && selected.pitch_gerado && (
+                    <div style={{ background: '#161b27', border: '1px solid #2a3040', borderRadius: 10, padding: 20 }}>
+                      <h4 style={{ margin: '0 0 12px', color: '#6b7a99', fontSize: 14 }}>📄 Último Pitch</h4>
+                      <p style={{ margin: 0, color: '#c8d0e0', fontSize: 14, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selected.pitch_gerado}</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Add modal */}
+        {showAdd && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+            <div style={{ background: '#0f1117', border: '1px solid #f0a500', borderRadius: 16, padding: 32, width: 480, maxWidth: '90vw' }}>
+              <h3 style={{ margin: '0 0 24px', color: '#f0a500' }}>Novo Investimento</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {[
+                  { label: 'Nome do Projeto', key: 'nome', full: true, type: 'text' },
+                  { label: 'VGV (R$ M)', key: 'vgv', type: 'number' },
+                  { label: 'ROI (%)', key: 'roi', type: 'number' },
+                  { label: 'TIR (%)', key: 'tir', type: 'number' },
+                  { label: 'NOI (%)', key: 'noi', type: 'number' },
+                  { label: 'Cap Rate (%)', key: 'cap_rate', type: 'number' },
+                  { label: 'Score ESG', key: 'esg', type: 'number' },
+                ].map(f => (
+                  <div key={f.key} style={{ gridColumn: f.full ? '1 / -1' : undefined }}>
+                    <label style={{ display: 'block', color: '#6b7a99', fontSize: 12, marginBottom: 6 }}>{f.label}</label>
+                    <input type={f.type} value={(novo as Record<string, string>)[f.key]} onChange={e => setNovo(n => ({ ...n, [f.key]: e.target.value }))}
+                      style={{ width: '100%', background: '#161b27', border: '1px solid #2a3040', borderRadius: 8, padding: '10px 14px', color: '#e8ecf5', fontSize: 14, boxSizing: 'border-box' }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                <button onClick={() => setShowAdd(false)} style={{ flex: 1, background: 'transparent', border: '1px solid #2a3040', borderRadius: 8, padding: '12px', color: '#6b7a99', cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={salvarNovo} disabled={saving} style={{ flex: 2, background: '#f0a500', border: 'none', borderRadius: 8, padding: '12px', color: '#0a0d12', fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                  {saving ? 'Salvando...' : 'Salvar Investimento'}
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
-      {showPrint && (
-        <PrintShareModal
-          title={`Valuation & Pitch — ${proj.nome}`}
-          onClose={() => setShowPrint(false)}
-          buildHtml={() => `
-<div class="meta">
-  <span>🏗️ ${proj.nome}</span>
-  <span>📊 VGV: ${fmt(proj.vgv)}</span>
-  <span>📅 ${proj.fase}</span>
-</div>
-<h2>Indicadores Financeiros</h2>
-<div class="grid3">
-  <div class="field"><label>VGV</label><p style="font-size:18px;font-weight:700;color:#185FA5">${fmt(proj.vgv)}</p></div>
-  <div class="field"><label>ROI</label><p style="font-size:18px;font-weight:700;color:#3B6D11">${proj.roi}%</p></div>
-  <div class="field"><label>TIR</label><p style="font-size:18px;font-weight:700;color:#534AB7">${proj.tir}%</p></div>
-  <div class="field"><label>NOI Anual</label><p style="font-size:18px;font-weight:700;color:#185FA5">${fmt(proj.noi)}</p></div>
-  <div class="field"><label>Cap Rate</label><p style="font-size:18px;font-weight:700;color:#BA7517">${proj.capRate}%</p></div>
-  <div class="field"><label>ESG Score</label><p style="font-size:18px;font-weight:700;color:${esgColor(proj.esg)}">${proj.esg}/100 — ${esgLabel(proj.esg)}</p></div>
-</div>
-<h2>Pitch para Investidores</h2>
-<div class="text-area">${pitch}</div>`}
-          buildText={() => [
-            `VALUATION & PITCH — ${proj.nome}`,
-            `VGV: ${fmt(proj.vgv)} | ROI: ${proj.roi}% | TIR: ${proj.tir}%`,
-            `NOI: ${fmt(proj.noi)} | Cap Rate: ${proj.capRate}% | ESG: ${proj.esg}/100`,
-            ``, pitch,
-          ].join('\n')}
-        />
-      )}
     </>
   )
 }
