@@ -5,6 +5,8 @@ import { getSupabase } from '../lib/supabase'
 interface Props {
   onClose: () => void
   onCreated: (project: ProjectInput) => void
+  initialName?: string
+  initialType?: string
 }
 
 export interface ProjectInput {
@@ -26,19 +28,30 @@ export interface ProjectInput {
 }
 
 const TIPOS = ['Residencial Unifamiliar', 'Residencial Multifamiliar', 'Comercial', 'Industrial', 'Misto', 'Infraestrutura']
+
+type ProjectTypeDb = 'edificacao_residencial' | 'edificacao_comercial' | 'infraestrutura_viaria' | 'infraestrutura_hidrica' | 'industrial' | 'outro'
+
+const PROJECT_TYPE_TO_DB: Record<string, ProjectTypeDb> = {
+  'Residencial Unifamiliar': 'edificacao_residencial',
+  'Residencial Multifamiliar': 'edificacao_residencial',
+  Comercial: 'edificacao_comercial',
+  Industrial: 'industrial',
+  Misto: 'outro',
+  Infraestrutura: 'infraestrutura_viaria',
+}
 const STATUS_OPTS = [
   { v: 'planejamento', l: 'Planejamento' },
   { v: 'em_andamento', l: 'Em andamento' },
   { v: 'atrasado',     l: 'Atrasado' },
   { v: 'pausado',      l: 'Pausado' },
-  { v: 'concluido',    l: 'Concluído' },
+  { v: 'concluido',    l: 'Concluido' },
 ]
 const STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
 
-export default function NewProjectModal({ onClose, onCreated }: Props) {
-  const [nome, setNome]           = useState('')
+export default function NewProjectModal({ onClose, onCreated, initialName = '', initialType = '' }: Props) {
+  const [nome, setNome]           = useState(initialName)
   const [codigo, setCodigo]       = useState(`OBR-${new Date().getFullYear()}-${String(Date.now()).slice(-3)}`)
-  const [tipo, setTipo]           = useState(TIPOS[0])
+  const [tipo, setTipo]           = useState(initialType && TIPOS.includes(initialType) ? initialType : TIPOS[0])
   const [status, setStatus]       = useState('planejamento')
   const [cidade, setCidade]       = useState('')
   const [estado, setEstado]       = useState('SP')
@@ -52,7 +65,7 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
   const [error, setError]         = useState('')
 
   async function handleSubmit() {
-    if (!nome.trim()) { setError('Nome do projeto é obrigatório'); return }
+    if (!nome.trim()) { setError('Nome do projeto e obrigatorio'); return }
     setLoading(true)
 
     const planned = parseFloat(orcPlan) || 0
@@ -81,14 +94,20 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
       created_at: new Date().toISOString(),
     }
 
-    // Save to Supabase if configured
     const sb = getSupabase()
     if (sb) {
+      const { data: { user }, error: userErr } = await sb.auth.getUser()
+      if (userErr || !user) {
+        setError('Supabase: usuario autenticado nao encontrado.')
+        setLoading(false)
+        return
+      }
+
       const { error: err } = await sb.from('projects').insert({
         id: project.id,
         name: project.name,
         code: project.code,
-        type: project.type,
+        type: PROJECT_TYPE_TO_DB[project.type] ?? 'outro',
         status: project.status,
         city: project.city,
         state: project.state,
@@ -99,17 +118,17 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
         spi: project.spi,
         eac: project.eac,
         esg_score: project.esg_score,
+        created_by: user.id,
       })
       if (err) {
-        setError(`Supabase: ${err.message} — projeto salvo localmente.`)
+        setError(`Supabase: ${err.message} -- projeto salvo localmente.`)
       }
     }
 
-    // Always save to localStorage (works in demo mode and as offline cache)
     try {
       const existing = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
       localStorage.setItem('atlas_projects', JSON.stringify([project, ...existing]))
-    } catch { /* ignore storage errors */ }
+    } catch { /* ignore */ }
 
     setLoading(false)
     onCreated(project)
@@ -141,16 +160,16 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
   return (
     <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={s.modal}>
-        <div style={s.title}>🏗️ Novo Projeto</div>
+        <div style={s.title}>Novo Projeto</div>
 
-        <div style={s.section}>Identificação</div>
+        <div style={s.section}>Identificacao</div>
         <div style={s.field}>
           <label style={s.label}>Nome do Projeto *</label>
-          <input style={s.input} placeholder="Ex: Torre Horizonte — Fase 1" value={nome} onChange={e => setNome(e.target.value)} />
+          <input style={s.input} placeholder="Ex: Torre Horizonte - Fase 1" value={nome} onChange={e => setNome(e.target.value)} />
         </div>
         <div style={s.grid2}>
           <div>
-            <label style={s.label}>Código da Obra</label>
+            <label style={s.label}>Codigo da Obra</label>
             <input style={s.input} value={codigo} onChange={e => setCodigo(e.target.value)} />
           </div>
           <div>
@@ -168,16 +187,16 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
             </select>
           </div>
           <div>
-            <label style={s.label}>Avanço Físico (%)</label>
+            <label style={s.label}>Avanco Fisico (%)</label>
             <input style={s.input} type="number" min="0" max="100" value={avanco} onChange={e => setAvanco(e.target.value)} />
           </div>
         </div>
 
-        <div style={s.section}>Localização</div>
+        <div style={s.section}>Localizacao</div>
         <div style={s.grid2}>
           <div>
             <label style={s.label}>Cidade</label>
-            <input style={s.input} placeholder="Ex: São Paulo" value={cidade} onChange={e => setCidade(e.target.value)} />
+            <input style={s.input} placeholder="Ex: Sao Paulo" value={cidade} onChange={e => setCidade(e.target.value)} />
           </div>
           <div>
             <label style={s.label}>Estado</label>
@@ -187,10 +206,10 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
           </div>
         </div>
 
-        <div style={s.section}>Orçamento & Índices EVM</div>
+        <div style={s.section}>Orcamento e Indices EVM</div>
         <div style={s.grid2}>
           <div>
-            <label style={s.label}>Orçamento Planejado (R$)</label>
+            <label style={s.label}>Orcamento Planejado (R$)</label>
             <input style={s.input} type="number" placeholder="Ex: 12400000" value={orcPlan} onChange={e => setOrcPlan(e.target.value)} />
           </div>
           <div>
@@ -200,28 +219,79 @@ export default function NewProjectModal({ onClose, onCreated }: Props) {
         </div>
         <div style={s.grid2}>
           <div>
-            <label style={s.label}>CPI (Índice de Custo)</label>
+            <label style={s.label}>CPI (Indice de Custo)</label>
             <input style={s.input} type="number" step="0.01" placeholder="1.00" value={cpi} onChange={e => setCpi(e.target.value)} />
           </div>
           <div>
-            <label style={s.label}>SPI (Índice de Prazo)</label>
+            <label style={s.label}>SPI (Indice de Prazo)</label>
             <input style={s.input} type="number" step="0.01" placeholder="1.00" value={spi} onChange={e => setSpi(e.target.value)} />
           </div>
         </div>
         <div style={s.field}>
-          <label style={s.label}>Score ESG (0–100)</label>
+          <label style={s.label}>Score ESG (0-100)</label>
           <input style={s.input} type="number" min="0" max="100" value={esg} onChange={e => setEsg(e.target.value)} />
+        </div>
+
+        {/* Legal Context Banner */}
+        <div style={{ marginBottom: 16, borderRadius: 10, overflow: 'hidden',
+          border: '1px solid #dce6f5', fontSize: 12 }}>
+          <div style={{ background: '#0F4C81', color: '#fff', padding: '7px 14px',
+            fontWeight: 700, fontSize: 11, letterSpacing: '0.08em', display: 'flex',
+            alignItems: 'center', gap: 6 }}>
+            CONTEXTO JURIDICO AUTOMATICO - BR + USA
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', background: '#F8FAFF' }}>
+            <div style={{ padding: '10px 14px', borderRight: '1px solid #dce6f5' }}>
+              <div style={{ fontWeight: 700, color: '#0F4C81', marginBottom: 6, fontSize: 11 }}>
+                NORMAS BRASILEIRAS
+              </div>
+              {[
+                ['ABNT NBR 6118', 'Projetos de estruturas de concreto'],
+                ['ABNT NBR 12721', 'Avaliacao de custos unitarios - CUB'],
+                ['ABNT NBR 9050', 'Acessibilidade (equiv. ADA)'],
+                ['CAU/CREA', 'Responsabilidade tecnica'],
+                ['NR-18', 'Seguranca do trabalho na construcao'],
+              ].map(([norm, desc]) => (
+                <div key={norm} style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, color: '#185FA5' }}>{norm}</span>
+                  <span style={{ color: '#6b7a99', marginLeft: 4 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '10px 14px' }}>
+              <div style={{ fontWeight: 700, color: '#B22222', marginBottom: 6, fontSize: 11 }}>
+                US STANDARDS
+              </div>
+              {[
+                ['IBC 2021', 'International Building Code'],
+                ['ADA', 'Americans with Disabilities Act'],
+                ['LEED v4', 'Green building certification'],
+                ['ASTM', 'Materials and testing standards'],
+                ['CSI MasterFormat', 'Specifications divisions'],
+              ].map(([norm, desc]) => (
+                <div key={norm} style={{ marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, color: '#B22222' }}>{norm}</span>
+                  <span style={{ color: '#6b7a99', marginLeft: 4 }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: '#EBF3FF', padding: '5px 14px', fontSize: 10,
+            color: '#185FA5', borderTop: '1px solid #dce6f5', display: 'flex',
+            alignItems: 'center', gap: 4 }}>
+            Este projeto sera vinculado automaticamente ao sistema juridico BR + USA apos criacao
+          </div>
         </div>
 
         {error && (
           <div style={{ fontSize: 12, color: '#BA7517', background: '#FFF3E0', borderRadius: 6,
-            padding: '8px 12px', marginBottom: 12 }}>⚠️ {error}</div>
+            padding: '8px 12px', marginBottom: 12 }}>{error}</div>
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
           <button style={s.btnGhost} onClick={onClose}>Cancelar</button>
           <button style={s.btnPrimary} onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Salvando...' : '✓ Criar Projeto'}
+            {loading ? 'Salvando...' : 'Criar Projeto'}
           </button>
         </div>
       </div>
