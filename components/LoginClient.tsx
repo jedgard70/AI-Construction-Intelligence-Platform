@@ -510,10 +510,11 @@ const CSS = `
 }
 
 .acip-access-note {
-  margin-top: 1.25rem;
-  text-align: center;
+  margin-top: auto;
+  padding-top: 1.5rem;
   font-size: 11px;
   color: #9a9890;
+  text-align: center;
 }
 
 @media (max-width: 640px) {
@@ -522,13 +523,10 @@ const CSS = `
     max-width: 420px;
   }
   .acip-brand {
-    padding: 1.75rem 1.5rem;
-  }
-  .acip-features {
     display: none;
   }
   .acip-form {
-    padding: 1.75rem 1.5rem;
+    padding: 2rem 1.5rem;
   }
 }
 `

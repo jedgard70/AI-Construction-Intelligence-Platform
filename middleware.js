@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
 // Rotas que NÃO precisam de login
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password']
+const PUBLIC_PATHS = ['/', '/login', '/forgot-password', '/reset-password']
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl
