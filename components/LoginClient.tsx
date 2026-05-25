@@ -496,4 +496,39 @@ const CSS = `
   animation: acip-spin 0.7s linear infinite;
   display: inline-block;
 }
-@keyframes acip-spin { to { transform: rotate(3
+@keyframes acip-spin { to { transform: rotate(360deg); } }
+
+.acip-demo-note {
+  margin-top: 1rem;
+  padding: 10px 14px;
+  background: rgba(186,117,23,.08);
+  border: 1px solid rgba(186,117,23,.25);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: #7a5010;
+  line-height: 1.5;
+}
+
+.acip-access-note {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 11px;
+  color: #9a9890;
+}
+
+@media (max-width: 640px) {
+  .acip-card {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+  .acip-brand {
+    padding: 1.75rem 1.5rem;
+  }
+  .acip-features {
+    display: none;
+  }
+  .acip-form {
+    padding: 1.75rem 1.5rem;
+  }
+}
+`
