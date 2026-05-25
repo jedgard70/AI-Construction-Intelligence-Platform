@@ -10,4 +10,6 @@ export function getSupabase(): SupabaseClient | null {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
-  _client =
+  _client = createBrowserClient(url, key)
+  return _client
+}
