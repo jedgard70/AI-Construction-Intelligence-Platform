@@ -498,6 +498,17 @@ const CSS = `
 }
 @keyframes acip-spin { to { transform: rotate(360deg); } }
 
+.acip-demo-note {
+  margin-top: 1rem;
+  padding: 10px 14px;
+  background: rgba(186,117,23,.08);
+  border: 1px solid rgba(186,117,23,.25);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: #7a5010;
+  line-height: 1.5;
+}
+
 .acip-access-note {
   margin-top: auto;
   padding-top: 1.5rem;
@@ -507,8 +518,15 @@ const CSS = `
 }
 
 @media (max-width: 640px) {
-  .acip-card { grid-template-columns: 1fr; }
-  .acip-brand { display: none; }
-  .acip-form { padding: 2rem 1.5rem; }
+  .acip-card {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+  }
+  .acip-brand {
+    display: none;
+  }
+  .acip-form {
+    padding: 2rem 1.5rem;
+  }
 }
 `

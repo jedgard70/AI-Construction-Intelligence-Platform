@@ -27,10 +27,26 @@ interface NCI {
   prazo: string | null
 }
 
-const sevColor: Record<string, string> = { critico:'#A32D2D', alto:'#BA7517', medio:'#185FA5', baixo:'#3B6D11' }
-const sevLabel: Record<string, string> = { critico:'CRÍTICA', alto:'ALTA', medio:'MÉDIA', baixo:'BAIXA' }
-const stColor: Record<string, string> = { pendente:'#A32D2D', em_andamento:'#BA7517', concluido:'#3B6D11' }
-const stLabel: Record<string, string> = { pendente:'Pendente', em_andamento:'Em andamento', concluido:'Concluído' }
+interface QualityNciRow {
+  id: string
+  title: string
+  project_id: string | null
+  opened_by: string | null
+  severity: string
+  status: string
+  deadline: string | null
+  projects?: { name: string | null } | Array<{ name: string | null }> | null
+}
+
+const sevColor: Record<string, string> = { critica:'#A32D2D', maior:'#BA7517', menor:'#185FA5', observacao:'#3B6D11' }
+const sevLabel: Record<string, string> = { critica:'CRÍTICA', maior:'MAIOR', menor:'MENOR', observacao:'OBSERVAÇÃO' }
+const stColor: Record<string, string> = { aberta:'#A32D2D', em_analise:'#BA7517', em_correcao:'#185FA5', aguardando_verificacao:'#185FA5', fechada:'#3B6D11', cancelada:'#8890a0' }
+const stLabel: Record<string, string> = { aberta:'Aberta', em_analise:'Em análise', em_correcao:'Em correção', aguardando_verificacao:'Aguardando verificação', fechada:'Fechada', cancelada:'Cancelada' }
+
+function mapQualityNci(row: QualityNciRow): NCI {
+  const project = Array.isArray(row.projects) ? row.projects[0] : row.projects
+  return { id: row.id, titulo: row.title, projeto: project?.name ?? row.project_id, responsavel: row.opened_by?.slice(0, 8).toUpperCase() ?? null, severidade: row.severity, status: row.status, prazo: row.deadline }
+}
 
 export default function QualidadePage() {
   const router = useRouter()
@@ -46,10 +62,10 @@ export default function QualidadePage() {
       if (!sb) { setLoading(false); return }
       const [{ data: ckData }, { data: nciData }] = await Promise.all([
         sb.from('checklists').select('*').order('created_at', { ascending: false }),
-        sb.from('ncis').select('*').order('created_at', { ascending: false }),
+        sb.from('quality_nci').select('id,title,project_id,opened_by,severity,status,deadline,created_at,projects(name)').order('created_at', { ascending: false }),
       ])
       if (ckData) setChecklists(ckData as Checklist[])
-      if (nciData) setNcis(nciData as NCI[])
+      if (nciData) setNcis((nciData as QualityNciRow[]).map(mapQualityNci))
       setLoading(false)
     }
     fetchData()
@@ -127,7 +143,7 @@ export default function QualidadePage() {
             <div style={s.card}>
               {/* Filtro */}
               <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
-                {[['todas','Todas'],['aberta','Abertas'],['em_andamento','Em andamento'],['resolvida','Resolvidas']].map(([v,l]) => (
+                {[['todas','Todas'],['aberta','Abertas'],['em_analise','Em análise'],['em_correcao','Em correção'],['fechada','Fechadas']].map(([v,l]) => (
                   <button key={v} onClick={() => setFiltro(v)} style={{
                     padding:'4px 12px', borderRadius:20, fontSize:11, fontWeight:600,
                     cursor:'pointer', fontFamily:'inherit', border:'1px solid',
