@@ -22,19 +22,18 @@ export default function NewClientModal({ onClose, onCreated }: Props) {
     if (!nome.trim()) { setError('Nome é obrigatório'); return }
     setLoading(true)
     const sb = getSupabase()
-    if (sb) {
-      const { error: err } = await sb.from('clients').insert({
-        nome,
-        razao_social: empresa || null,
-        segmento,
-        email: email || null,
-        telefone: telefone || null,
-        status: 'ativo',
-        tipo: 'pessoa_juridica',
-        cpf_cnpj: `cli_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-      })
-      if (err) { setError(err.message); setLoading(false); return }
-    }
+    if (!sb) { setError('Supabase não configurado'); setLoading(false); return }
+    const { error: err } = await sb.from('clients').insert({
+      nome,
+      razao_social: empresa || null,
+      segmento,
+      email: email || null,
+      telefone: telefone || null,
+      status: 'ativo',
+      tipo: 'pessoa_juridica',
+      cpf_cnpj: `cli_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    })
+    if (err) { setError(err.message); setLoading(false); return }
     onCreated()
     onClose()
   }
