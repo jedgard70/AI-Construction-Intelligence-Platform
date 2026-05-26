@@ -91,7 +91,6 @@ export default function NewClientModal({ onClose, onCreated }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.nome.trim()) { setError('Nome é obrigatório.'); return }
-    if (!form.cpf_cnpj.trim()) { setError('CPF/CNPJ é obrigatório.'); return }
     setLoading(true); setError(''); setSuccess('')
 
     const sb = getSupabase()
@@ -114,7 +113,7 @@ export default function NewClientModal({ onClose, onCreated }) {
       segmento:       form.segmento,
       nome:           form.nome.trim(),
       razao_social:   form.razao_social.trim() || null,
-      cpf_cnpj:       form.cpf_cnpj.trim(),
+      cpf_cnpj:       form.cpf_cnpj.trim() || ('cli_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
       email:          form.email.trim() || null,
       telefone:       form.telefone.trim() || null,
       celular:        form.celular.trim() || null,
