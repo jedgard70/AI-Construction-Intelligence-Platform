@@ -929,6 +929,20 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
       })()}
 
       {/* ── VISUALIZADOR DE PLANTAS ── */}
+      {showNewClient && (
+        <NewClientModal
+          onClose={() => setShowNewClient(false)}
+          onCreated={() => loadData()}
+        />
+      )}
+
+      {showNewProject && (
+        <NewProjectModal
+          onClose={() => setShowNewProject(false)}
+          onCreated={() => loadData()}
+        />
+      )}
+
       {showPlantasViewer && (() => {
         const IMAGE_EXTS = ['jpg','jpeg','png','webp','gif','bmp','tiff','tif','svg']
         const SUPPORTED_EXTS = [...IMAGE_EXTS,'pdf','dwg','dxf','dgn','ifc','rvt','dwf','dwfx','fbx','stl','step','stp','obj','sat','gbxml','nwc','nwd']

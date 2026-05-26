@@ -4,8 +4,6 @@ import { getSupabase } from '../lib/supabase'
 const PROJECT_TYPES = [
   { value: 'edificacao_residencial',  label: 'Edificação Residencial' },
   { value: 'edificacao_comercial',    label: 'Edificação Comercial' },
-  { value: 'reforma_residencial',     label: 'Reforma Residencial' },
-  { value: 'reforma_comercial',       label: 'Reforma Comercial' },
   { value: 'infraestrutura_viaria',   label: 'Infraestrutura Viária' },
   { value: 'infraestrutura_hidrica',  label: 'Infraestrutura Hídrica' },
   { value: 'industrial',              label: 'Industrial' },
