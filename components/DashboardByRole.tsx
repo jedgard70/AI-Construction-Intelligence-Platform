@@ -340,25 +340,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const loadData = useCallback(async () => {
     const sb = getSupabase()
     if (!sb) {
-      // Modo local — carrega projetos salvos pelo usuário (localStorage)
-      try {
-        const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
-        if (stored.length > 0) {
-          setProjects(stored)
-        } else {
-          // Dados de exemplo só quando não há nada salvo
-          setProjects([
-            { id:'example-1', name:'[Exemplo] Torre Horizonte — Torre A', code:'OBR-2026-EX1', status:'em_andamento',
-              city:'São Paulo', state:'SP', budget_planned:12400000, budget_actual:10200000,
-              completion_pct:68, cpi:1.02, spi:1.04, eac:12200000, esg_score:81 },
-            { id:'example-2', name:'[Exemplo] Clique em "+ Novo Projeto" para criar o seu', code:'OBR-2026-EX2', status:'planejamento',
-              city:'', state:'', budget_planned:0, budget_actual:0,
-              completion_pct:0, cpi:null, spi:null, eac:null, esg_score:null },
-          ])
-        }
-      } catch {
-        setProjects([])
-      }
+      setProjects([])
       setBudgetData([])
       setEvents([])
       setLoading(false)
@@ -814,10 +796,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                                 if (!confirm(`Remover "${p.name}"?`)) return
                                 setProjects(prev => {
                                   const updated = prev.filter(x => x.id !== p.id)
-                                  try {
-                                    const stored = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
-                                    localStorage.setItem('atlas_projects', JSON.stringify(stored.filter((x: any) => x.id !== p.id)))
-                                  } catch {}
+
                                   const sb = getSupabase()
                                   if (sb) sb.from('projects').delete().eq('id', p.id).then(() => {})
                                   return updated
