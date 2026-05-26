@@ -23,26 +23,6 @@ interface Project {
   created_at: string
 }
 
-interface ActivityEntry {
-  id: string
-  ts: string
-  action: string
-  field?: string
-  from?: string
-  to?: string
-}
-
-interface ContractMeta {
-  id: string
-  projectId: string | null
-  idioma: string
-  type: string
-  party: string
-  state: string
-  value: string
-  date: string
-  status: string
-}
 
 // ─── Helpers ─────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -78,18 +58,6 @@ function esgColor(v: number | null) {
   return '#A32D2D'
 }
 
-function logActivity(projectId: string, action: string, field?: string, from?: string, to?: string) {
-  try {
-    const key = `atlas_activity_${projectId}`
-    const existing: ActivityEntry[] = JSON.parse(localStorage.getItem(key) || '[]')
-    const entry: ActivityEntry = {
-      id: crypto.randomUUID(),
-      ts: new Date().toISOString(),
-      action, field, from, to,
-    }
-    localStorage.setItem(key, JSON.stringify([entry, ...existing].slice(0, 50)))
-  } catch {}
-}
 
 // ─── Styles ──────────────────────────────────────────────────────
 const s = {
@@ -136,14 +104,14 @@ export default function ProjetoPage() {
   const { id } = router.query as { id: string }
 
   const [project, setProject]     = useState<Project | null>(null)
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
   const [editing, setEditing]     = useState(false)
   const [saving,  setSaving]      = useState(false)
   const [saved,   setSaved]       = useState(false)
-  const [activity, setActivity]   = useState<ActivityEntry[]>([])
   const [aiText,   setAiText]     = useState('')
   const [aiLoading,setAiLoading]  = useState(false)
   const [aiCtx,    setAiCtx]      = useState('')
-  const [contracts, setContracts] = useState<ContractMeta[]>([])
 
   // Edit form state
   const [form, setForm] = useState<Partial<Project>>({})
@@ -151,45 +119,72 @@ export default function ProjetoPage() {
   // Load project
   useEffect(() => {
     if (!id) return
-    const load = () => {
+    let cancelled = false
+
+    async function loadProject() {
+      setLoading(true)
+      setError('')
+      setSaved(false)
+
+      const sb = getSupabase()
+      if (!sb) {
+        if (!cancelled) {
+          setProject(null)
+          setError('Supabase não configurado.')
+          setLoading(false)
+        }
+        return
+      }
+
       try {
-        const stored: Project[] = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
-        const found = stored.find(p => p.id === id)
-        if (found) {
-          setProject(found)
-          setForm(found)
+        const { data, error: loadError } = await sb
+          .from('projects')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (cancelled) return
+
+        if (loadError) {
+          setProject(null)
+          setError('Erro ao carregar projeto: ' + loadError.message)
+          return
         }
-      } catch {}
-    }
-    load()
 
-    // Also try Supabase
-    const sb = getSupabase()
-    if (sb) {
-      sb.from('projects').select('*').eq('id', id).single().then(({ data }) => {
-        if (data) {
-          setProject(data as Project)
-          setForm(data as Project)
+        if (!data) {
+          setProject(null)
+          setError('Projeto não encontrado.')
+          return
         }
-      })
+
+        setProject(data as Project)
+        setForm(data as Project)
+      } catch {
+        if (!cancelled) {
+          setProject(null)
+          setError('Erro inesperado ao carregar projeto.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
 
-    // Load activity log
-    try {
-      const key = `atlas_activity_${id}`
-      setActivity(JSON.parse(localStorage.getItem(key) || '[]'))
-    } catch {}
+    loadProject()
 
-    // Load contracts linked to this project
-    try {
-      const allContracts: ContractMeta[] = JSON.parse(localStorage.getItem('atlas_contracts') || '[]')
-      setContracts(allContracts.filter(c => c.projectId === id))
-    } catch {}
+    return () => { cancelled = true }
   }, [id])
 
   const saveProject = useCallback(async () => {
     if (!project || !id) return
     setSaving(true)
+    setError('')
+
+    const sb = getSupabase()
+    if (!sb) {
+      setError('Supabase não configurado.')
+      setSaving(false)
+      return
+    }
 
     const updated: Project = {
       ...project,
@@ -199,44 +194,50 @@ export default function ProjetoPage() {
         : project.eac,
     }
 
-    // Log changed fields
-    const fields = ['status','completion_pct','budget_actual','cpi','spi','esg_score'] as const
-    fields.forEach(f => {
-      if (project[f] !== updated[f]) {
-        logActivity(id, 'Atualizado', f, String(project[f] ?? ''), String(updated[f] ?? ''))
-      }
-    })
+    let data: Project | null = null
+    let saveError: { message: string } | null = null
 
-    // Update localStorage
     try {
-      const stored: Project[] = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
-      localStorage.setItem('atlas_projects',
-        JSON.stringify(stored.map(p => p.id === id ? updated : p)))
-    } catch {}
+      const result = await sb
+        .from('projects')
+        .update({
+          status: updated.status,
+          completion_pct: updated.completion_pct,
+          budget_actual: updated.budget_actual,
+          budget_planned: updated.budget_planned,
+          cpi: updated.cpi,
+          spi: updated.spi,
+          eac: updated.eac,
+          esg_score: updated.esg_score,
+          city: updated.city,
+          state: updated.state,
+        })
+        .eq('id', id)
+        .select('*')
+        .single()
 
-    // Update Supabase if connected
-    const sb = getSupabase()
-    if (sb) {
-      await sb.from('projects').update({
-        status: updated.status,
-        completion_pct: updated.completion_pct,
-        budget_actual: updated.budget_actual,
-        budget_planned: updated.budget_planned,
-        cpi: updated.cpi,
-        spi: updated.spi,
-        eac: updated.eac,
-        esg_score: updated.esg_score,
-        city: updated.city,
-        state: updated.state,
-      }).eq('id', id)
+      data = result.data as Project | null
+      saveError = result.error
+    } catch {
+      setError('Erro inesperado ao salvar projeto.')
+      setSaving(false)
+      return
     }
 
-    // Reload activity
-    try {
-      setActivity(JSON.parse(localStorage.getItem(`atlas_activity_${id}`) || '[]'))
-    } catch {}
+    if (saveError) {
+      setError('Erro ao salvar projeto: ' + saveError.message)
+      setSaving(false)
+      return
+    }
 
-    setProject(updated)
+    if (!data) {
+      setError('Projeto não retornado pelo Supabase após salvar.')
+      setSaving(false)
+      return
+    }
+
+    setProject(data)
+    setForm(data)
     setEditing(false)
     setSaving(false)
     setSaved(true)
@@ -261,12 +262,30 @@ export default function ProjetoPage() {
     setAiLoading(false)
   }
 
-  if (!project) return (
+  if (loading) return (
     <div style={{ minHeight:'100vh', background:'#f4f5f7', display:'flex',
       alignItems:'center', justifyContent:'center', fontFamily:'system-ui' }}>
       <div style={{ textAlign:'center', color:'#8b93a7' }}>
         <div style={{ fontSize:32, marginBottom:12 }}>🏗️</div>
         <div style={{ fontSize:14 }}>Carregando projeto...</div>
+        <button onClick={() => router.push('/dashboard')}
+          style={{ marginTop:16, padding:'8px 20px', background:'#185FA5', color:'#fff',
+            border:'none', borderRadius:8, cursor:'pointer', fontSize:13 }}>
+          ← Voltar ao dashboard
+        </button>
+      </div>
+    </div>
+  )
+
+  if (error || !project) return (
+    <div style={{ minHeight:'100vh', background:'#f4f5f7', display:'flex',
+      alignItems:'center', justifyContent:'center', fontFamily:'system-ui' }}>
+      <div style={{ textAlign:'center', color:'#8b93a7' }}>
+        <div style={{ fontSize:32, marginBottom:12 }}>🏗️</div>
+        <div style={{ fontSize:14, fontWeight:700, color:'#1a1f36', marginBottom:8 }}>
+          Não foi possível carregar o projeto
+        </div>
+        <div style={{ fontSize:13, maxWidth:360 }}>{error || 'Projeto não encontrado.'}</div>
         <button onClick={() => router.push('/dashboard')}
           style={{ marginTop:16, padding:'8px 20px', background:'#185FA5', color:'#fff',
             border:'none', borderRadius:8, cursor:'pointer', fontSize:13 }}>
@@ -332,6 +351,12 @@ export default function ProjetoPage() {
         </div>
 
         <div style={s.body}>
+          {error && (
+            <div style={{ ...s.card, borderColor:'#FBBCBC', color:'#A32D2D', fontSize:13, fontWeight:600 }}>
+              {error}
+            </div>
+          )}
+
           {/* ── KPI Cards ── */}
           <div style={{ ...s.grid4, marginBottom:16 }}>
             {/* Avanço Físico */}
@@ -544,38 +569,10 @@ export default function ProjetoPage() {
                     + Novo Contrato
                   </a>
                 </div>
-                {contracts.length === 0 ? (
-                  <div style={{ fontSize:13, color:'#8b93a7', padding:'12px 0' }}>
-                    Nenhum contrato gerado ainda.{' '}
-                    <a href={`/juridico?projectId=${id}`} style={{ color:'#185FA5' }}>Gerar contrato →</a>
-                  </div>
-                ) : (
-                  <div>
-                    {contracts.map(c => (
-                      <div key={c.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between',
-                        padding:'10px 0', borderBottom:'1px solid #f0f2f5' }}>
-                        <div>
-                          <div style={{ fontSize:13, fontWeight:600, color:'#1a1f36' }}>
-                            {c.type.replace(/_/g,' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            <span style={{ marginLeft:8, fontSize:10, padding:'2px 7px', borderRadius:10,
-                              background: c.idioma === 'en-US' ? '#EFF4FF' : '#EAF3DE',
-                              color: c.idioma === 'en-US' ? '#185FA5' : '#3B6D11', fontWeight:700 }}>
-                              {c.idioma}
-                            </span>
-                          </div>
-                          <div style={{ fontSize:11, color:'#8b93a7', marginTop:2 }}>
-                            {c.party || '—'} · {c.state} · {new Date(c.date).toLocaleDateString('pt-BR')}
-                            {c.value ? ` · ${c.value}` : ''}
-                          </div>
-                        </div>
-                        <span style={{ fontSize:10, padding:'3px 10px', borderRadius:20,
-                          background:'#FFF3E0', color:'#BA7517', fontWeight:700 }}>
-                          {c.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div style={{ fontSize:13, color:'#8b93a7', padding:'12px 0' }}>
+                  Contratos vinculados serão exibidos quando houver fonte Supabase real para este módulo.{' '}
+                  <a href={`/juridico?projectId=${id}`} style={{ color:'#185FA5' }}>Gerar contrato →</a>
+                </div>
               </div>
 
               {/* ── AI Analysis ── */}
@@ -719,24 +716,9 @@ Formato: executivo, linguagem clara para cliente não técnico. Inclua: sumário
               {/* Activity log */}
               <div style={s.card}>
                 <div style={s.cardTit}>📝 Histórico de Atualizações</div>
-                {activity.length === 0 ? (
-                  <div style={{ fontSize:12, color:'#8b93a7' }}>
-                    Nenhuma atualização registrada ainda.
-                  </div>
-                ) : (
-                  activity.slice(0, 10).map(a => (
-                    <div key={a.id} style={{ padding:'7px 0', borderBottom:'1px solid #f0f2f5' }}>
-                      <div style={{ fontSize:11, color:'#8b93a7' }}>
-                        {new Date(a.ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit',
-                          hour:'2-digit', minute:'2-digit' })}
-                      </div>
-                      <div style={{ fontSize:12, color:'#1a1f36', marginTop:2 }}>
-                        {a.field && <span style={{ color:'#534AB7', fontWeight:600 }}>{a.field}: </span>}
-                        {a.from && a.to ? `${a.from} → ${a.to}` : a.action}
-                      </div>
-                    </div>
-                  ))
-                )}
+                <div style={{ fontSize:12, color:'#8b93a7' }}>
+                  Histórico de atualizações temporariamente indisponível até existir fonte Supabase real.
+                </div>
               </div>
             </div>
           </div>
