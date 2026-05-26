@@ -97,9 +97,15 @@ export default function NewClientModal({ onClose, onCreated }) {
     const sb = getSupabase()
 
     if (!sb) {
-      setSuccess(`Cliente "${form.nome}" cadastrado! (modo demo)`)
+      setError('Supabase não configurado.')
       setLoading(false)
-      setTimeout(() => { onCreated?.(); onClose() }, 1400)
+      return
+    }
+
+    const { data: { user }, error: userErr } = await sb.auth.getUser()
+    if (userErr || !user) {
+      setError('Usuário autenticado não encontrado.')
+      setLoading(false)
       return
     }
 
@@ -125,6 +131,7 @@ export default function NewClientModal({ onClose, onCreated }) {
       contato_telefone: form.contato_telefone.trim() || null,
       observacoes:    form.observacoes.trim() || null,
       status:         'ativo',
+      created_by:     user.id,
     }
 
     const { error: err } = await sb.from('clients').insert(payload)

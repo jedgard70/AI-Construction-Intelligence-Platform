@@ -10,13 +10,24 @@ export default async function handler(req, res) {
   const key = serviceKey || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !key) {
-    return res.status(200).json({ demo: true, message: 'Modo demo — projeto criado localmente.' })
+    return res.status(503).json({ error: 'Supabase não configurado.' })
   }
 
   // Service role client bypasses RLS (no infinite recursion in profiles policy)
   const sb = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
+
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  if (!token) {
+    return res.status(401).json({ error: 'Usuário autenticado não encontrado.' })
+  }
+
+  const { data: { user }, error: userError } = await sb.auth.getUser(token)
+  if (userError || !user) {
+    return res.status(401).json({ error: 'Usuário autenticado não encontrado.' })
+  }
 
   const {
     name, code, type, city, state,
@@ -39,6 +50,7 @@ export default async function handler(req, res) {
     budget_planned:   0,
     budget_actual:    0,
     completion_pct:   0,
+    created_by:       user.id,
   }).select().single()
 
   if (error) {
