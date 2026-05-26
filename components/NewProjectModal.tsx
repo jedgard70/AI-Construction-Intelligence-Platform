@@ -95,41 +95,41 @@ export default function NewProjectModal({ onClose, onCreated, initialName = '', 
     }
 
     const sb = getSupabase()
-    if (sb) {
-      const { data: { user }, error: userErr } = await sb.auth.getUser()
-      if (userErr || !user) {
-        setError('Supabase: usuario autenticado nao encontrado.')
-        setLoading(false)
-        return
-      }
-
-      const { error: err } = await sb.from('projects').insert({
-        id: project.id,
-        name: project.name,
-        code: project.code,
-        type: PROJECT_TYPE_TO_DB[project.type] ?? 'outro',
-        status: project.status,
-        city: project.city,
-        state: project.state,
-        budget_planned: project.budget_planned,
-        budget_actual: project.budget_actual,
-        completion_pct: project.completion_pct,
-        cpi: project.cpi,
-        spi: project.spi,
-        eac: project.eac,
-        esg_score: project.esg_score,
-        created_by: user.id,
-      })
-      if (err) {
-        setError(`Supabase: ${err.message} -- projeto salvo localmente.`)
-      }
+    if (!sb) {
+      setError('Supabase não configurado')
+      setLoading(false)
+      return
     }
 
-    try {
-      const existing = JSON.parse(localStorage.getItem('atlas_projects') || '[]')
-      localStorage.setItem('atlas_projects', JSON.stringify([project, ...existing]))
-    } catch { /* ignore */ }
+    const { data: { user }, error: userErr } = await sb.auth.getUser()
+    if (userErr || !user) {
+      setError('Supabase: usuario autenticado nao encontrado.')
+      setLoading(false)
+      return
+    }
 
+    const { error: err } = await sb.from('projects').insert({
+      id: project.id,
+      name: project.name,
+      code: project.code,
+      type: PROJECT_TYPE_TO_DB[project.type] ?? 'outro',
+      status: project.status,
+      city: project.city,
+      state: project.state,
+      budget_planned: project.budget_planned,
+      budget_actual: project.budget_actual,
+      completion_pct: project.completion_pct,
+      cpi: project.cpi,
+      spi: project.spi,
+      eac: project.eac,
+      esg_score: project.esg_score,
+      created_by: user.id,
+    })
+    if (err) {
+      setError(`Supabase: ${err.message}`)
+      setLoading(false)
+      return
+    }
     setLoading(false)
     onCreated(project)
     onClose()
