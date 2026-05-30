@@ -125,7 +125,7 @@ refactor/descricao        → refatoração sem mudança de comportamento
 
 - Operar sempre no repositório existente em `D:\AI-constr`.
 - Reaproveitar histórico, branches e contexto já presentes.
-- Em caso de conflito técnico, resolver por branch/merge no mesmo repositório, sem clonar.
+- Em caso de conflito técnico, resolver por branch/merge no mesmo repositório (sem clonar).
 
 ---
 
@@ -141,12 +141,12 @@ Nenhuma sprint futura pode ser encerrada sem atualização documental.
 2. `docs/APEX_GLOBAL_MASTER_PLAN.md`
 3. `docs/IA_CONSTRUCTION_PLATFORM_ARCHITECTURE.md`
 4. `docs/ROADMAP_OFICIAL.md`
-5. Índice do pacote ativo, por exemplo `docs/PACOTE_MASTER_002_INDEX.md`
+5. Índice do pacote ativo (ex.: `docs/PACOTE_MASTER_002_INDEX.md`)
 
 ### Critério de completude
 
 - Código sem documentação atualizada é entrega incompleta.
-- Toda conclusão deve registrar status, evidências, pendências e próximos passos.
+- Toda conclusão deve registrar: status, evidências, pendências e próximos passos.
 
 ### REGRA 004 — KNOWLEDGE FIRST
 
@@ -157,13 +157,15 @@ Antes de encerrar qualquer pacote, validar obrigatoriamente:
 3. documentação atualizada
 4. status atualizado
 
-Se faltar qualquer item, o pacote não está encerrado.
+Se faltar qualquer item:
+
+- pacote não encerrado
 
 ---
 
 ## 9. Regra de Não Duplicação
 
-Antes de criar qualquer novo artefato, como tela, API, tabela, agente ou workflow, verificar se já existe estrutura semelhante no repositório.
+Antes de criar qualquer novo artefato (tela, API, tabela, agente ou workflow), verificar se já existe estrutura semelhante no repositório.
 
 Se existir, a ação padrão deve ser:
 
@@ -173,7 +175,7 @@ Se existir, a ação padrão deve ser:
 
 Diretriz:
 
-- nunca duplicar domínio funcional já existente, como CRM, leads, contratos ou vendas.
+- nunca duplicar domínio funcional já existente (CRM, leads, contratos, vendas, etc.).
 
 ---
 
@@ -190,31 +192,3 @@ Estrutura obrigatória:
 - `02_MASTER_002`
 - `03_GOVERNANCA`
 - `04_ARQUITETURA_E_ROADMAP`
-
----
-
-## 11. CLEANUP CHECK Pós-Recuperação
-
-Após concluir a recuperação dos PRs limpos, executar obrigatoriamente um `CLEANUP CHECK`.
-
-Objetivo:
-
-- eliminar arquivos temporários, pastas suspeitas, branches contaminadas e artefatos de recovery que não forem mais necessários;
-- executar a limpeza somente após confirmação de que tudo útil foi incorporado em `main`;
-- nunca apagar nada automaticamente;
-- sempre pedir aprovação explícita antes de excluir qualquer item.
-
-Itens candidatos a revisão:
-
-- `tmp_*.sql`
-- `supabase/.temp/`
-- `ai-construction-intelligence-platform/`
-- branches contaminadas antigas
-- patches/bundles temporários já aplicados
-- recovery obsoleto
-
-Regra operacional:
-
-1. preservar primeiro
-2. recuperar depois
-3. limpar por último
