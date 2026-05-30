@@ -74,3 +74,25 @@ BRL, USD, EUR
 | Observabilidade (recordApiCall) | ✅ Ativo |
 | RLS (Row Level Security) | ✅ Configurado |
 | Build Next.js | ✅ Passando |
+
+---
+
+## Recuperação de Push — 002-S5 (30/05/2026)
+
+**Status:** ⚠️ 4 commits implementados localmente — push bloqueado por ambiente de rede
+
+| Arquivo de Recuperação | Localização | Integridade |
+|------------------------|-------------|-------------|
+| Patch (`git am`) | `PACOTE_MASTER_002_S5_REVENUE_ENGINE.patch` | ✅ 2286 linhas |
+| Bundle (`git fetch`) | `PACOTE_MASTER_002_S5_REVENUE_ENGINE.bundle` | ✅ 27KB — sha1 OK |
+| Relatório completo | `docs/PACOTE_MASTER_002_S5_PUSH_RECOVERY.md` | ✅ |
+
+**Commits preservados:**
+```
+61e2e71 docs: final status report for 002-S5 Revenue Engine
+fd153e9 chore: next-env.d.ts update
+052421d chore: update next-env.d.ts routes path
+ddadd8a feat(002-S5): Revenue Engine — migration, APIs, dashboard UI
+```
+
+**Para resolver:** Ver instruções completas em `docs/PACOTE_MASTER_002_S5_PUSH_RECOVERY.md`
