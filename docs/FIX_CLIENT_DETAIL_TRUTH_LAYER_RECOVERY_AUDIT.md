@@ -256,3 +256,31 @@ Proximo passo recomendado:
 4. Repetir por PR, sempre com escopo pequeno.
 
 O trabalho esta preservado em patch, lista e zip. Nenhum arquivo original foi apagado, movido, resetado ou sobrescrito.
+
+---
+
+## 6. CLEANUP CHECK pos-recuperacao
+
+Apos concluir a recuperacao dos PRs limpos, executar obrigatoriamente um `CLEANUP CHECK`.
+
+Objetivo:
+
+- eliminar arquivos temporarios, pastas suspeitas, branches contaminadas e artefatos de recovery que nao forem mais necessarios;
+- executar a limpeza somente apos confirmacao de que tudo util foi incorporado em `main`;
+- nao apagar nada automaticamente;
+- sempre pedir aprovacao explicita antes de excluir qualquer item.
+
+Itens candidatos a revisao:
+
+- `tmp_*.sql`
+- `supabase/.temp/`
+- `ai-construction-intelligence-platform/`
+- branches contaminadas antigas
+- patches/bundles temporarios ja aplicados
+- recovery obsoleto
+
+Regra operacional:
+
+1. preservar primeiro
+2. recuperar depois
+3. limpar por ultimo

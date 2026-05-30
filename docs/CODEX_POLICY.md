@@ -190,3 +190,31 @@ Estrutura obrigatória:
 - `02_MASTER_002`
 - `03_GOVERNANCA`
 - `04_ARQUITETURA_E_ROADMAP`
+
+---
+
+## 11. CLEANUP CHECK Pós-Recuperação
+
+Após concluir a recuperação dos PRs limpos, executar obrigatoriamente um `CLEANUP CHECK`.
+
+Objetivo:
+
+- eliminar arquivos temporários, pastas suspeitas, branches contaminadas e artefatos de recovery que não forem mais necessários;
+- executar a limpeza somente após confirmação de que tudo útil foi incorporado em `main`;
+- nunca apagar nada automaticamente;
+- sempre pedir aprovação explícita antes de excluir qualquer item.
+
+Itens candidatos a revisão:
+
+- `tmp_*.sql`
+- `supabase/.temp/`
+- `ai-construction-intelligence-platform/`
+- branches contaminadas antigas
+- patches/bundles temporários já aplicados
+- recovery obsoleto
+
+Regra operacional:
+
+1. preservar primeiro
+2. recuperar depois
+3. limpar por último
