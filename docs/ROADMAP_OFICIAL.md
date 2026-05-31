@@ -23,6 +23,7 @@
 - [x] **S4 — Studio 3D Plantas:** upload, render Gemini, paleta, marketing
 - [x] **S5 — Revenue Engine:** tabelas, APIs, dashboard financeiro
 - [x] **S5 — Recuperacao limpa:** branch isolada baseada em `origin/main`
+- [x] **002-E2E — Commercial Flow Validation:** migration aplicada no Supabase real, revenue_* confirmadas, fluxo opportunity→service→proposal→contract→revenue→dashboard operacional com token real
 - [x] **PR B — Foundation Operacional:** AgentWindow, ApexCopilot, ApexShell, Nova Análise, Mission Control, Project Workspace, Agent Events API e integrações BIM/Plantas. Commit main: `5e45e76`.
 
 ---
@@ -30,7 +31,7 @@
 ## Próximos Passos
 
 ### Pacote 002-S6 — CRM Completo (planejado)
-- [ ] Endurecer autenticacao server-side do Revenue Engine
+- [x] Endurecer autenticacao server-side do Revenue Engine (concluído no 002-E2E)
 - [ ] Tabelas: `opportunities`, `proposals`, `contracts`
 - [ ] Pipeline visual Kanban
 - [ ] Integração proposals → contracts → revenue
