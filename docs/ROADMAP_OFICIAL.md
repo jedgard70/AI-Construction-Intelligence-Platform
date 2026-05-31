@@ -1,6 +1,6 @@
 # Roadmap Oficial — AI Construction Intelligence Platform
 
-**Última atualização:** 30 de maio de 2026
+**Última atualização:** 31 de maio de 2026
 
 ---
 
@@ -23,6 +23,7 @@
 - [x] **S4 — Studio 3D Plantas:** upload, render Gemini, paleta, marketing
 - [x] **S5 — Revenue Engine:** tabelas, APIs, dashboard financeiro
 - [x] **S5 — Recuperacao limpa:** branch isolada baseada em `origin/main`
+- [x] **PR B — Foundation Operacional:** AgentWindow, ApexCopilot, ApexShell, Nova Análise, Mission Control, Project Workspace, Agent Events API e integrações BIM/Plantas. Commit main: `5e45e76`.
 
 ---
 

@@ -1,8 +1,8 @@
 # PACOTE MASTER — Status Geral
 
-**Última atualização:** 30 de maio de 2026
+**Última atualização:** 31 de maio de 2026
 **Projeto:** AI Construction Intelligence Platform
-**Branch ativa:** `feature/002-s5-revenue-engine-clean`
+**Branch ativa:** `main`
 
 ---
 
@@ -15,6 +15,25 @@
 | 002-S3 | Sales Pipeline | ✅ Concluído | — |
 | 002-S4 | Studio 3D Plantas | ✅ Concluído | 22/05/2026 |
 | **002-S5** | **Revenue Engine** | **✅ Concluído** | **30/05/2026** |
+| **PR B** | **Foundation Operacional** | **✅ Concluído e mergeado** | **31/05/2026** |
+
+---
+
+## Foundation Operacional (PR B) — Resumo
+
+**Commit em main:** `5e45e76`
+
+### Componentes recuperados
+- `AgentWindow`
+- `ApexCopilot`
+- `ApexShell`
+
+### Fluxos e telas
+- Nova Análise
+- Mission Control
+- Project Workspace em `/projeto/[id]`
+- Agent Events API
+- Integrações AgentWindow em BIM 3D, BIM OPS e Plantas
 
 ---
 

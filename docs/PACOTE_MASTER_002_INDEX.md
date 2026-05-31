@@ -1,7 +1,7 @@
 # Pacote Master 002 — Índice
 
 **Projeto:** AI Construction Intelligence Platform
-**Última atualização:** 30 de maio de 2026
+**Última atualização:** 31 de maio de 2026
 
 ---
 
@@ -14,6 +14,40 @@
 | S3 | Sales Pipeline | ✅ | `pages/vendas.tsx`, `pages/api/sales/` |
 | S4 | Studio 3D Plantas | ✅ | `pages/plantas.js`, `pages/api/render.js` |
 | **S5** | **Revenue Engine** | **✅** | Ver abaixo |
+| **PR B** | **Foundation Operacional** | **✅** | `AgentWindow`, `ApexCopilot`, `ApexShell`, `/nova-analise`, `/mission-control`, Project Workspace |
+
+---
+
+## PR B — Foundation Operacional
+
+**Status:** concluído e mergeado em `main`
+**Commit main:** `5e45e76`
+
+### Componentes recuperados
+```
+components/AgentWindow.tsx
+components/ApexCopilot.tsx
+components/layout/ApexShell.tsx
+```
+
+### Telas e fluxos
+```
+pages/nova-analise.tsx
+pages/mission-control.tsx
+pages/projeto/[id].tsx
+```
+
+### API
+```
+pages/api/agent-events/log.ts
+```
+
+### Integrações
+```
+pages/bim-3d.tsx
+pages/bim-ops.tsx
+pages/plantas.js
+```
 
 ---
 
