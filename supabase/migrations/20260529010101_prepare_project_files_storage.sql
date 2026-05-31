@@ -1,0 +1,3 @@
+-- Historical mirror migration.
+-- Present on remote migration history before this local repository state.
+-- Intentionally no-op locally to align migration versions.

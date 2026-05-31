@@ -15,6 +15,7 @@
 | 002-S3 | Sales Pipeline | ✅ Concluído | — |
 | 002-S4 | Studio 3D Plantas | ✅ Concluído | 22/05/2026 |
 | **002-S5** | **Revenue Engine** | **✅ Concluído** | **30/05/2026** |
+| **002-E2E** | **Commercial Flow Validation** | **✅ Concluído (operacional real)** | **31/05/2026** |
 | **PR B** | **Foundation Operacional** | **✅ Concluído e mergeado** | **31/05/2026** |
 
 ---
@@ -113,3 +114,28 @@ BRL, USD, EUR
 - `/crm/revenue` respondeu `200`
 
 **Branch contaminada descartada:** `claude/api-key-env-priority-Wwjia` nao foi mesclada.
+
+---
+
+## 002-E2E — Comercial Operacional Real
+
+**Status:** ✅ finalizado
+**Supabase projeto:** `stjhkxwylqtihzflspqe`
+**Migration aplicada:** `20260531173000_master002_e2e_revenue_engine.sql`
+
+### Confirmacoes em banco real
+- `revenue_records` ✅
+- `revenue_installments` ✅
+- `revenue_events` ✅
+
+### E2E validado (token real)
+- `opportunity -> service -> proposal -> contract -> revenue -> dashboard` ✅
+- `/api/crm/contracts` com token real: `201`
+- `/api/crm/revenue` com token real: `201`
+- `/api/crm/revenue/dashboard` com token real: `200`
+- `/api/crm/revenue` sem token: `401`
+- `/api/crm/revenue` token fake: `401`
+
+### Evidencias (IDs reais)
+- `contract_id`: `68df1088-e5fe-4086-a111-b26a97e88669`
+- `revenue_record_id`: `3f89bfc7-bd35-4868-aa7a-61538994e3d5`

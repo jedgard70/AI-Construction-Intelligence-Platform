@@ -14,6 +14,7 @@
 | S3 | Sales Pipeline | ✅ | `pages/vendas.tsx`, `pages/api/sales/` |
 | S4 | Studio 3D Plantas | ✅ | `pages/plantas.js`, `pages/api/render.js` |
 | **S5** | **Revenue Engine** | **✅** | Ver abaixo |
+| **002-E2E** | **Commercial Flow Validation** | **✅** | Ver abaixo |
 | **PR B** | **Foundation Operacional** | **✅** | `AgentWindow`, `ApexCopilot`, `ApexShell`, `/nova-analise`, `/mission-control`, Project Workspace |
 
 ---
@@ -121,3 +122,43 @@ GET /api/crm/revenue/dashboard
 - [ ] Adicionar `/crm/revenue` ao sidebar de navegação
 - [ ] Integrar com tabela `contracts` quando criada (Pacote S6)
 - [ ] Aplicar endurecimento de autenticacao server-side nas APIs Revenue
+
+---
+
+## 002-E2E — Commercial Flow Validation (Finalizado)
+
+### Migration aplicada em produção
+```
+supabase/migrations/20260529010101_prepare_project_files_storage.sql
+supabase/migrations/20260531173000_master002_e2e_revenue_engine.sql
+```
+
+### Confirmacoes Supabase real
+```
+revenue_records         ✅
+revenue_installments    ✅
+revenue_events          ✅
+```
+
+### E2E final validado (token real)
+```
+opportunity (201)
+service vinculado (201)
+proposal (201)
+proposal approve (200)
+contract (201)
+revenue record (201)
+revenue dashboard (200)
+```
+
+### Segurança API Revenue
+```
+sem token -> 401
+token fake -> 401
+```
+
+### Evidências reais
+```
+contract_id: 68df1088-e5fe-4086-a111-b26a97e88669
+revenue_record_id: 3f89bfc7-bd35-4868-aa7a-61538994e3d5
+```
