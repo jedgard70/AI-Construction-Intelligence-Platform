@@ -1,17 +1,31 @@
 -- PACOTE MASTER 002-S1
--- CRM Core: pipeline_stages + opportunities
+-- CRM Core: pipeline_stages + opportunities (idempotent for partial environments)
 
 create table if not exists public.pipeline_stages (
-  id uuid primary key default gen_random_uuid(),
-  code text not null unique,
-  label text not null,
-  stage_order int not null,
-  is_closed boolean not null default false,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id uuid primary key default gen_random_uuid()
 );
 
+alter table public.pipeline_stages add column if not exists code text;
+alter table public.pipeline_stages add column if not exists label text;
+alter table public.pipeline_stages add column if not exists stage_order int;
+alter table public.pipeline_stages add column if not exists is_closed boolean default false;
+alter table public.pipeline_stages add column if not exists is_active boolean default true;
+alter table public.pipeline_stages add column if not exists created_at timestamptz default now();
+alter table public.pipeline_stages add column if not exists updated_at timestamptz default now();
+
+alter table public.pipeline_stages alter column code set not null;
+alter table public.pipeline_stages alter column label set not null;
+alter table public.pipeline_stages alter column stage_order set not null;
+alter table public.pipeline_stages alter column is_closed set default false;
+alter table public.pipeline_stages alter column is_closed set not null;
+alter table public.pipeline_stages alter column is_active set default true;
+alter table public.pipeline_stages alter column is_active set not null;
+alter table public.pipeline_stages alter column created_at set default now();
+alter table public.pipeline_stages alter column created_at set not null;
+alter table public.pipeline_stages alter column updated_at set default now();
+alter table public.pipeline_stages alter column updated_at set not null;
+
+create unique index if not exists uq_pipeline_stages_code on public.pipeline_stages(code);
 create index if not exists idx_pipeline_stages_order on public.pipeline_stages(stage_order);
 create index if not exists idx_pipeline_stages_active on public.pipeline_stages(is_active);
 
@@ -32,25 +46,72 @@ set
   is_active = excluded.is_active;
 
 create table if not exists public.opportunities (
-  id uuid primary key default gen_random_uuid(),
-  lead_id uuid not null references public.leads(id),
-  client_id uuid references public.clients(id),
-  project_id uuid references public.projects(id),
-  title text not null,
-  stage_id uuid not null references public.pipeline_stages(id),
-  value numeric(15,2),
-  currency_code text not null default 'BRL',
-  probability int not null default 0 check (probability between 0 and 100),
-  status text not null default 'open' check (status in ('open','won','lost')),
-  owner_user_id uuid references public.profiles(id) default auth.uid(),
-  close_date date,
-  loss_reason text,
-  country_code text not null default 'BR',
-  market_region text not null default 'LATAM',
-  metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  id uuid primary key default gen_random_uuid()
 );
+
+alter table public.opportunities add column if not exists lead_id uuid;
+alter table public.opportunities add column if not exists client_id uuid;
+alter table public.opportunities add column if not exists project_id uuid;
+alter table public.opportunities add column if not exists title text;
+alter table public.opportunities add column if not exists stage_id uuid;
+alter table public.opportunities add column if not exists value numeric(15,2);
+alter table public.opportunities add column if not exists currency_code text default 'BRL';
+alter table public.opportunities add column if not exists probability int default 0;
+alter table public.opportunities add column if not exists status text default 'open';
+alter table public.opportunities add column if not exists owner_user_id uuid default auth.uid();
+alter table public.opportunities add column if not exists close_date date;
+alter table public.opportunities add column if not exists loss_reason text;
+alter table public.opportunities add column if not exists country_code text default 'BR';
+alter table public.opportunities add column if not exists market_region text default 'LATAM';
+alter table public.opportunities add column if not exists metadata jsonb default '{}'::jsonb;
+alter table public.opportunities add column if not exists created_at timestamptz default now();
+alter table public.opportunities add column if not exists updated_at timestamptz default now();
+
+alter table public.opportunities alter column lead_id set not null;
+alter table public.opportunities alter column title set not null;
+alter table public.opportunities alter column stage_id set not null;
+alter table public.opportunities alter column currency_code set default 'BRL';
+alter table public.opportunities alter column currency_code set not null;
+alter table public.opportunities alter column probability set default 0;
+alter table public.opportunities alter column probability set not null;
+alter table public.opportunities alter column status set default 'open';
+alter table public.opportunities alter column status set not null;
+alter table public.opportunities alter column owner_user_id set default auth.uid();
+alter table public.opportunities alter column country_code set default 'BR';
+alter table public.opportunities alter column country_code set not null;
+alter table public.opportunities alter column market_region set default 'LATAM';
+alter table public.opportunities alter column market_region set not null;
+alter table public.opportunities alter column metadata set default '{}'::jsonb;
+alter table public.opportunities alter column metadata set not null;
+alter table public.opportunities alter column created_at set default now();
+alter table public.opportunities alter column created_at set not null;
+alter table public.opportunities alter column updated_at set default now();
+alter table public.opportunities alter column updated_at set not null;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_probability_check') then
+    alter table public.opportunities add constraint opportunities_probability_check check (probability between 0 and 100);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_status_check') then
+    alter table public.opportunities add constraint opportunities_status_check check (status in ('open','won','lost'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_lead_id_fkey') then
+    alter table public.opportunities add constraint opportunities_lead_id_fkey foreign key (lead_id) references public.leads(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_client_id_fkey') then
+    alter table public.opportunities add constraint opportunities_client_id_fkey foreign key (client_id) references public.clients(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_project_id_fkey') then
+    alter table public.opportunities add constraint opportunities_project_id_fkey foreign key (project_id) references public.projects(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_stage_id_fkey') then
+    alter table public.opportunities add constraint opportunities_stage_id_fkey foreign key (stage_id) references public.pipeline_stages(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_owner_user_id_fkey') then
+    alter table public.opportunities add constraint opportunities_owner_user_id_fkey foreign key (owner_user_id) references public.profiles(id);
+  end if;
+end $$;
 
 create index if not exists idx_opportunities_lead on public.opportunities(lead_id);
 create index if not exists idx_opportunities_stage on public.opportunities(stage_id);

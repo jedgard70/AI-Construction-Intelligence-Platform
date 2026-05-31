@@ -1,5 +1,5 @@
 -- PACOTE MASTER 002-S4
--- Contract Engine: contracts + contract_items
+-- Contract Engine: contracts + contract_items (idempotent for partial environments)
 
 create table if not exists public.contracts (
   id uuid primary key default gen_random_uuid()
@@ -26,6 +26,39 @@ alter table public.contracts add column if not exists metadata jsonb not null de
 alter table public.contracts add column if not exists created_at timestamptz not null default now();
 alter table public.contracts add column if not exists updated_at timestamptz not null default now();
 
+alter table public.contracts alter column status set default 'draft';
+alter table public.contracts alter column currency_code set default 'BRL';
+alter table public.contracts alter column version_number set default 1;
+alter table public.contracts alter column created_by set default auth.uid();
+alter table public.contracts alter column metadata set default '{}'::jsonb;
+alter table public.contracts alter column created_at set default now();
+alter table public.contracts alter column updated_at set default now();
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'contracts_status_check') then
+    alter table public.contracts add constraint contracts_status_check check (status in ('draft','sent','signed','active','completed','cancelled'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_proposal_id_fkey') then
+    alter table public.contracts add constraint contracts_proposal_id_fkey foreign key (proposal_id) references public.proposals(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_opportunity_id_fkey') then
+    alter table public.contracts add constraint contracts_opportunity_id_fkey foreign key (opportunity_id) references public.opportunities(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_client_id_fkey') then
+    alter table public.contracts add constraint contracts_client_id_fkey foreign key (client_id) references public.clients(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_project_id_fkey') then
+    alter table public.contracts add constraint contracts_project_id_fkey foreign key (project_id) references public.projects(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_parent_contract_id_fkey') then
+    alter table public.contracts add constraint contracts_parent_contract_id_fkey foreign key (parent_contract_id) references public.contracts(id);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contracts_created_by_fkey') then
+    alter table public.contracts add constraint contracts_created_by_fkey foreign key (created_by) references public.profiles(id);
+  end if;
+end $$;
+
 create unique index if not exists idx_contracts_code_unique on public.contracts(contract_code) where contract_code is not null;
 create index if not exists idx_contracts_proposal on public.contracts(proposal_id);
 create index if not exists idx_contracts_opportunity on public.contracts(opportunity_id);
@@ -51,6 +84,28 @@ alter table public.contract_items add column if not exists line_total numeric(15
 alter table public.contract_items add column if not exists metadata jsonb not null default '{}'::jsonb;
 alter table public.contract_items add column if not exists created_at timestamptz not null default now();
 alter table public.contract_items add column if not exists updated_at timestamptz not null default now();
+
+alter table public.contract_items alter column quantity set default 1;
+alter table public.contract_items alter column unit set default 'package';
+alter table public.contract_items alter column unit_price set default 0;
+alter table public.contract_items alter column currency_code set default 'BRL';
+alter table public.contract_items alter column discount_pct set default 0;
+alter table public.contract_items alter column metadata set default '{}'::jsonb;
+alter table public.contract_items alter column created_at set default now();
+alter table public.contract_items alter column updated_at set default now();
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_discount_pct_check') then
+    alter table public.contract_items add constraint contract_items_discount_pct_check check (discount_pct between 0 and 100);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_contract_id_fkey') then
+    alter table public.contract_items add constraint contract_items_contract_id_fkey foreign key (contract_id) references public.contracts(id) on delete cascade;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_proposal_item_id_fkey') then
+    alter table public.contract_items add constraint contract_items_proposal_item_id_fkey foreign key (proposal_item_id) references public.proposal_items(id);
+  end if;
+end $$;
 
 create index if not exists idx_contract_items_contract on public.contract_items(contract_id);
 create index if not exists idx_contract_items_service_code on public.contract_items(service_code);
