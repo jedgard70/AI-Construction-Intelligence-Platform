@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { getSupabase } from '../../lib/supabase'
+import AgentWindow from '../../components/AgentWindow'
 
 // ─── Types ───────────────────────────────────────────────────────
 interface Project {
@@ -20,6 +21,24 @@ interface Project {
   spi: number | null
   eac: number | null
   esg_score: number | null
+  created_at: string
+}
+
+interface ProjectDocument {
+  id: string
+  name: string | null
+  file_name: string
+  category: string
+  status: string
+  created_at: string
+}
+
+interface ProjectEvent {
+  id: string
+  source_agent: string
+  event_type: string
+  summary: string
+  priority: string
   created_at: string
 }
 
@@ -87,6 +106,10 @@ const s = {
   pre:     { background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:16,
              fontSize:12, color:'#2d3748', lineHeight:1.7, whiteSpace:'pre-wrap' as const,
              marginTop:12, maxHeight:400, overflowY:'auto' as const },
+  tab:     { padding:'9px 12px', border:'1px solid #e5e8f0', borderRadius:8,
+             background:'#fff', color:'#5a6282', fontSize:12, fontWeight:700, cursor:'pointer' },
+  tabOn:   { padding:'9px 12px', border:'1px solid #185FA5', borderRadius:8,
+             background:'#EFF4FF', color:'#185FA5', fontSize:12, fontWeight:800, cursor:'pointer' },
 }
 
 const STATUS_OPTS = [
@@ -112,6 +135,9 @@ export default function ProjetoPage() {
   const [aiText,   setAiText]     = useState('')
   const [aiLoading,setAiLoading]  = useState(false)
   const [aiCtx,    setAiCtx]      = useState('')
+  const [workspaceTab, setWorkspaceTab] = useState<'arquivos'|'chat'|'agentes'|'documentacao'|'entregas'|'financeiro'>('arquivos')
+  const [documents, setDocuments] = useState<ProjectDocument[]>([])
+  const [events, setEvents] = useState<ProjectEvent[]>([])
 
   // Edit form state
   const [form, setForm] = useState<Partial<Project>>({})
@@ -137,11 +163,14 @@ export default function ProjetoPage() {
       }
 
       try {
-        const { data, error: loadError } = await sb
-          .from('projects')
-          .select('*')
-          .eq('id', id)
-          .single()
+        const [projectRes, docsRes, eventsRes] = await Promise.all([
+          sb.from('projects').select('*').eq('id', id).single(),
+          sb.from('documents').select('id,name,file_name,category,status,created_at').eq('project_id', id).order('created_at', { ascending: false }).limit(40),
+          sb.from('agent_events').select('id,source_agent,event_type,summary,priority,created_at').eq('project_id', id).order('created_at', { ascending: false }).limit(40),
+        ])
+
+        const data = projectRes.data
+        const loadError = projectRes.error
 
         if (cancelled) return
 
@@ -159,6 +188,8 @@ export default function ProjetoPage() {
 
         setProject(data as Project)
         setForm(data as Project)
+        setDocuments((docsRes.data ?? []) as ProjectDocument[])
+        setEvents((eventsRes.data ?? []) as ProjectEvent[])
       } catch {
         if (!cancelled) {
           setProject(null)
@@ -301,6 +332,14 @@ export default function ProjetoPage() {
   const overBudget = project.budget_actual > project.budget_planned
   const cpiOk = (project.cpi ?? 1) >= 0.95
   const spiOk = (project.spi ?? 1) >= 0.95
+  const tabs = [
+    ['arquivos', 'Arquivos'],
+    ['chat', 'Chat'],
+    ['agentes', 'Agentes'],
+    ['documentacao', 'Documentacao'],
+    ['entregas', 'Entregas'],
+    ['financeiro', 'Financeiro'],
+  ] as const
 
   return (
     <>
@@ -435,6 +474,92 @@ export default function ProjetoPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div style={s.card}>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:16 }}>
+              {tabs.map(([key, label]) => (
+                <button key={key} style={workspaceTab === key ? s.tabOn : s.tab}
+                  onClick={() => setWorkspaceTab(key)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {workspaceTab === 'arquivos' && (
+              <div>
+                <div style={s.cardTit}>Arquivos do projeto</div>
+                {documents.length ? documents.map(doc => (
+                  <div key={doc.id} style={{ display:'grid', gridTemplateColumns:'1fr 130px 110px', gap:12,
+                    padding:'10px 0', borderBottom:'1px solid #f0f2f5', fontSize:12 }}>
+                    <strong>{doc.file_name || doc.name}</strong>
+                    <span>{doc.category}</span>
+                    <span>{doc.status}</span>
+                  </div>
+                )) : <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhum arquivo vinculado ainda.</div>}
+              </div>
+            )}
+
+            {workspaceTab === 'chat' && (
+              <div>
+                <div style={s.cardTit}>Chat do projeto</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:12 }}>
+                  Use o Apex AI ou o AgentWindow para conversa operacional com contexto deste projeto.
+                </div>
+                <button style={s.btnAI} onClick={() => runAI('chat',
+                  `Atue como assistente do projeto ${project.name}. Resuma o status, proximas acoes e riscos principais com base nestes dados: ${JSON.stringify(project)}`)}>
+                  Conversar sobre este projeto
+                </button>
+              </div>
+            )}
+
+            {workspaceTab === 'agentes' && (
+              <div>
+                <div style={s.cardTit}>Agentes e eventos</div>
+                {events.length ? events.map(event => (
+                  <div key={event.id} style={{ padding:'9px 0', borderBottom:'1px solid #f0f2f5', fontSize:12 }}>
+                    <strong>{event.source_agent}</strong> · {event.event_type} · {event.priority}
+                    <div style={{ color:'#8b93a7', marginTop:3 }}>{event.summary}</div>
+                  </div>
+                )) : <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhum evento de agente registrado.</div>}
+              </div>
+            )}
+
+            {workspaceTab === 'documentacao' && (
+              <div>
+                <div style={s.cardTit}>Documentacao</div>
+                {documents.filter(doc => ['memorial_descritivo','contrato','laudo_tecnico','relatorio','checklist'].includes(doc.category)).length ? documents
+                  .filter(doc => ['memorial_descritivo','contrato','laudo_tecnico','relatorio','checklist'].includes(doc.category))
+                  .map(doc => (
+                    <div key={doc.id} style={{ padding:'9px 0', borderBottom:'1px solid #f0f2f5', fontSize:12 }}>
+                      <strong>{doc.file_name || doc.name}</strong>
+                      <div style={{ color:'#8b93a7' }}>{doc.category} · {doc.status}</div>
+                    </div>
+                  )) : <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhuma documentacao vinculada ainda.</div>}
+              </div>
+            )}
+
+            {workspaceTab === 'entregas' && (
+              <div>
+                <div style={s.cardTit}>Entregas</div>
+                <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                  <button style={s.btnAI} onClick={() => router.push(`/plantas?project_id=${project.id}`)}>Abrir Plantas</button>
+                  <button style={{ ...s.btnAI, background:'#534AB7' }} onClick={() => router.push(`/bim-ops?project_id=${project.id}`)}>Abrir BIM OPS</button>
+                  <button style={{ ...s.btnAI, background:'#3B6D11' }} onClick={() => router.push(`/bim-3d?project_id=${project.id}`)}>Abrir BIM 3D</button>
+                </div>
+              </div>
+            )}
+
+            {workspaceTab === 'financeiro' && (
+              <div>
+                <div style={s.cardTit}>Financeiro</div>
+                <div style={s.grid3}>
+                  <div><span style={s.label}>Planejado</span><strong>{fmtFull(project.budget_planned)}</strong></div>
+                  <div><span style={s.label}>Realizado</span><strong>{fmtFull(project.budget_actual)}</strong></div>
+                  <div><span style={s.label}>EAC</span><strong>{project.eac ? fmtFull(project.eac) : '—'}</strong></div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:16 }}>
@@ -724,6 +849,14 @@ Formato: executivo, linguagem clara para cliente não técnico. Inclua: sumário
           </div>
         </div>
       </div>
+      <AgentWindow
+        moduleKey="project-workspace"
+        title="Project Workspace Agent"
+        defaultMessage="Analise este workspace do projeto. Gere findings, actions e artifacts para arquivos, agentes, documentacao, entregas e financeiro."
+        projectId={project.id}
+        context={{ project, documents_count: documents.length, agent_events_count: events.length }}
+        accent="#0F4C81"
+      />
     </>
   )
 }

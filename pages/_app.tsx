@@ -1,6 +1,9 @@
 import type { AppProps } from 'next/app'
 import { Component, ReactNode, ErrorInfo } from 'react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { useRouter } from 'next/router'
+import ApexCopilot from '../components/ApexCopilot'
+import ApexShell from '../components/layout/ApexShell'
 
 interface EBState { hasError: boolean; message: string }
 
@@ -52,9 +55,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, EBState> {
 }
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter()
+  const path = router.pathname
+  const useShell =
+    !path.startsWith('/api') &&
+    !['/', '/login', '/forgot-password', '/reset-password', '/jornada'].includes(path)
+
   return (
     <ErrorBoundary>
-      <Component {...pageProps} />
+      {useShell ? (
+        <ApexShell>
+          <Component {...pageProps} />
+        </ApexShell>
+      ) : (
+        <Component {...pageProps} />
+      )}
+      <ApexCopilot />
       <SpeedInsights />
     </ErrorBoundary>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Head from 'next/head'
 import { getSupabase } from '../lib/supabase'
+import AgentWindow from '../components/AgentWindow'
 
 // Proprietary formats that cannot be parsed in browser
 const UNSUPPORTED_FORMATS = ['rvt','dwg','dxf','dgn','dwf','dwfx','gbxml','nwc','nwd','sat']
@@ -548,6 +549,14 @@ ${canvasImg}
           </div>
         )}
       </div>
+      <AgentWindow
+        moduleKey="bim-3d"
+        title="BIM 3D Agent"
+        defaultMessage="Analise o modelo BIM/3D em contexto. Liste clashes provaveis, riscos de compatibilizacao, quantitativos iniciais, acoes recomendadas e artefatos para o workspace."
+        context={{ file_name: fileName, file_extension: fileExt, current_analysis: aiAnalysis }}
+        accent={accent}
+        dark
+      />
     </>
   )
 }
