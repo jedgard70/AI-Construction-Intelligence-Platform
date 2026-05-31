@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import PrintShareModal from '../components/PrintShareModal'
 import { getSupabase } from '../lib/supabase'
+import AgentWindow from '../components/AgentWindow'
 
 // ─── Types ──────────────────────────────────────────────────────
 type Module = 'dashboard' | 'clash' | 'permits' | 'docs' | 'workflow' | 'reports' | 'upload' | 'codes' | 'residential' | 'coordination' | 'quantities' | 'feasibility'
@@ -2179,6 +2180,15 @@ Top 3 opportunities to reduce cost without compromising quality.` }
         )}
 
       </div>
+      <AgentWindow
+        moduleKey="bim-ops"
+        title="BIM OPS Agent"
+        defaultMessage="Analise a operacao BIM do projeto. Gere findings, acoes com dry run e artefatos para clashes, licencas, workflow, quantitativos e viabilidade."
+        projectId={projectCtx?.id}
+        context={{ active_module: activeModule, project: projectCtx ?? null }}
+        accent="#58a6ff"
+        dark
+      />
     </>
   )
 }

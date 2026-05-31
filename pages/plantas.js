@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { getSupabase } from '../lib/supabase'
+import AgentWindow from '../components/AgentWindow'
 
 // ── Drawing data (architectural floor plan schematic) ─────────────────────
 const DRAWING = {
@@ -765,6 +766,13 @@ Top 3 ações prioritárias antes de submeter para aprovação.` }
           </div>
         </div>
       )}
+      <AgentWindow
+        moduleKey="plantas"
+        title="Plantas Agent"
+        defaultMessage="Analise a planta atual. Gere message, findings, actions e artifacts para compatibilizacao, cotas, acessibilidade, RFI e memorial."
+        context={{ findings_count: findings.length, open_findings: findings.filter(f => f.status === 'open').length }}
+        accent="#185FA5"
+      />
     </>
   )
 }
