@@ -36,25 +36,72 @@ alter table public.contracts alter column updated_at set default now();
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'contracts_status_check') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_status_check')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%draft%'
+         and pg_get_constraintdef(c.oid) ilike '%sent%'
+         and pg_get_constraintdef(c.oid) ilike '%signed%'
+         and pg_get_constraintdef(c.oid) ilike '%active%'
+         and pg_get_constraintdef(c.oid) ilike '%completed%'
+         and pg_get_constraintdef(c.oid) ilike '%cancelled%'
+     ) then
     alter table public.contracts add constraint contracts_status_check check (status in ('draft','sent','signed','active','completed','cancelled'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_proposal_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_proposal_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (proposal_id)%REFERENCES public.proposals(id)%'
+     ) then
     alter table public.contracts add constraint contracts_proposal_id_fkey foreign key (proposal_id) references public.proposals(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_opportunity_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_opportunity_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (opportunity_id)%REFERENCES public.opportunities(id)%'
+     ) then
     alter table public.contracts add constraint contracts_opportunity_id_fkey foreign key (opportunity_id) references public.opportunities(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_client_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_client_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (client_id)%REFERENCES public.clients(id)%'
+     ) then
     alter table public.contracts add constraint contracts_client_id_fkey foreign key (client_id) references public.clients(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_project_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_project_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (project_id)%REFERENCES public.projects(id)%'
+     ) then
     alter table public.contracts add constraint contracts_project_id_fkey foreign key (project_id) references public.projects(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_parent_contract_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_parent_contract_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (parent_contract_id)%REFERENCES public.contracts(id)%'
+     ) then
     alter table public.contracts add constraint contracts_parent_contract_id_fkey foreign key (parent_contract_id) references public.contracts(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contracts_created_by_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contracts_created_by_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contracts'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (created_by)%REFERENCES public.profiles(id)%'
+     ) then
     alter table public.contracts add constraint contracts_created_by_fkey foreign key (created_by) references public.profiles(id);
   end if;
 end $$;
@@ -96,13 +143,31 @@ alter table public.contract_items alter column updated_at set default now();
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'contract_items_discount_pct_check') then
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_discount_pct_check')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contract_items'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%discount_pct%0%100%'
+     ) then
     alter table public.contract_items add constraint contract_items_discount_pct_check check (discount_pct between 0 and 100);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contract_items_contract_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_contract_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contract_items'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (contract_id)%REFERENCES public.contracts(id)%'
+     ) then
     alter table public.contract_items add constraint contract_items_contract_id_fkey foreign key (contract_id) references public.contracts(id) on delete cascade;
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'contract_items_proposal_item_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'contract_items_proposal_item_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.contract_items'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (proposal_item_id)%REFERENCES public.proposal_items(id)%'
+     ) then
     alter table public.contract_items add constraint contract_items_proposal_item_id_fkey foreign key (proposal_item_id) references public.proposal_items(id);
   end if;
 end $$;

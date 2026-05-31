@@ -13,6 +13,26 @@ alter table public.pipeline_stages add column if not exists is_active boolean de
 alter table public.pipeline_stages add column if not exists created_at timestamptz default now();
 alter table public.pipeline_stages add column if not exists updated_at timestamptz default now();
 
+update public.pipeline_stages
+set
+  code = coalesce(nullif(trim(code), ''), 'stage-' || left(id::text, 8)),
+  label = coalesce(nullif(trim(label), ''), 'Unnamed Stage'),
+  stage_order = coalesce(stage_order, 0),
+  is_closed = coalesce(is_closed, false),
+  is_active = coalesce(is_active, true),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  code is null
+  or btrim(code) = ''
+  or label is null
+  or btrim(label) = ''
+  or stage_order is null
+  or is_closed is null
+  or is_active is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.pipeline_stages alter column code set not null;
 alter table public.pipeline_stages alter column label set not null;
 alter table public.pipeline_stages alter column stage_order set not null;
@@ -67,9 +87,34 @@ alter table public.opportunities add column if not exists metadata jsonb default
 alter table public.opportunities add column if not exists created_at timestamptz default now();
 alter table public.opportunities add column if not exists updated_at timestamptz default now();
 
-alter table public.opportunities alter column lead_id set not null;
+update public.opportunities
+set
+  title = coalesce(nullif(trim(title), ''), 'Untitled Opportunity'),
+  currency_code = coalesce(nullif(trim(currency_code), ''), 'BRL'),
+  probability = coalesce(probability, 0),
+  status = coalesce(nullif(trim(status), ''), 'open'),
+  country_code = coalesce(nullif(trim(country_code), ''), 'BR'),
+  market_region = coalesce(nullif(trim(market_region), ''), 'LATAM'),
+  metadata = coalesce(metadata, '{}'::jsonb),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  title is null
+  or btrim(title) = ''
+  or currency_code is null
+  or btrim(currency_code) = ''
+  or probability is null
+  or status is null
+  or btrim(status) = ''
+  or country_code is null
+  or btrim(country_code) = ''
+  or market_region is null
+  or btrim(market_region) = ''
+  or metadata is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.opportunities alter column title set not null;
-alter table public.opportunities alter column stage_id set not null;
 alter table public.opportunities alter column currency_code set default 'BRL';
 alter table public.opportunities alter column currency_code set not null;
 alter table public.opportunities alter column probability set default 0;
@@ -90,25 +135,77 @@ alter table public.opportunities alter column updated_at set not null;
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_probability_check') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_probability_check')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%probability%0%100%'
+     ) then
     alter table public.opportunities add constraint opportunities_probability_check check (probability between 0 and 100);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_status_check') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_status_check')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%status%'
+         and pg_get_constraintdef(c.oid) ilike '%open%'
+         and pg_get_constraintdef(c.oid) ilike '%won%'
+         and pg_get_constraintdef(c.oid) ilike '%lost%'
+     ) then
     alter table public.opportunities add constraint opportunities_status_check check (status in ('open','won','lost'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_lead_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_lead_id_fkey')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (lead_id)%REFERENCES public.leads(id)%'
+     ) then
     alter table public.opportunities add constraint opportunities_lead_id_fkey foreign key (lead_id) references public.leads(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_client_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_client_id_fkey')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (client_id)%REFERENCES public.clients(id)%'
+     ) then
     alter table public.opportunities add constraint opportunities_client_id_fkey foreign key (client_id) references public.clients(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_project_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_project_id_fkey')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (project_id)%REFERENCES public.projects(id)%'
+     ) then
     alter table public.opportunities add constraint opportunities_project_id_fkey foreign key (project_id) references public.projects(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_stage_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_stage_id_fkey')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (stage_id)%REFERENCES public.pipeline_stages(id)%'
+     ) then
     alter table public.opportunities add constraint opportunities_stage_id_fkey foreign key (stage_id) references public.pipeline_stages(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunities_owner_user_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunities_owner_user_id_fkey')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunities'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (owner_user_id)%REFERENCES public.profiles(id)%'
+     ) then
     alter table public.opportunities add constraint opportunities_owner_user_id_fkey foreign key (owner_user_id) references public.profiles(id);
   end if;
 end $$;

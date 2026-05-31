@@ -18,6 +18,35 @@ alter table public.services_catalog add column if not exists metadata jsonb defa
 alter table public.services_catalog add column if not exists created_at timestamptz default now();
 alter table public.services_catalog add column if not exists updated_at timestamptz default now();
 
+update public.services_catalog
+set
+  service_code = coalesce(nullif(trim(service_code), ''), 'service-' || left(id::text, 8)),
+  name = coalesce(nullif(trim(name), ''), 'Unnamed Service'),
+  category = coalesce(nullif(trim(category), ''), 'general'),
+  default_unit = coalesce(nullif(trim(default_unit), ''), 'package'),
+  default_currency_code = coalesce(nullif(trim(default_currency_code), ''), 'BRL'),
+  available_in_regions = coalesce(available_in_regions, '{"LATAM","NA","EU"}'),
+  is_active = coalesce(is_active, true),
+  metadata = coalesce(metadata, '{}'::jsonb),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  service_code is null
+  or btrim(service_code) = ''
+  or name is null
+  or btrim(name) = ''
+  or category is null
+  or btrim(category) = ''
+  or default_unit is null
+  or btrim(default_unit) = ''
+  or default_currency_code is null
+  or btrim(default_currency_code) = ''
+  or available_in_regions is null
+  or is_active is null
+  or metadata is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.services_catalog alter column service_code set not null;
 alter table public.services_catalog alter column name set not null;
 alter table public.services_catalog alter column category set not null;
@@ -60,8 +89,30 @@ alter table public.opportunity_services add column if not exists metadata jsonb 
 alter table public.opportunity_services add column if not exists created_at timestamptz default now();
 alter table public.opportunity_services add column if not exists updated_at timestamptz default now();
 
-alter table public.opportunity_services alter column opportunity_id set not null;
-alter table public.opportunity_services alter column service_id set not null;
+update public.opportunity_services
+set
+  quantity = coalesce(quantity, 1),
+  unit = coalesce(nullif(trim(unit), ''), 'package'),
+  unit_price = coalesce(unit_price, 0),
+  currency_code = coalesce(nullif(trim(currency_code), ''), 'BRL'),
+  discount_pct = coalesce(discount_pct, 0),
+  is_primary = coalesce(is_primary, false),
+  metadata = coalesce(metadata, '{}'::jsonb),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  quantity is null
+  or unit is null
+  or btrim(unit) = ''
+  or unit_price is null
+  or currency_code is null
+  or btrim(currency_code) = ''
+  or discount_pct is null
+  or is_primary is null
+  or metadata is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.opportunity_services alter column quantity set default 1;
 alter table public.opportunity_services alter column quantity set not null;
 alter table public.opportunity_services alter column unit set default 'package';
@@ -75,7 +126,6 @@ alter table public.opportunity_services alter column discount_pct set not null;
 alter table public.opportunity_services alter column is_primary set default false;
 alter table public.opportunity_services alter column is_primary set not null;
 alter table public.opportunity_services alter column created_by set default auth.uid();
-alter table public.opportunity_services alter column created_by set not null;
 alter table public.opportunity_services alter column metadata set default '{}'::jsonb;
 alter table public.opportunity_services alter column metadata set not null;
 alter table public.opportunity_services alter column created_at set default now();
@@ -85,16 +135,41 @@ alter table public.opportunity_services alter column updated_at set not null;
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_discount_pct_check') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_discount_pct_check')
+     and not exists (
+       select 1
+       from pg_constraint c
+       where c.conrelid = 'public.opportunity_services'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%discount_pct%0%100%'
+     ) then
     alter table public.opportunity_services add constraint opportunity_services_discount_pct_check check (discount_pct between 0 and 100);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_opportunity_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_opportunity_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.opportunity_services'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (opportunity_id)%REFERENCES public.opportunities(id)%'
+     ) then
     alter table public.opportunity_services add constraint opportunity_services_opportunity_id_fkey foreign key (opportunity_id) references public.opportunities(id) on delete cascade;
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_service_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_service_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.opportunity_services'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (service_id)%REFERENCES public.services_catalog(id)%'
+     ) then
     alter table public.opportunity_services add constraint opportunity_services_service_id_fkey foreign key (service_id) references public.services_catalog(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_created_by_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'opportunity_services_created_by_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.opportunity_services'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (created_by)%REFERENCES public.profiles(id)%'
+     ) then
     alter table public.opportunity_services add constraint opportunity_services_created_by_fkey foreign key (created_by) references public.profiles(id);
   end if;
   if not exists (select 1 from pg_constraint where conname = 'opportunity_services_opportunity_id_service_id_key') then

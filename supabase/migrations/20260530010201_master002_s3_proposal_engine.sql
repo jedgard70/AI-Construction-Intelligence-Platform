@@ -22,7 +22,33 @@ alter table public.proposals add column if not exists metadata jsonb default '{}
 alter table public.proposals add column if not exists created_at timestamptz default now();
 alter table public.proposals add column if not exists updated_at timestamptz default now();
 
-alter table public.proposals alter column opportunity_id set not null;
+update public.proposals
+set
+  proposal_code = coalesce(nullif(trim(proposal_code), ''), 'PROP-' || left(id::text, 8)),
+  title = coalesce(nullif(trim(title), ''), 'Untitled Proposal'),
+  proposal_type = coalesce(nullif(trim(proposal_type), ''), 'consulting'),
+  status = coalesce(nullif(trim(status), ''), 'draft'),
+  version_number = coalesce(version_number, 1),
+  currency_code = coalesce(nullif(trim(currency_code), ''), 'BRL'),
+  metadata = coalesce(metadata, '{}'::jsonb),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  proposal_code is null
+  or btrim(proposal_code) = ''
+  or title is null
+  or btrim(title) = ''
+  or proposal_type is null
+  or btrim(proposal_type) = ''
+  or status is null
+  or btrim(status) = ''
+  or version_number is null
+  or currency_code is null
+  or btrim(currency_code) = ''
+  or metadata is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.proposals alter column proposal_code set not null;
 alter table public.proposals alter column title set not null;
 alter table public.proposals alter column proposal_type set not null;
@@ -33,7 +59,6 @@ alter table public.proposals alter column version_number set not null;
 alter table public.proposals alter column currency_code set default 'BRL';
 alter table public.proposals alter column currency_code set not null;
 alter table public.proposals alter column created_by set default auth.uid();
-alter table public.proposals alter column created_by set not null;
 alter table public.proposals alter column metadata set default '{}'::jsonb;
 alter table public.proposals alter column metadata set not null;
 alter table public.proposals alter column created_at set default now();
@@ -43,16 +68,45 @@ alter table public.proposals alter column updated_at set not null;
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'proposals_status_check') then
+  if not exists (select 1 from pg_constraint where conname = 'proposals_status_check')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposals'::regclass
+         and c.contype = 'c'
+         and pg_get_constraintdef(c.oid) ilike '%draft%'
+         and pg_get_constraintdef(c.oid) ilike '%sent%'
+         and pg_get_constraintdef(c.oid) ilike '%viewed%'
+         and pg_get_constraintdef(c.oid) ilike '%approved%'
+         and pg_get_constraintdef(c.oid) ilike '%rejected%'
+         and pg_get_constraintdef(c.oid) ilike '%expired%'
+     ) then
     alter table public.proposals add constraint proposals_status_check check (status in ('draft','sent','viewed','approved','rejected','expired'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'proposals_opportunity_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposals_opportunity_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposals'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (opportunity_id)%REFERENCES public.opportunities(id)%'
+     ) then
     alter table public.proposals add constraint proposals_opportunity_id_fkey foreign key (opportunity_id) references public.opportunities(id) on delete cascade;
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'proposals_parent_proposal_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposals_parent_proposal_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposals'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (parent_proposal_id)%REFERENCES public.proposals(id)%'
+     ) then
     alter table public.proposals add constraint proposals_parent_proposal_id_fkey foreign key (parent_proposal_id) references public.proposals(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'proposals_created_by_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposals_created_by_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposals'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (created_by)%REFERENCES public.profiles(id)%'
+     ) then
     alter table public.proposals add constraint proposals_created_by_fkey foreign key (created_by) references public.profiles(id);
   end if;
 end $$;
@@ -82,7 +136,34 @@ alter table public.proposal_items add column if not exists metadata jsonb defaul
 alter table public.proposal_items add column if not exists created_at timestamptz default now();
 alter table public.proposal_items add column if not exists updated_at timestamptz default now();
 
-alter table public.proposal_items alter column proposal_id set not null;
+update public.proposal_items
+set
+  service_code = coalesce(nullif(trim(service_code), ''), 'service-item'),
+  service_name = coalesce(nullif(trim(service_name), ''), 'Unnamed Service'),
+  quantity = coalesce(quantity, 1),
+  unit = coalesce(nullif(trim(unit), ''), 'package'),
+  unit_price = coalesce(unit_price, 0),
+  currency_code = coalesce(nullif(trim(currency_code), ''), 'BRL'),
+  discount_pct = coalesce(discount_pct, 0),
+  metadata = coalesce(metadata, '{}'::jsonb),
+  created_at = coalesce(created_at, now()),
+  updated_at = coalesce(updated_at, now())
+where
+  service_code is null
+  or btrim(service_code) = ''
+  or service_name is null
+  or btrim(service_name) = ''
+  or quantity is null
+  or unit is null
+  or btrim(unit) = ''
+  or unit_price is null
+  or currency_code is null
+  or btrim(currency_code) = ''
+  or discount_pct is null
+  or metadata is null
+  or created_at is null
+  or updated_at is null;
+
 alter table public.proposal_items alter column service_code set not null;
 alter table public.proposal_items alter column service_name set not null;
 alter table public.proposal_items alter column quantity set default 1;
@@ -104,13 +185,31 @@ alter table public.proposal_items alter column updated_at set not null;
 
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'proposal_items_proposal_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposal_items_proposal_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposal_items'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (proposal_id)%REFERENCES public.proposals(id)%'
+     ) then
     alter table public.proposal_items add constraint proposal_items_proposal_id_fkey foreign key (proposal_id) references public.proposals(id) on delete cascade;
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'proposal_items_service_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposal_items_service_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposal_items'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (service_id)%REFERENCES public.services_catalog(id)%'
+     ) then
     alter table public.proposal_items add constraint proposal_items_service_id_fkey foreign key (service_id) references public.services_catalog(id);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'proposal_items_source_opportunity_service_id_fkey') then
+  if not exists (select 1 from pg_constraint where conname = 'proposal_items_source_opportunity_service_id_fkey')
+     and not exists (
+       select 1 from pg_constraint c
+       where c.conrelid = 'public.proposal_items'::regclass
+         and c.contype = 'f'
+         and pg_get_constraintdef(c.oid) ilike 'FOREIGN KEY (source_opportunity_service_id)%REFERENCES public.opportunity_services(id)%'
+     ) then
     alter table public.proposal_items add constraint proposal_items_source_opportunity_service_id_fkey foreign key (source_opportunity_service_id) references public.opportunity_services(id);
   end if;
 end $$;
