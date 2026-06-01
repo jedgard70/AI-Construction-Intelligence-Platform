@@ -1,6 +1,6 @@
 # Roadmap Oficial — AI Construction Intelligence Platform
 
-**Última atualização:** 31 de maio de 2026
+**Última atualização:** 1 de junho de 2026
 
 ---
 
@@ -25,6 +25,8 @@
 - [x] **S5 — Recuperacao limpa:** branch isolada baseada em `origin/main`
 - [x] **002-E2E — Commercial Flow Validation:** migration aplicada no Supabase real, revenue_* confirmadas, fluxo opportunity→service→proposal→contract→revenue→dashboard operacional com token real
 - [x] **PR B — Foundation Operacional:** AgentWindow, ApexCopilot, ApexShell, Nova Análise, Mission Control, Project Workspace, Agent Events API e integrações BIM/Plantas. Commit main: `5e45e76`.
+- [x] **STORAGE-3 — UI Project Workspace:** upload opcional em `/nova-analise`, listagem e download seguro em `/projeto/[id]`.
+- [ ] **STORAGE-4 — E2E Storage Real:** pendente validação completa com sessão real (upload + metadata + signed URL + download).
 
 ---
 

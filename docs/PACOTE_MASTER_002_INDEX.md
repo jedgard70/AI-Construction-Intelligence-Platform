@@ -1,7 +1,7 @@
 # Pacote Master 002 — Índice
 
 **Projeto:** AI Construction Intelligence Platform
-**Última atualização:** 31 de maio de 2026
+**Última atualização:** 1 de junho de 2026
 
 ---
 
@@ -18,6 +18,8 @@
 | **PR B** | **Foundation Operacional** | **✅** | `AgentWindow`, `ApexCopilot`, `ApexShell`, `/nova-analise`, `/mission-control`, Project Workspace |
 | **Help AI PR1-PR4** | **ApexCopilot Advanced Foundation** | **✅** | Backend governance + role/seat + client hardening + AgentWindow/Mission Control |
 | **Help AI PR5** | **Safety + Audit Trail** | **🔄** | Guardrails e contrato de trilha auditável (em PR) |
+| **STORAGE-3** | **UI Project Workspace** | **✅** | `/nova-analise`, `/projeto/[id]`, `docs/PR_STORAGE_3_UI_PROJECT_WORKSPACE.md` |
+| **STORAGE-4** | **Storage E2E Validation** | **🟡** | `docs/PR_STORAGE_4_E2E_VALIDATION.md` |
 
 ---
 
