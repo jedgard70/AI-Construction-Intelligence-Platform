@@ -34,6 +34,26 @@ type EventRow = {
   created_at: string
 }
 
+type AutonomousStatusPayload = {
+  system?: { status?: string }
+  governance?: {
+    destructiveActionsAllowed?: boolean
+    criticalDeployAllowed?: boolean
+    migrationWithoutApprovalAllowed?: boolean
+    requiredApprovals?: Array<{ key: string; description: string; approvalRequired: boolean }>
+  }
+  execution?: {
+    mode?: string
+    nextRecommendedBlock?: {
+      id: string
+      title: string
+      risk: string
+      priority: string
+      approvalRequired: boolean
+    } | null
+  }
+}
+
 export default function MissionControlPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -43,6 +63,8 @@ export default function MissionControlPage() {
   const [events, setEvents] = useState<EventRow[]>([])
   const [documentsCount, setDocumentsCount] = useState<number | null>(null)
   const [copilotKnowledgeStatus, setCopilotKnowledgeStatus] = useState<'loading' | 'active' | 'unavailable'>('loading')
+  const [autonomous, setAutonomous] = useState<AutonomousStatusPayload | null>(null)
+  const [autonomousError, setAutonomousError] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -74,6 +96,18 @@ export default function MissionControlPage() {
       setDocumentsCount(docsRes.count ?? null)
       setCopilotKnowledgeStatus(modulesRes.error ? 'unavailable' : 'active')
       setLoading(false)
+
+      try {
+        const autonomousRes = await fetch('/api/autonomous/status')
+        if (!autonomousRes.ok) {
+          setAutonomousError(`Autonomous status indisponivel (${autonomousRes.status})`)
+        } else {
+          const payload = (await autonomousRes.json()) as AutonomousStatusPayload
+          setAutonomous(payload)
+        }
+      } catch {
+        setAutonomousError('Falha ao carregar Autonomous Orchestrator.')
+      }
     }
 
     init()
@@ -229,6 +263,37 @@ export default function MissionControlPage() {
                 <div style={s.small}>{project.status} - {new Date(project.created_at).toLocaleDateString('pt-BR')}</div>
               </button>
             ))}
+          </div>
+        </section>
+
+        <section style={{ ...s.grid2, marginBottom: 14 }}>
+          <div style={s.card}>
+            <div style={s.sec}>Autonomous Orchestrator</div>
+            <div style={{ fontSize: 12, color: '#475467', marginBottom: 8 }}>
+              Modo: <strong>{autonomous?.execution?.mode ?? 'guided'}</strong>
+            </div>
+            {autonomous?.execution?.nextRecommendedBlock ? (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 10, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: '#667085', textTransform: 'uppercase', fontWeight: 800 }}>Proximo bloco recomendado</div>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>{autonomous.execution.nextRecommendedBlock.id} - {autonomous.execution.nextRecommendedBlock.title}</div>
+                <div style={s.small}>Risco: {autonomous.execution.nextRecommendedBlock.risk} | Prioridade: {autonomous.execution.nextRecommendedBlock.priority}</div>
+              </div>
+            ) : (
+              <p style={s.small}>Sem bloco recomendado no momento.</p>
+            )}
+            {autonomousError && <p style={{ ...s.small, color: '#a32d2d' }}>{autonomousError}</p>}
+          </div>
+
+          <div style={s.card}>
+            <div style={s.sec}>Aprovacao Obrigatoria</div>
+            {autonomous?.governance?.requiredApprovals?.length ? autonomous.governance.requiredApprovals.map(item => (
+              <div key={item.key} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7' }}>
+                <strong style={{ fontSize: 12 }}>{item.key}</strong>
+                <div style={s.small}>{item.description}</div>
+              </div>
+            )) : (
+              <p style={s.small}>Sem regras carregadas pela API de autonomia.</p>
+            )}
           </div>
         </section>
 
