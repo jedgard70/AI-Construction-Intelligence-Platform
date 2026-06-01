@@ -8,3 +8,7 @@ dist/
 out/
 *.log
 *.tsbuildinfo
+tmp_*tokens*.json
+*_tokens.json
+.env*.local
+supabase/.temp/
