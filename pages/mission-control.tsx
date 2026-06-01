@@ -42,17 +42,20 @@ export default function MissionControlPage() {
   const [projects, setProjects] = useState<ProjectRow[]>([])
   const [events, setEvents] = useState<EventRow[]>([])
   const [documentsCount, setDocumentsCount] = useState<number | null>(null)
+  const [copilotKnowledgeStatus, setCopilotKnowledgeStatus] = useState<'loading' | 'active' | 'unavailable'>('loading')
 
   useEffect(() => {
     async function init() {
       const sb = getSupabase()
       if (!sb) {
+        setCopilotKnowledgeStatus('unavailable')
         router.replace('/login')
         return
       }
 
       const { data: { session } } = await sb.auth.getSession()
       if (!session) {
+        setCopilotKnowledgeStatus('unavailable')
         router.replace('/login')
         return
       }
@@ -69,11 +72,22 @@ export default function MissionControlPage() {
       setProjects((projectsRes.data ?? []) as ProjectRow[])
       setEvents((eventsRes.data ?? []) as EventRow[])
       setDocumentsCount(docsRes.count ?? null)
+      setCopilotKnowledgeStatus(modulesRes.error ? 'unavailable' : 'active')
       setLoading(false)
     }
 
     init()
   }, [router])
+
+  const copilotKnowledgeBadge = useMemo(() => {
+    if (copilotKnowledgeStatus === 'loading') {
+      return { text: 'Base Apex Copilot carregando...', color: '#ad6800' }
+    }
+    if (copilotKnowledgeStatus === 'active') {
+      return { text: 'Base Apex Copilot ativa (server-side governance)', color: '#2f7d32' }
+    }
+    return { text: 'Base Apex Copilot indisponivel', color: '#a32d2d' }
+  }, [copilotKnowledgeStatus])
 
   const statusItems = useMemo<StatusItem[]>(() => [
     {
@@ -158,8 +172,8 @@ export default function MissionControlPage() {
           <h1 style={s.title}>Mission Control</h1>
           <p style={s.sub}>Status operacional real da plataforma, roadmap e checklist do Pacote Master 001.</p>
           <div style={{ marginTop: 8, display: 'inline-flex', gap: 8, alignItems: 'center', border: '1px solid #d8e0ee', borderRadius: 999, padding: '4px 10px', background: '#f8fafc', fontSize: 11, color: '#475467', fontWeight: 700 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: '#2f7d32', display: 'inline-block' }} />
-            Base Apex Copilot carregada (server-side governance)
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: copilotKnowledgeBadge.color, display: 'inline-block' }} />
+            {copilotKnowledgeBadge.text}
           </div>
         </div>
 
