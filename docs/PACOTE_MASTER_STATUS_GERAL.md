@@ -19,6 +19,7 @@
 | **PR B** | **Foundation Operacional** | **✅ Concluído e mergeado** | **31/05/2026** |
 | **STORAGE-3** | **UI Project Workspace** | **✅ Concluído e mergeado** | **01/06/2026** |
 | **STORAGE-4** | **E2E Validation** | **✅ Concluído (operacional real)** | **01/06/2026** |
+| **ARCHVIS-1..4** | **Visualização Arquitetônica IA + Prancha A1** | **✅ Concluído (foundation operacional)** | **01/06/2026** |
 | **AUTONOMOUS-B1/B2/B3/B4** | **Autonomous Orchestrator + Design Evolution + Feature/PR Auditor + Finalização** | **✅ Concluído** | **01/06/2026** |
 
 ---
@@ -83,6 +84,8 @@ BRL, USD, EUR
 | Homepage (index.js) | CORE | MÉDIA |
 | Link Revenue no menu principal | 002-S5 | BAIXA |
 | Rota parcelas /api/crm/revenue/[id]/installments | 002-S5 | MÉDIA |
+| Conector de geração de imagem/vídeo (Archvis) | ARCHVIS | MÉDIA |
+| Exportação PDF A1 automatizada | ARCHVIS | MÉDIA |
 
 ---
 

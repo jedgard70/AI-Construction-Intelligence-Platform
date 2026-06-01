@@ -20,6 +20,10 @@
 | **Help AI PR5** | **Safety + Audit Trail** | **✅** | Guardrails e contrato de trilha auditável |
 | **STORAGE-3** | **UI Project Workspace** | **✅** | `/nova-analise`, `/projeto/[id]`, `docs/PR_STORAGE_3_UI_PROJECT_WORKSPACE.md` |
 | **STORAGE-4** | **Storage E2E Validation** | **✅** | `docs/PR_STORAGE_4_E2E_VALIDATION.md`, `docs/STORAGE_E2E_REAL_FINAL_VALIDATION.md` |
+| **ARCHVIS-1** | **Foundation + Storage Structure** | **✅** | `pages/projeto/[id].tsx`, `docs/PR_ARCHVIS_AI_FOUNDATION.md`, `docs/ARCHVIS_AI_OPERATING_SYSTEM.md` |
+| **ARCHVIS-2** | **Guided Visual Generation Flow** | **✅** | `pages/projeto/[id].tsx`, `lib/archvis/guided-flow.ts`, `docs/PR_ARCHVIS_GUIDED_FLOW.md` |
+| **ARCHVIS-3** | **Prompt Library + APIs** | **✅** | `lib/archvis/prompts.ts`, `pages/api/archvis/prompts.ts`, `pages/api/archvis/generate-brief.ts`, `docs/PR_ARCHVIS_PROMPT_LIBRARY.md` |
+| **ARCHVIS-4** | **Prancha A1 + Commercial Package** | **✅** | `lib/archvis/a1-template.ts`, `pages/projeto/[id].tsx`, `docs/PR_ARCHVIS_A1_COMMERCIAL_PACKAGE.md` |
 | **AUTONOMOUS-B1/B2/B3/B4** | **Autonomous Orchestrator + Design Evolution + Feature/PR Auditor** | **✅** | `docs/PR_AUTONOMOUS_CORE.md`, `docs/PR_DESIGN_EVOLUTION_ENGINE.md`, `docs/PR_FEATURE_GENERATOR_PR_AUDITOR.md`, `docs/AUTONOMOUS_ORCHESTRATOR_FINAL_REPORT.md` |
 
 ---
