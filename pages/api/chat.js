@@ -50,6 +50,29 @@ Regras obrigatorias:
     }
   }
 
+  const readMarkdownTree = (dirPath) => {
+    try {
+      if (!fs.existsSync(dirPath)) return []
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true })
+      const files = []
+      for (const entry of entries) {
+        const full = path.join(dirPath, entry.name)
+        if (entry.isDirectory()) {
+          files.push(...readMarkdownTree(full))
+          continue
+        }
+        if (!entry.isFile() || !entry.name.toLowerCase().endsWith('.md')) continue
+        const content = fs.readFileSync(full, 'utf8').trim()
+        if (!content) continue
+        const rel = path.relative(docsDir, full).replace(/\\/g, '/')
+        files.push({ rel, content })
+      }
+      return files.sort((a, b) => a.rel.localeCompare(b.rel))
+    } catch {
+      return []
+    }
+  }
+
   const governance = readDoc('governance.md')
   const folderStructure = readDoc('folder-structure.md')
   const permissions = readDoc('permissions.md')
@@ -66,7 +89,16 @@ Regras obrigatorias:
     .filter(Boolean)
     .join('\n\n')
 
-  const policySystem = serverGovernancePrompt || fallbackSystem
+  const skillsKnowledge = readMarkdownTree(path.join(docsDir, 'skills'))
+  const skillsPrompt = skillsKnowledge.length
+    ? skillsKnowledge
+        .map((doc) => `### ${doc.rel}\n${doc.content}`)
+        .join('\n\n')
+    : ''
+
+  const policySystem = [serverGovernancePrompt || fallbackSystem, skillsPrompt && `## Apex Skills Knowledge\n${skillsPrompt}`]
+    .filter(Boolean)
+    .join('\n\n')
 
   const joinedUserText = Array.isArray(messages)
     ? messages
