@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import { getSupabase } from '../../lib/supabase'
 import AgentWindow from '../../components/AgentWindow'
+import { buildArchvisPrompt, type ArchvisFlowStatus, type ArchvisStylePreset } from '../../lib/archvis/guided-flow'
 
 // ─── Types ───────────────────────────────────────────────────────
 interface Project {
@@ -58,6 +59,16 @@ type ArchvisStageKey =
   | 'refinamentos'
   | 'render_final'
   | 'prancha_a1'
+
+type ArchvisBriefForm = {
+  stylePreset: ArchvisStylePreset
+  objective: string
+  propertyStandard: string
+  lighting: string
+  landscaping: string
+  materials: string
+  observations: string
+}
 
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -185,6 +196,17 @@ export default function ProjetoPage() {
   const [storageLoading, setStorageLoading] = useState(false)
   const [storageError, setStorageError] = useState('')
   const [events, setEvents] = useState<ProjectEvent[]>([])
+  const [archvisStatus, setArchvisStatus] = useState<ArchvisFlowStatus>('referencia_recebida')
+  const [archvisPrompt, setArchvisPrompt] = useState('')
+  const [archvisForm, setArchvisForm] = useState<ArchvisBriefForm>({
+    stylePreset: 'fachada_moderna',
+    objective: '',
+    propertyStandard: '',
+    lighting: '',
+    landscaping: '',
+    materials: '',
+    observations: '',
+  })
 
   // Edit form state
   const [form, setForm] = useState<Partial<Project>>({})
@@ -456,6 +478,13 @@ export default function ProjetoPage() {
     files: storageFiles.filter(file => inferArchvisStage(file.original_name, file.mime_type) === stage.key),
     docs: documents.filter(doc => inferArchvisStage(doc.file_name || doc.name || '', null) === stage.key),
   }))
+  const archvisStatusSteps: Array<{ key: ArchvisFlowStatus; label: string }> = [
+    { key: 'referencia_recebida', label: 'Referencia recebida' },
+    { key: 'preview_gerado', label: 'Preview gerado' },
+    { key: 'refinamento_em_andamento', label: 'Refinamento em andamento' },
+    { key: 'aprovado', label: 'Aprovado' },
+    { key: 'prancha_a1_pronta', label: 'Prancha A1 pronta' },
+  ]
 
   return (
     <>
@@ -659,6 +688,97 @@ export default function ProjetoPage() {
                 <div style={{ ...s.cardTit, marginBottom:8 }}>Visualizacao Arquitetonica IA</div>
                 <div style={{ fontSize:12, color:'#8b93a7', marginBottom:14 }}>
                   Estrutura operacional do fluxo Archvis por projeto: Plantas → Referencias → Previews IA → Refinamentos → Render Final → Prancha A1.
+                </div>
+                <div style={{ border:'1px solid #e5e8f0', borderRadius:10, padding:12, marginBottom:12, background:'#fff' }}>
+                  <div style={{ fontSize:12, fontWeight:700, marginBottom:8, color:'#1a1f36' }}>Fluxo guiado</div>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                    {archvisStatusSteps.map(step => (
+                      <button
+                        key={step.key}
+                        onClick={() => setArchvisStatus(step.key)}
+                        style={{
+                          border:'1px solid',
+                          borderColor: archvisStatus === step.key ? '#185FA5' : '#e2e8f0',
+                          background: archvisStatus === step.key ? '#EFF4FF' : '#fff',
+                          color: archvisStatus === step.key ? '#185FA5' : '#5a6282',
+                          borderRadius:999,
+                          padding:'6px 10px',
+                          fontSize:11,
+                          fontWeight:700,
+                          cursor:'pointer',
+                        }}
+                      >
+                        {step.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:11, color:'#5a6282' }}>
+                    Status atual: <strong>{archvisStatusSteps.find(s => s.key === archvisStatus)?.label}</strong>
+                  </div>
+                </div>
+
+                <div style={{ border:'1px solid #e5e8f0', borderRadius:10, padding:12, marginBottom:12, background:'#fff' }}>
+                  <div style={{ fontSize:12, fontWeight:700, marginBottom:10, color:'#1a1f36' }}>Direcao criativa (brief)</div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    <div>
+                      <label style={s.label}>Estilo arquitetonico</label>
+                      <select
+                        style={s.select}
+                        value={archvisForm.stylePreset}
+                        onChange={e => setArchvisForm(f => ({ ...f, stylePreset: e.target.value as ArchvisStylePreset }))}
+                      >
+                        <option value="fachada_moderna">Fachada moderna</option>
+                        <option value="minimalista_sofisticada">Minimalista sofisticada</option>
+                        <option value="brutalista_moderna">Brutalista moderna</option>
+                        <option value="luxo">Luxo</option>
+                        <option value="noturna">Noturna</option>
+                        <option value="paisagismo_frontal">Paisagismo frontal</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={s.label}>Padrao do imovel</label>
+                      <input style={s.input} value={archvisForm.propertyStandard} onChange={e => setArchvisForm(f => ({ ...f, propertyStandard: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={s.label}>Objetivo</label>
+                      <input style={s.input} value={archvisForm.objective} onChange={e => setArchvisForm(f => ({ ...f, objective: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={s.label}>Iluminacao</label>
+                      <input style={s.input} value={archvisForm.lighting} onChange={e => setArchvisForm(f => ({ ...f, lighting: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={s.label}>Paisagismo</label>
+                      <input style={s.input} value={archvisForm.landscaping} onChange={e => setArchvisForm(f => ({ ...f, landscaping: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={s.label}>Materiais</label>
+                      <input style={s.input} value={archvisForm.materials} onChange={e => setArchvisForm(f => ({ ...f, materials: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div style={{ marginTop:10 }}>
+                    <label style={s.label}>Observacoes</label>
+                    <textarea
+                      style={{ ...s.input, minHeight:72, resize:'vertical' as const }}
+                      value={archvisForm.observations}
+                      onChange={e => setArchvisForm(f => ({ ...f, observations: e.target.value }))}
+                    />
+                  </div>
+                  <div style={{ display:'flex', gap:8, marginTop:10 }}>
+                    <button
+                      style={{ ...s.btnAI, background:'#185FA5' }}
+                      onClick={() => setArchvisPrompt(buildArchvisPrompt(archvisForm))}
+                    >
+                      Gerar prompt estruturado
+                    </button>
+                  </div>
+                  {archvisPrompt ? (
+                    <pre style={{ ...s.pre, marginTop:10, maxHeight:220 }}>{archvisPrompt}</pre>
+                  ) : (
+                    <div style={{ fontSize:11, color:'#8b93a7', marginTop:8 }}>
+                      Gere o prompt para preparar preview, refinamento, aprovacao e prancha A1.
+                    </div>
+                  )}
                 </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                   {archvisByStage.map(stage => (
