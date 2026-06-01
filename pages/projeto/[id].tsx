@@ -42,6 +42,15 @@ interface ProjectEvent {
   created_at: string
 }
 
+interface StorageFile {
+  id: string
+  project_id: string | null
+  original_name: string
+  mime_type: string | null
+  file_size: number | null
+  created_at: string
+}
+
 
 // ─── Helpers ─────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -53,6 +62,12 @@ const fmtFull = (v: number) =>
 
 const pct = (v: number | null) => v != null ? `${v.toFixed(1)}%` : '—'
 const idx = (v: number | null) => v != null ? v.toFixed(2) : '—'
+const fileSizeLabel = (size: number | null) => {
+  if (!size || size <= 0) return '—'
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  return `${Math.max(1, Math.round(size / 1024))} KB`
+}
+const dateLabel = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
 
 function statusLabel(s: string) {
   return ({ em_andamento:'Em andamento', atrasado:'Atrasado', planejamento:'Planejamento',
@@ -137,6 +152,9 @@ export default function ProjetoPage() {
   const [aiCtx,    setAiCtx]      = useState('')
   const [workspaceTab, setWorkspaceTab] = useState<'arquivos'|'chat'|'agentes'|'documentacao'|'entregas'|'financeiro'>('arquivos')
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
+  const [storageFiles, setStorageFiles] = useState<StorageFile[]>([])
+  const [storageLoading, setStorageLoading] = useState(false)
+  const [storageError, setStorageError] = useState('')
   const [events, setEvents] = useState<ProjectEvent[]>([])
 
   // Edit form state
@@ -190,6 +208,7 @@ export default function ProjetoPage() {
         setForm(data as Project)
         setDocuments((docsRes.data ?? []) as ProjectDocument[])
         setEvents((eventsRes.data ?? []) as ProjectEvent[])
+        await loadStorageFiles(id)
       } catch {
         if (!cancelled) {
           setProject(null)
@@ -291,6 +310,68 @@ export default function ProjetoPage() {
       setAiText('Erro ao conectar com a IA.')
     }
     setAiLoading(false)
+  }
+
+  async function loadStorageFiles(projectId: string) {
+    const sb = getSupabase()
+    if (!sb) return
+    setStorageLoading(true)
+    setStorageError('')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        setStorageError('Sessao expirada para listar arquivos do projeto.')
+        setStorageFiles([])
+        return
+      }
+
+      const res = await fetch(`/api/storage/project-files?project_id=${encodeURIComponent(projectId)}&limit=100`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setStorageError(json?.error?.message || json?.error || 'Falha ao listar arquivos do projeto.')
+        setStorageFiles([])
+        return
+      }
+      setStorageFiles((json?.data || []) as StorageFile[])
+    } catch {
+      setStorageError('Falha de conexao ao carregar arquivos do projeto.')
+      setStorageFiles([])
+    } finally {
+      setStorageLoading(false)
+    }
+  }
+
+  async function downloadStorageFile(documentId: string) {
+    const sb = getSupabase()
+    if (!sb) return
+    setStorageError('')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        setStorageError('Sessao expirada para gerar link de download.')
+        return
+      }
+      const res = await fetch('/api/storage/signed-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ document_id: documentId, expires_in: 600 }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok || !json?.data?.signed_url) {
+        setStorageError(json?.error?.message || json?.error || 'Falha ao gerar signed URL.')
+        return
+      }
+      window.open(json.data.signed_url, '_blank', 'noopener,noreferrer')
+    } catch {
+      setStorageError('Falha de conexao ao gerar signed URL.')
+    }
   }
 
   if (loading) return (
@@ -488,15 +569,40 @@ export default function ProjetoPage() {
 
             {workspaceTab === 'arquivos' && (
               <div>
-                <div style={s.cardTit}>Arquivos do projeto</div>
-                {documents.length ? documents.map(doc => (
-                  <div key={doc.id} style={{ display:'grid', gridTemplateColumns:'1fr 130px 110px', gap:12,
-                    padding:'10px 0', borderBottom:'1px solid #f0f2f5', fontSize:12 }}>
-                    <strong>{doc.file_name || doc.name}</strong>
-                    <span>{doc.category}</span>
-                    <span>{doc.status}</span>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                  <div style={s.cardTit}>Arquivos do projeto</div>
+                  <button
+                    style={{ ...s.tab, padding:'7px 10px' }}
+                    onClick={() => loadStorageFiles(project.id)}
+                    disabled={storageLoading}
+                  >
+                    {storageLoading ? 'Atualizando...' : 'Atualizar'}
+                  </button>
+                </div>
+                {storageError && (
+                  <div style={{ fontSize:12, color:'#A32D2D', background:'#fff1f1', border:'1px solid #f3b1b1', borderRadius:8, padding:'8px 10px', marginBottom:10 }}>
+                    {storageError}
                   </div>
-                )) : <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhum arquivo vinculado ainda.</div>}
+                )}
+                {storageLoading ? (
+                  <div style={{ fontSize:12, color:'#8b93a7' }}>Carregando arquivos do projeto...</div>
+                ) : storageFiles.length ? storageFiles.map(file => (
+                  <div key={file.id} style={{ display:'grid', gridTemplateColumns:'1fr 120px 100px 110px', gap:12,
+                    padding:'10px 0', borderBottom:'1px solid #f0f2f5', fontSize:12, alignItems:'center' }}>
+                    <strong style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={file.original_name}>{file.original_name}</strong>
+                    <span style={{ color:'#5a6282' }}>{file.mime_type || 'application/octet-stream'}</span>
+                    <span style={{ color:'#5a6282' }}>{fileSizeLabel(file.file_size)}</span>
+                    <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'center' }}>
+                      <span style={{ color:'#8b93a7', fontSize:11 }}>{dateLabel(file.created_at)}</span>
+                      <button
+                        onClick={() => downloadStorageFile(file.id)}
+                        style={{ border:'1px solid #d8e0ee', background:'#fff', color:'#185FA5', borderRadius:8, padding:'4px 8px', fontSize:11, fontWeight:700, cursor:'pointer' }}
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                )) : <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhum arquivo armazenado para este projeto ainda.</div>}
               </div>
             )}
 
@@ -854,7 +960,7 @@ Formato: executivo, linguagem clara para cliente não técnico. Inclua: sumário
         title="Project Workspace Agent"
         defaultMessage="Analise este workspace do projeto. Gere findings, actions e artifacts para arquivos, agentes, documentacao, entregas e financeiro."
         projectId={project.id}
-        context={{ project, documents_count: documents.length, agent_events_count: events.length }}
+        context={{ project, documents_count: storageFiles.length || documents.length, agent_events_count: events.length }}
         accent="#0F4C81"
       />
     </>
