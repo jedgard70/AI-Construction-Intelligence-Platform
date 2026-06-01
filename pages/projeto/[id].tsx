@@ -5,6 +5,7 @@ import Head from 'next/head'
 import { getSupabase } from '../../lib/supabase'
 import AgentWindow from '../../components/AgentWindow'
 import { buildArchvisPrompt, type ArchvisFlowStatus, type ArchvisStylePreset } from '../../lib/archvis/guided-flow'
+import { ARCHVIS_COMMERCIAL_PACKAGES, createDefaultA1Template } from '../../lib/archvis/a1-template'
 
 // ─── Types ───────────────────────────────────────────────────────
 interface Project {
@@ -485,6 +486,10 @@ export default function ProjetoPage() {
     { key: 'aprovado', label: 'Aprovado' },
     { key: 'prancha_a1_pronta', label: 'Prancha A1 pronta' },
   ]
+  const a1Template = createDefaultA1Template({
+    client: project.name,
+    project: `${project.code} - ${project.name}`,
+  })
 
   return (
     <>
@@ -817,6 +822,45 @@ export default function ProjetoPage() {
                 </div>
                 <div style={{ marginTop:12, fontSize:12, color:'#5a6282', background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:'10px 12px' }}>
                   Categoria atual e inferida por nome/extensao enquanto a taxonomia final de metadata nao e obrigatoria no banco.
+                </div>
+                <div style={{ border:'1px solid #e5e8f0', borderRadius:10, padding:12, marginTop:12, background:'#fff' }}>
+                  <div style={{ fontSize:12, fontWeight:700, marginBottom:8, color:'#1a1f36' }}>Modelo de Prancha A1 (print-ready inicial)</div>
+                  <div style={{ border:'1px dashed #cbd5e1', borderRadius:10, padding:12, background:'#fafcff' }}>
+                    <div style={{ fontSize:14, fontWeight:800, marginBottom:6 }}>{a1Template.title}</div>
+                    <div style={{ fontSize:12, color:'#5a6282', marginBottom:10 }}>
+                      Cliente: {a1Template.client} · Projeto: {a1Template.project}
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:10, marginBottom:10 }}>
+                      <div style={{ border:'1px solid #dbe3ef', borderRadius:8, minHeight:120, padding:8, background:'#fff' }}>
+                        <strong style={{ fontSize:12 }}>{a1Template.heroImageLabel}</strong>
+                      </div>
+                      <div style={{ display:'grid', gap:8 }}>
+                        {a1Template.secondaryImageLabels.map(label => (
+                          <div key={label} style={{ border:'1px solid #dbe3ef', borderRadius:8, minHeight:34, padding:8, background:'#fff', fontSize:11 }}>
+                            {label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ fontSize:12, marginBottom:4 }}><strong>Conceito:</strong> {a1Template.concept}</div>
+                    <div style={{ fontSize:12, marginBottom:4 }}><strong>Materiais:</strong> {a1Template.materials}</div>
+                    <div style={{ fontSize:12, marginBottom:4 }}><strong>Observacoes:</strong> {a1Template.observations}</div>
+                    <div style={{ fontSize:11, color:'#8b93a7', marginTop:8 }}>{a1Template.apexSignature}</div>
+                  </div>
+                </div>
+                <div style={{ border:'1px solid #e5e8f0', borderRadius:10, padding:12, marginTop:12, background:'#fff' }}>
+                  <div style={{ fontSize:12, fontWeight:700, marginBottom:8, color:'#1a1f36' }}>Pacotes comerciais Archvis</div>
+                  <div style={{ display:'grid', gap:8 }}>
+                    {ARCHVIS_COMMERCIAL_PACKAGES.map(pkg => (
+                      <div key={pkg.code} style={{ border:'1px solid #eef2f7', borderRadius:8, padding:10 }}>
+                        <div style={{ fontSize:12, fontWeight:800 }}>{pkg.name} <span style={{ color:'#8b93a7' }}>({pkg.code})</span></div>
+                        <div style={{ fontSize:11, color:'#5a6282', marginTop:3 }}>{pkg.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:11, color:'#8b93a7', marginTop:8 }}>
+                    Preparado para virar item de proposta em fase comercial, sem alterar CRM/Revenue nesta entrega.
+                  </div>
                 </div>
               </div>
             )}
