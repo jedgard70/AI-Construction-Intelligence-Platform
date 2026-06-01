@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import fs from 'fs'
+import path from 'path'
 
 /**
  * POST /api/chat
@@ -30,8 +32,77 @@ export default async function handler(req, res) {
     vars = {},
   } = req.body
 
+  const docsDir = path.join(process.cwd(), 'docs', 'copilot_knowledge')
+  const fallbackSystem = `Voce e o Apex Help AI da AI Construction Intelligence Platform.
+Regras obrigatorias:
+- Use o workspace oficial: D:\\AI-constr\\AI-Construction-Intelligence-Platform.
+- Nao orientar criacao de clone novo da plataforma.
+- Nao pedir token, chave secreta ou credencial no chat.
+- Responder em portugues do Brasil, foco operacional e seguro.`
+
+  const readDoc = (name) => {
+    try {
+      const p = path.join(docsDir, name)
+      if (!fs.existsSync(p)) return ''
+      return fs.readFileSync(p, 'utf8').trim()
+    } catch {
+      return ''
+    }
+  }
+
+  const governance = readDoc('governance.md')
+  const folderStructure = readDoc('folder-structure.md')
+  const permissions = readDoc('permissions.md')
+  const platformStatus = readDoc('platform-status.md')
+  const systemContext = readDoc('APEX_COPILOT_SYSTEM_CONTEXT.md')
+
+  const serverGovernancePrompt = [
+    systemContext,
+    governance && `## Governance\n${governance}`,
+    folderStructure && `## Folder Structure\n${folderStructure}`,
+    permissions && `## Permissions\n${permissions}`,
+    platformStatus && `## Platform Status\n${platformStatus}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  const policySystem = serverGovernancePrompt || fallbackSystem
+
+  const joinedUserText = Array.isArray(messages)
+    ? messages
+        .map((m) => {
+          if (typeof m?.content === 'string') return m.content
+          if (Array.isArray(m?.content)) return m.content.map((c) => c?.text || '').join(' ')
+          return ''
+        })
+        .join(' ')
+        .toLowerCase()
+    : ''
+
+  if (
+    joinedUserText.includes('clone novo') ||
+    (joinedUserText.includes('clonar') && joinedUserText.includes('plataforma'))
+  ) {
+    return res.status(200).json({
+      id: 'help-ai-policy-block',
+      type: 'message',
+      role: 'assistant',
+      model,
+      content: [
+        {
+          type: 'text',
+          text:
+            'Bloqueado por governanca Apex: nao criar clone novo da plataforma. Use somente o workspace oficial D:\\AI-constr\\AI-Construction-Intelligence-Platform.',
+        },
+      ],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 0, output_tokens: 0 },
+    })
+  }
+
   // ── Resolve system prompt ─────────────────────────────────────────────────
-  let systemPrompt = inlineSystem ?? null
+  let systemPrompt = policySystem
 
   if (promptKey) {
     try {
@@ -54,11 +125,15 @@ export default async function handler(req, res) {
         for (const [k, v] of Object.entries(vars)) {
           resolved = resolved.replaceAll(`{{${k}}}`, String(v))
         }
-        systemPrompt = resolved
+        systemPrompt = `${policySystem}\n\n## Prompt Version\n${resolved}`
       }
     } catch {
-      // fall through to inlineSystem
+      // keep policySystem fallback
     }
+  }
+
+  if (inlineSystem && typeof inlineSystem === 'string' && inlineSystem.trim()) {
+    systemPrompt = `${systemPrompt}\n\n## Client Context\n${inlineSystem.trim()}`
   }
 
   // ── Forward to Anthropic ──────────────────────────────────────────────────
