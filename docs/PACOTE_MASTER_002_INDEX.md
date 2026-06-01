@@ -17,9 +17,10 @@
 | **002-E2E** | **Commercial Flow Validation** | **✅** | Ver abaixo |
 | **PR B** | **Foundation Operacional** | **✅** | `AgentWindow`, `ApexCopilot`, `ApexShell`, `/nova-analise`, `/mission-control`, Project Workspace |
 | **Help AI PR1-PR4** | **ApexCopilot Advanced Foundation** | **✅** | Backend governance + role/seat + client hardening + AgentWindow/Mission Control |
-| **Help AI PR5** | **Safety + Audit Trail** | **🔄** | Guardrails e contrato de trilha auditável (em PR) |
+| **Help AI PR5** | **Safety + Audit Trail** | **✅** | Guardrails e contrato de trilha auditável |
 | **STORAGE-3** | **UI Project Workspace** | **✅** | `/nova-analise`, `/projeto/[id]`, `docs/PR_STORAGE_3_UI_PROJECT_WORKSPACE.md` |
 | **STORAGE-4** | **Storage E2E Validation** | **✅** | `docs/PR_STORAGE_4_E2E_VALIDATION.md`, `docs/STORAGE_E2E_REAL_FINAL_VALIDATION.md` |
+| **AUTONOMOUS-B1/B2/B3/B4** | **Autonomous Orchestrator + Design Evolution + Feature/PR Auditor** | **✅** | `docs/PR_AUTONOMOUS_CORE.md`, `docs/PR_DESIGN_EVOLUTION_ENGINE.md`, `docs/PR_FEATURE_GENERATOR_PR_AUDITOR.md`, `docs/AUTONOMOUS_ORCHESTRATOR_FINAL_REPORT.md` |
 
 ---
 
