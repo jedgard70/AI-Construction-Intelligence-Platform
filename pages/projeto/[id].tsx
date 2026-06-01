@@ -51,6 +51,14 @@ interface StorageFile {
   created_at: string
 }
 
+type ArchvisStageKey =
+  | 'plantas'
+  | 'referencias'
+  | 'previews_ia'
+  | 'refinamentos'
+  | 'render_final'
+  | 'prancha_a1'
+
 
 // ─── Helpers ─────────────────────────────────────────────────────
 const fmt = (v: number) =>
@@ -68,6 +76,27 @@ const fileSizeLabel = (size: number | null) => {
   return `${Math.max(1, Math.round(size / 1024))} KB`
 }
 const dateLabel = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
+const normalizeText = (v: string | null | undefined) => (v || '').toLowerCase()
+
+const ARCHVIS_STAGES: Array<{ key: ArchvisStageKey; label: string; desc: string }> = [
+  { key: 'plantas', label: 'Plantas', desc: 'Arquivos base de planta baixa e desenhos tecnicos.' },
+  { key: 'referencias', label: 'Referencias', desc: 'Imagens e referencias visuais de direcao criativa.' },
+  { key: 'previews_ia', label: 'Previews IA', desc: 'Primeiras variacoes de conceito visual geradas para aprovacao.' },
+  { key: 'refinamentos', label: 'Refinamentos', desc: 'Iteracoes e ajustes apos feedback do cliente/equipe.' },
+  { key: 'render_final', label: 'Render Final', desc: 'Versao final aprovada para entrega visual premium.' },
+  { key: 'prancha_a1', label: 'Prancha A1', desc: 'Composicao final para apresentacao e impressao A1.' },
+]
+
+function inferArchvisStage(fileName: string, mimeType: string | null): ArchvisStageKey {
+  const n = normalizeText(fileName)
+  if (n.includes('a1') || n.includes('prancha')) return 'prancha_a1'
+  if (n.includes('final') || n.includes('render-final') || n.includes('render_final')) return 'render_final'
+  if (n.includes('refino') || n.includes('refinamento') || n.includes('rev')) return 'refinamentos'
+  if (n.includes('preview') || n.includes('conceito') || n.includes('draft')) return 'previews_ia'
+  if (n.includes('referencia') || n.includes('reference') || n.includes('moodboard')) return 'referencias'
+  if (n.includes('planta') || n.includes('floorplan') || normalizeText(mimeType).includes('pdf')) return 'plantas'
+  return 'referencias'
+}
 
 function statusLabel(s: string) {
   return ({ em_andamento:'Em andamento', atrasado:'Atrasado', planejamento:'Planejamento',
@@ -150,7 +179,7 @@ export default function ProjetoPage() {
   const [aiText,   setAiText]     = useState('')
   const [aiLoading,setAiLoading]  = useState(false)
   const [aiCtx,    setAiCtx]      = useState('')
-  const [workspaceTab, setWorkspaceTab] = useState<'arquivos'|'chat'|'agentes'|'documentacao'|'entregas'|'financeiro'>('arquivos')
+  const [workspaceTab, setWorkspaceTab] = useState<'arquivos'|'archvis'|'chat'|'agentes'|'documentacao'|'entregas'|'financeiro'>('arquivos')
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [storageFiles, setStorageFiles] = useState<StorageFile[]>([])
   const [storageLoading, setStorageLoading] = useState(false)
@@ -415,12 +444,18 @@ export default function ProjetoPage() {
   const spiOk = (project.spi ?? 1) >= 0.95
   const tabs = [
     ['arquivos', 'Arquivos'],
+    ['archvis', 'Visualizacao Arquitetonica IA'],
     ['chat', 'Chat'],
     ['agentes', 'Agentes'],
     ['documentacao', 'Documentacao'],
     ['entregas', 'Entregas'],
     ['financeiro', 'Financeiro'],
   ] as const
+  const archvisByStage = ARCHVIS_STAGES.map(stage => ({
+    ...stage,
+    files: storageFiles.filter(file => inferArchvisStage(file.original_name, file.mime_type) === stage.key),
+    docs: documents.filter(doc => inferArchvisStage(doc.file_name || doc.name || '', null) === stage.key),
+  }))
 
   return (
     <>
@@ -616,6 +651,53 @@ export default function ProjetoPage() {
                   `Atue como assistente do projeto ${project.name}. Resuma o status, proximas acoes e riscos principais com base nestes dados: ${JSON.stringify(project)}`)}>
                   Conversar sobre este projeto
                 </button>
+              </div>
+            )}
+
+            {workspaceTab === 'archvis' && (
+              <div>
+                <div style={{ ...s.cardTit, marginBottom:8 }}>Visualizacao Arquitetonica IA</div>
+                <div style={{ fontSize:12, color:'#8b93a7', marginBottom:14 }}>
+                  Estrutura operacional do fluxo Archvis por projeto: Plantas → Referencias → Previews IA → Refinamentos → Render Final → Prancha A1.
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                  {archvisByStage.map(stage => (
+                    <div key={stage.key} style={{ border:'1px solid #e5e8f0', borderRadius:10, padding:12, background:'#fbfcff' }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+                        <strong style={{ fontSize:13, color:'#1a1f36' }}>{stage.label}</strong>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#5a6282' }}>
+                          {stage.files.length + stage.docs.length} itens
+                        </span>
+                      </div>
+                      <div style={{ fontSize:11, color:'#8b93a7', marginBottom:8 }}>{stage.desc}</div>
+                      {(stage.files.length || stage.docs.length) ? (
+                        <>
+                          {stage.files.slice(0, 4).map(file => (
+                            <div key={file.id} style={{ padding:'6px 0', borderTop:'1px solid #eef2f7', fontSize:12 }}>
+                              <strong>{file.original_name}</strong>
+                              <div style={{ color:'#8b93a7', fontSize:11 }}>
+                                {file.mime_type || 'application/octet-stream'} · {fileSizeLabel(file.file_size)}
+                              </div>
+                            </div>
+                          ))}
+                          {stage.docs.slice(0, 3).map(doc => (
+                            <div key={doc.id} style={{ padding:'6px 0', borderTop:'1px solid #eef2f7', fontSize:12 }}>
+                              <strong>{doc.file_name || doc.name}</strong>
+                              <div style={{ color:'#8b93a7', fontSize:11 }}>
+                                Metadata documento · {doc.category || 'sem categoria'}
+                              </div>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div style={{ fontSize:12, color:'#8b93a7' }}>Nenhum arquivo classificado nesta etapa ainda.</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop:12, fontSize:12, color:'#5a6282', background:'#f8f9fc', border:'1px solid #e5e8f0', borderRadius:8, padding:'10px 12px' }}>
+                  Categoria atual e inferida por nome/extensao enquanto a taxonomia final de metadata nao e obrigatoria no banco.
+                </div>
               </div>
             )}
 
