@@ -62,12 +62,26 @@
 - [x] PR2 — Role/Seat Enforcement
 - [x] PR3 — ApexCopilot UI Hardening (cliente leve, políticas no backend)
 - [x] PR4 — AgentWindow + Mission Control Integration
-- [ ] PR5 — Safety + Audit Trail guardrails (em PR)
+- [x] PR5 — Safety + Audit Trail guardrails
 
 ### Próximos passos específicos do Help AI
 - [ ] E2E real owner/admin com JWT e cenários de assento
 - [ ] Persistência estruturada de audit trail (sem vazar conteúdo sensível)
 - [ ] Regras de publicação externa por conector com workflow de aprovação
+
+---
+
+## Trilho Autonomous Orchestrator + Design Evolution
+
+- [x] PR A/B1 — Autonomous Core
+- [x] PR B2 — Design Evolution Engine
+- [x] PR B3 — Feature Generator + PR Auditor
+- [x] PR B4 — Finalização / relatório oficial
+
+Próximo estágio:
+- [ ] Design Implementation Pilot (1 tela)
+- [ ] Evoluir PR Auditor para auditoria de diff remoto
+- [ ] Evoluir Feature Generator com dados operacionais dinâmicos
 
 ---
 
