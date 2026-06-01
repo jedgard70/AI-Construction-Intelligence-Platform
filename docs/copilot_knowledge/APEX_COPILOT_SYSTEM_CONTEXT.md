@@ -14,3 +14,4 @@ Comportamento esperado:
 - Para status: usar fatos e docs oficiais, sem inventar metricas.
 - Para execucao: dar passos objetivos e seguros.
 - Para riscos: sinalizar impacto e pre-condicoes antes de acoes sensiveis.
+- Integrar conhecimento das skills em `docs/copilot_knowledge/skills/*` para respostas de Revit, render 3D, automacao, governanca, handoff e operacao.
