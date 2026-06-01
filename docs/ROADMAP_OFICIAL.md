@@ -27,6 +27,10 @@
 - [x] **PR B — Foundation Operacional:** AgentWindow, ApexCopilot, ApexShell, Nova Análise, Mission Control, Project Workspace, Agent Events API e integrações BIM/Plantas. Commit main: `5e45e76`.
 - [x] **STORAGE-3 — UI Project Workspace:** upload opcional em `/nova-analise`, listagem e download seguro em `/projeto/[id]`.
 - [x] **STORAGE-4 — E2E Storage Real:** validado com sessão real (upload + metadata + signed URL + download) e bloqueios 401/403 confirmados.
+- [x] **ARCHVIS-1 — Foundation + Storage Structure:** aba Archvis no Project Workspace com pipeline operacional por etapas.
+- [x] **ARCHVIS-2 — Guided Visual Generation Flow:** fluxo guiado com status, brief e prompt builder arquitetônico.
+- [x] **ARCHVIS-3 — Prompt Library:** biblioteca de prompts + APIs opcionais `/api/archvis/prompts` e `/api/archvis/generate-brief`.
+- [x] **ARCHVIS-4 — Prancha A1 + Commercial Packaging:** template print-ready inicial e pacotes comerciais preparados.
 
 ---
 
@@ -53,6 +57,12 @@
 - [ ] Webhooks de saída configuráveis
 - [ ] API pública RESTful documentada
 - [ ] Integração com ERPs (TOTVS, SAP)
+
+### Pacote ARCHVIS-5 — Evolução de Produção (planejado)
+- [ ] Conector validado para geração automática de imagem
+- [ ] Conector validado para geração automática de vídeo
+- [ ] Exportação PDF A1 automatizada
+- [ ] Integração comercial automática com proposals
 
 ---
 
