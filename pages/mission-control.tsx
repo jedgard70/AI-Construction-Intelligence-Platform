@@ -235,203 +235,270 @@ export default function MissionControlPage() {
     bloqueado: '#a32d2d',
   }
 
-  const s: Record<string, React.CSSProperties> = {
-    page: { minHeight: '100vh', background: '#f5f7fa', color: '#172033', fontFamily: "'Geist', system-ui, sans-serif" },
-    topbar: { height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', background: '#fff', borderBottom: '1px solid #e2e8f0' },
-    main: { maxWidth: 1180, margin: '0 auto', padding: '24px 20px 42px' },
-    grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 },
-    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 },
-    card: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16 },
-    title: { margin: 0, fontSize: 24, color: '#111827' },
-    sub: { marginTop: 4, color: '#667085', fontSize: 13 },
-    sec: { fontSize: 11, fontWeight: 900, letterSpacing: '.08em', textTransform: 'uppercase', color: '#667085', marginBottom: 10 },
-    btn: { border: '1px solid #d8dee9', background: '#fff', borderRadius: 8, padding: '8px 12px', color: '#185FA5', fontWeight: 800, cursor: 'pointer' },
-    row: { display: 'grid', gridTemplateColumns: '1.1fr .6fr 1fr', gap: 10, padding: '9px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 },
-    small: { color: '#667085', fontSize: 12, lineHeight: 1.5 },
+  const sectionBadge = (value?: string) => {
+    const normalized = (value || '').toLowerCase()
+    if (normalized.includes('ok') || normalized.includes('active') || normalized.includes('true')) return 'badge badge-ok'
+    if (normalized.includes('pendente') || normalized.includes('atenc') || normalized.includes('guided')) return 'badge badge-warning'
+    return 'badge badge-neutral'
   }
 
   if (loading) {
-    return <div style={s.page}><main style={s.main}>Carregando Mission Control...</main></div>
+    return <div className="page"><main className="main">Carregando Mission Control...</main></div>
   }
 
   return (
-    <div style={s.page}>
+    <div className="page">
       <Head>
         <title>Mission Control | AI Construction Platform</title>
       </Head>
 
-      <header style={s.topbar}>
-        <button style={s.btn} onClick={() => router.push('/dashboard')}>Dashboard</button>
+      <header className="topbar">
+        <button className="btn" onClick={() => router.push('/dashboard')}>Dashboard</button>
         <strong>Mission Control V1</strong>
       </header>
 
-      <main style={s.main}>
-        <div style={{ marginBottom: 20 }}>
-          <h1 style={s.title}>Mission Control</h1>
-          <p style={s.sub}>Status operacional real da plataforma, roadmap e checklist do Pacote Master 001.</p>
-          <div style={{ marginTop: 8, display: 'inline-flex', gap: 8, alignItems: 'center', border: '1px solid #d8e0ee', borderRadius: 999, padding: '4px 10px', background: '#f8fafc', fontSize: 11, color: '#475467', fontWeight: 700 }}>
-            <span style={{ width: 8, height: 8, borderRadius: 999, background: copilotKnowledgeBadge.color, display: 'inline-block' }} />
+      <main className="main">
+        <div className="hero">
+          <h1 className="title">Mission Control</h1>
+          <p className="sub">Painel central de governanca, status tecnico e proximas acoes da plataforma Apex.</p>
+          <div className="chip">
+            <span className="chip-dot" style={{ background: copilotKnowledgeBadge.color }} />
             {copilotKnowledgeBadge.text}
           </div>
         </div>
 
-        <section style={{ ...s.grid4, marginBottom: 14 }}>
+        <section className="status-grid">
           {statusItems.map(item => (
-            <div key={item.name} style={s.card}>
-              <div style={s.sec}>{item.name}</div>
-              <div style={{ color: statusColor[item.status], fontSize: 18, fontWeight: 900 }}>{item.status.toUpperCase()}</div>
-              <p style={s.small}>{item.detail}</p>
+            <div key={item.name} className="card">
+              <div className="section-title">{item.name}</div>
+              <div className={sectionBadge(item.status)} style={{ color: statusColor[item.status] }}>{item.status.toUpperCase()}</div>
+              <p className="small">{item.detail}</p>
             </div>
           ))}
         </section>
 
-        <section style={{ ...s.grid2, marginBottom: 14 }}>
-          <div style={s.card}>
-            <div style={s.sec}>Roadmap</div>
-            {roadmap.map(item => (
-              <div key={item.item} style={s.row}>
-                <strong>{item.item}</strong>
-                <span>{item.status}</span>
-                <span style={{ color: '#667085' }}>{item.priority}</span>
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Plataforma</h2>
+            <span className="badge badge-neutral">Core Operations</span>
+          </div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="section-title">Roadmap</div>
+              {roadmap.map(item => (
+                <div key={item.item} className="row row-3">
+                  <strong>{item.item}</strong>
+                  <span>{item.status}</span>
+                  <span className="muted">{item.priority}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="card">
+              <div className="section-title">Checklist</div>
+              {checklist.map(([label, done]) => (
+                <div key={String(label)} className="check-row">
+                  <span className={done ? 'badge badge-ok' : 'badge badge-warning'}>{done ? 'OK' : 'PENDENTE'}</span>
+                  <span>{label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Help AI / ApexCopilot</h2>
+            <span className={copilotKnowledgeStatus === 'active' ? 'badge badge-ok' : 'badge badge-warning'}>
+              {copilotKnowledgeStatus === 'active' ? 'Ativo' : 'Atencao'}
+            </span>
+          </div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="section-title">Feature Generator</div>
+              {nextFeature?.nextFeature ? (
+                <>
+                  <div className="strong">
+                    {nextFeature.nextFeature.id} - {nextFeature.nextFeature.title}
+                  </div>
+                  <div className="small">Modulo: {nextFeature.nextFeature.module}</div>
+                  <div className="small">Aprovacao obrigatoria: {nextFeature.nextFeature.needsApproval ? 'sim' : 'nao'}</div>
+                </>
+              ) : (
+                <p className="small">Sem especificacao sugerida no momento.</p>
+              )}
+              {nextFeatureError && <p className="small error">{nextFeatureError}</p>}
+            </div>
+
+            <div className="card">
+              <div className="section-title">PR Auditor</div>
+              {(prAuditTemplate?.template?.scopeChecklist ?? []).length ? (
+                prAuditTemplate?.template?.scopeChecklist?.map(item => (
+                  <div key={item} className="line-item">
+                    <strong>{item}</strong>
+                  </div>
+                ))
+              ) : (
+                <p className="small">Template de auditoria ainda nao carregado.</p>
+              )}
+              {prAuditTemplateError && <p className="small error">{prAuditTemplateError}</p>}
+            </div>
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Storage</h2>
+            <span className="badge badge-neutral">Foundation + APIs</span>
+          </div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="section-title">Modulos</div>
+              {modules.length ? modules.map(module => (
+                <div key={module.id ?? module.module_key ?? module.label} className="line-item">
+                  <strong>{module.label ?? module.module_key}</strong>
+                  <div className="small">{module.status ?? 'sem status'} {module.page ? `- ${module.page}` : ''} {module.description ? `- ${module.description}` : ''}</div>
+                </div>
+              )) : <p className="small">Nenhum registro em platform_modules ou sem permissao de leitura.</p>}
+            </div>
+
+            <div className="card">
+              <div className="section-title">Projetos recentes</div>
+              {projects.map(project => (
+                <button key={project.id} onClick={() => router.push(`/projeto/${project.id}`)} className="project-item">
+                  <strong>{project.name}</strong>
+                  <div className="small">{project.status} - {new Date(project.created_at).toLocaleDateString('pt-BR')}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Autonomous Orchestrator</h2>
+            <span className={sectionBadge(autonomous?.execution?.mode)}>{autonomous?.execution?.mode ?? 'guided'}</span>
+          </div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="section-title">Bloco recomendado</div>
+              {autonomous?.execution?.nextRecommendedBlock ? (
+                <div className="panel">
+                  <div className="tiny-title">Proximo bloco recomendado</div>
+                  <div className="strong">{autonomous.execution.nextRecommendedBlock.id} - {autonomous.execution.nextRecommendedBlock.title}</div>
+                  <div className="small">Risco: {autonomous.execution.nextRecommendedBlock.risk} | Prioridade: {autonomous.execution.nextRecommendedBlock.priority}</div>
+                </div>
+              ) : (
+                <p className="small">Sem bloco recomendado no momento.</p>
+              )}
+              {autonomousError && <p className="small error">{autonomousError}</p>}
+            </div>
+
+            <div className="card">
+              <div className="section-title">Aprovacao obrigatoria</div>
+              {autonomous?.governance?.requiredApprovals?.length ? autonomous.governance.requiredApprovals.map(item => (
+                <div key={item.key} className="line-item">
+                  <strong>{item.key}</strong>
+                  <div className="small">{item.description}</div>
+                </div>
+              )) : (
+                <p className="small">Sem regras carregadas pela API de autonomia.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Design Evolution</h2>
+            <span className={designEvolution?.engine?.autoApplyGlobalLayout ? 'badge badge-ok' : 'badge badge-warning'}>
+              {designEvolution?.engine?.mode ?? 'advisory'}
+            </span>
+          </div>
+          <div className="grid-2">
+            <div className="card">
+              <div className="section-title">Motor de evolucao</div>
+              <div className="small">Modo: <strong>{designEvolution?.engine?.mode ?? 'advisory'}</strong></div>
+              <div className="small">Auto aplicar layout global: <strong>{designEvolution?.engine?.autoApplyGlobalLayout ? 'sim' : 'nao'}</strong></div>
+              <div className="small">Auditorias: <strong>{designEvolution?.summary?.total ?? 0}</strong> | High: <strong>{designEvolution?.summary?.high ?? 0}</strong></div>
+              {designEvolutionError && <p className="small error">{designEvolutionError}</p>}
+            </div>
+
+            <div className="card">
+              <div className="section-title">Proximas telas de evolucao</div>
+              {(designEvolution?.summary?.nextRecommendedScreens ?? []).length ? (
+                designEvolution?.summary?.nextRecommendedScreens?.map(screen => (
+                  <div key={screen} className="line-item">
+                    <strong>{screen}</strong>
+                  </div>
+                ))
+              ) : (
+                <p className="small">Sem recomendacoes no momento.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>PR Auditor e Eventos</h2>
+            <span className="badge badge-neutral">Monitoramento continuo</span>
+          </div>
+          <div className="card">
+            <div className="section-title">Eventos de agentes</div>
+            {events.map(event => (
+              <div key={event.id} className="line-item">
+                <strong>{event.source_agent}</strong> · {event.event_type} · {event.priority}
+                <div className="small">{event.summary}</div>
               </div>
             ))}
-          </div>
-
-          <div style={s.card}>
-            <div style={s.sec}>Checklist</div>
-            {checklist.map(([label, done]) => (
-              <div key={String(label)} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 13 }}>
-                <span style={{ color: done ? '#2f7d32' : '#ad6800', fontWeight: 900 }}>{done ? 'OK' : 'PENDENTE'}</span>
-                <span>{label}</span>
-              </div>
-            ))}
+            {!events.length && <p className="small">Nenhum evento de agente encontrado.</p>}
           </div>
         </section>
 
-        <section style={{ ...s.grid2, marginBottom: 14 }}>
-          <div style={s.card}>
-            <div style={s.sec}>Feature Generator</div>
-            {nextFeature?.nextFeature ? (
-              <>
-                <div style={{ fontSize: 13, fontWeight: 800 }}>
-                  {nextFeature.nextFeature.id} - {nextFeature.nextFeature.title}
-                </div>
-                <div style={s.small}>Modulo: {nextFeature.nextFeature.module}</div>
-                <div style={s.small}>Aprovacao obrigatoria: {nextFeature.nextFeature.needsApproval ? 'sim' : 'nao'}</div>
-              </>
-            ) : (
-              <p style={s.small}>Sem especificacao sugerida no momento.</p>
-            )}
-            {nextFeatureError && <p style={{ ...s.small, color: '#a32d2d' }}>{nextFeatureError}</p>}
-          </div>
-
-          <div style={s.card}>
-            <div style={s.sec}>PR Auditor</div>
-            {(prAuditTemplate?.template?.scopeChecklist ?? []).length ? (
-              prAuditTemplate?.template?.scopeChecklist?.map(item => (
-                <div key={item} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 }}>
-                  <strong>{item}</strong>
-                </div>
-              ))
-            ) : (
-              <p style={s.small}>Template de auditoria ainda nao carregado.</p>
-            )}
-            {prAuditTemplateError && <p style={{ ...s.small, color: '#a32d2d' }}>{prAuditTemplateError}</p>}
-          </div>
-        </section>
-
-        <section style={{ ...s.grid2, marginBottom: 14 }}>
-          <div style={s.card}>
-            <div style={s.sec}>Modulos</div>
-            {modules.length ? modules.map(module => (
-              <div key={module.id ?? module.module_key ?? module.label} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7' }}>
-                <strong style={{ fontSize: 13 }}>{module.label ?? module.module_key}</strong>
-                <div style={s.small}>{module.status ?? 'sem status'} {module.page ? `- ${module.page}` : ''} {module.description ? `- ${module.description}` : ''}</div>
-              </div>
-            )) : <p style={s.small}>Nenhum registro em platform_modules ou sem permissao de leitura.</p>}
-          </div>
-
-          <div style={s.card}>
-            <div style={s.sec}>Projetos recentes</div>
-            {projects.map(project => (
-              <button key={project.id} onClick={() => router.push(`/projeto/${project.id}`)} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 0, borderBottom: '1px solid #eef2f7', padding: '8px 0', cursor: 'pointer' }}>
-                <strong style={{ fontSize: 13 }}>{project.name}</strong>
-                <div style={s.small}>{project.status} - {new Date(project.created_at).toLocaleDateString('pt-BR')}</div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section style={{ ...s.grid2, marginBottom: 14 }}>
-          <div style={s.card}>
-            <div style={s.sec}>Autonomous Orchestrator</div>
-            <div style={{ fontSize: 12, color: '#475467', marginBottom: 8 }}>
-              Modo: <strong>{autonomous?.execution?.mode ?? 'guided'}</strong>
-            </div>
-            {autonomous?.execution?.nextRecommendedBlock ? (
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                <div style={{ fontSize: 11, color: '#667085', textTransform: 'uppercase', fontWeight: 800 }}>Proximo bloco recomendado</div>
-                <div style={{ fontSize: 13, fontWeight: 800 }}>{autonomous.execution.nextRecommendedBlock.id} - {autonomous.execution.nextRecommendedBlock.title}</div>
-                <div style={s.small}>Risco: {autonomous.execution.nextRecommendedBlock.risk} | Prioridade: {autonomous.execution.nextRecommendedBlock.priority}</div>
-              </div>
-            ) : (
-              <p style={s.small}>Sem bloco recomendado no momento.</p>
-            )}
-            {autonomousError && <p style={{ ...s.small, color: '#a32d2d' }}>{autonomousError}</p>}
-          </div>
-
-          <div style={s.card}>
-            <div style={s.sec}>Aprovacao Obrigatoria</div>
-            {autonomous?.governance?.requiredApprovals?.length ? autonomous.governance.requiredApprovals.map(item => (
-              <div key={item.key} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7' }}>
-                <strong style={{ fontSize: 12 }}>{item.key}</strong>
-                <div style={s.small}>{item.description}</div>
-              </div>
-            )) : (
-              <p style={s.small}>Sem regras carregadas pela API de autonomia.</p>
-            )}
-          </div>
-        </section>
-
-        <section style={{ ...s.grid2, marginBottom: 14 }}>
-          <div style={s.card}>
-            <div style={s.sec}>Design Evolution</div>
-            <div style={s.small}>
-              Modo: <strong>{designEvolution?.engine?.mode ?? 'advisory'}</strong>
-            </div>
-            <div style={s.small}>
-              Auto aplicar layout global: <strong>{designEvolution?.engine?.autoApplyGlobalLayout ? 'sim' : 'nao'}</strong>
-            </div>
-            <div style={{ marginTop: 8, fontSize: 12 }}>
-              Auditorias: <strong>{designEvolution?.summary?.total ?? 0}</strong> | High: <strong>{designEvolution?.summary?.high ?? 0}</strong>
-            </div>
-            {designEvolutionError && <p style={{ ...s.small, color: '#a32d2d' }}>{designEvolutionError}</p>}
-          </div>
-
-          <div style={s.card}>
-            <div style={s.sec}>Proximas Telas de Evolucao</div>
-            {(designEvolution?.summary?.nextRecommendedScreens ?? []).length ? (
-              designEvolution?.summary?.nextRecommendedScreens?.map(screen => (
-                <div key={screen} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 }}>
-                  <strong>{screen}</strong>
-                </div>
-              ))
-            ) : (
-              <p style={s.small}>Sem recomendacoes no momento.</p>
-            )}
-          </div>
-        </section>
-
-        <section style={s.card}>
-          <div style={s.sec}>Eventos de agentes</div>
-          {events.map(event => (
-            <div key={event.id} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 }}>
-              <strong>{event.source_agent}</strong> · {event.event_type} · {event.priority}
-              <div style={s.small}>{event.summary}</div>
-            </div>
-          ))}
-          {!events.length && <p style={s.small}>Nenhum evento de agente encontrado.</p>}
-        </section>
+        <style jsx>{`
+          .page { min-height: 100vh; background: linear-gradient(180deg, #f4f7fb 0%, #eef3fb 100%); color: #172033; font-family: "Geist", system-ui, sans-serif; }
+          .topbar { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: #ffffffcc; border-bottom: 1px solid #e2e8f0; backdrop-filter: blur(8px); position: sticky; top: 0; z-index: 20; }
+          .main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 42px; }
+          .hero { margin-bottom: 20px; }
+          .title { margin: 0; font-size: 28px; color: #111827; letter-spacing: -0.02em; }
+          .sub { margin-top: 6px; color: #667085; font-size: 14px; }
+          .chip { margin-top: 10px; display: inline-flex; gap: 8px; align-items: center; border: 1px solid #d8e0ee; border-radius: 999px; padding: 4px 10px; background: #f8fafc; font-size: 11px; color: #475467; font-weight: 700; }
+          .chip-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+          .btn { border: 1px solid #d8dee9; background: #fff; border-radius: 8px; padding: 8px 12px; color: #185fa5; font-weight: 800; cursor: pointer; }
+          .status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+          .domain { margin-bottom: 14px; }
+          .domain-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+          .domain-header h2 { margin: 0; font-size: 16px; color: #1e293b; }
+          .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+          .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 6px 16px rgba(16, 24, 40, 0.04); }
+          .section-title { font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: #667085; margin-bottom: 10px; }
+          .row { display: grid; gap: 10px; padding: 9px 0; border-bottom: 1px solid #eef2f7; font-size: 12px; }
+          .row-3 { grid-template-columns: 1.1fr .6fr 1fr; }
+          .line-item { padding: 8px 0; border-bottom: 1px solid #eef2f7; font-size: 12px; }
+          .project-item { display: block; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid #eef2f7; padding: 8px 0; cursor: pointer; }
+          .small { color: #667085; font-size: 12px; line-height: 1.5; }
+          .muted { color: #667085; }
+          .strong { font-size: 13px; font-weight: 800; }
+          .tiny-title { font-size: 11px; color: #667085; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
+          .panel { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #f8fafc; }
+          .check-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f7; font-size: 13px; }
+          .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; border: 1px solid; }
+          .badge-ok { color: #14532d; border-color: #86efac; background: #f0fdf4; }
+          .badge-warning { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
+          .badge-neutral { color: #334155; border-color: #cbd5e1; background: #f8fafc; }
+          .error { color: #a32d2d; }
+          @media (max-width: 1024px) {
+            .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-2 { grid-template-columns: 1fr; }
+          }
+          @media (max-width: 640px) {
+            .main { padding: 18px 14px 28px; }
+            .topbar { padding: 0 14px; }
+            .title { font-size: 24px; }
+            .status-grid { grid-template-columns: 1fr; }
+          }
+        `}</style>
       </main>
     </div>
   )
