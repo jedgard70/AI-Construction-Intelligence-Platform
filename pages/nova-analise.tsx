@@ -92,6 +92,18 @@ function projectCode() {
   return `INT-${year}-${suffix}`
 }
 
+async function fileToBase64(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer()
+  let binary = ''
+  const bytes = new Uint8Array(buffer)
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    const slice = bytes.subarray(i, i + chunk)
+    binary += String.fromCharCode(...slice)
+  }
+  return btoa(binary)
+}
+
 export default function NovaAnalisePage() {
   const router = useRouter()
   const [clients, setClients] = useState<ClientRow[]>([])
@@ -236,43 +248,45 @@ export default function NovaAnalisePage() {
       return
     }
 
-    const filePath = `projects/${projectId}/intake/${Date.now()}-${safeFileName(file.name)}`
-    const { error: documentErr } = await sb.from('documents').insert({
-      project_id: projectId,
-      user_id: user.id,
-      uploaded_by: user.id,
-      name: file.name,
-      file_name: file.name,
-      file_path: filePath,
-      file_size_kb: Math.max(1, Math.round(file.size / 1024)),
-      mime_type: file.type || `application/${extensionFrom(file.name) || 'octet-stream'}`,
-      category: docCategory,
-      status: 'WIP',
-      ai_summary: `Entrada registrada pelo Project Intake Engine. Objetivo: ${objective.trim()}`,
-      ai_tags: ['project-intake', extensionFrom(file.name), docCategory, projectType].filter(Boolean),
-      ai_entities: {
-        objective: objective.trim(),
-        intake_source: 'nova-analise',
-        original_file_name: file.name,
-        storage_bucket: STORAGE_BUCKET,
-        storage_status: 'prepared_pending_bucket',
-        generated_project_id: projectId,
-        generated_project_code: code,
-      },
-    })
+    const { data: sessionData } = await sb.auth.getSession()
+    const token = sessionData.session?.access_token ?? ''
 
-    if (documentErr) {
-      setSubmitting(false)
-      setError(`Projeto criado, mas o documento nao foi registrado: ${documentErr.message}`)
-      return
+    try {
+      const base64 = await fileToBase64(file)
+      const uploadRes = await fetch('/api/storage/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          project_id: projectId,
+          original_name: safeFileName(file.name),
+          mime_type: file.type || `application/${extensionFrom(file.name) || 'octet-stream'}`,
+          file_base64: base64,
+          metadata: {
+            source: 'nova-analise',
+            objective: objective.trim(),
+            detected_document_category: docCategory,
+            detected_project_type: projectType,
+            storage_bucket: STORAGE_BUCKET,
+            generated_project_code: code,
+          },
+        }),
+      })
+      const uploadData = await uploadRes.json().catch(() => ({}))
+      if (!uploadRes.ok) {
+        setWarning(`Projeto criado. Aviso: upload/metadados de arquivo falhou (${uploadData?.error?.message || uploadData?.error || 'erro desconhecido'}).`)
+      }
+    } catch {
+      setWarning('Projeto criado. Aviso: upload de arquivo indisponivel no momento.')
     }
 
-    const { data: sessionData } = await sb.auth.getSession()
     const eventRes = await fetch('/api/agent-events/log', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${sessionData.session?.access_token ?? ''}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         project_id: projectId,
