@@ -158,39 +158,55 @@ export default function AgentWindow({
     setNotice('')
 
     try {
-      const res = await fetch('/api/agents/orchestrator', {
+      const mode =
+        typeof context?.mode === 'string'
+          ? context.mode
+          : typeof context?.action === 'string'
+          ? context.action
+          : 'analyze'
+
+      const lightweightPrompt = [
+        `module: ${moduleKey}`,
+        `page: ${router.pathname}`,
+        `project_id: ${resolvedProjectId ?? 'none'}`,
+        `action: ${mode}`,
+        `question: ${message}`,
+      ].join('\n')
+
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          task: message,
-          project_id: resolvedProjectId ?? undefined,
-          context: {
-            module: moduleKey,
-            contract: 'message/findings/actions/artifacts',
-            ...context,
-          },
-          agents: [
+          model: 'claude-sonnet-4-6',
+          max_tokens: 900,
+          messages: [
             {
-              id: `${moduleKey}_agent`,
-              name: title,
-              role: moduleKey,
-              userPrompt: `${message}\n\nRetorne uma resposta operacional com: message, findings, actions e artifacts.`,
-              priority: 10,
-              maxRetries: 1,
+              role: 'user',
+              content: lightweightPrompt,
             },
           ],
         }),
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Falha no orquestrador.')
+      if (!res.ok) {
+        throw new Error(data?.error?.message || data?.error || 'Falha ao consultar o Help AI.')
+      }
 
-      const output = data?.finalOutput || JSON.stringify(data?.finalOutputJson ?? data, null, 2)
+      const output = data?.content?.[0]?.text || JSON.stringify(data, null, 2)
       const turn = normalizeOutput(output)
+      if (turn.message.toLowerCase().includes('bloqueado por governanca')) {
+        setNotice('Resposta bloqueada por governanca Apex para este contexto.')
+      }
       setTurns(prev => [...prev, turn])
       await persistTurn(turn, message)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao executar agente.')
+      const msg = err instanceof Error ? err.message : 'Erro ao consultar agente.'
+      if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('network')) {
+        setError('Sem conexao com o servidor do Help AI. Verifique rede/API e tente novamente.')
+      } else {
+        setError(msg)
+      }
     } finally {
       setRunning(false)
     }
