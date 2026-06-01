@@ -143,6 +143,52 @@ export default async function handler(req, res) {
 
   const userContext = await resolveUserContext()
 
+  const classifyIntent = (text) => {
+    const t = text.toLowerCase()
+    if (
+      t.includes('service role key') ||
+      t.includes('api key') ||
+      t.includes('token') ||
+      t.includes('pat ') ||
+      t.includes('senha') ||
+      t.includes('secret')
+    ) {
+      return 'secret_request'
+    }
+    if (
+      t.includes('apague ') ||
+      t.includes('delete ') ||
+      t.includes('rm -rf') ||
+      t.includes('git reset') ||
+      t.includes('drop table') ||
+      t.includes('destruir') ||
+      t.includes('formatar')
+    ) {
+      return 'destructive_request'
+    }
+    if (
+      t.includes('publique') ||
+      t.includes('poste') ||
+      t.includes('envie email') ||
+      t.includes('suba no ar') ||
+      t.includes('deploy')
+    ) {
+      return 'external_publish'
+    }
+    if (
+      t.includes('implementar') ||
+      t.includes('corrigir') ||
+      t.includes('alterar codigo') ||
+      t.includes('criar pr')
+    ) {
+      return 'implementation_guidance'
+    }
+    if (t.includes('status') || t.includes('como está') || t.includes('como esta')) {
+      return 'safe_info'
+    }
+    return 'unknown'
+  }
+
   const docsDir = path.join(process.cwd(), 'docs', 'copilot_knowledge')
   const fallbackSystem = `Voce e o Apex Help AI da AI Construction Intelligence Platform.
 Regras obrigatorias:
@@ -240,6 +286,30 @@ Policy:
         .toLowerCase()
     : ''
 
+  const intentClass = classifyIntent(joinedUserText)
+
+  const safeAuditMeta = {
+    timestamp: new Date().toISOString(),
+    user_id: userContext.user_id || null,
+    role: userContext.role,
+    page_path: (() => {
+      const m = joinedUserText.match(/page:\s*([^\n]+)/i)
+      return m?.[1]?.trim() || null
+    })(),
+    intent_class: intentClass,
+    blocked_by_policy: false,
+    reason: null,
+  }
+
+  const logHelpAudit = (meta) => {
+    try {
+      // Contract-only audit trail (non-sensitive, non-blocking)
+      console.info('[HELP_AI_AUDIT]', JSON.stringify(meta))
+    } catch {
+      // never break chat flow if audit log fails
+    }
+  }
+
   const asksOwnerPrivate =
     joinedUserText.includes('todos os chats do josé') ||
     joinedUserText.includes('todos os chats do jose') ||
@@ -254,6 +324,7 @@ Policy:
     joinedUserText.includes('clone novo') ||
     (joinedUserText.includes('clonar') && joinedUserText.includes('plataforma'))
   ) {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: true, reason: 'clone_new_blocked' })
     return res.status(200).json({
       id: 'help-ai-policy-block',
       type: 'message',
@@ -272,7 +343,76 @@ Policy:
     })
   }
 
+  if (intentClass === 'secret_request') {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: true, reason: 'secret_request_blocked' })
+    return res.status(200).json({
+      id: 'help-ai-secret-block',
+      type: 'message',
+      role: 'assistant',
+      model,
+      content: [
+        {
+          type: 'text',
+          text:
+            'Bloqueado por seguranca Apex: nao posso fornecer, solicitar ou orientar uso de tokens, keys, service role, PAT ou segredos. Use configuracao segura no ambiente e no backend.',
+        },
+      ],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 0, output_tokens: 0 },
+    })
+  }
+
+  if (
+    joinedUserText.includes('system prompt completo') ||
+    joinedUserText.includes('mostre o system prompt') ||
+    joinedUserText.includes('prompt mestre completo')
+  ) {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: true, reason: 'system_prompt_disclosure_blocked' })
+    return res.status(200).json({
+      id: 'help-ai-system-block',
+      type: 'message',
+      role: 'assistant',
+      model,
+      content: [
+        {
+          type: 'text',
+          text:
+            'Por seguranca, nao exponho o system prompt completo. Posso explicar as politicas ativas em alto nivel (governanca, role/seat e guardrails).',
+        },
+      ],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 0, output_tokens: 0 },
+    })
+  }
+
+  if (intentClass === 'destructive_request' || intentClass === 'external_publish') {
+    logHelpAudit({
+      ...safeAuditMeta,
+      blocked_by_policy: true,
+      reason: intentClass === 'destructive_request' ? 'destructive_approval_required' : 'external_publish_approval_required',
+    })
+    return res.status(200).json({
+      id: 'help-ai-approval-required',
+      type: 'message',
+      role: 'assistant',
+      model,
+      content: [
+        {
+          type: 'text',
+          text:
+            'Acao sensivel detectada. Antes de executar, preciso de aprovacao explicita com este checklist:\n1) Escopo exato da acao\n2) Ambiente alvo\n3) Impacto esperado\n4) Plano de rollback\n5) Confirmacao final: AUTORIZO EXECUTAR',
+        },
+      ],
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      usage: { input_tokens: 0, output_tokens: 0 },
+    })
+  }
+
   if (!userContext.is_owner && asksOwnerPrivate) {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: true, reason: 'owner_private_scope_blocked' })
     return res.status(200).json({
       id: 'help-ai-seat-block',
       type: 'message',
@@ -292,6 +432,7 @@ Policy:
   }
 
   if (userContext.role === 'guest' && asksInternalRoadmap) {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: true, reason: 'guest_sensitive_scope_blocked' })
     return res.status(200).json({
       id: 'help-ai-guest-guard',
       type: 'message',
@@ -361,8 +502,10 @@ Policy:
     })
 
     const data = await anthropicRes.json()
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: null })
     return res.status(anthropicRes.status).json(data)
   } catch {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: 'provider_error_fallback' })
     return res.status(500).json({ error: { message: 'Erro ao conectar com a API Anthropic.' } })
   }
 }
