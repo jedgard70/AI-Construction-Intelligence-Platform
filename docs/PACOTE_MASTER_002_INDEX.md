@@ -19,7 +19,7 @@
 | **Help AI PR1-PR4** | **ApexCopilot Advanced Foundation** | **✅** | Backend governance + role/seat + client hardening + AgentWindow/Mission Control |
 | **Help AI PR5** | **Safety + Audit Trail** | **🔄** | Guardrails e contrato de trilha auditável (em PR) |
 | **STORAGE-3** | **UI Project Workspace** | **✅** | `/nova-analise`, `/projeto/[id]`, `docs/PR_STORAGE_3_UI_PROJECT_WORKSPACE.md` |
-| **STORAGE-4** | **Storage E2E Validation** | **🟡** | `docs/PR_STORAGE_4_E2E_VALIDATION.md` |
+| **STORAGE-4** | **Storage E2E Validation** | **✅** | `docs/PR_STORAGE_4_E2E_VALIDATION.md`, `docs/STORAGE_E2E_REAL_FINAL_VALIDATION.md` |
 
 ---
 
