@@ -54,6 +54,11 @@ type AutonomousStatusPayload = {
   }
 }
 
+type DesignEvolutionPayload = {
+  engine?: { name?: string; mode?: string; autoApplyGlobalLayout?: boolean }
+  summary?: { total?: number; high?: number; medium?: number; low?: number; nextRecommendedScreens?: string[] }
+}
+
 export default function MissionControlPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -65,6 +70,8 @@ export default function MissionControlPage() {
   const [copilotKnowledgeStatus, setCopilotKnowledgeStatus] = useState<'loading' | 'active' | 'unavailable'>('loading')
   const [autonomous, setAutonomous] = useState<AutonomousStatusPayload | null>(null)
   const [autonomousError, setAutonomousError] = useState('')
+  const [designEvolution, setDesignEvolution] = useState<DesignEvolutionPayload | null>(null)
+  const [designEvolutionError, setDesignEvolutionError] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -107,6 +114,18 @@ export default function MissionControlPage() {
         }
       } catch {
         setAutonomousError('Falha ao carregar Autonomous Orchestrator.')
+      }
+
+      try {
+        const designRes = await fetch('/api/design-evolution/audit')
+        if (!designRes.ok) {
+          setDesignEvolutionError(`Design Evolution indisponivel (${designRes.status})`)
+        } else {
+          const payload = (await designRes.json()) as DesignEvolutionPayload
+          setDesignEvolution(payload)
+        }
+      } catch {
+        setDesignEvolutionError('Falha ao carregar Design Evolution Engine.')
       }
     }
 
@@ -293,6 +312,35 @@ export default function MissionControlPage() {
               </div>
             )) : (
               <p style={s.small}>Sem regras carregadas pela API de autonomia.</p>
+            )}
+          </div>
+        </section>
+
+        <section style={{ ...s.grid2, marginBottom: 14 }}>
+          <div style={s.card}>
+            <div style={s.sec}>Design Evolution</div>
+            <div style={s.small}>
+              Modo: <strong>{designEvolution?.engine?.mode ?? 'advisory'}</strong>
+            </div>
+            <div style={s.small}>
+              Auto aplicar layout global: <strong>{designEvolution?.engine?.autoApplyGlobalLayout ? 'sim' : 'nao'}</strong>
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12 }}>
+              Auditorias: <strong>{designEvolution?.summary?.total ?? 0}</strong> | High: <strong>{designEvolution?.summary?.high ?? 0}</strong>
+            </div>
+            {designEvolutionError && <p style={{ ...s.small, color: '#a32d2d' }}>{designEvolutionError}</p>}
+          </div>
+
+          <div style={s.card}>
+            <div style={s.sec}>Proximas Telas de Evolucao</div>
+            {(designEvolution?.summary?.nextRecommendedScreens ?? []).length ? (
+              designEvolution?.summary?.nextRecommendedScreens?.map(screen => (
+                <div key={screen} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 }}>
+                  <strong>{screen}</strong>
+                </div>
+              ))
+            ) : (
+              <p style={s.small}>Sem recomendacoes no momento.</p>
             )}
           </div>
         </section>
