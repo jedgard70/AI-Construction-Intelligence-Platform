@@ -157,6 +157,10 @@ export default function MissionControlPage() {
         <div style={{ marginBottom: 20 }}>
           <h1 style={s.title}>Mission Control</h1>
           <p style={s.sub}>Status operacional real da plataforma, roadmap e checklist do Pacote Master 001.</p>
+          <div style={{ marginTop: 8, display: 'inline-flex', gap: 8, alignItems: 'center', border: '1px solid #d8e0ee', borderRadius: 999, padding: '4px 10px', background: '#f8fafc', fontSize: 11, color: '#475467', fontWeight: 700 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: '#2f7d32', display: 'inline-block' }} />
+            Base Apex Copilot carregada (server-side governance)
+          </div>
         </div>
 
         <section style={{ ...s.grid4, marginBottom: 14 }}>
