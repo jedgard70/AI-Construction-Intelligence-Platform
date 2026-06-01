@@ -18,7 +18,7 @@
 | **002-E2E** | **Commercial Flow Validation** | **✅ Concluído (operacional real)** | **31/05/2026** |
 | **PR B** | **Foundation Operacional** | **✅ Concluído e mergeado** | **31/05/2026** |
 | **STORAGE-3** | **UI Project Workspace** | **✅ Concluído e mergeado** | **01/06/2026** |
-| **STORAGE-4** | **E2E Validation** | **🟡 Validação parcial (pendente E2E real)** | **01/06/2026** |
+| **STORAGE-4** | **E2E Validation** | **✅ Concluído (operacional real)** | **01/06/2026** |
 
 ---
 

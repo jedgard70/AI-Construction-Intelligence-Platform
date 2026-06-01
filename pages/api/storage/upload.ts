@@ -66,6 +66,7 @@ export default async function handler(
   }
 
   const originalName = sanitizeFilename(typeof originalNameRaw === 'string' ? originalNameRaw : 'file.bin')
+  const documentName = originalName.replace(/\.[^/.]+$/, '') || originalName
   const mimeType = typeof mimeTypeRaw === 'string' && mimeTypeRaw.trim() ? mimeTypeRaw.trim() : null
   const documentId = randomUUID()
   const storagePath = `projects/${projectId}/${documentId}/${originalName}`
@@ -90,6 +91,10 @@ export default async function handler(
       project_id: projectId,
       owner_user_id: auth.user.id,
       created_by: auth.user.id,
+      name: documentName,
+      file_name: originalName,
+      file_path: `/storage/project-files/${storagePath}`,
+      file_size_kb: Math.max(1, Math.round(fileBuffer.length / 1024)),
       storage_bucket: 'project-files',
       storage_path: storagePath,
       original_name: originalName,
