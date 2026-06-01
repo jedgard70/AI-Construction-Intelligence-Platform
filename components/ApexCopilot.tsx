@@ -10,13 +10,6 @@ const MODE_LABEL: Record<Mode, string> = {
   status: 'Status',
 }
 
-const SYSTEM = `Voce e o Apex AI Copilot da AI Construction Intelligence Platform.
-Funcoes:
-- Manual: orientar uso da plataforma, modulos, fluxo Nova Analise, Workspace e Mission Control.
-- Supervisor: revisar o que o usuario pretende fazer e apontar riscos antes de executar.
-- Status: explicar estado atual do Pacote Master 001, sem inventar metricas.
-Responda em portugues do Brasil, direto, com foco operacional.`
-
 export default function ApexCopilot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -46,7 +39,6 @@ export default function ApexCopilot() {
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 900,
-          system: SYSTEM,
           messages: [
             {
               role: 'user',
@@ -56,9 +48,24 @@ export default function ApexCopilot() {
         }),
       })
       const data = await res.json()
-      setMessages(prev => [...prev, { role: 'assistant', text: data?.content?.[0]?.text || 'Nao consegui obter resposta do Copilot.' }])
+      if (!res.ok) {
+        const serverError = data?.error?.message || 'API indisponivel no momento.'
+        setMessages(prev => [...prev, { role: 'assistant', text: `Nao consegui concluir agora: ${serverError}` }])
+        return
+      }
+
+      const reply = data?.content?.[0]?.text
+      if (typeof reply === 'string' && reply.trim()) {
+        setMessages(prev => [...prev, { role: 'assistant', text: reply }])
+        return
+      }
+
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Nao consegui obter resposta valida do Copilot.' }])
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Erro ao chamar o Copilot. Verifique a API.' }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: 'Sem conexao com o servidor do Copilot. Verifique sua internet ou tente novamente em instantes.',
+      }])
     } finally {
       setLoading(false)
     }
