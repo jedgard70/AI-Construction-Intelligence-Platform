@@ -54,6 +54,21 @@
 
 ---
 
+## Trilho Help AI Advanced (PR1-PR5)
+
+- [x] PR1 — Backend Prompt Governance
+- [x] PR2 — Role/Seat Enforcement
+- [x] PR3 — ApexCopilot UI Hardening (cliente leve, políticas no backend)
+- [x] PR4 — AgentWindow + Mission Control Integration
+- [ ] PR5 — Safety + Audit Trail guardrails (em PR)
+
+### Próximos passos específicos do Help AI
+- [ ] E2E real owner/admin com JWT e cenários de assento
+- [ ] Persistência estruturada de audit trail (sem vazar conteúdo sensível)
+- [ ] Regras de publicação externa por conector com workflow de aprovação
+
+---
+
 ## Arquitetura de Dados
 
 ```

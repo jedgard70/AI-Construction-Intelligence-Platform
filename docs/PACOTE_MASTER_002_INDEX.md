@@ -16,6 +16,8 @@
 | **S5** | **Revenue Engine** | **✅** | Ver abaixo |
 | **002-E2E** | **Commercial Flow Validation** | **✅** | Ver abaixo |
 | **PR B** | **Foundation Operacional** | **✅** | `AgentWindow`, `ApexCopilot`, `ApexShell`, `/nova-analise`, `/mission-control`, Project Workspace |
+| **Help AI PR1-PR4** | **ApexCopilot Advanced Foundation** | **✅** | Backend governance + role/seat + client hardening + AgentWindow/Mission Control |
+| **Help AI PR5** | **Safety + Audit Trail** | **🔄** | Guardrails e contrato de trilha auditável (em PR) |
 
 ---
 
