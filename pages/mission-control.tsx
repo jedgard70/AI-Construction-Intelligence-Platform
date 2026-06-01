@@ -59,6 +59,23 @@ type DesignEvolutionPayload = {
   summary?: { total?: number; high?: number; medium?: number; low?: number; nextRecommendedScreens?: string[] }
 }
 
+type NextFeaturePayload = {
+  nextFeature?: {
+    id: string
+    title: string
+    module: string
+    needsApproval: boolean
+  }
+}
+
+type PrAuditTemplatePayload = {
+  template?: {
+    scopeChecklist?: string[]
+    forbiddenItems?: string[]
+    qualityChecks?: string[]
+  }
+}
+
 export default function MissionControlPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -72,6 +89,10 @@ export default function MissionControlPage() {
   const [autonomousError, setAutonomousError] = useState('')
   const [designEvolution, setDesignEvolution] = useState<DesignEvolutionPayload | null>(null)
   const [designEvolutionError, setDesignEvolutionError] = useState('')
+  const [nextFeature, setNextFeature] = useState<NextFeaturePayload | null>(null)
+  const [nextFeatureError, setNextFeatureError] = useState('')
+  const [prAuditTemplate, setPrAuditTemplate] = useState<PrAuditTemplatePayload | null>(null)
+  const [prAuditTemplateError, setPrAuditTemplateError] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -126,6 +147,30 @@ export default function MissionControlPage() {
         }
       } catch {
         setDesignEvolutionError('Falha ao carregar Design Evolution Engine.')
+      }
+
+      try {
+        const featureRes = await fetch('/api/autonomous/next-feature')
+        if (!featureRes.ok) {
+          setNextFeatureError(`Feature Generator indisponivel (${featureRes.status})`)
+        } else {
+          const payload = (await featureRes.json()) as NextFeaturePayload
+          setNextFeature(payload)
+        }
+      } catch {
+        setNextFeatureError('Falha ao carregar Feature Generator.')
+      }
+
+      try {
+        const prAuditRes = await fetch('/api/autonomous/pr-audit-template')
+        if (!prAuditRes.ok) {
+          setPrAuditTemplateError(`PR Auditor indisponivel (${prAuditRes.status})`)
+        } else {
+          const payload = (await prAuditRes.json()) as PrAuditTemplatePayload
+          setPrAuditTemplate(payload)
+        }
+      } catch {
+        setPrAuditTemplateError('Falha ao carregar PR Auditor.')
       }
     }
 
@@ -260,6 +305,38 @@ export default function MissionControlPage() {
                 <span>{label}</span>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section style={{ ...s.grid2, marginBottom: 14 }}>
+          <div style={s.card}>
+            <div style={s.sec}>Feature Generator</div>
+            {nextFeature?.nextFeature ? (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 800 }}>
+                  {nextFeature.nextFeature.id} - {nextFeature.nextFeature.title}
+                </div>
+                <div style={s.small}>Modulo: {nextFeature.nextFeature.module}</div>
+                <div style={s.small}>Aprovacao obrigatoria: {nextFeature.nextFeature.needsApproval ? 'sim' : 'nao'}</div>
+              </>
+            ) : (
+              <p style={s.small}>Sem especificacao sugerida no momento.</p>
+            )}
+            {nextFeatureError && <p style={{ ...s.small, color: '#a32d2d' }}>{nextFeatureError}</p>}
+          </div>
+
+          <div style={s.card}>
+            <div style={s.sec}>PR Auditor</div>
+            {(prAuditTemplate?.template?.scopeChecklist ?? []).length ? (
+              prAuditTemplate?.template?.scopeChecklist?.map(item => (
+                <div key={item} style={{ padding: '8px 0', borderBottom: '1px solid #eef2f7', fontSize: 12 }}>
+                  <strong>{item}</strong>
+                </div>
+              ))
+            ) : (
+              <p style={s.small}>Template de auditoria ainda nao carregado.</p>
+            )}
+            {prAuditTemplateError && <p style={{ ...s.small, color: '#a32d2d' }}>{prAuditTemplateError}</p>}
           </div>
         </section>
 
