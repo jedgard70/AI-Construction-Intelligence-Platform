@@ -139,3 +139,26 @@ BRL, USD, EUR
 ### Evidencias (IDs reais)
 - `contract_id`: `68df1088-e5fe-4086-a111-b26a97e88669`
 - `revenue_record_id`: `3f89bfc7-bd35-4868-aa7a-61538994e3d5`
+
+---
+
+## Help AI / ApexCopilot Advanced — Ciclo de Governança
+
+| PR | Nome | Status |
+|----|------|--------|
+| PR1 | Backend Prompt Governance | ✅ Mergeado |
+| PR2 | Role/Seat Enforcement | ✅ Mergeado |
+| PR3 | ApexCopilot UI Hardening | ✅ Mergeado |
+| PR4 | AgentWindow + Mission Control Integration | ✅ Mergeado |
+| PR5 | Safety + Audit Trail Guardrails | 🔄 Em PR (aguardando merge) |
+
+### Estado atual
+- Foundation operacional avançada do Help AI estabelecida.
+- Prompt mestre, governança e permissões mantidos no backend.
+- Frontend com contexto leve em ApexCopilot e AgentWindow.
+
+### Pendências reais
+- Validação E2E com JWT real para owner/admin em ambiente integrado.
+- Publicação externa via conectores com aprovação explícita por política.
+- Persistência de audit trail em storage estruturado seguro (sem migration automática).
+- Evolução para cenários multiassento com integração mais profunda em CRM/chats.
