@@ -12,6 +12,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { memoryGet, getOpenAlerts } from '../../../lib/supabase-store'
 import { createClient } from '@supabase/supabase-js'
+import { APPROVAL_GUARDRAILS, getNextAutonomousBlock } from '../../../lib/autonomous/model'
 
 function db() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -58,6 +59,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       cronSchedule: '*/5 * * * *',
       lastCycle: (lastReport as Record<string, unknown>)?.finishedAt ?? null,
       lastCycleDurationMs: (lastReport as Record<string, unknown>)?.durationMs ?? null,
+    },
+    governance: {
+      destructiveActionsAllowed: false,
+      criticalDeployAllowed: false,
+      migrationWithoutApprovalAllowed: false,
+      requiredApprovals: APPROVAL_GUARDRAILS,
+    },
+    execution: {
+      nextRecommendedBlock: getNextAutonomousBlock(),
+      mode: 'guided',
     },
     lastLoop: lastReport,
     alerts: {
