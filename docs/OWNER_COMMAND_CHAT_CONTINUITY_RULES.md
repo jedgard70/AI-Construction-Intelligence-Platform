@@ -3,7 +3,7 @@
 ## Objetivo
 Garantir continuidade operacional com enforcement no backend para chats, tarefas, PRs e fluxos em andamento, preservando a hierarquia de assentos:
 
-- Dr. Edgard/Owner pode retomar qualquer fluxo.
+- Dr. Edgard/Owner (`jedgard70@gmail.com`) pode retomar qualquer fluxo.
 - Segundo assento/admin nao pode ver nem assumir contexto privado do Owner.
 - Guest nao acessa historico interno global.
 
@@ -14,6 +14,7 @@ Garantir continuidade operacional com enforcement no backend para chats, tarefas
 - `guest`: sem acesso a historico interno global.
 
 ## Owner continuity
+- Dr. Edgard / `jedgard70@gmail.com` = Owner oficial da plataforma.
 - O backend reconhece `is_owner=true`.
 - Quando `is_owner=true`, a continuidade global e liberada para:
   - listar chats operacionais
@@ -21,11 +22,13 @@ Garantir continuidade operacional com enforcement no backend para chats, tarefas
   - continuar tarefas iniciadas por outro assento
   - visualizar decisoes pendentes
   - aprovar ou reprovar acoes
+  - retomar qualquer chat, tarefa, PR ou decisao
   - assumir execucao de qualquer fluxo
 - Safety Gate continua ativo para acoes destrutivas, mas a aprovacao critica continua reservada ao Owner.
 
 ## Regras do segundo assento/admin
 - Nao ve chats privados do Owner.
+- Nao ve contexto `owner_private`.
 - Vê apenas:
   - proprios chats
   - tarefas explicitamente atribuidas ao assento
