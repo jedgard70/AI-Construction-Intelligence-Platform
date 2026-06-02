@@ -7,6 +7,7 @@ Impedir que agentes/assentos/automações executem ações destrutivas em paths 
 - Windows é case-insensitive.
 - `D:\AI-constr\AI-Construction-Intelligence-Platform` e variantes com caixa diferente podem representar o mesmo caminho.
 - Incidente recente mostrou risco de exclusão por path equivalente.
+- Incidente operacional tambem mostrou risco de criacao indevida de `temp`, `archived`, `backup`, `recovery` e copias paralelas sem autorizacao.
 
 ## Escopo desta entrega
 1. Criar camada de segurança em `lib/safety/*`.
@@ -38,8 +39,10 @@ Impedir que agentes/assentos/automações executem ações destrutivas em paths 
 - Paths equivalentes por caixa são tratados como mesmo caminho.
 - Diretórios com marcadores de repositório (`.git`, `package.json`, `pages`, `docs`, `supabase`) recebem risco elevado/crítico.
 - Bloqueio explícito para tarefa crítica sem aprovação owner.
+- Regras operacionais de nao criar `temp`, `archived`, `backup`, `recovery` ou clones sem autorizacao ficam registradas em `docs/CODEX_OPERATIONAL_RULES.md`.
 - Build passa.
 
 ## Riscos e limites
 - A análise de texto de tarefa pode não capturar 100% dos casos sem parser dedicado.
 - Integração nesta fase é focada no trilho `autonomous`; outros módulos podem adotar em etapas seguintes.
+- Guardrail documental complementar: `docs/CODEX_OPERATIONAL_RULES.md`.
