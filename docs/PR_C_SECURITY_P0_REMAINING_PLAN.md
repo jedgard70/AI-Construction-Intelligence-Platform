@@ -206,6 +206,13 @@ Status C.1:
 - corrigir policies `USING/WITH CHECK true` por modulo, em grupos pequenos
 - exibir claramente o impacto por tabela
 
+Status C.2 em andamento:
+- primeiro grupo selecionado: `public.clients` e `public.contracts`;
+- o objetivo e remover os fallbacks permissivos desses dois quadros sem mexer em Revenue/Auth ou UI;
+- a migration idempotente foi preparada e a validação no advisor vem em seguida.
+- confirmacao no Supabase real: o advisor deixou de apontar `rls_policy_always_true` para essas duas tabelas.
+- o plano C continua para os demais grupos de policies permissivas.
+
 ### PR C.3
 
 - revisar `auth_allow_anonymous_sign_ins`
