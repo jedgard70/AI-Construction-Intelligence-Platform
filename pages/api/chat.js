@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
 import { Buffer } from 'buffer'
+import { resolveConfiguredOwnerEmails } from '../../lib/owner-auth'
 
 /**
  * POST /api/chat
@@ -33,10 +34,7 @@ export default async function handler(req, res) {
     vars = {},
   } = req.body
 
-  const ownerEmails = (process.env.APEX_OWNER_EMAILS || 'jedgard70@gmail.com')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
+  const ownerEmails = resolveConfiguredOwnerEmails()
 
   const authHeader = req.headers.authorization
   const bearerToken =

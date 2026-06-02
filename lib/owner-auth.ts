@@ -39,6 +39,19 @@ type ProfileRow = {
 
 const DEFAULT_OWNER_EMAILS = 'jedgard70@gmail.com'
 
+export function resolveConfiguredOwnerEmails(): string[] {
+  const configuredOwnerEmails =
+    process.env.OWNER_EMAILS ||
+    process.env.OWNER_EMAIL ||
+    process.env.APEX_OWNER_EMAILS ||
+    DEFAULT_OWNER_EMAILS
+
+  return configuredOwnerEmails
+    .split(',')
+    .map(v => v.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 export function getBearerToken(authorizationHeader?: string): string | null {
   if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) return null
   const token = authorizationHeader.slice(7).trim()
@@ -71,10 +84,7 @@ export async function resolveOwnerContext(bearerToken: string | null): Promise<O
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !anonKey || !serviceRoleKey) return guest
 
-  const ownerEmails = (process.env.APEX_OWNER_EMAILS || DEFAULT_OWNER_EMAILS)
-    .split(',')
-    .map(v => v.trim().toLowerCase())
-    .filter(Boolean)
+  const ownerEmails = resolveConfiguredOwnerEmails()
 
   const userClient = createClient(url, anonKey, {
     global: { headers: { Authorization: `Bearer ${bearerToken}` } },

@@ -5,10 +5,12 @@ Orientar o acesso do Owner Command Chat sem expor segredos e sem depender de reg
 
 ## Requisitos
 - Login valido no Supabase Auth.
+- Owner email oficial: `jedgard70@gmail.com`.
 - `NEXT_PUBLIC_SUPABASE_URL` configurada.
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` ou `NEXT_PUBLIC_SUPABASE_ANON_KEY` configurada.
 - `SUPABASE_SERVICE_ROLE_KEY` configurada apenas no backend.
-- `APEX_OWNER_EMAILS` com o email oficial do Owner quando necessario.
+- `OWNER_EMAIL` ou `OWNER_EMAILS` preferencialmente configurada com `jedgard70@gmail.com`.
+- `APEX_OWNER_EMAILS` permanece aceito como compatibilidade.
 
 ## Fluxo
 1. O frontend obtém a sessao do Supabase.
@@ -19,8 +21,11 @@ Orientar o acesso do Owner Command Chat sem expor segredos e sem depender de reg
 
 ## Regras
 - Nunca pedir token/secret no chat.
+- Nunca registrar senha em docs, chat ou env commitado.
+- A senha do Owner deve ser definida somente via Supabase Auth ou painel seguro equivalente.
 - Nunca confiar em flags vindas do cliente para liberar acesso.
 - `is_owner` e inferido no backend por sessao valida e/ou perfil persistido.
+- O fallback documental/controlado para ambiente sem configuracao adicional continua sendo `jedgard70@gmail.com`.
 - Se faltar perfil, o fallback deve ser restritivo.
 
 ## Resultado esperado
