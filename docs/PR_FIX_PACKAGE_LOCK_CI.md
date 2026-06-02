@@ -37,6 +37,7 @@ O `package-lock.json` estava fora de sincronia com o manifesto atual e refletia 
 
 ## Arquivos alterados
 - `package-lock.json`
+- `package.json`
 - `docs/PR_FIX_PACKAGE_LOCK_CI.md`
 
 ## Comandos executados
@@ -46,13 +47,18 @@ O `package-lock.json` estava fora de sincronia com o manifesto atual e refletia 
    - regenerou inicialmente o lockfile a partir do `package.json` atual.
 3. `npx npm@10 install --package-lock-only`
    - regenerou novamente o lockfile usando a mesma linha principal de npm do CI com Node 20.
-4. `npx npm@10 ci`
+4. `npm pkg set devDependencies.picomatch="^4.0.4"`
+   - adicionou a menor ancora explicita necessaria no manifesto para satisfazer a cadeia de peer dependencies do tooling de lint no CI.
+5. `npx npm@10 install --package-lock-only`
+   - regenerou o lockfile final com a ancora de `picomatch`.
+6. `npx npm@10 ci`
    - validou a instalacao limpa com o lockfile compatibilizado para o ambiente do GitHub.
-5. `NEXT_DISABLE_BUILD_WORKER=1 npm run build -- --webpack`
+7. `NEXT_DISABLE_BUILD_WORKER=1 npm run build -- --webpack`
    - validou o build local apos a correcao.
 
 ## Resultado
-- `package.json` nao precisou ser alterado.
+- `package.json` precisou de uma alteracao minima e justificada:
+  - `devDependencies.picomatch: ^4.0.4`
 - `package-lock.json` passou a refletir a arvore declarada no manifesto atual.
 - `npm ci` do trilho compativel com o CI passou com sucesso.
 - O build em webpack passou com sucesso.
