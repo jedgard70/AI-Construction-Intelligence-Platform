@@ -33,6 +33,12 @@ Atualizacao C.1 em preparacao:
 - a migration idempotente de hardening foi preparada em `supabase/migrations/20260602203314_qa_real_003_c1_security_definer_views_hardening.sql`;
 - a confirmacao final foi executada no Supabase real e o advisor nao retornou mais os dois achados de `SECURITY DEFINER VIEW`.
 
+Atualizacao C.2 em preparacao:
+- o primeiro grupo pequeno de policies permissivas foi selecionado em `public.clients` e `public.contracts`;
+- a estrategia e remover os fallbacks amplos mantendo o restante dos policies escopados ja existentes;
+- a migration idempotente de C.2 foi preparada em `supabase/migrations/20260602204551_qa_real_003_c2_policies_true_group_1.sql`.
+- confirmacao no Supabase real: `public.clients` e `public.contracts` nao aparecem mais como `rls_policy_always_true` no advisor.
+
 ## P0 ainda aberto
 
 ### Security Definer View
