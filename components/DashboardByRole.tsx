@@ -388,6 +388,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   )
 
   const kpis = cfg.kpis(projects)
+  const shellManaged = true
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
@@ -401,10 +402,9 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
         .reel-kenburns { animation: kenburns 18s linear forwards; }
       `}</style>
 
-      <div style={{ display:'flex', height:'100vh', overflow:'hidden' }}>
+      <div style={{ display:'flex', minHeight:'100%', overflow:'hidden' }}>
 
-        {/* ── SIDEBAR ───────────────────────────────────────────────────── */}
-        <aside style={{
+        {!shellManaged && <aside style={{
           width: '220px', minWidth: '220px', background: '#fff',
           borderRight: '1px solid #e5e8f0', display: 'flex',
           flexDirection: 'column', overflow: 'hidden',
@@ -522,10 +522,10 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               ↩
             </button>
           </div>
-        </aside>
+        </aside>}
 
         {/* ── MAIN ──────────────────────────────────────────────────────── */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
 
           {/* Topbar */}
           <div style={{ background: '#fff', borderBottom: '1px solid #e5e8f0',
@@ -540,7 +540,40 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   month:'long', year:'numeric' })} · {projects.length} projetos
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '6px 10px',
+                border: '1px solid #e5e8f0',
+                borderRadius: 10,
+                background: '#f8fafc',
+                minWidth: 0,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: '50%',
+                  background: cfg.accentColor + '22', color: cfg.accentColor,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, flexShrink: 0,
+                }}>
+                  {avatarInitials(profile.full_name)}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: '#1a1f36',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 180,
+                  }}>
+                    {profile.full_name ?? profile.email}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#8b93a7' }}>{cfg.icon} {cfg.label}</div>
+                </div>
+              </div>
               <button onClick={loadData}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
                   border:'1px solid #e5e8f0', borderRadius:8, background:'#fff',
@@ -568,6 +601,13 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
                   fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer',
                   fontFamily:'inherit' }}>
                 + Novo Projeto
+              </button>
+              <button onClick={handleLogout}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
+                  border:'1px solid #e5e8f0', borderRadius:8, background:'#fff',
+                  fontSize:12, fontWeight:600, color:'#5a6282', cursor:'pointer',
+                  fontFamily:'inherit' }}>
+                Sair
               </button>
             </div>
           </div>
