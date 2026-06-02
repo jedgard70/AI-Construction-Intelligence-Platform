@@ -39,6 +39,14 @@ type ProfileRow = {
 
 const DEFAULT_OWNER_EMAILS = 'jedgard70@gmail.com'
 
+export function hasOwnerAuthConfig(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+  )
+}
+
 export function resolveConfiguredOwnerEmails(): string[] {
   const configuredOwnerEmails =
     process.env.OWNER_EMAILS ||

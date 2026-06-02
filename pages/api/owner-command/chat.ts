@@ -4,6 +4,7 @@ import path from 'path'
 import {
   evaluateOwnerThreadAccess,
   getBearerToken,
+  hasOwnerAuthConfig,
   getSeatPermissionSummary,
   resolveOwnerContext,
   type OwnerThreadAccessInput,
@@ -150,7 +151,35 @@ function buildSuccessPayload(params: {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<OwnerChatResponse>) {
   const bearer = getBearerToken(req.headers.authorization)
+
+  if (!bearer) {
+    return denied(
+      res,
+      'authentication_required',
+      'Faca login para acessar o Owner Command Chat.',
+      401,
+    )
+  }
+
+  if (!hasOwnerAuthConfig()) {
+    return denied(
+      res,
+      'owner_auth_not_configured',
+      'Owner Command Chat requer configuracao real de autenticacao Supabase no backend.',
+      503,
+    )
+  }
+
   const user = await resolveOwnerContext(bearer)
+  if (!user.userId) {
+    return denied(
+      res,
+      'invalid_session',
+      'Sessao invalida ou expirada. Entre novamente para continuar.',
+      401,
+    )
+  }
+
   const permissionSummary = getSeatPermissionSummary(user)
 
   const requestThreadContext =

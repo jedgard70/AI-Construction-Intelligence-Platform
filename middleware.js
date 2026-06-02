@@ -3,6 +3,11 @@ import { NextResponse } from 'next/server'
 
 // Rotas que NÃO precisam de login
 const PUBLIC_PATHS = ['/', '/login', '/forgot-password', '/reset-password']
+const OWNER_PROTECTED_PATHS = ['/owner-command']
+
+function isOwnerProtectedPath(pathname) {
+  return OWNER_PROTECTED_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+}
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl
@@ -18,12 +23,21 @@ export async function middleware(req) {
   }
 
   const isPublic = PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+  const isOwnerProtected = isOwnerProtectedPath(pathname)
 
-  // Sem credenciais Supabase (dev local sem .env) → liberar tudo
+  // Sem credenciais Supabase (dev local sem .env) → nao liberar Owner Command
   const url  = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key  = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key) return NextResponse.next()
+  if (!url || !key) {
+    if (isOwnerProtected) {
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      loginUrl.searchParams.set('reason', 'owner-auth-required')
+      return NextResponse.redirect(loginUrl)
+    }
+    return NextResponse.next()
+  }
 
   let res = NextResponse.next({ request: { headers: req.headers } })
 
@@ -45,12 +59,17 @@ export async function middleware(req) {
   if (!session && !isPublic) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('redirect', pathname)
+    if (isOwnerProtected) {
+      loginUrl.searchParams.set('reason', 'owner-auth-required')
+    }
     return NextResponse.redirect(loginUrl)
   }
 
-  // Já logado tentando acessar /login → redirecionar para /dashboard
+  // Já logado tentando acessar /login → redirecionar para destino pedido ou /dashboard
   if (session && pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', req.url))
+    const redirect = req.nextUrl.searchParams.get('redirect')
+    const target = redirect && redirect.startsWith('/') ? redirect : '/dashboard'
+    return NextResponse.redirect(new URL(target, req.url))
   }
 
   return res

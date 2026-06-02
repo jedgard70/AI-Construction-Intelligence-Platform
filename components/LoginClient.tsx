@@ -11,6 +11,14 @@ const FEATURES = [
 
 export default function LoginClient() {
   const router = useRouter()
+  const redirectTarget =
+    typeof router.query.redirect === 'string' && router.query.redirect.startsWith('/')
+      ? router.query.redirect
+      : '/dashboard'
+  const reason =
+    router.query.reason === 'owner-auth-required'
+      ? 'Faça login com sua conta autenticada para acessar o Owner Command Chat.'
+      : ''
   const [tab, setTab]           = useState<'login' | 'signup'>('login')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -55,7 +63,7 @@ export default function LoginClient() {
       }
       // Full page navigation so the browser sends the fresh session cookie
       // to middleware — avoids the flicker/redirect loop
-      window.location.href = '/dashboard'
+      window.location.href = redirectTarget
     } catch (err: unknown) {
       setError('Erro de conexão. Tente novamente.')
       setLoading(false)
@@ -134,6 +142,10 @@ export default function LoginClient() {
               ? 'Insira suas credenciais para acessar.'
               : 'Preencha os campos para criar seu acesso.'}
           </p>
+
+          {reason && tab === 'login' && (
+            <div className="acip-info">{reason}</div>
+          )}
 
           <form onSubmit={handleSubmit} noValidate>
             {/* E-mail */}
@@ -464,6 +476,20 @@ const CSS = `
   font-size: 12px;
   color: #a32d2d;
   margin-bottom: 1rem;
+}
+
+.acip-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(186,117,23,.08);
+  border: 1px solid rgba(186,117,23,.22);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: #7a5010;
+  margin-bottom: 1rem;
+  line-height: 1.5;
 }
 
 .acip-btn-primary {

@@ -1,3 +1,7 @@
+import { createServerClient } from '@supabase/ssr'
+import type { GetServerSideProps } from 'next'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { getSupabase } from '../lib/supabase'
 
@@ -36,6 +40,10 @@ type ChatMessage = {
   content: string
 }
 
+type OwnerCommandPageProps = {
+  initialEmail: string | null
+}
+
 const initialContinuity: ContinuityState = {
   canView: false,
   canContinue: false,
@@ -51,10 +59,69 @@ const initialPolicy: PolicyState = {
   ownerPrivateVisible: false,
 }
 
-export default function OwnerCommandPage() {
+export const getServerSideProps: GetServerSideProps<OwnerCommandPageProps> = async ({ req, res }) => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  const loginDestination = {
+    destination: '/login?redirect=%2Fowner-command&reason=owner-auth-required',
+    permanent: false,
+  }
+
+  if (!url || !key) {
+    return { redirect: loginDestination }
+  }
+
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return req.cookies
+          ? Object.entries(req.cookies).map(([name, value]) => ({ name, value: value ?? '' }))
+          : []
+      },
+      setAll(cookiesToSet) {
+        const existing = res.getHeader('Set-Cookie')
+        const base = Array.isArray(existing) ? existing : existing ? [String(existing)] : []
+        const serialized = cookiesToSet.map(({ name, value, options }) => {
+          const parts = [`${name}=${value}`]
+          if (options?.maxAge) parts.push(`Max-Age=${options.maxAge}`)
+          if (options?.domain) parts.push(`Domain=${options.domain}`)
+          if (options?.path) parts.push(`Path=${options.path}`)
+          if (options?.expires) parts.push(`Expires=${new Date(options.expires).toUTCString()}`)
+          if (options?.httpOnly) parts.push('HttpOnly')
+          if (options?.sameSite) parts.push(`SameSite=${options.sameSite}`)
+          if (options?.secure) parts.push('Secure')
+          return parts.join('; ')
+        })
+        res.setHeader('Set-Cookie', [...base, ...serialized])
+      },
+    },
+  })
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    return { redirect: loginDestination }
+  }
+
+  return {
+    props: {
+      initialEmail: session.user.email ?? null,
+    },
+  }
+}
+
+export default function OwnerCommandPage({ initialEmail }: OwnerCommandPageProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [sessionEmail, setSessionEmail] = useState(initialEmail)
   const [role, setRole] = useState('guest')
   const [isOwner, setIsOwner] = useState(false)
   const [message, setMessage] = useState('')
@@ -70,30 +137,61 @@ export default function OwnerCommandPage() {
   const [requiresOwnerApproval, setRequiresOwnerApproval] = useState(false)
 
   useEffect(() => {
-    async function init() {
-      const sb = getSupabase()
-      if (!sb) {
-        setError('Supabase nao configurado no frontend.')
-        setLoading(false)
-        return
-      }
+    const sb = getSupabase()
+    if (!sb) {
+      setError('Supabase Auth nao configurado no frontend.')
+      setLoading(false)
+      return
+    }
 
-      const { data } = await sb.auth.getSession()
-      const accessToken = data.session?.access_token || null
+    let active = true
+
+    async function init() {
+      const {
+        data: { session },
+      } = await sb.auth.getSession()
+
+      if (!active) return
+
+      const accessToken = session?.access_token || null
+      const email = session?.user?.email || null
       setSessionToken(accessToken)
+      setSessionEmail(email)
 
       if (!accessToken) {
-        setError('Faca login para acessar o Owner Command Chat.')
-        setLoading(false)
+        router.replace('/login?redirect=%2Fowner-command&reason=owner-auth-required')
         return
       }
 
       await evaluateContinuity(accessToken)
-      setLoading(false)
+      if (active) {
+        setLoading(false)
+      }
     }
 
-    init()
-  }, [])
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((_event, session) => {
+      const accessToken = session?.access_token || null
+      setSessionToken(accessToken)
+      setSessionEmail(session?.user?.email || null)
+
+      if (!accessToken) {
+        router.replace('/login?redirect=%2Fowner-command&reason=owner-auth-required')
+      }
+    })
+
+    init().catch(() => {
+      if (!active) return
+      setError('Falha ao validar a sessao do Owner Command Chat.')
+      setLoading(false)
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [router])
 
   async function evaluateContinuity(tokenOverride?: string) {
     const token = tokenOverride || sessionToken
@@ -107,14 +205,15 @@ export default function OwnerCommandPage() {
     if (threadVisibility.trim()) params.set('visibility', threadVisibility.trim())
     if (requiresOwnerApproval) params.set('requires_owner_approval', 'true')
 
-    const response = await fetch(`/api/owner-command/chat?${params.toString()}`, {
+    const query = params.toString()
+    const response = await fetch(`/api/owner-command/chat${query ? `?${query}` : ''}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
 
     const data = (await response.json()) as OwnerCommandResponse
-    if (!data.success || !data.data) {
+    if (!response.ok || !data.success || !data.data) {
       setError(data.error?.message || 'Falha ao avaliar continuidade.')
       return
     }
@@ -133,7 +232,8 @@ export default function OwnerCommandPage() {
     setSubmitting(true)
     setError(null)
 
-    const nextMessages = [...messages, { role: 'user' as const, content: trimmed }]
+    const previousMessages = messages
+    const nextMessages = [...previousMessages, { role: 'user' as const, content: trimmed }]
     setMessages(nextMessages)
     setMessage('')
 
@@ -145,7 +245,7 @@ export default function OwnerCommandPage() {
       },
       body: JSON.stringify({
         message: trimmed,
-        history: messages,
+        history: previousMessages,
         threadContext: {
           ownerUserId: ownerUserId.trim() || null,
           assignedTo: assignedTo.trim() || null,
@@ -161,8 +261,8 @@ export default function OwnerCommandPage() {
     })
 
     const data = (await response.json()) as OwnerCommandResponse
-    if (!data.success || !data.data) {
-      setMessages(messages)
+    if (!response.ok || !data.success || !data.data) {
+      setMessages(previousMessages)
       setError(data.error?.message || 'Falha ao enviar mensagem.')
       setSubmitting(false)
       return
@@ -179,6 +279,53 @@ export default function OwnerCommandPage() {
     setSubmitting(false)
   }
 
+  async function handleLogout() {
+    const sb = getSupabase()
+    if (!sb) {
+      router.replace('/login?redirect=%2Fowner-command')
+      return
+    }
+
+    setSigningOut(true)
+    await sb.auth.signOut()
+    router.replace('/login?redirect=%2Fowner-command')
+  }
+
+  if (loading) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.lockShell}>
+          <div style={styles.lockCard}>
+            <p style={styles.eyebrow}>Owner Command</p>
+            <h1 style={styles.lockTitle}>Validando sessao</h1>
+            <p style={styles.copy}>
+              Confirmando autenticacao Supabase e politicas do assento antes de liberar o console.
+            </p>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  if (!sessionToken && !loading) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.lockShell}>
+          <div style={styles.lockCard}>
+            <p style={styles.eyebrow}>Owner Command</p>
+            <h1 style={styles.lockTitle}>Autenticacao obrigatoria</h1>
+            <p style={styles.copy}>
+              Esta rota exige sessao Supabase Auth valida. Entre com o email autorizado para continuar.
+            </p>
+            <Link href="/login?redirect=%2Fowner-command" style={styles.loginLink}>
+              Entrar
+            </Link>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main style={styles.page}>
       <section style={styles.shell}>
@@ -189,10 +336,16 @@ export default function OwnerCommandPage() {
             <p style={styles.subtitle}>
               Backend enforcement ativo para continuidade global do Owner e restricoes do segundo assento.
             </p>
+            <p style={styles.sessionMeta}>
+              Sessao autenticada: {sessionEmail || 'usuario autenticado'} {isOwner ? '· owner' : '· seat'}
+            </p>
           </div>
           <div style={styles.badges}>
             <span style={styles.badge}>{role}</span>
             <span style={styles.badge}>{isOwner ? 'owner continuity' : continuity.scope}</span>
+            <button type="button" onClick={handleLogout} disabled={signingOut} style={styles.ghostButton}>
+              {signingOut ? 'Saindo...' : 'Logout'}
+            </button>
           </div>
         </header>
 
@@ -300,6 +453,26 @@ const styles: Record<string, CSSProperties> = {
     display: 'grid',
     gap: 20,
   },
+  lockShell: {
+    minHeight: 'calc(100vh - 88px)',
+    display: 'grid',
+    placeItems: 'center',
+  },
+  lockCard: {
+    maxWidth: 520,
+    background: 'rgba(7, 15, 24, 0.78)',
+    border: '1px solid rgba(195, 228, 244, 0.18)',
+    borderRadius: 28,
+    padding: 28,
+    display: 'grid',
+    gap: 16,
+    backdropFilter: 'blur(16px)',
+  },
+  lockTitle: {
+    margin: 0,
+    fontSize: 'clamp(2rem, 4vw, 3rem)',
+    lineHeight: 1,
+  },
   header: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -328,10 +501,18 @@ const styles: Record<string, CSSProperties> = {
     maxWidth: 640,
     color: 'rgba(247, 244, 237, 0.78)',
   },
+  sessionMeta: {
+    margin: '10px 0 0',
+    color: 'rgba(216, 242, 255, 0.88)',
+    fontSize: 13,
+    letterSpacing: '0.04em',
+    textTransform: 'uppercase',
+  },
   badges: {
     display: 'flex',
     gap: 10,
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   badge: {
     alignSelf: 'flex-start',
@@ -343,6 +524,16 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     letterSpacing: '0.06em',
     textTransform: 'uppercase',
+  },
+  ghostButton: {
+    alignSelf: 'flex-start',
+    border: '1px solid rgba(245, 209, 134, 0.28)',
+    background: 'rgba(245, 209, 134, 0.12)',
+    color: '#f6e2b3',
+    padding: '10px 14px',
+    borderRadius: 999,
+    cursor: 'pointer',
+    fontWeight: 700,
   },
   grid: {
     display: 'grid',
@@ -462,6 +653,16 @@ const styles: Record<string, CSSProperties> = {
     padding: '13px 18px',
     borderRadius: 14,
     cursor: 'pointer',
+    fontWeight: 700,
+  },
+  loginLink: {
+    justifySelf: 'start',
+    textDecoration: 'none',
+    border: 'none',
+    background: 'linear-gradient(135deg, #f5d186, #ff8f5b)',
+    color: '#17120a',
+    padding: '13px 18px',
+    borderRadius: 14,
     fontWeight: 700,
   },
   error: {

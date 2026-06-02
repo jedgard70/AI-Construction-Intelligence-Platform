@@ -39,7 +39,9 @@ Garantir continuidade operacional com enforcement no backend para chats, tarefas
 
 ## Enforcement no backend
 - Nunca confiar apenas no frontend.
+- A rota `/owner-command` exige login real antes de carregar o chat.
 - O endpoint `/api/owner-command/chat` resolve o contexto autenticado via bearer token.
+- Sem bearer token valido, o endpoint responde `401`.
 - O backend calcula a decisao de continuidade usando:
   - `owner_user_id`
   - `assigned_to`
