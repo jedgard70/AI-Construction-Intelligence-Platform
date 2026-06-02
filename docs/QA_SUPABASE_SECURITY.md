@@ -27,17 +27,28 @@ Evidencia remota desta rodada:
 
 Mesmo apos a remediacao, os advisors continuaram retornando achados P0/P1 relevantes. Portanto o gate `Security P0` continua `FAIL`.
 
+Atualizacao C.1 em preparacao:
+- as views alvo do P0 restante foram identificadas como `public.quality_nci_view` e `public.budget_items_view`;
+- a estrategia escolhida foi `security_invoker = true` para preservar o contrato da view e passar a respeitar RLS do chamador;
+- a migration idempotente de hardening foi preparada em `supabase/migrations/20260602203314_qa_real_003_c1_security_definer_views_hardening.sql`;
+- a confirmacao final foi executada no Supabase real e o advisor nao retornou mais os dois achados de `SECURITY DEFINER VIEW`.
+
 ## P0 ainda aberto
 
 ### Security Definer View
 
-Continuam em `ERROR` no advisor:
+Confirmacao apos C.1:
+- `public.quality_nci_view` nao aparece mais como `SECURITY DEFINER VIEW`;
+- `public.budget_items_view` nao aparece mais como `SECURITY DEFINER VIEW`;
+- o advisor de seguranca nao retornou os dois achados apos a migracao.
+
+Historico anterior:
 - `public.quality_nci_view`
 - `public.budget_items_view`
 
 Leitura objetiva:
-- esses achados continuam aparecendo como `security_definer_view`;
-- enquanto existirem, o gate de seguranca nao pode ser promovido a `PASS`.
+- esses achados foram corrigidos com a migracao C.1;
+- o gate de seguranca segue `FAIL` por outros motivos remanescentes, nao mais por essas duas views.
 
 ### Anonymous Access Policies
 
