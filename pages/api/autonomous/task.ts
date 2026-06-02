@@ -8,6 +8,8 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { enqueueTask } from '../../../lib/supabase-store'
+import { classifyDestructiveRisk, requireOwnerApproval } from '../../../lib/safety/destructive-action-guard'
+import { OFFICIAL_WORKSPACE_PATH } from '../../../lib/safety/workspace-guard'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
@@ -24,6 +26,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } = req.body
 
     if (!task?.trim()) return res.status(400).json({ error: 'task é obrigatória' })
+
+    const contextPaths = Array.isArray(context?.paths)
+      ? context.paths.filter((p: unknown) => typeof p === 'string')
+      : []
+    const riskReport = classifyDestructiveRisk(String(task), contextPaths)
+    const ownerApproved = req.headers['x-owner-approval'] === 'true'
+    const approval = requireOwnerApproval({ report: riskReport, ownerApproved })
+
+    if (!approval.allowed) {
+      return res.status(403).json({
+        error: 'Apex Safety Gate bloqueou tarefa destrutiva sem aprovação do owner.',
+        safetyGate: {
+          risk: riskReport.risk,
+          reasons: riskReport.reasons,
+          officialWorkspace: OFFICIAL_WORKSPACE_PATH,
+          requiredHeader: 'x-owner-approval: true',
+        },
+      })
+    }
 
     const enqueued = await enqueueTask({
       tenant_id: req.headers['x-tenant-id'] as string || 'default',
@@ -46,6 +67,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       message: 'Tarefa enfileirada. Será processada pelo agent-loop em até 5 minutos.',
       task: enqueued,
       tip: 'Chame POST /api/agent-loop para processamento imediato.',
+      safetyGate: {
+        risk: riskReport.risk,
+        requiresOwnerApproval: riskReport.requiresOwnerApproval,
+      },
     })
   }
 

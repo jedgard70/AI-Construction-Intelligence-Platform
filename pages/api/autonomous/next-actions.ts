@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { AUTONOMOUS_BACKLOG, getApprovalRequiredActions, getNextAutonomousBlock } from '../../../lib/autonomous/model'
+import { OFFICIAL_WORKSPACE_PATH } from '../../../lib/safety/workspace-guard'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -25,5 +26,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       approvalRequired: item.approvalRequired,
     })),
     actionsRequiringApproval: approvalActions,
+    safetyGate: {
+      enabled: true,
+      officialWorkspace: OFFICIAL_WORKSPACE_PATH,
+      caseInsensitivePathProtection: true,
+      destructiveActionsRequireOwnerApproval: true,
+    },
   })
 }
