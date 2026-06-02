@@ -45,6 +45,12 @@ Atualizacao C.2 grupo 2 em preparacao:
 - a migration idempotente foi preparada em `supabase/migrations/20260602205509_qa_real_003_c2_policies_true_group_2.sql`.
 - confirmacao no Supabase real: `auth_all_floor_plans`, `auth_all_rdo_reports` e `auth_all_video_analyses` foram removidas e o advisor nao retorna mais `rls_policy_always_true` para essas tabelas.
 
+Atualizacao C.2 grupo 3 em preparacao:
+- o proximo grupo pequeno selecionado e `public.brand_assets`, `public.compliance_checks` e `public.due_diligence`;
+- sao tabelas internas sem `project_id`, entao o endurecimento usa papeis elevados em `authenticated`;
+- a migration idempotente foi preparada em `supabase/migrations/20260602211452_qa_real_003_c2_policies_true_group_3.sql`.
+- confirmacao no Supabase real: `auth_all_brand_assets`, `auth_all_compliance_checks` e `auth_all_due_diligence` foram removidas e o advisor nao retorna mais `rls_policy_always_true` para essas tabelas.
+
 ## P0 ainda aberto
 
 ### Security Definer View
