@@ -13,6 +13,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { memoryGet, getOpenAlerts } from '../../../lib/supabase-store'
 import { createClient } from '@supabase/supabase-js'
 import { APPROVAL_GUARDRAILS, getNextAutonomousBlock } from '../../../lib/autonomous/model'
+import { OFFICIAL_WORKSPACE_PATH } from '../../../lib/safety/workspace-guard'
 
 function db() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -65,6 +66,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       criticalDeployAllowed: false,
       migrationWithoutApprovalAllowed: false,
       requiredApprovals: APPROVAL_GUARDRAILS,
+      safetyGate: {
+        enabled: true,
+        officialWorkspace: OFFICIAL_WORKSPACE_PATH,
+        caseInsensitivePathProtection: true,
+        repoMarkerProtection: ['.git', 'package.json', 'pages', 'docs', 'supabase'],
+      },
     },
     execution: {
       nextRecommendedBlock: getNextAutonomousBlock(),
