@@ -8,137 +8,122 @@ Fonte: Supabase Security Advisors
 
 Status: `FAIL EM P0`
 
-Hardening aplicado nesta rodada:
-- migration `20260602124000_qa_real_002_security_p0_hardening.sql`
-- migration `20260602130500_qa_real_002_block_anonymous_sessions.sql`
-- migration `20260602141910_qa_real_003_archvis_rls_hardening.sql`
+Hardening aplicado nesta sequencia:
+- `20260602124000_qa_real_002_security_p0_hardening.sql`
+- `20260602130500_qa_real_002_block_anonymous_sessions.sql`
+- `20260602141910_qa_real_003_archvis_rls_hardening.sql`
+- `20260602203314_qa_real_003_c1_security_definer_views_hardening.sql`
+- `20260602204551_qa_real_003_c2_policies_true_group_1.sql`
+- `20260602205509_qa_real_003_c2_policies_true_group_2.sql`
+- `20260602211452_qa_real_003_c2_policies_true_group_3.sql`
+- `qa_real_003_c2_policies_true_group_4`
 
-Essas migrations:
-- trocaram politicas centrais de `projects`, `project_members`, `documents`, `revenue_*` para `authenticated`;
-- adicionaram politicas `AS RESTRICTIVE` com `auth.jwt()->>'is_anonymous' = false`;
-- endureceram tambem `storage.objects`.
-- removeram de `public.archvis_renders` a policy `auth_all_archvis_renders` com `USING (true)` e `WITH CHECK (true)`;
-- removeram tambem a leitura `anon` de `public.archvis_renders`;
-- substituíram o acesso de `archvis_renders` por policies baseadas em `project_id`, membership e papeis elevados.
+Efeito confirmado no banco real:
+- `public.archvis_renders` deixou de aparecer como `RLS Policy Always True`;
+- `public.quality_nci_view` e `public.budget_items_view` deixaram de aparecer como `SECURITY DEFINER VIEW`;
+- `public.clients`, `public.contracts`, `public.floor_plans`, `public.rdo_reports`, `public.video_analyses`, `public.brand_assets`, `public.compliance_checks` e `public.due_diligence` deixaram de aparecer como `rls_policy_always_true`;
+- `public.bim3d_analyses`, `public.prompt_versions` e `public.video_projects` deixaram de aparecer como `rls_policy_always_true`.
 
-Evidencia remota desta rodada:
-- `public.archvis_renders` deixou de aparecer no advisor como `RLS Policy Always True`;
-- o projeto continua com achados de seguranca remotos em `SECURITY DEFINER VIEW` e em `Anonymous Access Policies`.
+## P0 restante por tipo
 
-Mesmo apos a remediacao, os advisors continuaram retornando achados P0/P1 relevantes. Portanto o gate `Security P0` continua `FAIL`.
+### `rls_policy_always_true`
 
-Atualizacao C.1 em preparacao:
-- as views alvo do P0 restante foram identificadas como `public.quality_nci_view` e `public.budget_items_view`;
-- a estrategia escolhida foi `security_invoker = true` para preservar o contrato da view e passar a respeitar RLS do chamador;
-- a migration idempotente de hardening foi preparada em `supabase/migrations/20260602203314_qa_real_003_c1_security_definer_views_hardening.sql`;
-- a confirmacao final foi executada no Supabase real e o advisor nao retornou mais os dois achados de `SECURITY DEFINER VIEW`.
+Nenhum achado restante neste snapshot.
 
-Atualizacao C.2 em preparacao:
-- o primeiro grupo pequeno de policies permissivas foi selecionado em `public.clients` e `public.contracts`;
-- a estrategia e remover os fallbacks amplos mantendo o restante dos policies escopados ja existentes;
-- a migration idempotente de C.2 foi preparada em `supabase/migrations/20260602204551_qa_real_003_c2_policies_true_group_1.sql`.
-- confirmacao no Supabase real: `public.clients` e `public.contracts` nao aparecem mais como `rls_policy_always_true` no advisor.
+### `auth_allow_anonymous_sign_ins`
 
-Atualizacao C.2 grupo 2 em preparacao:
-- o proximo grupo pequeno selecionado e `public.floor_plans`, `public.rdo_reports` e `public.video_analyses`;
-- todas possuem `project_id`, permitindo substituir `auth_all_*` por policies escopadas por membership de projeto e papeis elevados;
-- a migration idempotente foi preparada em `supabase/migrations/20260602205509_qa_real_003_c2_policies_true_group_2.sql`.
-- confirmacao no Supabase real: `auth_all_floor_plans`, `auth_all_rdo_reports` e `auth_all_video_analyses` foram removidas e o advisor nao retorna mais `rls_policy_always_true` para essas tabelas.
-
-Atualizacao C.2 grupo 3 em preparacao:
-- o proximo grupo pequeno selecionado e `public.brand_assets`, `public.compliance_checks` e `public.due_diligence`;
-- sao tabelas internas sem `project_id`, entao o endurecimento usa papeis elevados em `authenticated`;
-- a migration idempotente foi preparada em `supabase/migrations/20260602211452_qa_real_003_c2_policies_true_group_3.sql`.
-- confirmacao no Supabase real: `auth_all_brand_assets`, `auth_all_compliance_checks` e `auth_all_due_diligence` foram removidas e o advisor nao retorna mais `rls_policy_always_true` para essas tabelas.
-
-## P0 ainda aberto
-
-### Security Definer View
-
-Confirmacao apos C.1:
-- `public.quality_nci_view` nao aparece mais como `SECURITY DEFINER VIEW`;
-- `public.budget_items_view` nao aparece mais como `SECURITY DEFINER VIEW`;
-- o advisor de seguranca nao retornou os dois achados apos a migracao.
-
-Historico anterior:
-- `public.quality_nci_view`
-- `public.budget_items_view`
-
-Leitura objetiva:
-- esses achados foram corrigidos com a migracao C.1;
-- o gate de seguranca segue `FAIL` por outros motivos remanescentes, nao mais por essas duas views.
-
-### Anonymous Access Policies
-
-Continuam aparecendo nos advisors, entre outras, as tabelas:
-- `public.documents`
-- `public.project_members`
-- `public.projects`
-- `public.revenue_records`
-- `public.revenue_installments`
-- `public.revenue_events`
-- `public.profiles`
-- `public.proposals`
-- `public.proposal_items`
-- `public.opportunities`
-- `public.opportunity_services`
-- `public.pipeline_stages`
-- `public.services_catalog`
-- `storage.objects`
-
-Leitura objetiva:
-- o linter continua entendendo que politicas em papeis que incluem `authenticated` permanecem expostas a usuarios anonimos do Supabase;
-- isso e coerente com a documentacao oficial: anonymous users tambem entram como `authenticated`;
-- a propria documentacao do lint `0012_auth_allow_anonymous_sign_ins` deixa claro que o projeto precisa revisar essas policies ou desabilitar `Allow anonymous sign-ins`;
-- mesmo com barreiras restritivas de `is_anonymous = false`, o advisor continua marcando as policies enquanto a configuracao global e outras policies do projeto permanecerem nesse estado.
-
-### Politicas permissivas `USING/WITH CHECK true`
-
-Achados ainda presentes em tabelas de negocio:
+Persistem 39 tabelas:
+- `public.agent_events`
+- `public.archvis_gallery`
+- `public.archvis_materials`
+- `public.archvis_projects`
+- `public.archvis_renders`
 - `public.bim3d_analyses`
 - `public.brand_assets`
-- `public.clients`
-- `public.compliance_checks`
-- `public.contracts`
+- `public.director_projects`
+- `public.director_reviews`
+- `public.documents`
 - `public.due_diligence`
 - `public.floor_plans`
+- `public.investments`
+- `public.kpi_snapshots`
+- `public.leads`
+- `public.opportunities`
+- `public.opportunity_services`
+- `public.permit_checklist`
+- `public.pipeline_stages`
+- `public.platform_layers`
+- `public.platform_modules`
+- `public.profiles`
+- `public.project_members`
+- `public.projects`
+- `public.prompt_versions`
+- `public.proposal_items`
+- `public.proposals`
+- `public.quality_nci`
+- `public.rdo_records`
 - `public.rdo_reports`
+- `public.revenue_events`
+- `public.revenue_installments`
+- `public.revenue_records`
+- `public.services_catalog`
 - `public.video_analyses`
 - `public.video_projects`
+- `public.work_sessions`
+- `public.workflow_tasks`
+- `storage.objects`
 
-## P1 aberto
+### `anon_security_definer_function_executable`
 
-- `function_search_path_mutable`:
-  - `public.claim_pending_tasks`
-  - `public.handle_new_user`
-  - `public.set_nci_sequence`
-  - `public.has_project_access`
-  - `public.set_updated_at`
+Persistem 4 funcoes:
+- `public.current_role_acip()`
+- `public.get_my_role()`
+- `public.handle_new_user()`
+- `public.rls_auto_enable()`
+
+### `function_search_path_mutable`
+
+Persistem 5 funcoes:
+- `public.claim_pending_tasks`
+- `public.handle_new_user`
+- `public.set_nci_sequence`
+- `public.has_project_access`
+- `public.set_updated_at`
+
+## Total de P0 restantes
+
+Total contado neste snapshot: `48`
+
+Quebra:
+- `0` em `rls_policy_always_true`
+- `39` em `auth_allow_anonymous_sign_ins`
+- `4` em `anon_security_definer_function_executable`
+- `5` em `function_search_path_mutable`
+
+## Outros achados ainda presentes
+
+Esses pontos continuam aparecendo no advisor, mas nao entram no total acima de P0 deste snapshot:
+- `RLS Enabled No Policy` em `public.agent_memory`, `public.agent_tasks`, `public.autonomous_alerts`, `public.knowledge_chunks`, `public.site_states`
+- `Extension in Public` para `public.pg_trgm`
 - `Leaked Password Protection Disabled`
-- `Extension in Public` para `pg_trgm`
 
-## P2 aberto
+## Leitura objetiva
 
-- `RLS Enabled No Policy`:
-  - `public.agent_memory`
-  - `public.agent_tasks`
-  - `public.autonomous_alerts`
-  - `public.knowledge_chunks`
-  - `public.site_states`
+- O hardening por lotes anteriores funcionou e zerou os bloqueios `rls_policy_always_true`.
+- O residuo P0 agora e dominado por `auth_allow_anonymous_sign_ins`.
+- O proximo foco deve sair de `C.2 group 4` e entrar na decisao sobre `Allow anonymous sign-ins`.
 
-## Conclusao objetiva
+## Recomendacao do proximo PR
 
-- Houve progresso real de hardening nesta rodada.
-- `public.archvis_renders` foi corrigida com sucesso no banco real.
-- Nao houve `PASS` de seguranca.
-- Os bloqueios restantes para `PASS` sao:
-  - `security_definer_view` em `quality_nci_view` e `budget_items_view`;
-  - `auth_allow_anonymous_sign_ins` em varias policies com role `authenticated`;
-  - varias policies ainda permissivas com `USING/WITH CHECK true` fora da excecao minima desta rodada.
+Prioridade recomendada: tratar `Allow anonymous sign-ins`.
 
-## Proximo passo recomendado
+Motivo:
+- e o maior grupo remanescente;
+- impacta varias tabelas de negocio e storage;
+- tende a exigir decisao de produto/seguranca, nao apenas mais um lote mecanico de policies.
 
-1. Corrigir `public.quality_nci_view` e `public.budget_items_view` para remover `SECURITY DEFINER`.
-2. Decidir se `Allow anonymous sign-ins` permanece habilitado no projeto.
-3. Se permanecer habilitado, continuar revisao politica por politica ate zerar os achados `auth_allow_anonymous_sign_ins`.
-4. Se nao for necessario, desabilitar `Allow anonymous sign-ins` em `Auth > Providers` e revalidar os advisors.
+Sequencia sugerida:
+1. decidir se `Allow anonymous sign-ins` deve permanecer habilitado;
+2. se permanecer, continuar revisao por modulo para reduzir `auth_allow_anonymous_sign_ins`;
+3. se for desabilitado, reexecutar advisors e reavaliar o saldo real de P0;
+4. depois disso, corrigir as funcoes com search path mutavel.

@@ -233,12 +233,22 @@ Status C.2 grupo 3 em andamento:
 - decidir globalmente sobre `Allow anonymous sign-ins`
 - se necessario, documentar excecao por modulo antes de outra migration
 
-## 7. Recomendacao final
+## 7. Atualizacao apos C.2 grupo 4
 
-Status recomendado:
-- `pode iniciar correcoes isoladas, mas nao em lote`
+Status atualizado:
+- `rls_policy_always_true` foi zerado com o grupo 4;
+- o plano agora passa a ser dominado por `auth_allow_anonymous_sign_ins` e pelas funcoes com `search_path` mutavel.
 
 Leitura objetiva:
-- o PR C deve nascer como plano e depois se dividir em migrations pequenas;
-- o primeiro alvo seguro e mais claro continua sendo `SECURITY DEFINER VIEW`;
-- o restante precisa de decisao de produto e de seguranca para nao quebrar fluxos de visitante ou de autenticao permanente.
+- o bloco de policies permissivas por `USING/WITH CHECK true` foi encerrado neste ciclo;
+- o proximo trabalho relevante sai de `C.2` e entra em decisao sobre `Allow anonymous sign-ins`;
+- depois disso, o endurecimento pode seguir para as funcoes com search_path mutavel em PR separado.
+
+## 8. Recomendacao final
+
+Status recomendado:
+- `seguir com anonymous sign-ins e funcoes, sem misturar em lote`
+
+Leitura objetiva:
+- o PR C cumpriu a fase de policies permissivas;
+- agora o restante do P0 e majoritariamente uma decisao de autenticacao global e um conjunto pequeno de funcoes a endurecer depois.
