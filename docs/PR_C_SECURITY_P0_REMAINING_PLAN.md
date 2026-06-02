@@ -220,6 +220,13 @@ Status C.2 grupo 2 em andamento:
 - confirmacao no Supabase real: as policies `auth_all_floor_plans`, `auth_all_rdo_reports` e `auth_all_video_analyses` foram removidas.
 - o advisor deixou de apontar `rls_policy_always_true` para esse trio.
 
+Status C.2 grupo 3 em andamento:
+- grupo selecionado: `public.brand_assets`, `public.compliance_checks` e `public.due_diligence`;
+- criterio: tabelas internas sem `project_id`, endurecidas por papel elevado em `authenticated`;
+- a migration idempotente foi preparada para substituir o acesso amplo por policies restritas.
+- confirmacao no Supabase real: as policies `auth_all_brand_assets`, `auth_all_compliance_checks` e `auth_all_due_diligence` foram removidas.
+- o advisor deixou de apontar `rls_policy_always_true` para esse trio.
+
 ### PR C.3
 
 - revisar `auth_allow_anonymous_sign_ins`
