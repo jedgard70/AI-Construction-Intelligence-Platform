@@ -43,16 +43,18 @@ O `package-lock.json` estava fora de sincronia com o manifesto atual e refletia 
 1. `npm ci`
    - reproduziu a falha de sincronia entre manifesto e lockfile.
 2. `npm install --package-lock-only`
-   - regenerou o lockfile a partir do `package.json` atual.
-3. `npm ci`
-   - validou a instalacao limpa com o novo lockfile.
-4. `NEXT_DISABLE_BUILD_WORKER=1 npm run build -- --webpack`
+   - regenerou inicialmente o lockfile a partir do `package.json` atual.
+3. `npx npm@10 install --package-lock-only`
+   - regenerou novamente o lockfile usando a mesma linha principal de npm do CI com Node 20.
+4. `npx npm@10 ci`
+   - validou a instalacao limpa com o lockfile compatibilizado para o ambiente do GitHub.
+5. `NEXT_DISABLE_BUILD_WORKER=1 npm run build -- --webpack`
    - validou o build local apos a correcao.
 
 ## Resultado
 - `package.json` nao precisou ser alterado.
 - `package-lock.json` passou a refletir a arvore declarada no manifesto atual.
-- `npm ci` passou com sucesso.
+- `npm ci` do trilho compativel com o CI passou com sucesso.
 - O build em webpack passou com sucesso.
 
 ## Riscos
