@@ -213,6 +213,13 @@ Status C.2 em andamento:
 - confirmacao no Supabase real: o advisor deixou de apontar `rls_policy_always_true` para essas duas tabelas.
 - o plano C continua para os demais grupos de policies permissivas.
 
+Status C.2 grupo 2 em andamento:
+- grupo selecionado: `public.floor_plans`, `public.rdo_reports` e `public.video_analyses`;
+- criterio: chave de escopo clara por `project_id`;
+- a migration idempotente foi preparada para substituir o fallback permissivo por policies escopadas.
+- confirmacao no Supabase real: as policies `auth_all_floor_plans`, `auth_all_rdo_reports` e `auth_all_video_analyses` foram removidas.
+- o advisor deixou de apontar `rls_policy_always_true` para esse trio.
+
 ### PR C.3
 
 - revisar `auth_allow_anonymous_sign_ins`
