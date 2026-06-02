@@ -39,6 +39,12 @@ Atualizacao C.2 em preparacao:
 - a migration idempotente de C.2 foi preparada em `supabase/migrations/20260602204551_qa_real_003_c2_policies_true_group_1.sql`.
 - confirmacao no Supabase real: `public.clients` e `public.contracts` nao aparecem mais como `rls_policy_always_true` no advisor.
 
+Atualizacao C.2 grupo 2 em preparacao:
+- o proximo grupo pequeno selecionado e `public.floor_plans`, `public.rdo_reports` e `public.video_analyses`;
+- todas possuem `project_id`, permitindo substituir `auth_all_*` por policies escopadas por membership de projeto e papeis elevados;
+- a migration idempotente foi preparada em `supabase/migrations/20260602205509_qa_real_003_c2_policies_true_group_2.sql`.
+- confirmacao no Supabase real: `auth_all_floor_plans`, `auth_all_rdo_reports` e `auth_all_video_analyses` foram removidas e o advisor nao retorna mais `rls_policy_always_true` para essas tabelas.
+
 ## P0 ainda aberto
 
 ### Security Definer View
