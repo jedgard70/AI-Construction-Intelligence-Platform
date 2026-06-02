@@ -26,6 +26,7 @@ Adicionar camada de proteção para ações destrutivas com foco em paths críti
 2. Qualquer alvo dentro do workspace oficial é risco alto/crítico.
 3. Presença de marcadores de repositório (`.git`, `package.json`, `pages`, `docs`, `supabase`) eleva risco.
 4. Ações destrutivas de risco alto/crítico exigem aprovação owner.
+5. Criacao de `temp`, `archived`, `backup`, `recovery`, clones ou copias paralelas sem autorizacao passa a ser proibida por regra operacional documentada.
 
 ## Integração nas APIs autonomous
 - `POST /api/autonomous/task`
@@ -39,6 +40,7 @@ Adicionar camada de proteção para ações destrutivas com foco em paths críti
 ## Segurança operacional
 - Implementação não executa limpeza/destruição real.
 - Implementação apenas classifica/bloqueia no nível de enfileiramento de tarefas autônomas.
+- Regras operacionais complementares registradas em `docs/CODEX_OPERATIONAL_RULES.md`.
 
 ## Validação
 - Build obrigatório: `npm run build -- --webpack`.
