@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import fs from 'fs'
 import path from 'path'
-import { Buffer } from 'buffer'
-import { resolveConfiguredOwnerEmails } from '../../lib/owner-auth'
+import {
+  getBearerToken,
+  getSeatPermissionSummary,
+  resolveOwnerContext,
+} from '../../lib/owner-auth'
 
 /**
  * POST /api/chat
@@ -20,11 +23,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: { message: 'Method not allowed' } })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return res.status(500).json({ error: { message: 'ANTHROPIC_API_KEY não configurada no servidor.' } })
-  }
-
   const {
     model = 'claude-sonnet-4-6',
     max_tokens = 1024,
@@ -34,24 +32,7 @@ export default async function handler(req, res) {
     vars = {},
   } = req.body
 
-  const ownerEmails = resolveConfiguredOwnerEmails()
-
-  const authHeader = req.headers.authorization
-  const bearerToken =
-    typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7).trim()
-      : ''
-
-  const decodeJwtPayload = (token) => {
-    try {
-      const parts = token.split('.')
-      if (parts.length < 2) return null
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'))
-      return payload
-    } catch {
-      return null
-    }
-  }
+  const bearerToken = getBearerToken(req.headers.authorization)
 
   const resolveUserContext = async () => {
     const guestContext = {
@@ -67,79 +48,36 @@ export default async function handler(req, res) {
 
     if (!bearerToken) return guestContext
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    if (!url || !anonKey || !serviceRoleKey) return guestContext
+    const user = await resolveOwnerContext(bearerToken)
+    if (!user.userId) return guestContext
 
-    const userClient = createClient(url, anonKey, {
-      global: { headers: { Authorization: `Bearer ${bearerToken}` } },
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
-    const serviceClient = createClient(url, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
-
-    const { data, error } = await userClient.auth.getUser(bearerToken)
-    if (error || !data?.user) return guestContext
-
-    const email = (data.user.email || '').toLowerCase()
-    const isOwner = ownerEmails.includes(email)
-
-    let role = isOwner ? 'owner' : 'user'
-    let allowedScopes = isOwner ? ['all'] : ['department']
-    let department = null
-
-    const uid = data.user.id
-    const profileQueries = [
-      serviceClient.from('profiles').select('role,is_owner,allowed_scopes,department').eq('id', uid).maybeSingle(),
-      serviceClient.from('users').select('role,is_owner,allowed_scopes,department').eq('id', uid).maybeSingle(),
-      serviceClient.from('user_roles').select('role,is_owner,allowed_scopes,department').eq('user_id', uid).maybeSingle(),
-    ]
-
-    for (const query of profileQueries) {
-      try {
-        const { data: row } = await query
-        if (!row) continue
-        if (typeof row.role === 'string' && row.role.trim()) role = row.role.trim().toLowerCase()
-        if (row.is_owner === true) role = 'owner'
-        if (Array.isArray(row.allowed_scopes) && row.allowed_scopes.length) {
-          allowedScopes = row.allowed_scopes.map((v) => String(v))
-        }
-        if (typeof row.department === 'string') department = row.department
-        break
-      } catch {
-        // continue to next table
-      }
-    }
-
-    const finalIsOwner = role === 'owner' || isOwner
-    if (finalIsOwner) {
-      role = 'owner'
-      allowedScopes = ['all']
-    }
-
-    const permissionSummary =
-      role === 'owner'
-        ? 'Owner com acesso completo a plataforma, roadmap, modulos e departamentos.'
-        : role === 'admin'
-        ? 'Admin com escopo amplo de operacao, sem acesso ao contexto privado do owner.'
-        : role === 'client'
-        ? 'Cliente com acesso restrito aos projetos/documentos autorizados.'
-        : 'Usuario com acesso restrito por departamento/funcao.'
+    const permissionSummary = getSeatPermissionSummary(user)
 
     return {
-      role,
-      is_owner: finalIsOwner,
-      user_id: uid,
-      email,
-      allowed_scopes: allowedScopes,
+      role: String(user.role),
+      is_owner: user.isOwner,
+      user_id: user.userId,
+      email: user.email,
+      allowed_scopes: user.allowedScopes,
       permission_summary: permissionSummary,
-      department,
+      department: user.department,
     }
   }
 
   const userContext = await resolveUserContext()
+  const apexContextPayload = {
+    role: userContext.role,
+    is_owner: userContext.is_owner,
+    email: userContext.email,
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    return res.status(500).json({
+      error: { message: 'ANTHROPIC_API_KEY não configurada no servidor.' },
+      apex_context: apexContextPayload,
+    })
+  }
 
   const classifyIntent = (text) => {
     const t = text.toLowerCase()
@@ -501,9 +439,15 @@ Policy:
 
     const data = await anthropicRes.json()
     logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: null })
-    return res.status(anthropicRes.status).json(data)
+    return res.status(anthropicRes.status).json({
+      ...data,
+      apex_context: apexContextPayload,
+    })
   } catch {
     logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: 'provider_error_fallback' })
-    return res.status(500).json({ error: { message: 'Erro ao conectar com a API Anthropic.' } })
+    return res.status(500).json({
+      error: { message: 'Erro ao conectar com a API Anthropic.' },
+      apex_context: apexContextPayload,
+    })
   }
 }
