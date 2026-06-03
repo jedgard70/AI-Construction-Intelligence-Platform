@@ -25,6 +25,7 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 |-----------|------|--------|------|
 | 3.1 | Governance Consolidation | ✅ Completo | ~2026-05-25 |
 | 3.2 | Help AI / Apex AI Integration | ✅ Completo | ~2026-05-30 |
+| 3.3 | Owner Command Chat | ✅ Completo | 2026-06-03 |
 | 3.4 | Supabase Foundation Phase 0 | ✅ Completo | ~2026-06-01 |
 | 3.5 | Storage Validation | ✅ Completo | 2026-06-03 |
 
@@ -39,6 +40,17 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 - Integração de Apex AI (análise de projetos) verificada
 - APIs funcionando em ambiente local
 - Status: **Fechado e validado**
+
+### Checkpoint 3.3 — Owner Command Chat ✅
+- Frontend page `/owner-command` implementado (sem system prompt no cliente)
+- Backend endpoint `/api/owner-command/chat` implementado com enforcement
+- Owner auth library com resolução de contexto e continuidade
+- Hierarquia de assentos validada (Owner > Admin > User > Guest)
+- Owner continuity: `scope=global` para Dr. Edgard
+- Admin bloqueado em `owner_private` e `requires_owner_approval`
+- Safety Gate integrado para ações destrutivas
+- Documentação completa (OWNER_COMMAND_CHAT_CONTINUITY_RULES.md)
+- Status: **100% concluído. Documento de validação: `docs/CHECKLIST_3_3_OWNER_COMMAND_CHAT.md`**
 
 ### Checkpoint 3.4 — Supabase Foundation Phase 0 ✅
 - Estratégia de hardening de segurança Supabase aprovada conceitualmente
@@ -71,11 +83,7 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 
 ## 4. Next Checkpoints (Em Fila) ⏭️
 
-### Checkpoint 3.3 — Owner Command Chat (PENDENTE)
-- **Status:** Aguardando priorização
-- **Objetivo:** Integrar fluxo de chat de comandos para owner
-- **Escopo:** Backend + integração frontend
-- **Nota:** Esta checkpoint foi ultrapassada na ordem de execução devido a priorização de Storage Validation (3.5)
+Nenhuma checkpoint está pendente. Próximo passo: **Checkpoint 3.6 — Final Integration & E2E**
 
 ---
 

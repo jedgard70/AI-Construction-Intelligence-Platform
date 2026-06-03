@@ -146,20 +146,20 @@ Estado resumido:
 
 ## 4. Proxima acao unica
 
-**Checkpoint 3.5 — Storage Validation: 100% CONCLUÍDO ✅**
+**Checkpoints Completados na Retomada**:
 
-Resultados da validacao documentados em `docs/CHECKLIST_3_5_STORAGE.md`.
+### Checkpoint 3.3 — Owner Command Chat: 100% CONCLUÍDO ✅
+Resultados documentados em `docs/CHECKLIST_3_3_OWNER_COMMAND_CHAT.md`.
+- Todos os 15 requisitos validados ✅
+- Frontend + Backend implementados ✅
+- Safety Gate integrado ✅
+- Documentação completa ✅
 
-Todos os 15 requirements validados e confirmados:
-- Bucket `project-files` privado ✅
-- Tabela `documents` com metadata completa ✅
-- APIs upload/signed-url/list endpoints ✅
-- UI integration em `/nova-analise` e `/projeto/[id]` ✅
-- storage_path protegido (nao exposto a guests) ✅
+### Checkpoint 3.5 — Storage Validation: 100% CONCLUÍDO ✅
+Resultados documentados em `docs/CHECKLIST_3_5_STORAGE.md`.
+- Todos os 15 requisitos validados ✅
+- Storage subsystem funcional ✅
 - RLS policies robustas ✅
-- Access control Owner/member permitido, guest bloqueado ✅
-- E2E testing com sessao autenticada ✅
-- Persistencia validada ✅
 
 ---
 
@@ -168,7 +168,7 @@ Todos os 15 requirements validados e confirmados:
 Conforme documentado em `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md`:
 - Objetivo: Integração de todas as features com E2E testing e validação
 - Escopo: End-to-end testing, integração entre componentes, validação de fluxos
-- Blocker: Nenhum (3.5 concluído)
+- Checkpoints prerequisitos: 3.1 ✅ + 3.2 ✅ + 3.3 ✅ + 3.4 ✅ + 3.5 ✅
 
 Nenhuma outra acao deve ser misturada a essa retomada.
 
