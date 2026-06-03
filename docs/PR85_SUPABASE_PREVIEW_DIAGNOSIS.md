@@ -86,7 +86,22 @@ PR #85 mergeability:
 
 - GitHub reports `MERGEABLE`.
 
-After this diagnosis document was added to PR #85, the PR head moved forward. On the subsequent observed head, GitHub exposed successful `Build & Type Check` runs and Vercel-related checks, but no `Supabase Preview` check-run was present in the commit check-run payload at the time of observation. Therefore, the only Supabase Preview diagnostic payload available for PR #85 remains the cancelled check above.
+After this diagnosis document was added to PR #85, the PR head moved forward and Supabase emitted a second check-run state:
+
+- name: `Supabase Preview`
+- app: `supabase`
+- status: `completed`
+- conclusion: `skipped`
+- annotations: `[]`
+- details URL: `https://supabase.com/dashboard/project/stjhkxwylqtihzflspqe/branches`
+
+Exact second check-run output summary:
+
+```text
+This git branch is not associated with any Supabase Branch. You can open a PR to create a new branch.
+```
+
+This second state also did not execute migration replay logs. It is a branch-association/preview-branch provisioning state, not a SQL migration failure.
 
 ## Decision
 
