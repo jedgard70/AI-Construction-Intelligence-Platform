@@ -12,7 +12,7 @@ const BRAND = {
   light:     '#E8F0F9',  // Sky Mist
   success:   '#2D7A4F',  // Site Green
   text:      '#1A2B3C',
-  muted:     '#5C7A99',
+  muted:     '#475569',  // Darker steel gray for WCAG 2 AA contrast
 }
 
 // ─── Taglines ────────────────────────────────────────────────────
