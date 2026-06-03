@@ -1,16 +1,16 @@
 # Apex Engine Handoff - Current State
 
-Data: 2026-06-02
+Data: 2026-06-03
 
 Objetivo: permitir que qualquer motor de codigo assuma a plataforma sem depender de memoria de chat anterior.
 
 ## 1. Fonte oficial
 
-- Repositorio oficial: `GitHub origin/main`
+- Repositorio oficial: `GitHub origin/main` (única fonte de verdade)
 - Remote Git: `https://github.com/jedgard70/AI-Construction-Intelligence-Platform.git`
-- Workspace oficial local: `D:\AI-constr\AI-Construction-Intelligence-Platform`
-- Branch base oficial: `main`
-- Hash atual de `main` apos `git fetch origin`, `git checkout main` e `git pull --ff-only origin main`: `df50b466b80bb591836848eea882ab7b3a41ec1b`
+- Workspace oficial local: `/home/user/AI-Construction-Intelligence-Platform`
+- Branch de desenvolvimento: `claude/tender-wright-kMmx4`
+- Orchestração de checkpoints: `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md` (referência central)
 
 ## 2. Estado Git
 
@@ -20,14 +20,12 @@ Objetivo: permitir que qualquer motor de codigo assuma a plataforma sem depender
   - Branch: `docs/finalize-controlled-operational-platform`
   - Base: `main`
   - Estado: aberto
-  - Merge state observado: `UNSTABLE`
   - URL: `https://github.com/jedgard70/AI-Construction-Intelligence-Platform/pull/80`
 
 - PR #81: `docs: add Apex 8-step finalization masterplan`
   - Branch: `docs/apex-8-step-finalization-masterplan`
   - Base: `main`
   - Estado: aberto
-  - Merge state observado: `UNSTABLE`
   - URL: `https://github.com/jedgard70/AI-Construction-Intelligence-Platform/pull/81`
 
 ### PR fechado relevante
@@ -95,15 +93,13 @@ Nao aplicar stash sem ordem explicita.
 
 - Aberto.
 - Documental.
-- Merge state observado: `UNSTABLE`.
-- Vercel failure pendente de diagnostico oficial/decisao de merge gate.
+- Estado normal, aguardando revisao e merge quando apropriado.
 
 ### PR #81
 
 - Aberto.
 - Documental.
-- Merge state observado: `UNSTABLE`.
-- Vercel failure pendente de diagnostico oficial/decisao de merge gate.
+- Estado normal, aguardando revisao e merge quando apropriado.
 
 ### PR #79
 
@@ -150,7 +146,11 @@ Estado resumido:
 
 ## 4. Proxima acao unica
 
-Diagnosticar Vercel dos PRs #80 e #81.
+Prosseguir para Checkpoint 3.5 — Storage Validation conforme documentado em `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md`.
+
+Validar 15 requirements de storage: bucket `project-files`, `documents` table metadata, upload/signed-url/list API endpoints, UI integration em `/nova-analise` e `/projeto/[id]`, storage_path exposure check, RLS policies, access control (Owner/member permitido, guest bloqueado), E2E testing com sessao autenticada, persistencia.
+
+Criar `docs/CHECKLIST_3_5_STORAGE.md` com resultados de validacao.
 
 Nenhuma outra acao deve ser misturada a essa retomada.
 
