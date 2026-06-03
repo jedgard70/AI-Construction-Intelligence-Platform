@@ -481,8 +481,8 @@ export default function MissionControlPage() {
           .main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 42px; }
           .hero { margin-bottom: 20px; }
           .title { margin: 0; font-size: 28px; color: #111827; letter-spacing: -0.02em; }
-          .sub { margin-top: 6px; color: #667085; font-size: 14px; }
-          .chip { margin-top: 10px; display: inline-flex; gap: 8px; align-items: center; border: 1px solid #d8e0ee; border-radius: 999px; padding: 4px 10px; background: #f8fafc; font-size: 11px; color: #475467; font-weight: 700; }
+          .sub { margin-top: 6px; color: #4B5563; font-size: 14px; }
+          .chip { margin-top: 10px; display: inline-flex; gap: 8px; align-items: center; border: 1px solid #d8e0ee; border-radius: 999px; padding: 4px 10px; background: #f8fafc; font-size: 11px; color: #334155; font-weight: 700; }
           .chip-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
           .btn { border: 1px solid #d8dee9; background: #fff; border-radius: 8px; padding: 8px 12px; color: #185fa5; font-weight: 800; cursor: pointer; }
           .status-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
@@ -491,15 +491,15 @@ export default function MissionControlPage() {
           .domain-header h2 { margin: 0; font-size: 16px; color: #1e293b; }
           .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
           .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; box-shadow: 0 6px 16px rgba(16, 24, 40, 0.04); }
-          .section-title { font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: #667085; margin-bottom: 10px; }
+          .section-title { font-size: 11px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: #4B5563; margin-bottom: 10px; }
           .row { display: grid; gap: 10px; padding: 9px 0; border-bottom: 1px solid #eef2f7; font-size: 12px; }
           .row-3 { grid-template-columns: 1.1fr .6fr 1fr; }
           .line-item { padding: 8px 0; border-bottom: 1px solid #eef2f7; font-size: 12px; }
           .project-item { display: block; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid #eef2f7; padding: 8px 0; cursor: pointer; }
-          .small { color: #667085; font-size: 12px; line-height: 1.5; }
-          .muted { color: #667085; }
+          .small { color: #4B5563; font-size: 12px; line-height: 1.5; }
+          .muted { color: #4B5563; }
           .strong { font-size: 13px; font-weight: 800; }
-          .tiny-title { font-size: 11px; color: #667085; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
+          .tiny-title { font-size: 11px; color: #4B5563; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
           .panel { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #f8fafc; }
           .check-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f7; font-size: 13px; }
           .legend-card { background: #f8fafc; border: 1px solid #dbeafe; margin-top: 14px; }
@@ -507,8 +507,8 @@ export default function MissionControlPage() {
           .legend-row .badge { margin-top: 2px; flex-shrink: 0; }
           .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; border: 1px solid; }
           .badge-ok { color: #14532d; border-color: #86efac; background: #f0fdf4; }
-          .badge-warning { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
-          .badge-neutral { color: #334155; border-color: #cbd5e1; background: #f8fafc; }
+          .badge-warning { color: #78350f; border-color: #fcd34d; background: #fffbeb; }
+          .badge-neutral { color: #0F172A; border-color: #cbd5e1; background: #f8fafc; }
           .error { color: #a32d2d; }
           @media (max-width: 1024px) {
             .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
