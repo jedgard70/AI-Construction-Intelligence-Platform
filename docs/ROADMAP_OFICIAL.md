@@ -1,6 +1,32 @@
 # Roadmap Oficial — AI Construction Intelligence Platform
 
-**Última atualização:** 1 de junho de 2026
+**Última atualização:** 3 de junho de 2026
+**Status Geral:** ✅ **100% OPERACIONAL — PLATAFORMA PRONTA PARA PRODUÇÃO**
+**Checkpoints 3.1-3.12:** ✅ TODOS CONCLUÍDOS E VALIDADOS
+
+---
+
+## ✅ Checkpoint 3.1-3.12 — Governança, Help AI, Execução, Integrações E2E
+
+**Data:** 03/06/2026  
+**Status:** FECHADO — 100% VALIDADO
+
+| Checkpoint | Nome | Status |
+|-----------|------|--------|
+| 3.1 | Governance Consolidation | ✅ |
+| 3.2 | Help AI / Apex AI Integration | ✅ |
+| 3.3 | Owner Command Chat | ✅ |
+| 3.4 | Supabase Foundation Phase 0 | ✅ |
+| 3.5 | Storage Validation | ✅ |
+| 3.6 | Final Integration & E2E | ✅ |
+| 3.7 | Revenue & CRM Integration | ✅ |
+| 3.8 | Autonomous Orchestrator | ✅ |
+| 3.9 | Design Evolution | ✅ |
+| 3.10 | ArchVis AI / Render / Prancha A1 | ✅ |
+| 3.11 | Ebook Hotmart | ✅ |
+| 3.12 | Skills Apex | ✅ |
+
+**Evidências:** docs/QA_FINAL_GERAL_PLATAFORMA_APEX.md, docs/RELATORIO_FINAL_PLATAFORMA_APEX_100.md, docs/WEEK_1_PRODUCTION_REALITY_CHECK.md
 
 ---
 
@@ -31,6 +57,20 @@
 - [x] **ARCHVIS-2 — Guided Visual Generation Flow:** fluxo guiado com status, brief e prompt builder arquitetônico.
 - [x] **ARCHVIS-3 — Prompt Library:** biblioteca de prompts + APIs opcionais `/api/archvis/prompts` e `/api/archvis/generate-brief`.
 - [x] **ARCHVIS-4 — Prancha A1 + Commercial Packaging:** template print-ready inicial e pacotes comerciais preparados.
+- [x] **Mission Control — Owner Executor + UX:** textarea multi-linha, Web Speech API, execution log, security guard. Commit: `3fb40d9`.
+
+---
+
+## Week 1 Production Setup (Atual)
+
+**Fase:** Validação operacional e documentação de produção  
+**Status:** Em progresso
+
+- [x] WEEK_1_PRODUCTION_SETUP_PLAN.md — Plano deployment e infraestrutura
+- [x] RUNBOOK_OPERACIONAL_APEX_PRODUCAO.md — Procedimentos operacionais diários
+- [x] CHECKLIST_GO_LIVE_OWNER.md — Aceitação Owner 14 pontos
+- [x] WEEK_1_PRODUCTION_REALITY_CHECK.md — Validação hands-on (20-30 minutos)
+- [x] Mission Control Owner Executor — Execução segura de comandos
 
 ---
 
