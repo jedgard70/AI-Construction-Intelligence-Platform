@@ -211,12 +211,12 @@ export default function MissionControlPage() {
   ], [documentsCount, error, events.length, projects.length])
 
   const roadmap = [
-    { item: 'Project Intake Engine', status: '45%', priority: 'Critica' },
-    { item: 'Agent Window Framework', status: '55%', priority: 'Critica' },
-    { item: 'Mission Control V1', status: 'Em implantacao', priority: 'Alta' },
-    { item: 'Apex AI Copilot Foundation', status: 'Pendente', priority: 'Alta' },
-    { item: 'Project Workspace', status: 'Pendente', priority: 'Alta' },
-    { item: 'Supabase Gap Analysis', status: '60%', priority: 'Alta' },
+    { item: '3.1 Governance Consolidation', status: 'OK', priority: 'Critica' },
+    { item: '3.2 Help AI / Apex AI Integration', status: 'OK', priority: 'Critica' },
+    { item: '3.3 Owner Command Chat', status: 'OK', priority: 'Critica' },
+    { item: '3.4 Supabase Foundation Phase 0', status: 'OK', priority: 'Alta' },
+    { item: 'Mission Control Owner Executor', status: 'OK', priority: 'Alta' },
+    { item: 'Week 1 Production Reality Check', status: 'Em validacao', priority: 'Alta' },
   ]
 
   const checklist = [
@@ -224,9 +224,17 @@ export default function MissionControlPage() {
     ['Projeto nasce automaticamente', true],
     ['AgentWindow em BIM 3D/BIM OPS/Plantas', true],
     ['Mission Control com Supabase real', !loading],
-    ['Copilot global consolidado', false],
-    ['Workspace com abas padrao', false],
-    ['Migrations aprovadas', false],
+    ['Copilot global consolidado', true],
+    ['Workspace com abas padrao', true],
+    ['Owner Executor implementado', true],
+    ['Week 1 Production Reality Check documentado', true],
+  ]
+
+  const legendItems = [
+    { status: 'OK', description: 'Pronto e validado - nao requer acao.' },
+    { status: 'ATENÇÃO', description: 'Requer validacao externa ou configuracao especifica.' },
+    { status: 'PENDENTE', description: 'Nao implementado - aguardando proxima fase.' },
+    { status: 'Em validacao', description: 'Em teste/validacao produzione - resultado esperado OK.' },
   ]
 
   const statusColor = {
@@ -303,6 +311,17 @@ export default function MissionControlPage() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="card legend-card">
+            <div className="section-title">Legenda de Status</div>
+            {legendItems.map(item => (
+              <div key={item.status} className="legend-row">
+                <span className={`badge ${item.status === 'OK' || item.status === 'ATENÇÃO' ? 'badge-' + (item.status === 'OK' ? 'ok' : 'warning') : 'badge-neutral'}`}>
+                  {item.status}
+                </span>
+                <span className="small">{item.description}</span>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -483,6 +502,9 @@ export default function MissionControlPage() {
           .tiny-title { font-size: 11px; color: #667085; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
           .panel { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #f8fafc; }
           .check-row { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #eef2f7; font-size: 13px; }
+          .legend-card { background: #f8fafc; border: 1px solid #dbeafe; margin-top: 14px; }
+          .legend-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #e0e7ff; font-size: 12px; }
+          .legend-row .badge { margin-top: 2px; flex-shrink: 0; }
           .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; border: 1px solid; }
           .badge-ok { color: #14532d; border-color: #86efac; background: #f0fdf4; }
           .badge-warning { color: #92400e; border-color: #fcd34d; background: #fffbeb; }
