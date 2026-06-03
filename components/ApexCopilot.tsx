@@ -584,32 +584,75 @@ export default function ApexCopilot() {
           )}
 
           {!minimized && (
-            <div style={{ display: 'flex', gap: 8, padding: 10, borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
-              <input
-                value={input}
-                onChange={event => setInput(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter') send()
-                }}
-                placeholder={`Perguntar no modo ${MODE_LABEL[mode]}`}
-                style={{ flex: 1, border: '1px solid #cfd6e4', borderRadius: 8, padding: '9px 10px', fontSize: 12 }}
-              />
-              <button
-                onClick={() => send()}
-                disabled={loading}
-                style={{
-                  border: 0,
-                  borderRadius: 8,
-                  background: '#0f4c81',
-                  color: '#fff',
-                  padding: '9px 12px',
-                  fontSize: 12,
-                  fontWeight: 900,
-                  cursor: loading ? 'wait' : 'pointer',
-                }}
-              >
-                Enviar
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 10, borderTop: '1px solid #e2e8f0', background: '#f8fafc' }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <textarea
+                  value={input}
+                  onChange={event => setInput(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                      event.preventDefault()
+                      send()
+                    }
+                  }}
+                  placeholder={`Cole texto longo, página, relatório ou pergunta. Use Ctrl+Enter para enviar.`}
+                  style={{
+                    flex: 1,
+                    border: '1px solid #cfd6e4',
+                    borderRadius: 8,
+                    padding: '9px 10px',
+                    fontSize: 12,
+                    fontFamily: 'inherit',
+                    minHeight: '72px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordWrap: 'break-word',
+                    resize: 'vertical',
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <button
+                    onClick={() => send()}
+                    disabled={loading || input.trim().length === 0}
+                    style={{
+                      border: 0,
+                      borderRadius: 8,
+                      background: loading || input.trim().length === 0 ? '#cbd5e1' : '#0f4c81',
+                      color: '#fff',
+                      padding: '9px 12px',
+                      fontSize: 12,
+                      fontWeight: 900,
+                      cursor: loading || input.trim().length === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    Enviar
+                  </button>
+                  {input.trim().length > 0 && (
+                    <button
+                      onClick={() => setInput('')}
+                      disabled={loading}
+                      style={{
+                        border: 0,
+                        borderRadius: 8,
+                        background: loading ? '#cbd5e1' : '#e2e8f0',
+                        color: loading ? '#9ca3af' : '#475569',
+                        padding: '6px 10px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+              </div>
+              {input.trim().length > 0 && (
+                <div style={{ fontSize: 11, color: '#667085', textAlign: 'right' }}>
+                  {input.length} caracteres
+                </div>
+              )}
             </div>
           )}
         </div>
