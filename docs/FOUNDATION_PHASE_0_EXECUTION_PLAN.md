@@ -11,8 +11,8 @@
 
 Este documento detalha a sequência EXATA de execução para o reset da nova foundation Supabase, com foco em:
 1. **Ordem de migração** para Phase 0 foundation reset
-2. **RLS sem anonymous fallback** para dados internos (Option B do Owner)
-3. **Preservação e import de dados** (Categorias A+B+D)
+2. **RLS sem anonymous fallback** para operational data (dados operacionais críticos)
+3. **Preservação e import de dados** (operational-data-only: 24 tabelas críticas preservadas)
 4. **Validação em Preview** com testes de cada role
 5. **Rollout staged** Preview → Production
 6. **Rollback procedures** com restore sequencial
@@ -81,21 +81,20 @@ Este documento detalha a sequência EXATA de execução para o reset da nova fou
 
 **Objetivo:** Implementar RLS sem anonymous fallback para dados internos (Option B)
 
-**Tabelas Críticas (Categoria A):**
+**Operational Data Only – PRESERVE Scope (24 Items):**
 ```
-projects, clients, project_members, contracts
+auth.users, profiles, user_roles, projects, clients, project_members, contracts
 revenue_records, revenue_installments, revenue_events
 proposals, proposal_items
 opportunities, opportunity_services
-profiles, user_roles
-documents, bim3d_analyses, floor_plans, rdo_reports, video_analyses
-services_catalog, brand_assets, compliance_checks, due_diligence
+services_catalog, documents, bim3d_analyses, floor_plans, rdo_reports, video_analyses
+brand_assets, compliance_checks, due_diligence
 storage.objects
 ```
 
-**Estratégia RLS por Categoria:**
+**Estratégia RLS – Operational Data Protection:**
 
-#### A1: Dados de Projeto (project_id scoped)
+#### Project-Scoped Operational Data (project_id-based access)
 - `projects`: `authenticated` + `(project_id IN select id from projects where owner_id = auth.uid())`
 - `project_members`: `authenticated` + `(project_id IN select project_id from project_members where user_id = auth.uid())`
 - `documents`: `authenticated` + `(project_id IN select project_id from project_members where user_id = auth.uid())`
@@ -131,15 +130,15 @@ CREATE POLICY "members_view_team_projects" ON projects
   );
 ```
 
-#### A2: Dados de Faturamento (revenue_*)
+#### Revenue & Financial Operational Data
 - `revenue_records`, `revenue_installments`, `revenue_events`: Scoped to `authenticated` + elevated roles (manager/finance)
 - Sem fallback `authenticated` broad → Requer explicit role grant
 
-#### A3: Dados de Identidade
+#### User Identity & Roles Operational Data
 - `profiles`: `authenticated` + `(user_id = auth.uid())`
 - `user_roles`: `authenticated` + `(user_id = auth.uid())` ou elevated role for management
 
-#### A4: Dados Internos sem project_id (Categoria A3/A4)
+#### Internal Operational Data (non-project-scoped)
 - `brand_assets`, `compliance_checks`, `due_diligence`: `authenticated` + `is_elevated_role(auth.uid())` custom function
 - Sem fallback broad → Admin-only access
 
@@ -170,7 +169,7 @@ CREATE POLICY "authenticated_users_view_bucket" ON storage.objects
 -- 1. Desabilitar triggers e constraints temporariamente
 ALTER TABLE projects DISABLE TRIGGER ALL;
 ALTER TABLE revenue_records DISABLE TRIGGER ALL;
--- ... desabilitar para todas as tabelas Categoria A+B
+-- ... desabilitar para todas as tabelas operacionais (operational-data-only PRESERVE scope)
 
 -- 2. Importar data from CSV/JSON-L backups
 -- Via supabase-cli ou pg_restore (se backup era pg_dump)
@@ -354,7 +353,7 @@ SELECT policyname FROM pg_policies WHERE tablename = 'projects';
 
 ### Security & RLS
 - [ ] Advisor P0 = 0 findings (anonymous + security_definer + policy_always_true)
-- [ ] Cada tabela Categoria A tem mínimo RLS `authenticated + is_anonymous = false`
+- [ ] Cada tabela operational-data-only tem mínimo RLS `authenticated + is_anonymous = false`
 - [ ] Anon role bloqueado de internal data tables
 - [ ] Service role pode bypass (verificado)
 - [ ] Smoke test Production PASSADO
@@ -363,7 +362,7 @@ SELECT policyname FROM pg_policies WHERE tablename = 'projects';
 - [ ] Row counts ±5% de backup (tolerance para cleanup)
 - [ ] Foreign key constraints sem orphans
 - [ ] Timestamps preserved (created_at, updated_at)
-- [ ] No data loss em Categorias A+B (verificado pós-import)
+- [ ] No data loss em operational-data-only (verificado pós-import)
 
 ### Operational Readiness
 - [ ] App funcionando com nova RLS policies
@@ -453,10 +452,12 @@ Próximo: Phase 1 – Feature development em nova foundation."
 
 ## IX. Decisões Finais do Owner (Necessárias pré-execução)
 
-- [ ] **Decisão 1:** Timeline confirmada (Opção A: 4-6 semanas; Opção B: data específica; Opção C: após PR #84/#87)
-- [ ] **Decisão 2:** Data preservation level (Opção A: A+B+C+D; Opção B: A+B+D; Opção C: A+D)
-- [ ] **Decisão 3:** Anonymous access (Opção B CONFIRMADA: Disable em Auth > Providers)
-- [ ] **Decisão 4:** Validação strategy (Opção A RECOMENDADA: Preview first, dann Prod staged)
+- [x] **Decisão 1:** Timeline confirmada — **4 weeks from June 3, 2026** (execution window established by Owner)
+- [x] **Decisão 2:** Data preservation level — **OPERATIONAL-DATA-ONLY** (24 PRESERVE items only, 9 categories excluded from preservation)
+  - **PRESERVE (24 items):** auth.users, profiles, user_roles, projects, clients, project_members, contracts, revenue_records, revenue_installments, revenue_events, proposals, proposal_items, opportunities, opportunity_services, services_catalog, documents, bim3d_analyses, floor_plans, rdo_reports, video_analyses, brand_assets, compliance_checks, due_diligence, storage.objects
+  - **DO NOT PRESERVE (9 categories):** Logs & Temporary Data, Cache & Generated Content, Technical Debt, QA/Test/Demo Data, Duplicates & Empty Tables, Non-Operational Historical Data, Staging Data, Temporary Logs, Other Non-Operational Content
+- [x] **Decisión 3:** Anonymous access — **DISABLED in Auth > Providers** (RLS enforces `auth.role()='authenticated' AND auth.jwt()->>'is_anonymous'='false'`)
+- [x] **Decisión 4:** Validação strategy — **Preview-first staged approach** (Preview environment first, then Production with controlled rollback plan)
 
 ---
 
