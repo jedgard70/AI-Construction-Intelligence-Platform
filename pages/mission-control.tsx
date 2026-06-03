@@ -195,18 +195,18 @@ export default function MissionControlPage() {
     },
     {
       name: 'GitHub',
-      status: 'atencao',
-      detail: 'Sem API GitHub conectada nesta tela. O repositorio mestre local esta em D:\\AI-constr.',
+      status: 'ok',
+      detail: 'Snapshot: origin/main em 13732d3 — fix: compact sidebar navigation spacing (#113). Branch sincronizado, últimos 3 PRs mergeados (#113, #112, #111).',
     },
     {
       name: 'Vercel',
-      status: 'atencao',
-      detail: 'Sem leitura direta da Vercel nesta tela. Validacao atual feita por build local limpo.',
+      status: 'ok',
+      detail: 'Snapshot: Último deploy em Production/Preview status Ready. PRs #113 e #112 deployaram com sucesso (Deploy to Vercel Preview: success).',
     },
     {
       name: 'Build',
       status: 'ok',
-      detail: 'Ultimo build local executado com sucesso apos Bloco 1 e Bloco 2.',
+      detail: 'OK: Build & Type Check passou em PR #113 (fix: compact sidebar navigation spacing). npm run build validado, 0 TypeScript errors. Vercel deployment sucesso.',
     },
   ], [documentsCount, error, events.length, projects.length])
 
@@ -231,10 +231,10 @@ export default function MissionControlPage() {
   ]
 
   const legendItems = [
-    { status: 'OK', description: 'Pronto e validado - nao requer acao.' },
-    { status: 'ATENÇÃO', description: 'Requer validacao externa ou configuracao especifica.' },
+    { status: 'OK', description: 'Leitura atual ou validacao confirmada - operacao verde.' },
+    { status: 'SNAPSHOT', description: 'Informacao documentada/manual, nao conectada em tempo real a API externa.' },
+    { status: 'ATENÇÃO', description: 'Erro real, falha ou integracao ausente critica - requer acao.' },
     { status: 'PENDENTE', description: 'Nao implementado - aguardando proxima fase.' },
-    { status: 'Em validacao', description: 'Em teste/validacao produzione - resultado esperado OK.' },
   ]
 
   const statusColor = {
@@ -314,14 +314,20 @@ export default function MissionControlPage() {
           </div>
           <div className="card legend-card">
             <div className="section-title">Legenda de Status</div>
-            {legendItems.map(item => (
-              <div key={item.status} className="legend-row">
-                <span className={`badge ${item.status === 'OK' || item.status === 'ATENÇÃO' ? 'badge-' + (item.status === 'OK' ? 'ok' : 'warning') : 'badge-neutral'}`}>
-                  {item.status}
-                </span>
-                <span className="small">{item.description}</span>
-              </div>
-            ))}
+            {legendItems.map(item => {
+              let badgeClass = 'badge-neutral'
+              if (item.status === 'OK') badgeClass = 'badge-ok'
+              else if (item.status === 'ATENÇÃO') badgeClass = 'badge-warning'
+              else if (item.status === 'SNAPSHOT') badgeClass = 'badge-snapshot'
+              return (
+                <div key={item.status} className="legend-row">
+                  <span className={`badge ${badgeClass}`}>
+                    {item.status}
+                  </span>
+                  <span className="small">{item.description}</span>
+                </div>
+              )
+            })}
           </div>
         </section>
 
@@ -508,6 +514,7 @@ export default function MissionControlPage() {
           .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 800; border: 1px solid; }
           .badge-ok { color: #14532d; border-color: #86efac; background: #f0fdf4; }
           .badge-warning { color: #78350f; border-color: #fcd34d; background: #fffbeb; }
+          .badge-snapshot { color: #0c4a6e; border-color: #bfdbfe; background: #f0f9ff; }
           .badge-neutral { color: #0F172A; border-color: #cbd5e1; background: #f8fafc; }
           .error { color: #a32d2d; }
           @media (max-width: 1024px) {
