@@ -146,29 +146,46 @@ Estado resumido:
 
 ## 4. Proxima acao unica
 
-**Checkpoints Completados na Retomada**:
+**Checkpoints Fundamentais Completados**:
 
-### Checkpoint 3.3 — Owner Command Chat: 100% CONCLUÍDO ✅
-Resultados documentados em `docs/CHECKLIST_3_3_OWNER_COMMAND_CHAT.md`.
-- Todos os 15 requisitos validados ✅
-- Frontend + Backend implementados ✅
-- Safety Gate integrado ✅
-- Documentação completa ✅
+### Checkpoint 3.1 — Governance Consolidation ✅
+- Documentação de governança consolidada
+- Três níveis de autonomia formalizados
 
-### Checkpoint 3.5 — Storage Validation: 100% CONCLUÍDO ✅
-Resultados documentados em `docs/CHECKLIST_3_5_STORAGE.md`.
-- Todos os 15 requisitos validados ✅
-- Storage subsystem funcional ✅
-- RLS policies robustas ✅
+### Checkpoint 3.2 — Help AI / Apex AI Integration ✅
+- Help AI e Apex AI integrados e funcionando
+- Owner recognition implementado
+
+### Checkpoint 3.3 — Owner Command Chat ✅
+- Owner continuity com hierarquia de assentos
+- Backend enforcement de acesso
+- Documentação: `docs/CHECKLIST_3_3_OWNER_COMMAND_CHAT.md`
+
+### Checkpoint 3.4 — Supabase Foundation Phase 0 ✅
+- Estratégia de segurança Supabase definida
+- RLS policies implementadas
+
+### Checkpoint 3.5 — Storage Validation ✅
+- Bucket privado, APIs funcionais, UI integrada
+- Documentação: `docs/CHECKLIST_3_5_STORAGE.md`
+
+### Checkpoint 3.6 — Final Integration & E2E ✅
+- 14 validações de integração: 100% PASS
+- 0 critical bugs encontrados
+- Build + CI/CD: 100% green
+- Nenhum segredo exposto
+- Plataforma pronta para fase operacional
+- Documentação: `docs/CHECKLIST_3_6_FINAL_INTEGRATION_E2E.md`
 
 ---
 
-**Próxima Ação: Prosseguir para Checkpoint 3.6 — Final Integration & E2E**
+**Próxima Ação: Prosseguir para Checkpoint 3.7 — Revenue & CRM Integration**
 
 Conforme documentado em `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md`:
-- Objetivo: Integração de todas as features com E2E testing e validação
-- Escopo: End-to-end testing, integração entre componentes, validação de fluxos
-- Checkpoints prerequisitos: 3.1 ✅ + 3.2 ✅ + 3.3 ✅ + 3.4 ✅ + 3.5 ✅
+- Objetivo: Integração de módulos comerciais (CRM, proposals, contracts, payments)
+- Escopo: Pipeline comercial, integração com sistemas de pagamento, analytics
+- Checkpoints prerequisitos: ✅ TODOS COMPLETADOS (3.1 + 3.2 + 3.3 + 3.4 + 3.5 + 3.6)
+- Plataforma pronta para fase operacional/revenue
 
 Nenhuma outra acao deve ser misturada a essa retomada.
 

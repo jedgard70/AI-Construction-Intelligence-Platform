@@ -28,6 +28,7 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 | 3.3 | Owner Command Chat | ✅ Completo | 2026-06-03 |
 | 3.4 | Supabase Foundation Phase 0 | ✅ Completo | ~2026-06-01 |
 | 3.5 | Storage Validation | ✅ Completo | 2026-06-03 |
+| 3.6 | Final Integration & E2E | ✅ Completo | 2026-06-03 |
 
 ### Checkpoint 3.1 — Governance Consolidation ✅
 - Documentos consolidados: `AGENTS.md`, `MCP_WINDOWS_GOVERNANCE.md`, `CODEX_POLICY.md`, `CODEX_OPERATIONAL_RULES.md`
@@ -69,21 +70,35 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 - Persistência validada
 - Status: **100% concluído. Documento de validação: `docs/CHECKLIST_3_5_STORAGE.md`**
 
+### Checkpoint 3.6 — Final Integration & E2E ✅
+- 14 validações de integração completadas: Login, Owner recognition, Owner Command Chat, Security, Storage, Safety Gate
+- Build & Type Check: 100% passing
+- Vercel Preview deploy: funcional
+- 0 critical bugs encontrados
+- Owner/Admin/User/Guest hierarchy validado em todas as camadas
+- Nenhum segredo exposto em código ou docs
+- Escopo limpo (nenhum arquivo não autorizado)
+- Plataforma pronta para próxima fase operacional
+- Status: **100% concluído. Documento de validação: `docs/CHECKLIST_3_6_FINAL_INTEGRATION_E2E.md`**
+
 ---
 
 ## 3. Current Checkpoint 🔄
 
-### Checkpoint 3.6 — Final Integration & E2E
+### Checkpoint 3.7 — Revenue & CRM Integration
 - **Status:** Próximo na fila
-- **Objetivo:** Integração de todas as features com E2E testing e validação
-- **Escopo:** End-to-end testing, integração entre componentes, validação de fluxos
-- **Blocker atual:** Nenhum (checkpoint 3.5 concluído)
+- **Objetivo:** Integração de módulos comerciais e sistema de revenue
+- **Escopo:** CRM, proposals, contracts, payment integration, analytics
+- **Blocker atual:** Nenhum (checkpoint 3.6 concluído, plataforma pronta)
 
 ---
 
 ## 4. Next Checkpoints (Em Fila) ⏭️
 
-Nenhuma checkpoint está pendente. Próximo passo: **Checkpoint 3.6 — Final Integration & E2E**
+### Checkpoint 3.7 — Revenue & CRM Integration ⏳
+- **Status:** Aguardando início
+- **Objetivo:** Implementar pipeline comercial: CRM, proposals, contracts
+- **Prerequisitos:** ✅ 3.1 + ✅ 3.2 + ✅ 3.3 + ✅ 3.4 + ✅ 3.5 + ✅ 3.6 (todos completados)
 
 ---
 
