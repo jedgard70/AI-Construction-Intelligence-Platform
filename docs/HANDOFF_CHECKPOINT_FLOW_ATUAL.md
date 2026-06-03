@@ -26,6 +26,7 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 | 3.1 | Governance Consolidation | ✅ Completo | ~2026-05-25 |
 | 3.2 | Help AI / Apex AI Integration | ✅ Completo | ~2026-05-30 |
 | 3.4 | Supabase Foundation Phase 0 | ✅ Completo | ~2026-06-01 |
+| 3.5 | Storage Validation | ✅ Completo | 2026-06-03 |
 
 ### Checkpoint 3.1 — Governance Consolidation ✅
 - Documentos consolidados: `AGENTS.md`, `MCP_WINDOWS_GOVERNANCE.md`, `CODEX_POLICY.md`, `CODEX_OPERATIONAL_RULES.md`
@@ -45,36 +46,36 @@ Development segue modelo checkpoint-sequencial. Cada checkpoint deve estar 100% 
 - RLS policies parcialmente auditadas
 - Status: **Conceitual aprovado, não tecnicamente executado (aguarda Phase 1)**
 
+### Checkpoint 3.5 — Storage Validation ✅
+- Bucket `project-files` validado (privado, RLS habilitado)
+- Tabela `documents` validada (metadata completa, índices, constraints)
+- 3 API endpoints validados: upload (POST), signed-url (POST), list (GET)
+- UI integração validada em `/nova-analise` (upload) e `/projeto/[id]` (list/download)
+- RLS policies validadas (tabela + storage bucket)
+- Controle de acesso validado (owner/member permitido, guest bloqueado)
+- E2E testing validado com sessão autenticada
+- Persistência validada
+- Status: **100% concluído. Documento de validação: `docs/CHECKLIST_3_5_STORAGE.md`**
+
 ---
 
 ## 3. Current Checkpoint 🔄
 
-### Checkpoint 3.3 — Owner Command Chat
-- **Status:** Em desenvolvimento na branch `claude/tender-wright-kMmx4`
-- **Objetivo:** Integrar fluxo de chat de comandos para owner
-- **Escopo:** Backend + integração frontend
-- **Blocker atual:** Nenhum
+### Checkpoint 3.6 — Final Integration & E2E
+- **Status:** Próximo na fila
+- **Objetivo:** Integração de todas as features com E2E testing e validação
+- **Escopo:** End-to-end testing, integração entre componentes, validação de fluxos
+- **Blocker atual:** Nenhum (checkpoint 3.5 concluído)
 
 ---
 
 ## 4. Next Checkpoints (Em Fila) ⏭️
 
-### Checkpoint 3.5 — Storage Validation
-- **Objetivo:** Validar bucket `project-files`, documentos metadata, APIs upload/download, signed URLs, RLS policies, integração UI
-- **Tarefas:**
-  1. Validar bucket `project-files` existe e está configurado
-  2. Confirmar table `documents` com metadata (storage_path, file_size, file_type, etc.)
-  3. Testar APIs upload/download em /nova-analise e /projeto/[id]
-  4. Validar signed URLs funcionam
-  5. Verificar RLS policies permitem acesso Owner/member, bloqueiam guest
-  6. Testar integração UI completa
-  7. E2E tests
-  8. Criar `docs/CHECKLIST_3_5_STORAGE.md`
-- **Blocker atual:** Nenhum (aguarda conclusão 3.3)
-
-### Checkpoint 3.6 — Final Integration & E2E
-- **Objetivo:** Integração de todas as features com E2E testing e validação
-- **Blocker atual:** Nenhum (aguarda conclusão 3.5)
+### Checkpoint 3.3 — Owner Command Chat (PENDENTE)
+- **Status:** Aguardando priorização
+- **Objetivo:** Integrar fluxo de chat de comandos para owner
+- **Escopo:** Backend + integração frontend
+- **Nota:** Esta checkpoint foi ultrapassada na ordem de execução devido a priorização de Storage Validation (3.5)
 
 ---
 
