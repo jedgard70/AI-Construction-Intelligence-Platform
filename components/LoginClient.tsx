@@ -83,23 +83,23 @@ export default function LoginClient() {
           <div className="acip-logo-row">
             <div className="acip-logo-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                stroke="#0f4c81" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4"/>
               </svg>
             </div>
             <div>
-              <p className="acip-logo-title">Atlas Construction Intelligence</p>
+              <p className="acip-logo-title">APEX GLOBAL AI</p>
               <p className="acip-logo-sub">v5.3 · Enterprise</p>
             </div>
           </div>
 
           <div>
             <h1 className="acip-brand-heading">
-              IA Especializada em<br />Construção Civil
+              Inteligência Operacional<br />para Construção & Negócios
             </h1>
             <p className="acip-brand-desc">
-              Ecossistema operacional inteligente para engenharia civil,
-              BIM e inteligência executiva.
+              Plataforma de IA multi-agente para engenharia civil,
+              BIM, EVM e inteligência executiva integrada.
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export default function LoginClient() {
           </div>
 
           <p className="acip-footer">
-            © 2026 Atlas Construction Intelligence · Todos os direitos reservados
+            © 2026 Apex Global AI · Todos os direitos reservados
           </p>
         </aside>
 
@@ -229,10 +229,10 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --amber:    #BA7517;
-  --amber-dk: #9a6010;
-  --amber-lt: #faeeda;
-  --radius:   10px;
+  --apex-blue:    #0f4c81;
+  --apex-blue-dk: #0a3860;
+  --apex-blue-lt: #edf3ff;
+  --radius:       10px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -242,7 +242,7 @@ const CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f4f2ee;
+  background: #f0f3f8;
   padding: 2rem;
   font-family: 'DM Sans', system-ui, sans-serif;
 }
@@ -254,13 +254,13 @@ const CSS = `
   grid-template-columns: 1fr 1fr;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid #d8d4cc;
+  border: 1px solid #d6e2f0;
   box-shadow: 0 8px 40px rgba(0,0,0,0.12);
 }
 
 /* ── Painel esquerdo ── */
 .acip-brand {
-  background: #1a1a18;
+  background: linear-gradient(135deg, #0f4c81 0%, #0a3860 100%);
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -276,7 +276,7 @@ const CSS = `
 
 .acip-logo-icon {
   width: 36px; height: 36px;
-  background: var(--amber);
+  background: #fff;
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -323,14 +323,14 @@ const CSS = `
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #242420;
+  background: rgba(255,255,255,0.08);
   border-radius: var(--radius);
-  border: 1px solid #2e2e2a;
+  border: 1px solid rgba(255,255,255,0.12);
 }
 
 .acip-feat-icon {
   font-size: 16px;
-  color: var(--amber);
+  color: var(--apex-blue-lt);
   width: 20px;
   text-align: center;
   flex-shrink: 0;
@@ -365,7 +365,7 @@ const CSS = `
   display: flex;
   gap: 4px;
   margin-bottom: 1.5rem;
-  background: #f4f2ee;
+  background: #f0f3f8;
   padding: 4px;
   border-radius: 8px;
 }
@@ -435,17 +435,17 @@ const CSS = `
   font-size: 13px;
   font-family: inherit;
   color: #1a1a18;
-  background: #faf9f6;
-  border: 1px solid #d8d4cc;
+  background: #f9fafc;
+  border: 1px solid #d6e2f0;
   border-radius: var(--radius);
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .acip-input:focus {
-  border-color: var(--amber);
+  border-color: var(--apex-blue);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(186,117,23,0.12);
+  box-shadow: 0 0 0 3px rgba(15,76,129,0.12);
 }
 
 .acip-input--pwd { padding-right: 38px; }
@@ -483,11 +483,11 @@ const CSS = `
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: rgba(186,117,23,.08);
-  border: 1px solid rgba(186,117,23,.22);
+  background: rgba(15,76,129,.08);
+  border: 1px solid rgba(15,76,129,.22);
   border-radius: var(--radius);
   font-size: 12px;
-  color: #7a5010;
+  color: #0a3860;
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -495,7 +495,7 @@ const CSS = `
 .acip-btn-primary {
   width: 100%;
   padding: 12px;
-  background: var(--amber);
+  background: var(--apex-blue);
   border: none;
   border-radius: var(--radius);
   color: #fff;
@@ -510,7 +510,7 @@ const CSS = `
   transition: background 0.15s, transform 0.1s;
   margin-top: 0.25rem;
 }
-.acip-btn-primary:hover:not(:disabled) { background: var(--amber-dk); }
+.acip-btn-primary:hover:not(:disabled) { background: var(--apex-blue-dk); }
 .acip-btn-primary:active:not(:disabled) { transform: scale(0.98); }
 .acip-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -527,11 +527,11 @@ const CSS = `
 .acip-demo-note {
   margin-top: 1rem;
   padding: 10px 14px;
-  background: rgba(186,117,23,.08);
-  border: 1px solid rgba(186,117,23,.25);
+  background: rgba(15,76,129,.08);
+  border: 1px solid rgba(15,76,129,.25);
   border-radius: var(--radius);
   font-size: 12px;
-  color: #7a5010;
+  color: #0a3860;
   line-height: 1.5;
 }
 
