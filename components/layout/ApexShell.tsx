@@ -57,13 +57,13 @@ export default function ApexShell({ children }: Props) {
         </div>
 
         {MENU.map((group) => (
-          <div key={group.section} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--apx-muted)', padding: '6px 8px' }}>{group.section}</div>
-            <div style={{ display: 'grid', gap: 4 }}>
+          <div key={group.section} style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--apx-muted)', padding: '4px 8px 6px' }}>{group.section}</div>
+            <div style={{ display: 'grid', gap: 2 }}>
               {group.items.map((item) => {
                 const active = router.pathname === item.href || router.pathname.startsWith(item.href + '/')
                 return (
-                  <Link key={item.href} href={item.href} style={{ textDecoration: 'none', color: active ? '#fff' : 'var(--apx-text)', background: active ? 'var(--apx-primary)' : 'transparent', border: `1px solid ${active ? 'var(--apx-primary)' : 'transparent'}`, borderRadius: 8, padding: '8px 10px', fontSize: 13, fontWeight: active ? 700 : 500 }}>
+                  <Link key={item.href} href={item.href} style={{ textDecoration: 'none', color: active ? '#fff' : 'var(--apx-text)', background: active ? 'var(--apx-primary)' : 'transparent', border: `1px solid ${active ? 'var(--apx-primary)' : 'transparent'}`, borderRadius: 8, padding: '6px 10px', fontSize: 13, fontWeight: active ? 700 : 500 }}>
                     {item.label}
                   </Link>
                 )
