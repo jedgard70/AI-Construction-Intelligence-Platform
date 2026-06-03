@@ -639,32 +639,111 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
               ))}
             </div>
 
-            {/* ── 4 Cards Agentes IA ── */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10 }}>
-              {[
-                { id:'bim',    icon:'🏢', label:'BIM Intelligence',    sub:'Clash detection · 3D/4D/5D/6D/7D',   color:'#185FA5', bg:'#EFF4FF',
-                  prompt:'Você é o BIM_Intelligence_AI. Analise o portfólio de obras e simule uma detecção de clashes BIM. Retorne: 1) Número de interferências detectadas por disciplina (Estrutural, Hidráulica, Elétrica, HVAC); 2) Nível de severidade (Crítico/Médio/Baixo); 3) Top 3 conflitos prioritários com descrição técnica; 4) Índice 4D de cronograma e 5D de custo vinculados; 5) Recomendações de resolução. Use dados fictícios realistas de obras brasileiras.' },
-                { id:'evm',    icon:'📊', label:'EVM Analytics',        sub:'CPI, SPI, EAC, VAC, TCPI em tempo real', color:'#534AB7', bg:'#F0EEFF',
-                  prompt:'Você é o EVM_Analytics_AI. Calcule e analise os indicadores de Earned Value Management do portfólio. Forneça: 1) CPI (Cost Performance Index) por projeto; 2) SPI (Schedule Performance Index); 3) EAC (Estimate at Completion); 4) VAC (Variance at Completion); 5) TCPI (To-Complete Performance Index); 6) Análise da Curva S; 7) Previsão de encerramento e custo final. Use os projetos do portfólio e mostre cálculos detalhados.' },
-                { id:'nr',     icon:'🛡', label:'Conformidade NR',      sub:'NR-6, NR-10, NR-18, NR-33, NR-35',  color:'#3B6D11', bg:'#EAF3DE',
-                  prompt:'Você é o NR_Compliance_AI. Faça uma auditoria completa de conformidade com Normas Regulamentadoras no portfólio de obras. Analise: 1) NR-18 (Segurança na Construção Civil) — itens críticos; 2) NR-6 (EPIs) — cobertura e adequação; 3) NR-10 (Eletricidade) — pontos de risco; 4) NR-33 (Espaços Confinados); 5) NR-35 (Trabalho em Altura). Para cada NR: status de conformidade, pendências, prazo para regularização e risco de multa (valor estimado). Emita score geral de segurança.' },
-                { id:'multi',  icon:'🤖', label:'Multi-Agent AI',       sub:'8 especialistas cognitivos simultâneos', color:'#A32D2D', bg:'#FCEBEB',
-                  prompt:'Você é o MultiAgent_Coordinator. Coordene 8 agentes especializados e produza uma análise estratégica completa do portfólio: [Cost_Controller_AI] Desvios de custo e alertas SINAPI; [Construction_Planner_AI] Caminho crítico e reprogramações; [BIM_Intelligence_AI] Detecção de clashes e compatibilização; [Legal_Compliance_AI] Conformidade contratual e regulatória; [ESG_Monitor_AI] Score de sustentabilidade; [Risk_Assessment_AI] Matriz de riscos atualizada; [Market_Intelligence_AI] Benchmarking setorial; [Finance_Optimizer_AI] Fluxo de caixa e otimização. Consolide em relatório executivo com score geral 0-100 e top 5 ações prioritárias.' },
-              ].map(ag => (
-                <div key={ag.id}
-                  onClick={() => { setAiAgentModal(ag.id); setAgentResult('') }}
-                  style={{ background:'#fff', border:'1px solid #e5e8f0', borderRadius:12,
-                    padding:'14px 16px', cursor:'pointer', transition:'all .15s',
-                    borderLeftWidth:3, borderLeftColor:ag.color }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background=ag.bg; (e.currentTarget as HTMLElement).style.borderColor=ag.color }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background='#fff'; (e.currentTarget as HTMLElement).style.borderLeftColor=ag.color; (e.currentTarget as HTMLElement).style.borderTopColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderRightColor='#e5e8f0'; (e.currentTarget as HTMLElement).style.borderBottomColor='#e5e8f0' }}>
-                  <div style={{ fontSize:22, marginBottom:6 }}>{ag.icon}</div>
-                  <div style={{ fontSize:12, fontWeight:700, color:'#1a1f36', marginBottom:3 }}>{ag.label}</div>
-                  <div style={{ fontSize:10, color:'#8b93a7', lineHeight:1.4 }}>{ag.sub}</div>
-                  <div style={{ marginTop:10, fontSize:10, fontWeight:600, color:ag.color,
-                    display:'flex', alignItems:'center', gap:4 }}>▶ Executar agente</div>
+            {/* ── Resumo Executivo ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{
+                background: '#fff', border: '1px solid #e5e8f0',
+                borderRadius: 12, padding: '16px',
+              }}>
+                <div style={{ fontSize: 11, color: '#8b93a7', marginBottom: 8,
+                  display: 'flex', alignItems: 'center', gap: 4 }}>
+                  📊 Resumo de Projetos
                 </div>
-              ))}
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1f36', marginBottom: 3 }}>
+                  {projects.length} projetos
+                </div>
+                <div style={{ fontSize: 10, color: '#a0a8bb' }}>
+                  {projects.filter(p => p.status === 'em_andamento').length} em andamento
+                </div>
+              </div>
+              <div style={{
+                background: '#fff', border: '1px solid #e5e8f0',
+                borderRadius: 12, padding: '16px',
+              }}>
+                <div style={{ fontSize: 11, color: '#8b93a7', marginBottom: 8,
+                  display: 'flex', alignItems: 'center', gap: 4 }}>
+                  ⚠️ Pendências Críticas
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#A32D2D', marginBottom: 3 }}>
+                  {projects.filter(p => p.status === 'atrasado').length} atrasado(s)
+                </div>
+                <div style={{ fontSize: 10, color: '#a0a8bb' }}>
+                  Requerem atenção imediata
+                </div>
+              </div>
+              <div style={{
+                background: '#fff', border: '1px solid #e5e8f0',
+                borderRadius: 12, padding: '16px',
+              }}>
+                <div style={{ fontSize: 11, color: '#8b93a7', marginBottom: 8,
+                  display: 'flex', alignItems: 'center', gap: 4 }}>
+                  ✅ Status de Produção
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#3B6D11', marginBottom: 3 }}>
+                  100% Operacional
+                </div>
+                <div style={{ fontSize: 10, color: '#a0a8bb' }}>
+                  Plataforma pronta
+                </div>
+              </div>
+            </div>
+
+            {/* ── Links para Módulos Especializados ── */}
+            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#8b93a7', marginBottom: 10,
+                textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Acessar Módulos Especializados
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                <a href='/bim-ops' style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
+                  background: '#fff', border: '1px solid #e5e8f0', borderRadius: 8,
+                  textDecoration: 'none', color: '#185FA5', fontSize: 12, fontWeight: 500,
+                  transition: 'all 0.15s', cursor: 'pointer',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EFF4FF';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#185FA5' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#e5e8f0' }}>
+                  <span style={{ fontSize: 14 }}>🏢</span> BIM OPS
+                </a>
+                <a href='/orcamento' style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
+                  background: '#fff', border: '1px solid #e5e8f0', borderRadius: 8,
+                  textDecoration: 'none', color: '#534AB7', fontSize: 12, fontWeight: 500,
+                  transition: 'all 0.15s', cursor: 'pointer',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#F0EEFF';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#534AB7' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#e5e8f0' }}>
+                  <span style={{ fontSize: 14 }}>📊</span> Orçamento
+                </a>
+                <a href='/qualidade' style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
+                  background: '#fff', border: '1px solid #e5e8f0', borderRadius: 8,
+                  textDecoration: 'none', color: '#3B6D11', fontSize: 12, fontWeight: 500,
+                  transition: 'all 0.15s', cursor: 'pointer',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EAF3DE';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#3B6D11' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#e5e8f0' }}>
+                  <span style={{ fontSize: 14 }}>🛡️</span> Qualidade
+                </a>
+                <a href='/mission-control' style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
+                  background: '#fff', border: '1px solid #e5e8f0', borderRadius: 8,
+                  textDecoration: 'none', color: '#185FA5', fontSize: 12, fontWeight: 500,
+                  transition: 'all 0.15s', cursor: 'pointer',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#EFF4FF';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#185FA5' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff';
+                  (e.currentTarget as HTMLElement).style.borderColor = '#e5e8f0' }}>
+                  <span style={{ fontSize: 14 }}>🎯</span> Mission Control
+                </a>
+              </div>
             </div>
 
             {/* Linha central */}
