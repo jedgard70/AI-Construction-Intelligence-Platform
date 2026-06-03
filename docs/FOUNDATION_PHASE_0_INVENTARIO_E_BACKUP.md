@@ -70,7 +70,35 @@ Tabelas com policies aceitas por `authenticated` (incluindo anonymous):
 
 ---
 
-## III. Tabelas Mandatórias para Preservação
+## III. Estratégia de Preservação: Dados Operacionais Reais Apenas
+
+**OWNER DECISION (2026-06-03):** Mudança paradigmática de categorias para preservação restrita a dados operacionais reais.
+
+### Escopo Preservação (OPERATIONAL-DATA-ONLY)
+**PRESERVE:**
+- Authentication & Identity: `auth.users`, `profiles`, `user_roles` (usuários e acesso reais)
+- Real Projects: `projects`, `clients`, `project_members` (projetos em operação)
+- Real Contracts: `contracts` (documentação contratual ativa)
+- Real Revenue Cycle: `revenue_records`, `revenue_installments`, `revenue_events` (faturamento real)
+- Real CRM: `proposals`, `proposal_items`, `opportunities`, `opportunity_services` (pipeline de vendas ativo)
+- Real Catalog: `services_catalog`, `pipeline_stages` (catálogo de serviços operacional)
+- Real Documents: `documents` (artefatos documentais vinculados a projetos reais)
+- Real Analyses: `bim3d_analyses`, `floor_plans`, `rdo_reports`, `video_analyses` (análises vinculadas a projetos reais)
+- Real ArchVis: `brand_assets`, `compliance_checks`, `due_diligence` (ativos operacionais)
+- Real Storage: `storage.objects` (blobs vinculados a projetos reais e documentos reais)
+
+### Escopo Descartar (EXPLICIT EXCLUSIONS)
+**DO NOT PRESERVE:**
+- **Logs & Temporary:** `site_states` (estados temporários de sessão), logs de eventos
+- **Cache & Generated:** `archvis_renders` (renders cacheados, regeneráveis), snapshots gerados
+- **Technical Debt:** `agent_memory`, `agent_tasks`, `autonomous_alerts`, `knowledge_chunks` (obsoleto)
+- **QA/Test/Demo:** Dados de teste, dados de QA, dados de demonstração, staging data
+- **Duplicates & Empty:** Tabelas duplicadas, tabelas vazias, tabelas com <5 registros sem valor operacional
+- **Histórico não-operacional:** Histórico de eventos temporários, sessões expiradas
+
+---
+
+## IV. Tabelas Mandatórias para Preservação
 
 ### Categoria A: Dados Críticos de Negócio (PRESERVE COMPLETO)
 1. **Projetos & Clientes**
@@ -107,23 +135,28 @@ Tabelas com policies aceitas por `authenticated` (incluindo anonymous):
    - `compliance_checks` – verificações de conformidade
    - `due_diligence` – dados de due diligence
 
-### Categoria B: Dados Auxiliares (REVIEW PRÉ-PRESERVAÇÃO)
-- `floor_plans`, `video_projects`, `rdo_reports` – avaliar volume e retenção
-- `agent_memory`, `agent_tasks` – considerar cleanup antes de import
-- `autonomous_alerts`, `knowledge_chunks` – verificar relevância pós-reset
+### Categoria B: Dados Auxiliares (DESCARTE CONFIRMADO)
+**OWNER DECISION (2026-06-03):** NÃO preservar por padrão. Considerar apenas se indispensável operacionalmente:
+- `floor_plans`, `video_projects`, `rdo_reports` – descarte (histórico de análises)
+- `agent_memory`, `agent_tasks` – descarte (technical debt)
+- `autonomous_alerts`, `knowledge_chunks` – descarte (technical debt)
+- Estratégia: Revisar manualmente apenas se operacionalmente crítico
 
-### Categoria C: Dados Ephemeral (CONSIDERAR DESCARTAR)
-- `site_states` – estados temporários de sessão
-- `archvis_renders` – renders cacheados (regeneráveis)
-- Histórico de eventos temporários
+### Categoria C: Dados Ephemeral (DESCARTE CONFIRMADO)
+**OWNER DECISION (2026-06-03):** NÃO preservar por padrão
+- `site_states` – descarte (estados temporários de sessão)
+- `archvis_renders` – descarte (renders cacheados, regeneráveis)
+- Histórico de eventos temporários – descarte
+- Estratégia: Limpar completamente durante reset
 
-### Categoria D: Storage (PRESERVAR COM CUIDADO)
-- `storage.objects` – blobs e arquivos
-- Estratégia: Listar/exportar metadados, preservar blobs importantes
+### Categoria D: Storage (PRESERVAR SELETIVAMENTE)
+- `storage.objects` – preservar APENAS blobs ligados a projetos reais, documentos reais, e ArchVis real
+- Descarte: blobs de QA/teste/demo, caches, staging
+- Estratégia: Auditoria manual de storage_path para confirmar operational value
 
 ---
 
-## IV. Estratégia de Backup e Export
+## V. Estratégia de Backup e Export
 
 ### Fase 1: Snapshot Pré-Reset (PRÉ-FOUNDATION)
 ```
@@ -154,7 +187,7 @@ Validação: Checksum SHA256
 
 ---
 
-## V. Checklist de Validação Pré-Foundation
+## VI. Checklist de Validação Pré-Foundation
 
 ### Dados
 - [ ] Snapshot pg_dump completo capturado e comprimido
@@ -182,7 +215,7 @@ Validação: Checksum SHA256
 
 ---
 
-## VI. Riscos Identificados
+## VII. Riscos Identificados
 
 ### Risco 1: Perda de Dados Não-Replicáveis (CRÍTICO)
 - **Cenário:** Alguns dados em `agent_memory`, `autonomous_alerts` podem ser únicos
@@ -211,7 +244,7 @@ Validação: Checksum SHA256
 
 ---
 
-## VII. Decisões Pendentes do Owner
+## VIII. Decisões Pendentes do Owner
 
 ### Decisão 1: Timeline de Execução
 - **Opção A:** Imediata (após aprovação desta Phase 0) – 4-6 semanas contadas de hoje
@@ -223,7 +256,7 @@ Validação: Checksum SHA256
 - **Opção A:** Preservar tudo (Categoria A+B+C+D) – Seguro, mas maior volume
 - **Opção B:** Preservar A+B+D apenas (descartar C) – Balanço recomendado
 - **Opção C:** Preservar A+D apenas (review B caso a caso) – Agressivo
-- **Status:** ⏳ AGUARDANDO OWNER INPUT (Recomendação: Opção B)
+- **Status:** ✅ OWNER JÁ DECIDIU OPÇÃO B (não preservar) – Preservação restrita a dados operacionais reais apenas
 
 ### Decisão 3: Anonymous Access Pós-Foundation
 - **Opção A:** Manter `Allow anonymous sign-ins` habilitado, mas com RLS restritiva (interno=authenticated)
@@ -239,7 +272,7 @@ Validação: Checksum SHA256
 
 ---
 
-## VIII. Próximos Passos para Phase 0
+## IX. Próximos Passos para Phase 0
 
 1. **Owner Approval:** Confirmar decisões pendentes acima
 2. **Backup Execution:** Executar snapshots pg_dump e exports CSV/JSON-L
@@ -249,7 +282,7 @@ Validação: Checksum SHA256
 
 ---
 
-## IX. Metadados Documento
+## X. Metadados Documento
 
 - **Versão:** 1.0 (Draft)
 - **Criado em:** 2026-06-03
