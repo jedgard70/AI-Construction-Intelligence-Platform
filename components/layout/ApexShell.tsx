@@ -1,12 +1,18 @@
+'use client'
+
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useMemo, useState, useEffect } from 'react'
+import { getSupabase } from '../../lib/supabase'
 
-const MENU = [
+type MenuItem = { label: string; href: string; ownerOnly?: boolean }
+type MenuGroup = { section: string; items: MenuItem[] }
+
+const MENU: MenuGroup[] = [
   { section: 'Visao Geral', items: [
     { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Mission Control', href: '/mission-control' },
-    { label: 'Platform Map', href: '/platform' },
+    { label: 'Mission Control', href: '/mission-control', ownerOnly: true },
+    { label: 'Platform Map', href: '/platform', ownerOnly: true },
   ]},
   { section: 'Comercial', items: [
     { label: 'Vendas', href: '/vendas' },
@@ -44,9 +50,41 @@ function titleFromPath(pathname: string) {
   return 'Apex Platform'
 }
 
+async function checkOwnerStatus(): Promise<boolean> {
+  try {
+    const sb = getSupabase()
+    if (!sb) return false
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session?.user) return false
+    const email = (session.user.email || '').toLowerCase()
+    const ownerEmails = (process.env.NEXT_PUBLIC_OWNER_EMAILS || process.env.NEXT_PUBLIC_APEX_OWNER_EMAILS || 'jedgard70@gmail.com').split(',').map(e => e.trim().toLowerCase())
+    return ownerEmails.includes(email)
+  } catch {
+    return false
+  }
+}
+
 export default function ApexShell({ children }: Props) {
   const router = useRouter()
+  const [isOwner, setIsOwner] = useState(false)
+  const [menuReady, setMenuReady] = useState(false)
+
+  useEffect(() => {
+    checkOwnerStatus().then(result => {
+      setIsOwner(result)
+      setMenuReady(true)
+    })
+  }, [])
+
   const title = useMemo(() => titleFromPath(router.pathname), [router.pathname])
+
+  const filteredMenu = useMemo(() => {
+    if (!menuReady) return MENU
+    return MENU.map(group => ({
+      ...group,
+      items: group.items.filter(item => !item.ownerOnly || isOwner),
+    }))
+  }, [isOwner, menuReady])
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--apx-bg)', color: 'var(--apx-text)', display: 'grid', gridTemplateColumns: '260px 1fr', fontFamily: "'Geist', system-ui, sans-serif" }}>
@@ -56,7 +94,7 @@ export default function ApexShell({ children }: Props) {
           <div style={{ fontWeight: 700, marginTop: 2 }}>AI Construction Platform</div>
         </div>
 
-        {MENU.map((group) => (
+        {filteredMenu.map((group) => (
           <div key={group.section} style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--apx-muted)', padding: '4px 8px 6px' }}>{group.section}</div>
             <div style={{ display: 'grid', gap: 2 }}>

@@ -73,6 +73,17 @@ function validateAttachment(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
+function initWebSpeech(): { recognition: any; supported: boolean } {
+  if (typeof window === 'undefined') return { recognition: null, supported: false }
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (!SpeechRecognition) return { recognition: null, supported: false }
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'pt-BR'
+  recognition.continuous = false
+  recognition.interimResults = false
+  return { recognition, supported: true }
+}
+
 export default function ApexCopilot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -95,6 +106,9 @@ export default function ApexCopilot() {
   })
   const [activePanel, setActivePanel] = useState<Panel>('chat')
   const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [listening, setListening] = useState(false)
+  const [micSupported, setMicSupported] = useState(false)
+  const recognitionRef = useRef<any>(null)
 
   const dragStart = useRef<{
     pointerX: number
@@ -183,6 +197,24 @@ export default function ApexCopilot() {
     }
     syncViewport()
     window.addEventListener('resize', syncViewport)
+    const { recognition, supported } = initWebSpeech()
+    if (supported && recognition) {
+      recognitionRef.current = recognition
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('')
+        setInput(prev => prev + (prev ? ' ' : '') + transcript)
+        setListening(false)
+      }
+      recognition.onerror = () => {
+        setListening(false)
+      }
+      recognition.onend = () => {
+        setListening(false)
+      }
+      setMicSupported(true)
+    }
     return () => window.removeEventListener('resize', syncViewport)
   }, [])
 
@@ -529,7 +561,12 @@ export default function ApexCopilot() {
 
           {!minimized && (
             <div style={{ display: 'flex', gap: 0, padding: 0, borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-              {(['chat', 'manual', 'supervisor', 'status', 'master001'] as Panel[]).map(panel => (
+              {(['chat', 'manual', 'supervisor', 'status', 'master001'] as Panel[])
+                .filter(panel => {
+                  if (panel === 'chat' || panel === 'manual') return true
+                  return chatContext.owner
+                })
+                .map(panel => (
                 <button
                   key={panel}
                   onClick={() => setActivePanel(panel)}
@@ -646,15 +683,15 @@ export default function ApexCopilot() {
                 </div>
               )}
 
-              {activePanel === 'supervisor' && (
+              {activePanel === 'supervisor' && chatContext.owner && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>👁️ Supervisor</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>👁️ Supervisor — Owner Only</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <button onClick={() => router.push('/mission-control')} style={{ padding: 12, background: '#EFF4FF', border: '1px solid #0f4c81', borderRadius: 8, cursor: 'pointer', fontWeight: 600, color: '#0f4c81' }}>
                       🎯 Abrir Mission Control
                     </button>
                     <button onClick={() => router.push('/owner-command')} style={{ padding: 12, background: '#F0EEFF', border: '1px solid #534AB7', borderRadius: 8, cursor: 'pointer', fontWeight: 600, color: '#534AB7' }}>
-                      ⚡ Abrir Owner Command
+                      ⚡ Owner Executor (em /owner-command)
                     </button>
                     <div style={{ fontSize: 12, color: '#667085', padding: 12, background: '#f8fafc', borderRadius: 8 }}>
                       <strong>Próximos testes:</strong><br/>
@@ -665,9 +702,9 @@ export default function ApexCopilot() {
                 </div>
               )}
 
-              {activePanel === 'status' && (
+              {activePanel === 'status' && chatContext.owner && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>📊 Status</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>📊 Status — Owner Only</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ padding: 12, background: '#EAF3DE', borderRadius: 8, borderLeft: '4px solid #3B6D11' }}>
                       <div style={{ fontWeight: 600, color: '#3B6D11' }}>✅ Plataforma 100% Operacional</div>
@@ -685,9 +722,9 @@ export default function ApexCopilot() {
                 </div>
               )}
 
-              {activePanel === 'master001' && (
+              {activePanel === 'master001' && chatContext.owner && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>🏆 Pacote Master 001</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>🏆 Pacote Master 001 — Owner Only</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ padding: 12, background: '#EAF3DE', borderRadius: 8 }}>
                       <div style={{ fontWeight: 600, color: '#3B6D11', marginBottom: 8 }}>Foundation 100% Operacional</div>
@@ -784,6 +821,38 @@ export default function ApexCopilot() {
                       style={{ display: 'none' }}
                     />
                   </label>
+                  {micSupported && (
+                    <button
+                      onClick={() => {
+                        if (!recognitionRef.current) return
+                        if (listening) {
+                          recognitionRef.current.stop()
+                          setListening(false)
+                        } else {
+                          recognitionRef.current.start()
+                          setListening(true)
+                        }
+                      }}
+                      disabled={loading}
+                      title={listening ? 'Ouvindo...' : 'Usar microfone (pt-BR)'}
+                      style={{
+                        padding: '9px 8px',
+                        border: `1px solid ${listening ? '#0f4c81' : '#d8e0ee'}`,
+                        borderRadius: 8,
+                        background: listening ? '#edf3ff' : '#fff',
+                        color: listening ? '#0f4c81' : '#667085',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        fontSize: 14,
+                        height: 32,
+                        width: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      🎙️
+                    </button>
+                  )}
                   <button
                     onClick={() => send()}
                     disabled={loading || (input.trim().length === 0 && attachments.length === 0)}
