@@ -40,6 +40,15 @@ type ChatMessage = {
   content: string
 }
 
+type ExecutionLog = {
+  id: string
+  command: string
+  status: 'success' | 'error' | 'timeout'
+  result?: string
+  timestamp: string
+  duration_ms: number
+}
+
 type OwnerCommandPageProps = {
   initialEmail: string | null
 }
@@ -135,6 +144,21 @@ export default function OwnerCommandPage({ initialEmail }: OwnerCommandPageProps
   const [department, setDepartment] = useState('')
   const [allowedScopes, setAllowedScopes] = useState('')
   const [requiresOwnerApproval, setRequiresOwnerApproval] = useState(false)
+
+  // Owner Executor states
+  const [executionLogs, setExecutionLogs] = useState<ExecutionLog[]>([])
+  const [executingCommand, setExecutingCommand] = useState(false)
+  const [selectedCommand, setSelectedCommand] = useState('health_check')
+  const [listeningToMic, setListeningToMic] = useState(false)
+  const [micSupported, setMicSupported] = useState(true)
+
+  // Check Web Speech API support on mount
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setMicSupported(false)
+    }
+  }, [])
 
   useEffect(() => {
     const sb = getSupabase()
@@ -291,6 +315,132 @@ export default function OwnerCommandPage({ initialEmail }: OwnerCommandPageProps
     router.replace('/login?redirect=%2Fowner-command')
   }
 
+  // Start microphone input via Web Speech API
+  function startMicrophoneInput() {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setError('Web Speech API nao suportado neste navegador')
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = false
+    recognition.lang = 'pt-BR'
+
+    recognition.onstart = () => {
+      setListeningToMic(true)
+    }
+
+    recognition.onresult = (event: any) => {
+      let transcript = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      if (transcript) {
+        setMessage((prev) => prev + ' ' + transcript)
+      }
+    }
+
+    recognition.onerror = (event: any) => {
+      setError(`Erro microfone: ${event.error}`)
+      setListeningToMic(false)
+    }
+
+    recognition.onend = () => {
+      setListeningToMic(false)
+    }
+
+    recognition.start()
+  }
+
+  // Handle keyboard in textarea: Enter breaks line, Ctrl+Enter sends
+  function handleTextareaKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault()
+      submitMessage()
+    }
+  }
+
+  // Execute Owner command via API
+  async function executeOwnerCommand() {
+    if (!isOwner) {
+      setError('Apenas Owner pode executar comandos')
+      return
+    }
+
+    setExecutingCommand(true)
+    const logId = `exec_${Date.now()}`
+
+    try {
+      const response = await fetch('/api/owner-command/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          command: selectedCommand,
+        }),
+      })
+
+      const data = await response.json()
+
+      const log: ExecutionLog = {
+        id: logId,
+        command: selectedCommand,
+        status: data.result?.status || 'error',
+        result: data.result?.result || data.error?.message,
+        timestamp: new Date().toISOString(),
+        duration_ms: data.result?.duration_ms || 0,
+      }
+
+      setExecutionLogs((prev) => [log, ...prev])
+
+      if (!data.success) {
+        setError(`Erro executando comando: ${data.error?.message}`)
+      }
+    } catch (err) {
+      const log: ExecutionLog = {
+        id: logId,
+        command: selectedCommand,
+        status: 'error',
+        result: `Network error: ${err instanceof Error ? err.message : 'Unknown'}`,
+        timestamp: new Date().toISOString(),
+        duration_ms: 0,
+      }
+      setExecutionLogs((prev) => [log, ...prev])
+      setError(`Erro ao executar comando: ${err instanceof Error ? err.message : 'Desconhecido'}`)
+    } finally {
+      setExecutingCommand(false)
+    }
+  }
+
+  // Copy log to clipboard
+  function copyLogToClipboard() {
+    const logText = executionLogs
+      .map(
+        (log) =>
+          `[${log.timestamp}] ${log.command} (${log.status}) - ${log.duration_ms}ms\n${log.result || 'N/A'}`
+      )
+      .join('\n\n')
+
+    navigator.clipboard
+      .writeText(logText)
+      .then(() => setError(null))
+      .catch(() => setError('Erro ao copiar para clipboard'))
+  }
+
+  // Clear local logs
+  function clearExecutionLogs() {
+    setExecutionLogs([])
+  }
+
+  // Print or save as PDF
+  function printLogs() {
+    window.print()
+  }
+
   if (loading) {
     return (
       <main style={styles.page}>
@@ -420,13 +570,93 @@ export default function OwnerCommandPage({ initialEmail }: OwnerCommandPageProps
             )}
           </div>
 
+          {/* Owner Executor Section */}
+          {isOwner && (
+            <section style={styles.executorSection}>
+              <h3 style={styles.sectionTitle}>🔴 Owner Executor</h3>
+              <div style={styles.executorControls}>
+                <select value={selectedCommand} onChange={(e) => setSelectedCommand(e.target.value)} style={styles.commandSelect}>
+                  <option value="health_check">Health Check</option>
+                  <option value="status_report">Status Report</option>
+                  <option value="generate_handoff">Generate Handoff</option>
+                  <option value="validate_module">Validate Module</option>
+                  <option value="create_report">Create Report</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={executeOwnerCommand}
+                  disabled={executingCommand}
+                  style={styles.executorButton}
+                >
+                  {executingCommand ? 'Executando...' : 'Executar'}
+                </button>
+              </div>
+
+              {/* Execution Log */}
+              {executionLogs.length > 0 && (
+                <div style={styles.logContainer}>
+                  <div style={styles.logHeader}>
+                    <h4 style={styles.logTitle}>Log de Execução ({executionLogs.length})</h4>
+                    <div style={styles.logActions}>
+                      <button type="button" onClick={copyLogToClipboard} style={styles.logButton}>
+                        📋 Copiar
+                      </button>
+                      <button type="button" onClick={printLogs} style={styles.logButton}>
+                        🖨️ Imprimir
+                      </button>
+                      <button type="button" onClick={clearExecutionLogs} style={styles.logButton}>
+                        🗑️ Limpar
+                      </button>
+                    </div>
+                  </div>
+                  <div style={styles.logContent}>
+                    {executionLogs.map((log) => (
+                      <div key={log.id} style={styles.logEntry}>
+                        <div style={styles.logMeta}>
+                          <span style={styles.logCommand}>[{log.command}]</span>
+                          <span style={styles.logStatus(log.status)}>{log.status}</span>
+                          <span style={styles.logTime}>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                          <span style={styles.logDuration}>{log.duration_ms}ms</span>
+                        </div>
+                        {log.result && <pre style={styles.logResult}>{log.result}</pre>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {!isOwner && (
+            <div style={styles.blockedMessage}>
+              <p>🔒 Owner Executor é acessível apenas para Owner (você não é Owner)</p>
+            </div>
+          )}
+
           <div style={styles.composer}>
-            <textarea
-              value={message}
-              onChange={e => setMessage(e.target.value)}
-              placeholder="Continue um fluxo operacional com enforcement backend..."
-              style={styles.textarea}
-            />
+            <div style={styles.textareaContainer}>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleTextareaKeyDown}
+                placeholder="Continue um fluxo operacional com enforcement backend... (Ctrl+Enter para enviar, Enter para quebra de linha)"
+                style={styles.textarea}
+              />
+              {micSupported && (
+                <button
+                  type="button"
+                  onClick={startMicrophoneInput}
+                  disabled={listeningToMic}
+                  style={{
+                    ...styles.micButton,
+                    opacity: listeningToMic ? 0.6 : 1,
+                  }}
+                  title={listeningToMic ? 'Ouvindo...' : 'Clique para ditar (Web Speech API)'}
+                >
+                  {listeningToMic ? '🎤 Ouvindo...' : '🎤'}
+                </button>
+              )}
+            </div>
             <button type="button" onClick={submitMessage} disabled={submitting || loading} style={styles.primaryButton}>
               {submitting ? 'Sending...' : 'Send'}
             </button>
@@ -644,6 +874,149 @@ const styles: Record<string, CSSProperties> = {
     color: '#fff',
     padding: 16,
     resize: 'vertical',
+    fontFamily: 'monospace',
+  },
+  textareaContainer: {
+    position: 'relative' as const,
+    display: 'grid',
+  },
+  micButton: {
+    position: 'absolute' as const,
+    bottom: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    border: '1px solid rgba(195, 228, 244, 0.3)',
+    background: 'rgba(143, 213, 255, 0.14)',
+    color: '#d8f2ff',
+    cursor: 'pointer',
+    fontSize: 18,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  executorSection: {
+    background: 'rgba(7, 15, 24, 0.68)',
+    border: '2px solid rgba(255, 69, 0, 0.4)',
+    borderRadius: 24,
+    padding: 20,
+    display: 'grid',
+    gap: 16,
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: 16,
+    color: '#ff5722',
+    fontWeight: 700,
+  },
+  executorControls: {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: 12,
+  },
+  commandSelect: {
+    borderRadius: 12,
+    border: '1px solid rgba(195, 228, 244, 0.18)',
+    background: 'rgba(255, 255, 255, 0.06)',
+    color: '#fff',
+    padding: '10px 14px',
+    cursor: 'pointer',
+  },
+  executorButton: {
+    borderRadius: 12,
+    border: 'none',
+    background: '#ff5722',
+    color: '#fff',
+    padding: '10px 18px',
+    cursor: 'pointer',
+    fontWeight: 700,
+  },
+  logContainer: {
+    background: 'rgba(0, 0, 0, 0.3)',
+    borderRadius: 12,
+    padding: 16,
+    display: 'grid',
+    gap: 12,
+    maxHeight: 400,
+    overflow: 'hidden',
+    display: 'flex' as any,
+    flexDirection: 'column' as any,
+  },
+  logHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logTitle: {
+    margin: 0,
+    fontSize: 14,
+    color: '#d8f2ff',
+  },
+  logActions: {
+    display: 'flex',
+    gap: 8,
+  },
+  logButton: {
+    borderRadius: 6,
+    border: 'none',
+    background: 'rgba(143, 213, 255, 0.14)',
+    color: '#d8f2ff',
+    padding: '6px 10px',
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  logContent: {
+    overflowY: 'auto' as const,
+    display: 'grid',
+    gap: 8,
+  },
+  logEntry: {
+    background: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 8,
+    padding: 12,
+    borderLeft: '3px solid rgba(143, 213, 255, 0.3)',
+    fontSize: 12,
+  },
+  logMeta: {
+    display: 'flex',
+    gap: 8,
+    marginBottom: 8,
+    flexWrap: 'wrap' as const,
+  },
+  logCommand: {
+    color: '#d8f2ff',
+    fontWeight: 700 as any,
+  },
+  logStatus: (status: string) => ({
+    color: status === 'success' ? '#4caf50' : status === 'error' ? '#f44336' : '#ff9800',
+    fontWeight: 700 as any,
+  }),
+  logTime: {
+    color: 'rgba(215, 242, 255, 0.6)',
+  },
+  logDuration: {
+    color: 'rgba(215, 242, 255, 0.6)',
+    fontSize: 11,
+  },
+  logResult: {
+    margin: 0,
+    padding: 8,
+    background: 'rgba(0, 0, 0, 0.4)',
+    borderRadius: 4,
+    color: '#4caf50',
+    fontSize: 11,
+    overflow: 'auto' as const,
+    maxHeight: 150,
+    fontFamily: 'monospace',
+  },
+  blockedMessage: {
+    background: 'rgba(255, 69, 0, 0.1)',
+    border: '1px solid rgba(255, 69, 0, 0.3)',
+    borderRadius: 12,
+    padding: 12,
+    color: '#ff9999',
+    textAlign: 'center' as const,
   },
   primaryButton: {
     justifySelf: 'start',
