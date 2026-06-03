@@ -4,7 +4,7 @@ Date: 2026-06-03
 
 PR: `#85 fix: repair Supabase preview migration chain`
 
-Head SHA: `d9dd8b022a8455f76a5b753c64f86da06adc91af`
+Diagnosed Supabase check SHA: `d9dd8b022a8455f76a5b753c64f86da06adc91af`
 
 ## Objective
 
@@ -12,9 +12,9 @@ Diagnose whether the Supabase Preview result on PR #85 is a manual/legacy cancel
 
 No code, migration, PR #84, or merge action was changed during this diagnosis.
 
-## Supabase Preview Check
+## Supabase Preview Check On Diagnosed SHA
 
-GitHub check-run:
+GitHub check-run observed on `d9dd8b022a8455f76a5b753c64f86da06adc91af`:
 
 - name: `Supabase Preview`
 - app: `supabase`
@@ -74,7 +74,7 @@ Reason: the Supabase Preview check was cancelled before the migration replay sta
 
 ## Other Checks
 
-PR #85 remote checks observed:
+PR #85 remote checks observed on the diagnosed SHA:
 
 - `Build & Type Check`: success
 - `Deploy to Vercel Preview`: success/skipped depending on duplicate workflow run
@@ -85,6 +85,8 @@ PR #85 remote checks observed:
 PR #85 mergeability:
 
 - GitHub reports `MERGEABLE`.
+
+After this diagnosis document was added to PR #85, the PR head moved forward. On the subsequent observed head, GitHub exposed successful `Build & Type Check` runs and Vercel-related checks, but no `Supabase Preview` check-run was present in the commit check-run payload at the time of observation. Therefore, the only Supabase Preview diagnostic payload available for PR #85 remains the cancelled check above.
 
 ## Decision
 
