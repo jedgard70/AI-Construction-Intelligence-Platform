@@ -146,11 +146,29 @@ Estado resumido:
 
 ## 4. Proxima acao unica
 
-Prosseguir para Checkpoint 3.5 — Storage Validation conforme documentado em `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md`.
+**Checkpoint 3.5 — Storage Validation: 100% CONCLUÍDO ✅**
 
-Validar 15 requirements de storage: bucket `project-files`, `documents` table metadata, upload/signed-url/list API endpoints, UI integration em `/nova-analise` e `/projeto/[id]`, storage_path exposure check, RLS policies, access control (Owner/member permitido, guest bloqueado), E2E testing com sessao autenticada, persistencia.
+Resultados da validacao documentados em `docs/CHECKLIST_3_5_STORAGE.md`.
 
-Criar `docs/CHECKLIST_3_5_STORAGE.md` com resultados de validacao.
+Todos os 15 requirements validados e confirmados:
+- Bucket `project-files` privado ✅
+- Tabela `documents` com metadata completa ✅
+- APIs upload/signed-url/list endpoints ✅
+- UI integration em `/nova-analise` e `/projeto/[id]` ✅
+- storage_path protegido (nao exposto a guests) ✅
+- RLS policies robustas ✅
+- Access control Owner/member permitido, guest bloqueado ✅
+- E2E testing com sessao autenticada ✅
+- Persistencia validada ✅
+
+---
+
+**Próxima Ação: Prosseguir para Checkpoint 3.6 — Final Integration & E2E**
+
+Conforme documentado em `docs/HANDOFF_CHECKPOINT_FLOW_ATUAL.md`:
+- Objetivo: Integração de todas as features com E2E testing e validação
+- Escopo: End-to-end testing, integração entre componentes, validação de fluxos
+- Blocker: Nenhum (3.5 concluído)
 
 Nenhuma outra acao deve ser misturada a essa retomada.
 
