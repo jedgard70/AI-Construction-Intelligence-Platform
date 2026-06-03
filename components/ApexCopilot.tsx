@@ -8,8 +8,7 @@ import {
 } from 'react'
 import { getSupabase } from '../lib/supabase'
 
-type Mode = 'manual' | 'supervisor' | 'status'
-type Panel = 'chat' | 'manual' | 'supervisor' | 'status' | 'master001'
+type Screen = 'manual' | 'supervisor' | 'status'
 type Attachment = { id: string; name: string; type: string; size: number; preview?: string }
 type Msg = { role: 'user' | 'assistant'; text: string; attachments?: Attachment[] }
 type Pos = { x: number; y: number }
@@ -41,10 +40,20 @@ const DRAG_THRESHOLD = 6
 
 const INITIAL_ASSISTANT_MESSAGE: Msg = {
   role: 'assistant',
-  text: 'Apex AI pronto. Posso orientar uso da plataforma, supervisionar uma acao ou resumir status atual.',
+  text: 'Olá! Estou aqui para ajudar. Como posso assistir?',
 }
 
-const MODE_LABEL: Record<Mode, string> = {
+const INITIAL_SUPERVISOR_MESSAGE: Msg = {
+  role: 'assistant',
+  text: 'Supervisor ativo. Pronto para supervisionar operações, acessar Mission Control, ou gerar handoff.',
+}
+
+const INITIAL_STATUS_MESSAGE: Msg = {
+  role: 'assistant',
+  text: 'Status da plataforma. Qual aspecto da operação você quer aprofundar?',
+}
+
+const SCREEN_LABEL: Record<Screen, string> = {
   manual: 'Manual',
   supervisor: 'Supervisor',
   status: 'Status',
@@ -94,17 +103,18 @@ export default function ApexCopilot() {
   const [launcherPos, setLauncherPos] = useState<Pos | null>(null)
   const [panelPos, setPanelPos] = useState<Pos | null>(null)
   const [dragging, setDragging] = useState<DragTarget>(null)
-  const [mode, setMode] = useState<Mode>('manual')
+  const [activeScreen, setActiveScreen] = useState<Screen>('manual')
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [messages, setMessages] = useState<Msg[]>([INITIAL_ASSISTANT_MESSAGE])
+  const [manualMessages, setManualMessages] = useState<Msg[]>([INITIAL_ASSISTANT_MESSAGE])
+  const [supervisorMessages, setSupervisorMessages] = useState<Msg[]>([INITIAL_SUPERVISOR_MESSAGE])
+  const [statusMessages, setStatusMessages] = useState<Msg[]>([INITIAL_STATUS_MESSAGE])
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [chatContext, setChatContext] = useState<ChatContext>({
     role: 'guest',
     owner: false,
     email: null,
   })
-  const [activePanel, setActivePanel] = useState<Panel>('chat')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [listening, setListening] = useState(false)
   const [micSupported, setMicSupported] = useState(false)
@@ -361,8 +371,16 @@ export default function ApexCopilot() {
     if (!question || loading) return
 
     setInput('')
-    const nextMessages: Msg[] = [...messages, { role: 'user', text: question }]
-    setMessages(nextMessages)
+    const nextMessages: Msg[] = activeScreen === 'manual'
+      ? [...manualMessages, { role: 'user', text: question }]
+      : activeScreen === 'supervisor'
+      ? [...supervisorMessages, { role: 'user', text: question }]
+      : [...statusMessages, { role: 'user', text: question }]
+
+    if (activeScreen === 'manual') setManualMessages(nextMessages)
+    else if (activeScreen === 'supervisor') setSupervisorMessages(nextMessages)
+    else if (activeScreen === 'status') setStatusMessages(nextMessages)
+
     setLoading(true)
 
     try {
@@ -382,7 +400,7 @@ export default function ApexCopilot() {
           messages: [
             {
               role: 'user',
-              content: `Modo: ${MODE_LABEL[mode]}\nPagina atual: ${router.pathname}\nPergunta: ${question}`,
+              content: `Tela: ${SCREEN_LABEL[activeScreen]}\nPagina atual: ${router.pathname}\nPergunta: ${question}`,
             },
           ],
         }),
@@ -396,25 +414,23 @@ export default function ApexCopilot() {
 
       if (!res.ok) {
         const serverError = data?.error?.message || 'API indisponivel no momento.'
-        setMessages(prev => [...prev, { role: 'assistant', text: `Nao consegui concluir agora: ${serverError}` }])
+        const errorMsg = { role: 'assistant' as const, text: `Nao consegui concluir agora: ${serverError}` }
+        if (activeScreen === 'manual') setManualMessages(prev => [...prev, errorMsg])
+        else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, errorMsg])
+        else if (activeScreen === 'status') setStatusMessages(prev => [...prev, errorMsg])
         return
       }
 
       const reply = readAssistantText(data)
-      if (reply) {
-        setMessages(prev => [...prev, { role: 'assistant', text: reply }])
-        return
-      }
-
-      setMessages(prev => [...prev, { role: 'assistant', text: 'Nao consegui obter resposta valida do Copilot.' }])
+      const assistantMsg = { role: 'assistant' as const, text: reply || 'Nao consegui obter resposta valida do Copilot.' }
+      if (activeScreen === 'manual') setManualMessages(prev => [...prev, assistantMsg])
+      else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, assistantMsg])
+      else if (activeScreen === 'status') setStatusMessages(prev => [...prev, assistantMsg])
     } catch {
-      setMessages(prev => [
-        ...prev,
-        {
-          role: 'assistant',
-          text: 'Sem conexao com o servidor do Copilot. Verifique sua internet ou tente novamente em instantes.',
-        },
-      ])
+      const errorMsg = { role: 'assistant' as const, text: 'Sem conexao com o servidor do Copilot. Verifique sua internet ou tente novamente em instantes.' }
+      if (activeScreen === 'manual') setManualMessages(prev => [...prev, errorMsg])
+      else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, errorMsg])
+      else if (activeScreen === 'status') setStatusMessages(prev => [...prev, errorMsg])
     } finally {
       setLoading(false)
     }
@@ -446,14 +462,33 @@ export default function ApexCopilot() {
   }
 
   function clearConversation() {
-    setMessages([INITIAL_ASSISTANT_MESSAGE])
+    if (activeScreen === 'manual') setManualMessages([INITIAL_ASSISTANT_MESSAGE])
+    else if (activeScreen === 'supervisor') setSupervisorMessages([INITIAL_SUPERVISOR_MESSAGE])
+    else if (activeScreen === 'status') setStatusMessages([INITIAL_STATUS_MESSAGE])
   }
 
-  const quickActions = [
-    { label: 'Status Master 001', text: 'Resuma o status atual do Pacote Master 001 e o proximo passo.' },
-    { label: 'Como usar Nova Analise', text: 'Explique como usar a tela Nova Analise para criar um projeto automatico.' },
-    { label: 'Abrir Mission Control', text: '' },
-  ]
+  const getScreenButtons = () => {
+    if (activeScreen === 'manual') {
+      return [
+        { label: 'Como usar', text: 'Explique como usar a plataforma Apex, seus modulos principais e como acessar cada recurso.' },
+      ]
+    }
+    if (activeScreen === 'supervisor' && chatContext.owner) {
+      return [
+        { label: 'Mission Control', action: () => router.push('/mission-control') },
+        { label: 'Owner Command', action: () => router.push('/owner-command') },
+        { label: 'Owner Executor', action: () => router.push('/owner-command') },
+      ]
+    }
+    if (activeScreen === 'status' && chatContext.owner) {
+      return [
+        { label: 'Foundation / Master 001', text: 'Qual e o status completo do Foundation e do Pacote Master 001?' },
+        { label: 'Mission Control', text: 'Qual e o status da Mission Control e do operacional?' },
+        { label: 'Storage', text: 'Como esta o sistema de Storage e dados?' },
+      ]
+    }
+    return []
+  }
 
   const activeLauncherPos = launcherPos || getLauncherDefaultPosition()
   const activePanelPos =
@@ -561,44 +596,44 @@ export default function ApexCopilot() {
 
           {!minimized && (
             <div style={{ display: 'flex', gap: 0, padding: 0, borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
-              {(['chat', 'manual', 'supervisor', 'status', 'master001'] as Panel[])
-                .filter(panel => {
-                  if (panel === 'chat' || panel === 'manual') return true
+              {(['manual', 'supervisor', 'status'] as Screen[])
+                .filter(screen => {
+                  if (screen === 'manual') return true
                   return chatContext.owner
                 })
-                .map(panel => (
+                .map(screen => (
                 <button
-                  key={panel}
-                  onClick={() => setActivePanel(panel)}
+                  key={screen}
+                  onClick={() => setActiveScreen(screen)}
                   style={{
-                    flex: panel === 'chat' ? 1 : 'auto',
-                    minWidth: panel === 'chat' ? 'auto' : '90px',
+                    flex: 'auto',
+                    minWidth: '90px',
                     border: 'none',
-                    borderBottom: activePanel === panel ? '2px solid #0f4c81' : '2px solid transparent',
+                    borderBottom: activeScreen === screen ? '2px solid #0f4c81' : '2px solid transparent',
                     borderRadius: 0,
-                    background: activePanel === panel ? '#edf3ff' : '#fff',
-                    color: activePanel === panel ? '#0f4c81' : '#667085',
+                    background: activeScreen === screen ? '#edf3ff' : '#fff',
+                    color: activeScreen === screen ? '#0f4c81' : '#667085',
                     padding: '10px 12px',
                     fontSize: 12,
-                    fontWeight: activePanel === panel ? 700 : 500,
+                    fontWeight: activeScreen === screen ? 700 : 500,
                     cursor: 'pointer',
                   }}
                 >
-                  {panel === 'chat' ? 'Chat' : panel === 'manual' ? 'Manual' : panel === 'supervisor' ? 'Supervisor' : panel === 'status' ? 'Status' : 'Master 001'}
+                  {SCREEN_LABEL[screen]}
                 </button>
               ))}
             </div>
           )}
 
-          {!minimized && activePanel === 'chat' && (
+          {!minimized && (
             <div style={{ padding: 12, display: 'flex', gap: 6, flexWrap: 'wrap', borderBottom: '1px solid #e2e8f0' }}>
-              {quickActions.map(action => (
+              {getScreenButtons().map(btn => (
                 <button
-                  key={action.label}
-                  onClick={() => (action.text ? send(action.text) : router.push('/mission-control'))}
+                  key={btn.label}
+                  onClick={() => ('text' in btn && btn.text ? send(btn.text) : 'action' in btn && btn.action ? btn.action() : null)}
                   style={pillButtonStyle}
                 >
-                  {action.label}
+                  {btn.label}
                 </button>
               ))}
               <button
@@ -610,7 +645,7 @@ export default function ApexCopilot() {
                   fontWeight: 700,
                 }}
               >
-                Limpar conversa
+                Limpar tela
               </button>
             </div>
           )}
@@ -627,126 +662,39 @@ export default function ApexCopilot() {
               width: fullscreen ? '100%' : undefined,
               margin: fullscreen ? '0 auto' : undefined,
             }}>
-              {activePanel === 'chat' && (
-                <>
-                  {messages.map((message, index) => (
-                    <div key={`${message.role}-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div
-                        style={{
-                          alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                          maxWidth: '86%',
-                          background: message.role === 'user' ? '#0f4c81' : '#f3f6fb',
-                          color: message.role === 'user' ? '#fff' : '#172033',
-                          borderRadius: 10,
-                          padding: '8px 10px',
-                          fontSize: 12,
-                          lineHeight: 1.55,
-                          whiteSpace: 'pre-wrap',
-                        }}
-                      >
-                        {message.text}
-                      </div>
-                      {message.attachments && message.attachments.length > 0 && (
-                        <div style={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', display: 'flex', gap: 6 }}>
-                          {message.attachments.map(att => (
-                            <div key={att.id} style={{ fontSize: 10, padding: '4px 8px', background: '#e2e8f0', borderRadius: 6 }}>
-                              📎 {att.name} ({(att.size / 1024).toFixed(0)}KB)
-                            </div>
-                          ))}
+              {(activeScreen === 'manual' ? manualMessages : activeScreen === 'supervisor' ? supervisorMessages : statusMessages).map((message, index) => (
+                <div key={`${message.role}-${index}`} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div
+                    style={{
+                      alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
+                      maxWidth: '86%',
+                      background: message.role === 'user' ? '#0f4c81' : '#f3f6fb',
+                      color: message.role === 'user' ? '#fff' : '#172033',
+                      borderRadius: 10,
+                      padding: '8px 10px',
+                      fontSize: 12,
+                      lineHeight: 1.55,
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {message.text}
+                  </div>
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div style={{ alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start', display: 'flex', gap: 6 }}>
+                      {message.attachments.map(att => (
+                        <div key={att.id} style={{ fontSize: 10, padding: '4px 8px', background: '#e2e8f0', borderRadius: 6 }}>
+                          📎 {att.name} ({(att.size / 1024).toFixed(0)}KB)
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
-                  {loading && <div style={{ fontSize: 12, color: '#667085' }}>Apex AI analisando...</div>}
-                </>
-              )}
-
-              {activePanel === 'manual' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>📖 Manual de Uso</div>
-                  <div style={{ fontSize: 13, lineHeight: 1.6, color: '#3a4166' }}>
-                    <p><strong>Como usar a Apex AI:</strong></p>
-                    <ul style={{ marginLeft: 20, marginTop: 8, marginBottom: 8 }}>
-                      <li>✓ Cole texto longo, páginas inteiras ou relatórios</li>
-                      <li>✓ Anexe screenshots, imagens ou PDFs para análise</li>
-                      <li>✓ Use <strong>Ctrl+Enter</strong> (Cmd+Enter no Mac) para enviar</li>
-                      <li>✓ Acesse <strong>Mission Control</strong> para status da plataforma</li>
-                      <li>✓ Use <strong>Owner Command</strong> (/owner-command) para ações operacionais</li>
-                    </ul>
-                    <p style={{ marginTop: 12 }}><strong>Anexos:</strong></p>
-                    <ul style={{ marginLeft: 20, marginTop: 8 }}>
-                      <li>Imagens: PNG, JPEG, WebP (até 5MB)</li>
-                      <li>Documentos: PDF (até 10MB)</li>
-                      <li>Cole imagens diretamente ou selecione arquivos</li>
-                    </ul>
-                  </div>
+                  )}
                 </div>
-              )}
-
-              {activePanel === 'supervisor' && chatContext.owner && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>👁️ Supervisor — Owner Only</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <button onClick={() => router.push('/mission-control')} style={{ padding: 12, background: '#EFF4FF', border: '1px solid #0f4c81', borderRadius: 8, cursor: 'pointer', fontWeight: 600, color: '#0f4c81' }}>
-                      🎯 Abrir Mission Control
-                    </button>
-                    <button onClick={() => router.push('/owner-command')} style={{ padding: 12, background: '#F0EEFF', border: '1px solid #534AB7', borderRadius: 8, cursor: 'pointer', fontWeight: 600, color: '#534AB7' }}>
-                      ⚡ Owner Executor (em /owner-command)
-                    </button>
-                    <div style={{ fontSize: 12, color: '#667085', padding: 12, background: '#f8fafc', borderRadius: 8 }}>
-                      <strong>Próximos testes:</strong><br/>
-                      • Week 1 Production Reality Check em andamento<br/>
-                      • Status master 001: 100% OPERACIONAL
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activePanel === 'status' && chatContext.owner && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>📊 Status — Owner Only</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ padding: 12, background: '#EAF3DE', borderRadius: 8, borderLeft: '4px solid #3B6D11' }}>
-                      <div style={{ fontWeight: 600, color: '#3B6D11' }}>✅ Plataforma 100% Operacional</div>
-                      <div style={{ fontSize: 12, color: '#5F7D3D', marginTop: 4 }}>Checkpoints 3.1-3.12 concluídos e validados</div>
-                    </div>
-                    <div style={{ padding: 12, background: '#EFF4FF', borderRadius: 8, borderLeft: '4px solid #0f4c81' }}>
-                      <div style={{ fontWeight: 600, color: '#0f4c81' }}>⏳ Week 1 Production Reality Check</div>
-                      <div style={{ fontSize: 12, color: '#1d5a8f', marginTop: 4 }}>Validação hands-on em andamento (20-30 min)</div>
-                    </div>
-                    <div style={{ padding: 12, background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#667085' }}>
-                      <strong>Próximo passo operacional:</strong><br/>
-                      Owner assina CHECKLIST_GO_LIVE_OWNER.md e plataforma segue para go-live
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activePanel === 'master001' && chatContext.owner && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1f36' }}>🏆 Pacote Master 001 — Owner Only</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ padding: 12, background: '#EAF3DE', borderRadius: 8 }}>
-                      <div style={{ fontWeight: 600, color: '#3B6D11', marginBottom: 8 }}>Foundation 100% Operacional</div>
-                      <div style={{ fontSize: 12, color: '#5F7D3D', lineHeight: 1.6 }}>
-                        ✅ Checkpoints 3.1-3.12 implementados e validados<br/>
-                        ✅ Governance, Help AI, Owner Command, Supabase<br/>
-                        ✅ Storage, E2E, Revenue, Orchestrator<br/>
-                        ✅ Design Evolution, ArchVis, Ebook, Skills<br/>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: '#667085', padding: 12, background: '#f8fafc', borderRadius: 8 }}>
-                      <strong>Status:</strong> Pacote fechado e pronto para produção<br/>
-                      <strong>Data:</strong> 03/06/2026<br/>
-                      <strong>Validação:</strong> QA Final Geral PASS
-                    </div>
-                  </div>
-                </div>
-              )}
+              ))}
+              {loading && <div style={{ fontSize: 12, color: '#667085' }}>Apex AI analisando...</div>}
             </div>
           )}
 
-          {!minimized && activePanel === 'chat' && (
+          {!minimized && (
             <div style={{
               display: 'flex',
               flexDirection: 'column',
