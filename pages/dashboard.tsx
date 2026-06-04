@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
+import { trackEvent } from '../lib/tracking'
 
 const DashboardByRole = dynamic(
   () => import('../components/DashboardByRole'),
@@ -54,6 +55,12 @@ export default function Dashboard() {
         router.replace('/login')
         return
       }
+
+      // Track dashboard view
+      await trackEvent({
+        type: 'dashboard_view',
+        page_path: '/dashboard',
+      })
 
       // Busca perfil com role
       const { data: prof, error } = await sb

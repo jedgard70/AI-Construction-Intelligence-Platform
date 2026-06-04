@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { getSupabase } from '../lib/supabase'
+import { trackEvent } from '../lib/tracking'
 
 type ContinuityState = {
   canView: boolean
@@ -186,6 +187,12 @@ export default function OwnerCommandPage({ initialEmail }: OwnerCommandPageProps
         router.replace('/login?redirect=%2Fowner-command&reason=owner-auth-required')
         return
       }
+
+      // Track owner command view
+      await trackEvent({
+        type: 'owner_command_view',
+        page_path: '/owner-command',
+      })
 
       await evaluateContinuity(accessToken)
       if (active) {
