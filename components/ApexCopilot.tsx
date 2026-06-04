@@ -371,11 +371,14 @@ export default function ApexCopilot() {
     if (!question && attachments.length === 0 && loading) return
 
     setInput('')
+
+    const attachmentsToProcess = attachments
+
     const nextMessages: Msg[] = activeScreen === 'manual'
-      ? [...manualMessages, { role: 'user', text: question, attachments }]
+      ? [...manualMessages, { role: 'user', text: question, attachments: attachmentsToProcess }]
       : activeScreen === 'supervisor'
-      ? [...supervisorMessages, { role: 'user', text: question, attachments }]
-      : [...statusMessages, { role: 'user', text: question, attachments }]
+      ? [...supervisorMessages, { role: 'user', text: question, attachments: attachmentsToProcess }]
+      : [...statusMessages, { role: 'user', text: question, attachments: attachmentsToProcess }]
 
     if (activeScreen === 'manual') setManualMessages(nextMessages)
     else if (activeScreen === 'supervisor') setSupervisorMessages(nextMessages)
@@ -386,44 +389,39 @@ export default function ApexCopilot() {
 
     try {
       let attachmentAnalysis = ''
-      console.log('[SEND] Attachments to analyze:', attachments.length)
-      for (const att of attachments) {
-        console.log('[ATTACHMENT] Processing:', att.name, 'type:', att.type, 'has file:', !!att.file)
-        if (!att.file) {
-          console.warn('[ATTACHMENT] No file object for', att.name)
-          continue
-        }
-        try {
-          const formData = new FormData()
-          formData.append('file', att.file)
-          const analysisHeaders: Record<string, string> = {}
-          if (authToken) {
-            analysisHeaders.Authorization = `Bearer ${authToken}`
-          } else {
-            console.warn('[ATTACHMENT] No auth token available')
+
+      if (attachmentsToProcess.length > 0) {
+        for (const att of attachmentsToProcess) {
+          if (!att.file) continue
+
+          try {
+            const formData = new FormData()
+            formData.append('file', att.file)
+            const analysisHeaders: Record<string, string> = {}
+            if (authToken) {
+              analysisHeaders.Authorization = `Bearer ${authToken}`
+            }
+
+            const analysisRes = await fetch('/api/chat/analyze-attachment', {
+              method: 'POST',
+              headers: analysisHeaders,
+              body: formData,
+            })
+
+            if (analysisRes.ok) {
+              const analysisData = await analysisRes.json()
+              if (analysisData.analysis) {
+                attachmentAnalysis += `\n\n[Análise de ${att.name}]\n${analysisData.analysis}`
+              }
+            } else {
+              const errorText = await analysisRes.text()
+              attachmentAnalysis += `\n\n[ERRO] Falha ao analisar ${att.name}: ${analysisRes.status}`
+            }
+          } catch (err) {
+            attachmentAnalysis += `\n\n[ERRO] Problema ao analisar ${att.name}`
           }
-          console.log('[ATTACHMENT] Sending to analyze endpoint, token exists:', !!authToken)
-          const analysisRes = await fetch('/api/chat/analyze-attachment', {
-            method: 'POST',
-            headers: analysisHeaders,
-            body: formData,
-          })
-          console.log('[ATTACHMENT] Response status:', analysisRes.status, 'ok:', analysisRes.ok)
-          if (analysisRes.ok) {
-            const analysisData = await analysisRes.json()
-            console.log('[ATTACHMENT] Analysis successful:', analysisData.analysis?.substring?.(0, 100))
-            attachmentAnalysis += `\n\n[Análise de ${att.name}]\n${analysisData.analysis}`
-          } else {
-            const errorText = await analysisRes.text()
-            console.error('[ATTACHMENT] Analysis failed:', analysisRes.status, errorText)
-            const errorMsg = `Erro ao analisar ${att.name}: ${analysisRes.status} - ${analysisRes.statusText}`
-            attachmentAnalysis += `\n\n[ERRO] ${errorMsg}`
-          }
-        } catch (err) {
-          console.error('[ATTACHMENT_ANALYSIS] Error:', err)
         }
       }
-      console.log('[SEND] Attachment analysis complete, length:', attachmentAnalysis.length)
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -432,7 +430,12 @@ export default function ApexCopilot() {
         headers.Authorization = `Bearer ${authToken}`
       }
 
-      const fullQuestion = question + attachmentAnalysis
+      let finalQuestion = question
+      if (!question && attachmentsToProcess.length > 0) {
+        finalQuestion = 'Analyze this attachment and summarize what it contains.'
+      }
+
+      const fullQuestion = finalQuestion + attachmentAnalysis
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers,
@@ -969,22 +972,20 @@ export default function ApexCopilot() {
                   }}
                   onPaste={event => {
                     const clipboardData = event.clipboardData
-                    if (!clipboardData) {
-                      console.log('[PASTE] No clipboard data')
-                      return
-                    }
+                    if (!clipboardData) return
+
                     const items = clipboardData.items
-                    console.log('[PASTE] Clipboard items count:', items?.length || 0)
                     let foundImage = false
+
                     for (let i = 0; i < (items?.length || 0); i++) {
                       const item = items?.[i]
                       if (!item) continue
-                      console.log('[PASTE] Item', i, 'kind:', item.kind, 'type:', item.type)
+
                       if (item.kind === 'file' && item.type.startsWith('image/')) {
                         foundImage = true
                         event.preventDefault()
+
                         const file = item.getAsFile()
-                        console.log('[PASTE] Image file obtained:', !!file, 'name:', file?.name, 'type:', file?.type)
                         if (file) {
                           const validation = validateAttachment(file)
                           if (validation.valid) {
@@ -995,18 +996,19 @@ export default function ApexCopilot() {
                               size: file.size,
                               file: file,
                             }])
-                            console.log('[PASTE] Image attachment added:', file.name)
                           } else if (validation.error) {
-                            console.error('[PASTE] Validation error:', validation.error)
                             alert(validation.error)
                           }
-                        } else {
-                          console.warn('[PASTE] getAsFile() returned null')
                         }
+                        break
                       }
                     }
-                    if (!foundImage) {
-                      console.log('[PASTE] No image data found in clipboard')
+
+                    if (!foundImage && items && items.length > 0) {
+                      const hasFiles = Array.from(items).some(item => item.kind === 'file')
+                      if (hasFiles) {
+                        alert('Image paste is not supported on this browser. Use the attach button (📎) to upload files.')
+                      }
                     }
                   }}
                   placeholder={`Cole texto longo, página, relatório ou pergunta. Use Ctrl+Enter para enviar. Você também pode colar imagens via Print Screen.`}
