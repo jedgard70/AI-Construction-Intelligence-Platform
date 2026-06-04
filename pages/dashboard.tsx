@@ -2,6 +2,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
+import SafeEntryHome from '../components/SafeEntryHome'
 
 const DashboardByRole = dynamic(
   () => import('../components/DashboardByRole'),
@@ -23,11 +24,21 @@ const DashboardByRole = dynamic(
   }
 )
 
+// Roles operacionais internos que podem acessar DashboardByRole
+const AUTHORIZED_INTERNAL_ROLES = new Set([
+  'diretor_executivo',
+  'gestor_financeiro',
+  'coordenador_projetos',
+  'engenheiro_campo',
+  'gestor_qualidade',
+  'investidor',
+])
+
 export interface Profile {
   id: string
   email: string
   full_name: string | null
-  role: string
+  role: string | null
   company: string | null
   avatar_url: string | null
   is_active: boolean
@@ -43,19 +54,16 @@ export default function Dashboard() {
       const sb = getSupabase()
 
       if (!sb) {
-        // Supabase não configurado — redireciona para login com aviso
         router.replace('/login')
         return
       }
 
-      // Verifica sessão ativa
       const { data: { session } } = await sb.auth.getSession()
       if (!session) {
         router.replace('/login')
         return
       }
 
-      // Busca perfil com role
       const { data: prof, error } = await sb
         .from('profiles')
         .select('*')
@@ -63,15 +71,15 @@ export default function Dashboard() {
         .single()
 
       if (error || !prof) {
-        // Perfil ainda não criado (novo usuário) — usa dados do auth
+        // ✅ CORRIGIDO: Novo usuário NÃO recebe role automático
         setProfile({
           id: session.user.id,
           email: session.user.email ?? '',
           full_name: session.user.user_metadata?.full_name ?? null,
-          role: 'engenheiro_campo',   // default até admin definir o role
+          role: null,  // ← Null, não 'engenheiro_campo'
           company: null,
           avatar_url: null,
-          is_active: true,
+          is_active: false,  // Novo usuário não é "ativo" até aprovação
         })
       } else {
         setProfile(prof as Profile)
@@ -97,5 +105,14 @@ export default function Dashboard() {
     </div>
   )
 
+  if (!profile) return null
+
+  // ✅ CONTROLE DE ACESSO:
+  // Se role é desconhecida ou desautorizada, mostrar SafeEntryHome
+  if (!profile.role || !AUTHORIZED_INTERNAL_ROLES.has(profile.role)) {
+    return <SafeEntryHome email={profile.email} fullName={profile.full_name} />
+  }
+
+  // ✅ Se role é válida, mostrar DashboardByRole
   return <DashboardByRole profile={profile!} />
 }
