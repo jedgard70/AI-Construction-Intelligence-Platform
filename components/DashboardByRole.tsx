@@ -261,6 +261,25 @@ const DEFAULT_ROLE_CONFIG = ROLE_CONFIG['coordenador_projetos']
 
 export default function DashboardByRole({ profile }: { profile: Profile }) {
   const router = useRouter()
+
+  // ✅ SECURITY GATE: Prevent unauthorized roles from rendering operational dashboard
+  const isAuthorized = profile.role && profile.role in ROLE_CONFIG
+  if (!isAuthorized) {
+    return (
+      <div style={{
+        minHeight: '100vh', background: '#0a0d12',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{
+          color: '#f0a500', fontFamily: 'monospace',
+          fontSize: '14px', letterSpacing: '2px',
+        }}>
+          ACESSO NEGADO
+        </span>
+      </div>
+    )
+  }
+
   const [projects, setProjects]       = useState<Project[]>([])
   const [budgetData, setBudgetData]   = useState<BudgetItem[]>([])
   const [events, setEvents]           = useState<AgentEvent[]>([])
@@ -335,7 +354,7 @@ export default function DashboardByRole({ profile }: { profile: Profile }) {
   const [agentRunning, setAgentRunning] = useState(false)
   const [agentResult, setAgentResult]   = useState('')
 
-  const cfg = ROLE_CONFIG[profile.role] ?? DEFAULT_ROLE_CONFIG
+  const cfg = ROLE_CONFIG[profile.role!]
 
   const loadData = useCallback(async () => {
     const sb = getSupabase()
