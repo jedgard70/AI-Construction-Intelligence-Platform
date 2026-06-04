@@ -10,86 +10,10 @@ export const config = {
 type AnalysisResult = {
   success: boolean
   analysis: string
-  provider?: string
   error?: string
 }
 
-async function analyzeWithAnthropic(base64: string, mediaType: string, apiKey: string): Promise<AnalysisResult> {
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: { type: 'base64', media_type: mediaType, data: base64 },
-              },
-              { type: 'text', text: 'Analise esta imagem. Descreva o conteúdo principal, contexto e qualquer texto visível. Se for um screenshot ou documento visual, resuma os pontos-chave.' },
-            ],
-          },
-        ],
-      }),
-    })
-
-    const data = (await res.json()) as any
-
-    if (!res.ok) {
-      const errorMessage = data?.error?.message || `HTTP ${res.status}`
-      const isBillingError = errorMessage.includes('credit') || errorMessage.includes('billing') || errorMessage.includes('overloaded')
-      const isRateLimit = res.status === 429
-
-      if (isBillingError || isRateLimit) {
-        return {
-          success: false,
-          analysis: '',
-          provider: 'anthropic',
-          error: isBillingError ? 'billing' : 'rate_limit',
-        }
-      }
-
-      return {
-        success: false,
-        analysis: 'Erro ao analisar imagem com Anthropic.',
-        provider: 'anthropic',
-        error: 'api_error',
-      }
-    }
-
-    if (data.content?.[0]?.text) {
-      return {
-        success: true,
-        analysis: data.content[0].text,
-        provider: 'anthropic',
-      }
-    }
-
-    return {
-      success: false,
-      analysis: 'Nao foi possivel analisar a imagem.',
-      provider: 'anthropic',
-      error: 'no_response',
-    }
-  } catch (err) {
-    return {
-      success: false,
-      analysis: '',
-      provider: 'anthropic',
-      error: 'request_failed',
-    }
-  }
-}
-
-async function analyzeWithOpenAI(base64: string, mediaType: string, apiKey: string): Promise<AnalysisResult> {
+async function analyzeImageWithOpenAI(base64: string, mediaType: string, apiKey: string): Promise<AnalysisResult> {
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -131,7 +55,6 @@ async function analyzeWithOpenAI(base64: string, mediaType: string, apiKey: stri
         return {
           success: false,
           analysis: '',
-          provider: 'openai',
           error: isBillingError ? 'billing' : 'rate_limit',
         }
       }
@@ -139,7 +62,6 @@ async function analyzeWithOpenAI(base64: string, mediaType: string, apiKey: stri
       return {
         success: false,
         analysis: 'Erro ao analisar imagem com OpenAI.',
-        provider: 'openai',
         error: 'api_error',
       }
     }
@@ -149,21 +71,18 @@ async function analyzeWithOpenAI(base64: string, mediaType: string, apiKey: stri
       return {
         success: true,
         analysis: content,
-        provider: 'openai',
       }
     }
 
     return {
       success: false,
       analysis: 'Nao foi possivel analisar a imagem.',
-      provider: 'openai',
       error: 'no_response',
     }
   } catch (err) {
     return {
       success: false,
       analysis: '',
-      provider: 'openai',
       error: 'request_failed',
     }
   }
@@ -201,8 +120,10 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
   const openaiKey = process.env.OPENAI_API_KEY
+  if (!openaiKey) {
+    return res.status(500).json({ error: 'OPENAI_API_KEY not configured' })
+  }
 
   const form = new IncomingForm({
     maxFileSize: 15 * 1024 * 1024,
@@ -227,33 +148,12 @@ export default async function handler(req: any, res: any) {
       const buffer = fs.readFileSync(file.filepath)
       const base64 = buffer.toString('base64')
 
-      let analysis = ''
-      let provider = ''
-      let fallbackAttempted = false
-
-      if (anthropicKey) {
-        const result = await analyzeWithAnthropic(base64, fileType, anthropicKey)
-        if (result.success) {
-          analysis = result.analysis
-          provider = 'anthropic'
-          return res.status(200).json({ type: 'image', analysis, filename: file.originalFilename })
-        }
-
-        if (result.error === 'billing' || result.error === 'rate_limit') {
-          fallbackAttempted = true
-        }
+      const result = await analyzeImageWithOpenAI(base64, fileType, openaiKey)
+      if (result.success) {
+        return res.status(200).json({ type: 'image', analysis: result.analysis, filename: file.originalFilename })
       }
 
-      if ((!anthropicKey || fallbackAttempted) && openaiKey) {
-        const result = await analyzeWithOpenAI(base64, fileType, openaiKey)
-        if (result.success) {
-          analysis = result.analysis
-          provider = 'openai'
-          return res.status(200).json({ type: 'image', analysis, filename: file.originalFilename })
-        }
-      }
-
-      return res.status(503).json({ error: 'Attachment analysis is temporarily unavailable. Please try again or check AI provider billing.' })
+      return res.status(503).json({ error: 'Attachment analysis is temporarily unavailable. Please check OpenAI API key or billing.' })
     }
 
     if (fileType === 'application/pdf') {
