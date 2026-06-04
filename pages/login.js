@@ -3,10 +3,10 @@ import dynamic from 'next/dynamic'
 const LoginClient = dynamic(() => import('../components/LoginClient'), {
   ssr: false,
   loading: () => (
-    <div style={{ minHeight: '100dvh', background: '#f4f2ee', display: 'flex',
+    <div style={{ minHeight: '100dvh', background: '#071a33', display: 'flex',
       alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ color: '#BA7517', fontFamily: 'system-ui', fontSize: '14px',
-        letterSpacing: '2px' }}>CARREGANDO...</span>
+      <span style={{ color: '#c9d1d9', fontFamily: 'system-ui', fontSize: '14px',
+        letterSpacing: 0 }}>Loading...</span>
     </div>
   ),
 })
