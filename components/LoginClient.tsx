@@ -184,6 +184,7 @@ export default function LoginClient() {
 
         <main className="acip-form">
           <div className="acip-form-brand" aria-label="Apex Global AI">
+            <img src="/logo_apex_nova.jpeg" alt="APEX GLOBAL AI" />
             <strong>APEX GLOBAL AI</strong>
             <span>CONSTRUCTION INTELLIGENCE PLATFORM</span>
           </div>
@@ -467,6 +468,15 @@ const CSS = `
 .acip-form-brand {
   display: none;
   margin-bottom: 1rem;
+}
+
+.acip-form-brand img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--apex-silver);
+  margin-bottom: 0.75rem;
 }
 
 .acip-form-brand strong {
