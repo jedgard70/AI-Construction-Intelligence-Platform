@@ -24,9 +24,11 @@ const DashboardByRole = dynamic(
   }
 )
 
-// Roles operacionais internos que podem acessar DashboardByRole
-const AUTHORIZED_INTERNAL_ROLES = new Set([
-  'diretor_executivo',
+// ✅ OWNER/ADMIN: Only diretor_executivo sees global DashboardByRole
+const AUTHORIZED_OWNER_ROLES = new Set(['diretor_executivo'])
+
+// ✅ STAFF: Operational roles see SafeEntryHome (no global metrics/projects)
+const AUTHORIZED_STAFF_ROLES = new Set([
   'gestor_financeiro',
   'coordenador_projetos',
   'engenheiro_campo',
@@ -108,11 +110,12 @@ export default function Dashboard() {
   if (!profile) return null
 
   // ✅ CONTROLE DE ACESSO:
-  // Se role é desconhecida ou desautorizada, mostrar SafeEntryHome
-  if (!profile.role || !AUTHORIZED_INTERNAL_ROLES.has(profile.role)) {
-    return <SafeEntryHome email={profile.email} fullName={profile.full_name} />
+  // Only diretor_executivo sees the global DashboardByRole with all metrics/projects
+  if (profile.role && AUTHORIZED_OWNER_ROLES.has(profile.role)) {
+    return <DashboardByRole profile={profile!} />
   }
 
-  // ✅ Se role é válida, mostrar DashboardByRole
-  return <DashboardByRole profile={profile!} />
+  // Everyone else (staff, clients, unknown roles) sees SafeEntryHome
+  // Staff roles see it without global metrics/projects
+  return <SafeEntryHome email={profile.email} fullName={profile.full_name} />
 }
