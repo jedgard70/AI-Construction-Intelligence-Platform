@@ -905,7 +905,33 @@ export default function ApexCopilot() {
                       send()
                     }
                   }}
-                  placeholder={`Cole texto longo, página, relatório ou pergunta. Use Ctrl+Enter para enviar.`}
+                  onPaste={event => {
+                    const clipboardData = event.clipboardData
+                    if (!clipboardData) return
+                    const items = clipboardData.items
+                    for (let i = 0; i < items.length; i++) {
+                      const item = items[i]
+                      if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        event.preventDefault()
+                        const file = item.getAsFile()
+                        if (file) {
+                          const validation = validateAttachment(file)
+                          if (validation.valid) {
+                            setAttachments(prev => [...prev, {
+                              id: Date.now().toString(),
+                              name: file.name || `screenshot.${file.type.split('/')[1] || 'png'}`,
+                              type: file.type,
+                              size: file.size,
+                              file: file,
+                            }])
+                          } else if (validation.error) {
+                            alert(validation.error)
+                          }
+                        }
+                      }
+                    }
+                  }}
+                  placeholder={`Cole texto longo, página, relatório ou pergunta. Use Ctrl+Enter para enviar. Você também pode colar imagens via Print Screen.`}
                   style={{
                     flex: 1,
                     border: '1px solid #cfd6e4',
