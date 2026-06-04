@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 
 interface DashboardData {
   today_visitors: number
-  today_page_views: number
+  today_events: number
   modules: Record<string, number>
   top_pages: Array<{ path: string; views: number }>
   recent_events: Array<{ user: string; event: string; at: string }>
 }
 
-export default function AnalyticsDashboard() {
+export default function AnalyticsDashboard({ accessToken }: { accessToken?: string | null }) {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -16,7 +16,15 @@ export default function AnalyticsDashboard() {
   useEffect(() => {
     async function fetchAnalytics() {
       try {
-        const response = await fetch('/api/analytics/dashboard')
+        if (!accessToken) {
+          setError('Owner-only access required')
+          setLoading(false)
+          return
+        }
+
+        const response = await fetch('/api/analytics/dashboard', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
         if (response.status === 403) {
           setError('Owner-only access required')
           setLoading(false)
@@ -41,7 +49,7 @@ export default function AnalyticsDashboard() {
     const interval = setInterval(fetchAnalytics, 30000) // Refresh every 30s
 
     return () => clearInterval(interval)
-  }, [])
+  }, [accessToken])
 
   if (loading) {
     return (
@@ -66,7 +74,7 @@ export default function AnalyticsDashboard() {
       {/* Key Metrics */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         <MetricCard label="Today's Visitors" value={data.today_visitors} />
-        <MetricCard label="Page Views" value={data.today_page_views} />
+        <MetricCard label="Tracked Events" value={data.today_events} />
       </div>
 
       {/* Modules Breakdown */}

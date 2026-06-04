@@ -1,70 +1,82 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '../../../lib/supabase'
-import { createServerClient } from '@supabase/ssr'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { createClient } from '@supabase/supabase-js'
+import { getBearerToken, resolveOwnerContext } from '../../../lib/owner-auth'
 
 const VALID_EVENTS = new Set([
-  'page_view',
-  'login',
+  'login_success',
   'dashboard_view',
   'apex_ai_open',
-  'apex_ai_send',
   'mission_control_view',
   'owner_command_view',
-  'storage_upload',
-  'crm_view',
-  'proposal_view',
-  'export_report',
 ])
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+const EVENT_DEFAULTS: Record<string, { page_path: string; module: string }> = {
+  login_success: { page_path: '/login', module: 'auth' },
+  dashboard_view: { page_path: '/dashboard', module: 'dashboard' },
+  apex_ai_open: { page_path: '/apex-ai', module: 'apex-ai' },
+  mission_control_view: { page_path: '/mission-control', module: 'mission-control' },
+  owner_command_view: { page_path: '/owner-command', module: 'owner-command' },
+}
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceRoleKey) return null
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
+
+function cleanLabel(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  return trimmed && trimmed.length <= 120 ? trimmed : fallback
+}
+
+function analyticsRole(role: unknown): 'owner' | 'admin' | 'user' | 'client' {
+  if (role === 'owner' || role === 'admin' || role === 'client') return role
+  return 'user'
+}
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Require authentication
-  const supabase = getSupabase()
+  const bearerToken = getBearerToken(req.headers.authorization)
+  const user = await resolveOwnerContext(bearerToken)
+  if (!user.userId || user.role === 'guest') {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
+  const eventType = typeof req.body?.event_type === 'string' ? req.body.event_type : ''
+  if (!VALID_EVENTS.has(eventType)) {
+    return res.status(400).json({ error: 'Invalid event type' })
+  }
+
+  const supabase = getServiceClient()
   if (!supabase) {
     return res.status(500).json({ error: 'Server configuration error' })
   }
 
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
-  const { event_type, event_name, page_path, module, metadata, duration_seconds } = req.body
-
-  // Validate event_type
-  if (!event_type || !VALID_EVENTS.has(event_type)) {
-    return res.status(400).json({ error: 'Invalid event type' })
-  }
+  const defaults = EVENT_DEFAULTS[eventType]
+  const pagePath = cleanLabel(req.body?.page_path, defaults.page_path)
+  const moduleName = cleanLabel(req.body?.module, defaults.module)
+  const eventName = cleanLabel(req.body?.event_name, eventType)
 
   try {
-    // Get user role (from auth metadata or default to 'user')
-    const user_role = session.user?.user_metadata?.role || 'user'
-
-    // Insert event
-    const { error } = await supabase
-      .from('analytics_events')
-      .insert({
-        user_id: session.user.id,
-        user_role,
-        event_type,
-        event_name,
-        page_path,
-        module,
-        metadata: metadata || null,
-        ip_address: req.headers['x-forwarded-for'] as string,
-        user_agent: req.headers['user-agent'],
-      })
+    const { error } = await supabase.from('analytics_events').insert({
+      user_id: user.userId,
+      user_role: analyticsRole(user.role),
+      event_type: eventType,
+      event_name: eventName,
+      page_path: pagePath,
+      module: moduleName,
+      metadata: null,
+    })
 
     if (error) {
       console.error('Analytics tracking error:', error)
-      // Don't expose error details to client
-      return res.status(200).json({ ok: true })
     }
 
     return res.status(200).json({ ok: true })

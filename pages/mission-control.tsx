@@ -95,6 +95,7 @@ export default function MissionControlPage() {
   const [nextFeatureError, setNextFeatureError] = useState('')
   const [prAuditTemplate, setPrAuditTemplate] = useState<PrAuditTemplatePayload | null>(null)
   const [prAuditTemplateError, setPrAuditTemplateError] = useState('')
+  const [analyticsAccessToken, setAnalyticsAccessToken] = useState<string | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -111,6 +112,7 @@ export default function MissionControlPage() {
         router.replace('/login')
         return
       }
+      setAnalyticsAccessToken(session.access_token)
 
       // Track mission control view
       await trackEvent({
@@ -345,7 +347,7 @@ export default function MissionControlPage() {
             <span className="badge badge-neutral">Real-time Tracking</span>
           </div>
           <div style={{ marginBottom: '14px' }}>
-            <AnalyticsDashboard />
+            <AnalyticsDashboard accessToken={analyticsAccessToken} />
           </div>
         </section>
 

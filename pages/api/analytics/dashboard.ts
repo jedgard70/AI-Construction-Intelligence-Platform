@@ -1,9 +1,10 @@
-import { NextApiRequest, NextApiResponse } from 'next'
-import { getSupabase } from '../../../lib/supabase'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { createClient } from '@supabase/supabase-js'
+import { getBearerToken, resolveOwnerContext } from '../../../lib/owner-auth'
 
 interface DashboardData {
   today_visitors: number
-  today_page_views: number
+  today_events: number
   modules: Record<string, number>
   top_pages: Array<{ path: string; views: number }>
   recent_events: Array<{
@@ -11,6 +12,23 @@ interface DashboardData {
     event: string
     at: string
   }>
+}
+
+type AnalyticsEventRow = {
+  user_id: string
+  event_type: string
+  page_path: string | null
+  module: string | null
+  created_at: string
+}
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !serviceRoleKey) return null
+  return createClient(url, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }
 
 export default async function handler(
@@ -21,108 +39,67 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const supabase = getSupabase()
+  const bearerToken = getBearerToken(req.headers.authorization)
+  const user = await resolveOwnerContext(bearerToken)
+  if (!user.userId || user.role === 'guest') {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+  if (!user.isOwner) {
+    return res.status(403).json({ error: 'Forbidden - Owner access required' })
+  }
+
+  const supabase = getServiceClient()
   if (!supabase) {
     return res.status(500).json({ error: 'Server configuration error' })
   }
 
-  // Get authenticated user
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
-  // Owner-only check
-  const user_role = session.user?.user_metadata?.role || 'user'
-  if (user_role !== 'owner') {
-    return res.status(403).json({ error: 'Forbidden - Owner access required' })
-  }
-
   try {
     const now = new Date()
-    const today_start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    // Get today's visitors (unique users)
-    const { data: visitors_data } = await supabase
+    const { data, error } = await supabase
       .from('analytics_events')
-      .select('user_id', { count: 'exact' })
-      .gte('created_at', today_start.toISOString())
-      .select('DISTINCT user_id')
+      .select('user_id,event_type,page_path,module,created_at')
+      .gte('created_at', todayStart.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(500)
 
-    const today_visitors = visitors_data?.length || 0
+    if (error) {
+      console.error('Dashboard analytics query error:', error)
+      return res.status(500).json({ error: 'Internal server error' })
+    }
 
-    // Get today's page views
-    const { data: pageviews_data } = await supabase
-      .from('analytics_events')
-      .select('*', { count: 'exact' })
-      .eq('event_type', 'page_view')
-      .gte('created_at', today_start.toISOString())
-
-    const today_page_views = pageviews_data?.length || 0
-
-    // Get module breakdown
-    const { data: modules_data } = await supabase
-      .from('analytics_events')
-      .select('module')
-      .gte('created_at', today_start.toISOString())
-
+    const events = (data || []) as AnalyticsEventRow[]
     const modules: Record<string, number> = {}
-    modules_data?.forEach(row => {
-      if (row.module) {
-        modules[row.module] = (modules[row.module] || 0) + 1
-      }
-    })
-
-    // Get top pages (today)
-    const { data: toppage_data } = await supabase
-      .from('analytics_events')
-      .select('page_path')
-      .eq('event_type', 'page_view')
-      .gte('created_at', today_start.toISOString())
-
     const pages: Record<string, number> = {}
-    toppage_data?.forEach(row => {
-      if (row.page_path) {
-        pages[row.page_path] = (pages[row.page_path] || 0) + 1
-      }
-    })
+    const uniqueUsers = new Set<string>()
 
-    const top_pages = Object.entries(pages)
+    for (const event of events) {
+      uniqueUsers.add(event.user_id)
+      if (event.module) modules[event.module] = (modules[event.module] || 0) + 1
+      if (event.page_path) pages[event.page_path] = (pages[event.page_path] || 0) + 1
+    }
+
+    const topPages = Object.entries(pages)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5)
       .map(([path, views]) => ({ path, views }))
 
-    // Get recent events (last 10, today)
-    const { data: recent_data } = await supabase
-      .from('analytics_events')
-      .select('user_id, event_type, created_at')
-      .gte('created_at', today_start.toISOString())
-      .order('created_at', { ascending: false })
-      .limit(10)
-
-    // Get user emails for recent events
-    const recent_events = []
-    for (const event of recent_data || []) {
-      const { data: user_data } = await supabase.auth.admin.getUserById(event.user_id)
-      const email = user_data?.user?.email || 'unknown'
-      const time = new Date(event.created_at).toLocaleTimeString('pt-BR', {
+    const recentEvents = events.slice(0, 10).map(event => ({
+      user: event.user_id.slice(0, 8),
+      event: event.event_type,
+      at: new Date(event.created_at).toLocaleTimeString('pt-BR', {
         hour: '2-digit',
         minute: '2-digit',
-      })
-
-      recent_events.push({
-        user: email,
-        event: event.event_type,
-        at: time,
-      })
-    }
+      }),
+    }))
 
     return res.status(200).json({
-      today_visitors,
-      today_page_views,
+      today_visitors: uniqueUsers.size,
+      today_events: events.length,
       modules,
-      top_pages,
-      recent_events,
+      top_pages: topPages,
+      recent_events: recentEvents,
     })
   } catch (err) {
     console.error('Dashboard analytics error:', err)

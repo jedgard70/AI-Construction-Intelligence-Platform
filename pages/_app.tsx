@@ -4,7 +4,6 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { useRouter } from 'next/router'
 import ApexCopilot from '../components/ApexCopilot'
 import ApexShell from '../components/layout/ApexShell'
-import { usePageTracking } from '../lib/hooks/usePageTracking'
 
 interface EBState { hasError: boolean; message: string }
 
@@ -61,8 +60,6 @@ export default function App({ Component, pageProps }: AppProps) {
   const useShell =
     !path.startsWith('/api') &&
     !['/', '/login', '/forgot-password', '/reset-password', '/jornada'].includes(path)
-
-  usePageTracking()
 
   return (
     <ErrorBoundary>

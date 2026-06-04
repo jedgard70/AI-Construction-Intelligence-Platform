@@ -1,31 +1,25 @@
-// Analytics tracking utilities
-// Sends events to /api/analytics/track
+import { getSupabase } from './supabase'
 
 export type EventType =
-  | 'page_view'
   | 'login'
+  | 'login_success'
   | 'dashboard_view'
   | 'apex_ai_open'
-  | 'apex_ai_send'
   | 'mission_control_view'
   | 'owner_command_view'
-  | 'storage_upload'
-  | 'crm_view'
-  | 'proposal_view'
-  | 'export_report'
 
-const VALID_EVENTS = new Set<EventType>([
-  'page_view',
-  'login',
+type PersistedEventType = Exclude<EventType, 'login'>
+
+const EVENT_ALIASES: Record<string, PersistedEventType> = {
+  login: 'login_success',
+}
+
+const VALID_EVENTS = new Set<PersistedEventType>([
+  'login_success',
   'dashboard_view',
   'apex_ai_open',
-  'apex_ai_send',
   'mission_control_view',
   'owner_command_view',
-  'storage_upload',
-  'crm_view',
-  'proposal_view',
-  'export_report',
 ])
 
 const MODULE_MAP: Record<string, string> = {
@@ -33,9 +27,6 @@ const MODULE_MAP: Record<string, string> = {
   '/apex-ai': 'apex-ai',
   '/mission-control': 'mission-control',
   '/owner-command': 'owner-command',
-  '/crm': 'crm',
-  '/storage': 'storage',
-  '/proposals': 'proposals',
 }
 
 export function getModuleFromPath(path: string): string {
@@ -50,27 +41,32 @@ export interface TrackEventOptions {
   name?: string
   page_path?: string
   module?: string
-  metadata?: Record<string, any>
-  duration?: number
 }
 
 export async function trackEvent(options: TrackEventOptions): Promise<void> {
-  if (!VALID_EVENTS.has(options.type)) {
-    console.warn(`Invalid event type: ${options.type}`)
+  const eventType = EVENT_ALIASES[options.type] || options.type
+  if (!VALID_EVENTS.has(eventType as PersistedEventType)) {
+    console.warn(`Invalid analytics event type: ${options.type}`)
     return
   }
 
   try {
+    const supabase = getSupabase()
+    const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } }
+    const accessToken = data.session?.access_token
+    if (!accessToken) return
+
     await fetch('/api/analytics/track', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        event_type: options.type,
+        event_type: eventType,
         event_name: options.name,
         page_path: options.page_path,
         module: options.module,
-        metadata: options.metadata,
-        duration_seconds: options.duration,
       }),
     })
   } catch (err) {
@@ -79,12 +75,8 @@ export async function trackEvent(options: TrackEventOptions): Promise<void> {
   }
 }
 
-// Track page view with automatic module detection
+// Kept for compatibility. Global automatic page tracking is disabled in _app.
 export function trackPageView(path: string): void {
   const module = getModuleFromPath(path)
-  trackEvent({
-    type: 'page_view',
-    page_path: path,
-    module,
-  })
+  if (module === 'unknown') return
 }
