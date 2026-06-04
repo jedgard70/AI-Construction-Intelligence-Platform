@@ -9,7 +9,7 @@ import {
 import { getSupabase } from '../lib/supabase'
 
 type Screen = 'manual' | 'supervisor' | 'status'
-type Attachment = { id: string; name: string; type: string; size: number; preview?: string }
+type Attachment = { id: string; name: string; type: string; size: number; preview?: string; file?: File }
 type Msg = { role: 'user' | 'assistant'; text: string; attachments?: Attachment[] }
 type Pos = { x: number; y: number }
 type DragTarget = 'launcher' | 'panel' | null
@@ -368,22 +368,45 @@ export default function ApexCopilot() {
 
   async function send(text?: string) {
     const question = (text ?? input).trim()
-    if (!question || loading) return
+    if (!question && attachments.length === 0 && loading) return
 
     setInput('')
     const nextMessages: Msg[] = activeScreen === 'manual'
-      ? [...manualMessages, { role: 'user', text: question }]
+      ? [...manualMessages, { role: 'user', text: question, attachments }]
       : activeScreen === 'supervisor'
-      ? [...supervisorMessages, { role: 'user', text: question }]
-      : [...statusMessages, { role: 'user', text: question }]
+      ? [...supervisorMessages, { role: 'user', text: question, attachments }]
+      : [...statusMessages, { role: 'user', text: question, attachments }]
 
     if (activeScreen === 'manual') setManualMessages(nextMessages)
     else if (activeScreen === 'supervisor') setSupervisorMessages(nextMessages)
     else if (activeScreen === 'status') setStatusMessages(nextMessages)
 
     setLoading(true)
+    setAttachments([])
 
     try {
+      let attachmentAnalysis = ''
+      for (const att of attachments) {
+        if (!att.file) continue
+        try {
+          const formData = new FormData()
+          formData.append('file', att.file)
+          const analysisRes = await fetch('/api/chat/analyze-attachment', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${authToken}` || '',
+            },
+            body: formData,
+          })
+          if (analysisRes.ok) {
+            const analysisData = await analysisRes.json()
+            attachmentAnalysis += `\n\n[Análise de ${att.name}]\n${analysisData.analysis}`
+          }
+        } catch (err) {
+          console.error('[ATTACHMENT_ANALYSIS]', err)
+        }
+      }
+
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       }
@@ -391,6 +414,7 @@ export default function ApexCopilot() {
         headers.Authorization = `Bearer ${authToken}`
       }
 
+      const fullQuestion = question + attachmentAnalysis
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers,
@@ -400,7 +424,7 @@ export default function ApexCopilot() {
           messages: [
             {
               role: 'user',
-              content: `Tela: ${SCREEN_LABEL[activeScreen]}\nPagina atual: ${router.pathname}\nPergunta: ${question}`,
+              content: `Tela: ${SCREEN_LABEL[activeScreen]}\nPagina atual: ${router.pathname}\nPergunta: ${fullQuestion}`,
             },
           ],
         }),
@@ -466,6 +490,39 @@ export default function ApexCopilot() {
     else if (activeScreen === 'supervisor') setSupervisorMessages([INITIAL_SUPERVISOR_MESSAGE])
     else if (activeScreen === 'status') setStatusMessages([INITIAL_STATUS_MESSAGE])
   }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).catch(() => {
+      alert('Nao foi possivel copiar para clipboard.')
+    })
+  }
+
+  function speakText(text: string) {
+    if (!('speechSynthesis' in window)) {
+      alert('SpeechSynthesis nao suportado neste navegador.')
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'pt-BR'
+    utterance.rate = 0.95
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function shareText(text: string) {
+    if (!navigator.share) {
+      copyToClipboard(text)
+      return
+    }
+    navigator.share({
+      title: 'Apex AI',
+      text: text,
+    }).catch(() => {
+      copyToClipboard(text)
+    })
+  }
+
+  const [showMoreMenu, setShowMoreMenu] = useState<string | null>(null)
 
   const getScreenButtons = () => {
     if (activeScreen === 'manual') {
@@ -688,6 +745,126 @@ export default function ApexCopilot() {
                       ))}
                     </div>
                   )}
+                  {message.role === 'assistant' && (
+                    <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 6, position: 'relative' }}>
+                      <button
+                        onClick={() => copyToClipboard(message.text)}
+                        title="Copiar resposta"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          color: '#667085',
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                      >
+                        📋
+                      </button>
+                      <button
+                        onClick={() => speakText(message.text)}
+                        title="Ouvir em voz alta"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          color: '#667085',
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                      >
+                        🔊
+                      </button>
+                      <button
+                        onClick={() => shareText(message.text)}
+                        title="Compartilhar"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          color: '#667085',
+                          padding: 0,
+                          lineHeight: 1,
+                        }}
+                      >
+                        🔗
+                      </button>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => setShowMoreMenu(showMoreMenu === index.toString() ? null : index.toString())}
+                          title="Mais opções"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            color: '#667085',
+                            padding: 0,
+                            lineHeight: 1,
+                          }}
+                        >
+                          ⋮
+                        </button>
+                        {showMoreMenu === index.toString() && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            background: '#fff',
+                            border: '1px solid #d8e0ee',
+                            borderRadius: 6,
+                            padding: '6px 0',
+                            minWidth: '140px',
+                            zIndex: 100,
+                            boxShadow: '0 4px 12px rgba(0,0,0,.1)',
+                          }}>
+                            <button
+                              onClick={() => {
+                                const currentTime = new Date().toLocaleTimeString('pt-BR')
+                                copyToClipboard(`${message.text}\n\n[${currentTime}]`)
+                                setShowMoreMenu(null)
+                              }}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '8px 12px',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: 11,
+                                color: '#334155',
+                              }}
+                            >
+                              📋 Copiar com timestamp
+                            </button>
+                            <button
+                              onClick={() => {
+                                const lines = message.text.split('\n').filter(l => l.trim())
+                                const formatted = lines.map(l => `• ${l}`).join('\n')
+                                copyToClipboard(formatted)
+                                setShowMoreMenu(null)
+                              }}
+                              style={{
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '8px 12px',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: 11,
+                                color: '#334155',
+                              }}
+                            >
+                              🔘 Copiar formatado
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && <div style={{ fontSize: 12, color: '#667085' }}>Apex AI analisando...</div>}
@@ -753,16 +930,17 @@ export default function ApexCopilot() {
                           const file = e.target.files[0]
                           const validation = validateAttachment(file)
                           if (validation.valid) {
-                            const reader = new FileReader()
-                            reader.onload = ev => {
-                              setAttachments([...attachments, {
-                                id: Date.now().toString(),
-                                name: file.name,
-                                type: file.type,
-                                size: file.size,
-                              }])
-                            }
-                            reader.readAsArrayBuffer(file)
+                            setAttachments([...attachments, {
+                              id: Date.now().toString(),
+                              name: file.name,
+                              type: file.type,
+                              size: file.size,
+                              file: file,
+                            }])
+                            e.target.value = ''
+                          } else if (validation.error) {
+                            alert(validation.error)
+                            e.target.value = ''
                           }
                         }
                       }}
