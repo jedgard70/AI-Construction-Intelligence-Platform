@@ -31,7 +31,7 @@ function Nav({ t, lang, setLang }) {
         <a href="#top" className="brand">
           <BrandMark />
           <div>
-            <div className="brand-name">Atlas <span style={{ color: "var(--accent)" }}>·</span> ConstructAI</div>
+            <div className="brand-name">Apex <span style={{ color: "var(--accent)" }}>·</span> Global AI</div>
             <div className="brand-sub">Construction Intelligence</div>
           </div>
         </a>

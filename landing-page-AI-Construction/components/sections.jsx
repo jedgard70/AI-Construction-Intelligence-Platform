@@ -350,8 +350,8 @@ function Footer({ t, lang }) {
             <div className="row" style={{ marginBottom: 24 }}>
               <BrandMark size={44} />
               <div style={{ marginLeft: 4 }}>
-                <div style={{ fontFamily: "var(--font-sans-display)", fontWeight: 700, fontSize: 18 }}>Atlas <span style={{ color: "var(--accent)" }}>·</span> ConstructAI</div>
-                <div className="brand-sub">Atlas Construction Intelligence LLC</div>
+                <div style={{ fontFamily: "var(--font-sans-display)", fontWeight: 700, fontSize: 18 }}>Apex <span style={{ color: "var(--accent)" }}>·</span> Global AI</div>
+                <div className="brand-sub">Apex Global AI</div>
               </div>
             </div>
             <p className="footer-cta">{t.footer.cta}</p>
