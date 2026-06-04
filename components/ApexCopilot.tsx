@@ -386,28 +386,44 @@ export default function ApexCopilot() {
 
     try {
       let attachmentAnalysis = ''
+      console.log('[SEND] Attachments to analyze:', attachments.length)
       for (const att of attachments) {
-        if (!att.file) continue
+        console.log('[ATTACHMENT] Processing:', att.name, 'type:', att.type, 'has file:', !!att.file)
+        if (!att.file) {
+          console.warn('[ATTACHMENT] No file object for', att.name)
+          continue
+        }
         try {
           const formData = new FormData()
           formData.append('file', att.file)
           const analysisHeaders: Record<string, string> = {}
           if (authToken) {
             analysisHeaders.Authorization = `Bearer ${authToken}`
+          } else {
+            console.warn('[ATTACHMENT] No auth token available')
           }
+          console.log('[ATTACHMENT] Sending to analyze endpoint, token exists:', !!authToken)
           const analysisRes = await fetch('/api/chat/analyze-attachment', {
             method: 'POST',
             headers: analysisHeaders,
             body: formData,
           })
+          console.log('[ATTACHMENT] Response status:', analysisRes.status, 'ok:', analysisRes.ok)
           if (analysisRes.ok) {
             const analysisData = await analysisRes.json()
+            console.log('[ATTACHMENT] Analysis successful:', analysisData.analysis?.substring?.(0, 100))
             attachmentAnalysis += `\n\n[Análise de ${att.name}]\n${analysisData.analysis}`
+          } else {
+            const errorText = await analysisRes.text()
+            console.error('[ATTACHMENT] Analysis failed:', analysisRes.status, errorText)
+            const errorMsg = `Erro ao analisar ${att.name}: ${analysisRes.status} - ${analysisRes.statusText}`
+            attachmentAnalysis += `\n\n[ERRO] ${errorMsg}`
           }
         } catch (err) {
-          console.error('[ATTACHMENT_ANALYSIS]', err)
+          console.error('[ATTACHMENT_ANALYSIS] Error:', err)
         }
       }
+      console.log('[SEND] Attachment analysis complete, length:', attachmentAnalysis.length)
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
@@ -748,67 +764,113 @@ export default function ApexCopilot() {
                     </div>
                   )}
                   {message.role === 'assistant' && (
-                    <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 6, position: 'relative' }}>
+                    <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 4, position: 'relative', marginTop: 4 }}>
                       <button
-                        onClick={() => copyToClipboard(message.text)}
+                        onClick={() => {
+                          if (message.text && message.text.trim()) {
+                            copyToClipboard(message.text)
+                          } else {
+                            alert('Nada para copiar')
+                          }
+                        }}
                         title="Copiar resposta"
                         style={{
-                          background: 'none',
-                          border: 'none',
+                          background: '#f0f5ff',
+                          border: '1px solid #d8e0ee',
                           cursor: 'pointer',
-                          fontSize: 12,
-                          color: '#667085',
-                          padding: 0,
+                          fontSize: 14,
+                          color: '#0f4c81',
+                          padding: '6px 8px',
                           lineHeight: 1,
+                          borderRadius: 6,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#e0ecff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#0f4c81'
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#f0f5ff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#d8e0ee'
                         }}
                       >
-                        📋
+                        📋 Copy
                       </button>
                       <button
                         onClick={() => speakText(message.text)}
                         title="Ouvir em voz alta"
                         style={{
-                          background: 'none',
-                          border: 'none',
+                          background: '#f0f5ff',
+                          border: '1px solid #d8e0ee',
                           cursor: 'pointer',
-                          fontSize: 12,
-                          color: '#667085',
-                          padding: 0,
+                          fontSize: 14,
+                          color: '#0f4c81',
+                          padding: '6px 8px',
                           lineHeight: 1,
+                          borderRadius: 6,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#e0ecff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#0f4c81'
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#f0f5ff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#d8e0ee'
                         }}
                       >
-                        🔊
+                        🔊 Speak
                       </button>
                       <button
                         onClick={() => shareText(message.text)}
                         title="Compartilhar"
                         style={{
-                          background: 'none',
-                          border: 'none',
+                          background: '#f0f5ff',
+                          border: '1px solid #d8e0ee',
                           cursor: 'pointer',
-                          fontSize: 12,
-                          color: '#667085',
-                          padding: 0,
+                          fontSize: 14,
+                          color: '#0f4c81',
+                          padding: '6px 8px',
                           lineHeight: 1,
+                          borderRadius: 6,
+                          transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#e0ecff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#0f4c81'
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLButtonElement).style.background = '#f0f5ff'
+                          (e.currentTarget as HTMLButtonElement).style.borderColor = '#d8e0ee'
                         }}
                       >
-                        🔗
+                        🔗 Share
                       </button>
                       <div style={{ position: 'relative' }}>
                         <button
                           onClick={() => setShowMoreMenu(showMoreMenu === index.toString() ? null : index.toString())}
                           title="Mais opções"
                           style={{
-                            background: 'none',
-                            border: 'none',
+                            background: '#f0f5ff',
+                            border: '1px solid #d8e0ee',
                             cursor: 'pointer',
-                            fontSize: 12,
-                            color: '#667085',
-                            padding: 0,
+                            fontSize: 14,
+                            color: '#0f4c81',
+                            padding: '6px 8px',
                             lineHeight: 1,
+                            borderRadius: 6,
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={e => {
+                            (e.currentTarget as HTMLButtonElement).style.background = '#e0ecff'
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#0f4c81'
+                          }}
+                          onMouseLeave={e => {
+                            (e.currentTarget as HTMLButtonElement).style.background = '#f0f5ff'
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = '#d8e0ee'
                           }}
                         >
-                          ⋮
+                          ⋮ More
                         </button>
                         {showMoreMenu === index.toString() && (
                           <div style={{
@@ -907,13 +969,22 @@ export default function ApexCopilot() {
                   }}
                   onPaste={event => {
                     const clipboardData = event.clipboardData
-                    if (!clipboardData) return
+                    if (!clipboardData) {
+                      console.log('[PASTE] No clipboard data')
+                      return
+                    }
                     const items = clipboardData.items
-                    for (let i = 0; i < items.length; i++) {
-                      const item = items[i]
+                    console.log('[PASTE] Clipboard items count:', items?.length || 0)
+                    let foundImage = false
+                    for (let i = 0; i < (items?.length || 0); i++) {
+                      const item = items?.[i]
+                      if (!item) continue
+                      console.log('[PASTE] Item', i, 'kind:', item.kind, 'type:', item.type)
                       if (item.kind === 'file' && item.type.startsWith('image/')) {
+                        foundImage = true
                         event.preventDefault()
                         const file = item.getAsFile()
+                        console.log('[PASTE] Image file obtained:', !!file, 'name:', file?.name, 'type:', file?.type)
                         if (file) {
                           const validation = validateAttachment(file)
                           if (validation.valid) {
@@ -924,11 +995,18 @@ export default function ApexCopilot() {
                               size: file.size,
                               file: file,
                             }])
+                            console.log('[PASTE] Image attachment added:', file.name)
                           } else if (validation.error) {
+                            console.error('[PASTE] Validation error:', validation.error)
                             alert(validation.error)
                           }
+                        } else {
+                          console.warn('[PASTE] getAsFile() returned null')
                         }
                       }
+                    }
+                    if (!foundImage) {
+                      console.log('[PASTE] No image data found in clipboard')
                     }
                   }}
                   placeholder={`Cole texto longo, página, relatório ou pergunta. Use Ctrl+Enter para enviar. Você também pode colar imagens via Print Screen.`}
