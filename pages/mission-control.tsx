@@ -2,6 +2,8 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { getSupabase } from '../lib/supabase'
+import AnalyticsDashboard from '../components/AnalyticsDashboard'
+import { trackEvent } from '../lib/tracking'
 
 type StatusItem = {
   name: string
@@ -109,6 +111,12 @@ export default function MissionControlPage() {
         router.replace('/login')
         return
       }
+
+      // Track mission control view
+      await trackEvent({
+        type: 'mission_control_view',
+        page_path: '/mission-control',
+      })
 
       const [modulesRes, projectsRes, eventsRes, docsRes] = await Promise.all([
         sb.from('platform_modules').select('id,module_key,label,page,status,description').order('sort_order', { ascending: true }).limit(40),
@@ -328,6 +336,16 @@ export default function MissionControlPage() {
                 </div>
               )
             })}
+          </div>
+        </section>
+
+        <section className="domain">
+          <div className="domain-header">
+            <h2>Analytics</h2>
+            <span className="badge badge-neutral">Real-time Tracking</span>
+          </div>
+          <div style={{ marginBottom: '14px' }}>
+            <AnalyticsDashboard />
           </div>
         </section>
 
