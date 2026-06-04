@@ -2,22 +2,84 @@ import { useState, FormEvent, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 
-const FEATURES = [
-  { icon: '⬡', label: 'Inteligência BIM',       sub: 'IFC, RVT, NWD, DWG · Clash Detection' },
-  { icon: '◈', label: 'Gestão EVM',              sub: 'CPI, SPI, EAC, VAC em tempo real' },
-  { icon: '⬡', label: 'Normas ABNT / NR',        sub: 'NR-18, NR-35, NR-10, NR-6' },
-  { icon: '◈', label: 'IA Multi-Agente',          sub: '8 especialistas cognitivos simultâneos' },
-]
+type Lang = 'en' | 'pt'
+
+const COPY = {
+  en: {
+    ownerReason: 'Sign in with your authenticated account to access Owner Command Chat.',
+    required: 'Enter email and password.',
+    serverConfig: 'Server configuration is incomplete. Contact support.',
+    invalidCredentials: 'Incorrect email or password.',
+    connectionError: 'Connection error. Try again.',
+    accountCreated: 'Account created. Check your email to confirm registration.',
+    loginTab: 'Sign in',
+    signupTab: 'Create account',
+    loginTitle: 'Sign in to the platform',
+    signupTitle: 'Create your account',
+    loginSub: 'Enter your credentials to access Apex Global AI.',
+    signupSub: 'Fill in the fields to create your access.',
+    email: 'EMAIL',
+    password: 'PASSWORD',
+    hidePassword: 'Hide password',
+    showPassword: 'Show password',
+    loading: 'Authenticating...',
+    loginCta: 'Sign in ->',
+    signupCta: 'Create account ->',
+    accessNote: 'Restricted access for authorized users',
+    footer: '2026 Apex Global AI. All rights reserved.',
+    heroTitle: 'CONSTRUCTION INTELLIGENCE PLATFORM',
+    heroDesc: 'AI command center for construction, BIM, EVM, project controls, and executive decision intelligence.',
+    features: [
+      { icon: 'A', label: 'BIM Intelligence', sub: 'IFC, RVT, NWD, DWG, clash detection' },
+      { icon: 'E', label: 'EVM Controls', sub: 'CPI, SPI, EAC, VAC, live performance signals' },
+      { icon: 'S', label: 'Safety & Standards', sub: 'ABNT, NR-18, NR-35, NR-10, NR-6' },
+      { icon: 'AI', label: 'Multi-Agent AI', sub: 'Specialized agents for planning and execution' },
+    ],
+  },
+  pt: {
+    ownerReason: 'Faça login com sua conta autenticada para acessar o Owner Command Chat.',
+    required: 'Preencha e-mail e senha.',
+    serverConfig: 'Configuração do servidor incompleta. Contate o suporte.',
+    invalidCredentials: 'E-mail ou senha incorretos.',
+    connectionError: 'Erro de conexão. Tente novamente.',
+    accountCreated: 'Conta criada. Verifique seu e-mail para confirmar o cadastro.',
+    loginTab: 'Entrar',
+    signupTab: 'Criar conta',
+    loginTitle: 'Entrar na plataforma',
+    signupTitle: 'Criar sua conta',
+    loginSub: 'Insira suas credenciais para acessar a Apex Global AI.',
+    signupSub: 'Preencha os campos para criar seu acesso.',
+    email: 'E-MAIL',
+    password: 'SENHA',
+    hidePassword: 'Ocultar senha',
+    showPassword: 'Mostrar senha',
+    loading: 'Autenticando...',
+    loginCta: 'Entrar ->',
+    signupCta: 'Criar conta ->',
+    accessNote: 'Acesso restrito a usuários autorizados',
+    footer: '2026 Apex Global AI. Todos os direitos reservados.',
+    heroTitle: 'PLATAFORMA DE INTELIGÊNCIA PARA CONSTRUÇÃO',
+    heroDesc: 'Centro de comando com IA para construção, BIM, EVM, controles de projeto e inteligência executiva.',
+    features: [
+      { icon: 'A', label: 'Inteligência BIM', sub: 'IFC, RVT, NWD, DWG, clash detection' },
+      { icon: 'E', label: 'Controles EVM', sub: 'CPI, SPI, EAC, VAC, sinais em tempo real' },
+      { icon: 'S', label: 'Segurança e Normas', sub: 'ABNT, NR-18, NR-35, NR-10, NR-6' },
+      { icon: 'AI', label: 'IA Multi-Agente', sub: 'Agentes especializados para planejar e executar' },
+    ],
+  },
+} as const
 
 export default function LoginClient() {
   const router = useRouter()
+  const [lang, setLang] = useState<Lang>('en')
+  const copy = COPY[lang]
   const redirectTarget =
     typeof router.query.redirect === 'string' && router.query.redirect.startsWith('/')
       ? router.query.redirect
       : '/dashboard'
   const reason =
     router.query.reason === 'owner-auth-required'
-      ? 'Faça login com sua conta autenticada para acessar o Owner Command Chat.'
+      ? copy.ownerReason
       : ''
   const [tab, setTab]           = useState<'login' | 'signup'>('login')
   const [email, setEmail]       = useState('')
@@ -29,12 +91,12 @@ export default function LoginClient() {
   async function handleSubmit(e: FormEvent | KeyboardEvent) {
     e.preventDefault()
     if (!email || !password) {
-      setError('Preencha e-mail e senha.')
+      setError(copy.required)
       return
     }
     const supabase = getSupabase()
     if (!supabase) {
-      setError('Configuração do servidor incompleta. Contate o suporte.')
+      setError(copy.serverConfig)
       return
     }
     setLoading(true)
@@ -44,7 +106,7 @@ export default function LoginClient() {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
         if (authError) {
           setError(authError.message === 'Invalid login credentials'
-            ? 'E-mail ou senha incorretos.'
+            ? copy.invalidCredentials
             : authError.message)
           setLoading(false)
           return
@@ -57,7 +119,7 @@ export default function LoginClient() {
           return
         }
         setError('')
-        alert('Conta criada! Verifique seu e-mail para confirmar o cadastro.')
+        alert(copy.accountCreated)
         setLoading(false)
         return
       }
@@ -65,7 +127,7 @@ export default function LoginClient() {
       // to middleware — avoids the flicker/redirect loop
       window.location.href = redirectTarget
     } catch (err: unknown) {
-      setError('Erro de conexão. Tente novamente.')
+      setError(copy.connectionError)
       setLoading(false)
     }
   }
@@ -78,33 +140,32 @@ export default function LoginClient() {
     <div className="acip-wrapper">
       <div className="acip-card">
 
-        {/* ── Painel esquerdo — branding ── */}
+        {/* ── Branding panel ── */}
         <aside className="acip-brand">
           <div className="acip-logo-row">
             <div className="acip-logo-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="#0f4c81" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                stroke="#b20f1d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4"/>
               </svg>
             </div>
             <div>
               <p className="acip-logo-title">APEX GLOBAL AI</p>
-              <p className="acip-logo-sub">v5.3 · Enterprise</p>
+              <p className="acip-logo-sub">CONSTRUCTION INTELLIGENCE PLATFORM</p>
             </div>
           </div>
 
           <div>
             <h1 className="acip-brand-heading">
-              Inteligência Operacional<br />para Construção & Negócios
+              {copy.heroTitle}
             </h1>
             <p className="acip-brand-desc">
-              Plataforma de IA multi-agente para engenharia civil,
-              BIM, EVM e inteligência executiva integrada.
+              {copy.heroDesc}
             </p>
           </div>
 
           <div className="acip-features">
-            {FEATURES.map(f => (
+            {copy.features.map(f => (
               <div key={f.label} className="acip-feat-item">
                 <span className="acip-feat-icon">{f.icon}</span>
                 <div>
@@ -116,31 +177,48 @@ export default function LoginClient() {
           </div>
 
           <p className="acip-footer">
-            © 2026 Apex Global AI · Todos os direitos reservados
+            {copy.footer}
           </p>
         </aside>
 
-        {/* ── Painel direito — formulário ── */}
+        {/* ── Form panel ── */}
         <main className="acip-form">
+          <div className="acip-form-brand" aria-label="Apex Global AI">
+            <strong>APEX GLOBAL AI</strong>
+            <span>CONSTRUCTION INTELLIGENCE PLATFORM</span>
+          </div>
 
-          {/* Tab login / criar conta */}
+          <div className="acip-lang" aria-label="Language selector">
+            {(['en', 'pt'] as const).map(option => (
+              <button
+                key={option}
+                type="button"
+                className={`acip-lang-btn ${lang === option ? 'acip-lang-btn--active' : ''}`}
+                onClick={() => { setLang(option); setError('') }}
+                aria-pressed={lang === option}
+              >
+                {option.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <div className="acip-tabs">
             {(['login', 'signup'] as const).map(t => (
               <button key={t} type="button"
                 className={`acip-tab ${tab === t ? 'acip-tab--active' : ''}`}
                 onClick={() => { setTab(t); setError('') }}>
-                {t === 'login' ? 'Entrar' : 'Criar conta'}
+                {t === 'login' ? copy.loginTab : copy.signupTab}
               </button>
             ))}
           </div>
 
           <h2 className="acip-form-title">
-            {tab === 'login' ? 'Entrar na plataforma' : 'Criar sua conta'}
+            {tab === 'login' ? copy.loginTitle : copy.signupTitle}
           </h2>
           <p className="acip-form-sub">
             {tab === 'login'
-              ? 'Insira suas credenciais para acessar.'
-              : 'Preencha os campos para criar seu acesso.'}
+              ? copy.loginSub
+              : copy.signupSub}
           </p>
 
           {reason && tab === 'login' && (
@@ -148,9 +226,8 @@ export default function LoginClient() {
           )}
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* E-mail */}
             <div className="acip-field">
-              <label htmlFor="email" className="acip-field-label">E-MAIL</label>
+              <label htmlFor="email" className="acip-field-label">{copy.email}</label>
               <div className="acip-input-wrap">
                 <span className="acip-input-icon">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -167,9 +244,8 @@ export default function LoginClient() {
               </div>
             </div>
 
-            {/* Senha */}
             <div className="acip-field">
-              <label htmlFor="password" className="acip-field-label">SENHA</label>
+              <label htmlFor="password" className="acip-field-label">{copy.password}</label>
               <div className="acip-input-wrap">
                 <span className="acip-input-icon">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -186,7 +262,7 @@ export default function LoginClient() {
                   required disabled={loading} />
                 <button type="button" className="acip-eye-btn"
                   onClick={() => setShowPwd(v => !v)}
-                  aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}>
+                  aria-label={showPwd ? copy.hidePassword : copy.showPassword}>
                   {showPwd
                     ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
                     : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -195,7 +271,6 @@ export default function LoginClient() {
               </div>
             </div>
 
-            {/* Erro */}
             {error && (
               <div className="acip-error">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -205,17 +280,16 @@ export default function LoginClient() {
               </div>
             )}
 
-            {/* Botão */}
             <button type="submit" className="acip-btn-primary" disabled={loading}>
               {loading
-                ? <><span className="acip-spinner" /> Autenticando…</>
-                : tab === 'login' ? 'Entrar →' : 'Criar conta →'
+                ? <><span className="acip-spinner" /> {copy.loading}</>
+                : tab === 'login' ? copy.loginCta : copy.signupCta
               }
             </button>
           </form>
 
           <p className="acip-access-note">
-            Acesso restrito a usuários autorizados
+            {copy.accessNote}
           </p>
         </main>
       </div>
@@ -229,9 +303,13 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --apex-blue:    #0f4c81;
-  --apex-blue-dk: #0a3860;
-  --apex-blue-lt: #edf3ff;
+  --apex-navy:   #071a33;
+  --apex-navy-2: #0d2b52;
+  --apex-red:    #b20f1d;
+  --apex-red-dk: #8f0c17;
+  --apex-silver: #c9d1d9;
+  --apex-silver-2: #eef2f5;
+  --apex-ink:    #111827;
   --radius:       10px;
 }
 
@@ -242,7 +320,7 @@ const CSS = `
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f3f8;
+  background: linear-gradient(135deg, #071a33 0%, #eef2f5 100%);
   padding: 2rem;
   font-family: 'DM Sans', system-ui, sans-serif;
 }
@@ -254,13 +332,14 @@ const CSS = `
   grid-template-columns: 1fr 1fr;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid #d6e2f0;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+  border: 1px solid rgba(201,209,217,0.85);
+  box-shadow: 0 18px 60px rgba(7,26,51,0.24);
 }
 
-/* ── Painel esquerdo ── */
 .acip-brand {
-  background: linear-gradient(135deg, #0f4c81 0%, #0a3860 100%);
+  background:
+    linear-gradient(135deg, rgba(178,15,29,0.18) 0%, rgba(7,26,51,0) 42%),
+    linear-gradient(135deg, var(--apex-navy) 0%, var(--apex-navy-2) 100%);
   padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
@@ -284,31 +363,31 @@ const CSS = `
 
 .acip-logo-title {
   font-size: 13px;
-  font-weight: 600;
-  color: #f0ece3;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0;
   line-height: 1.3;
 }
 
 .acip-logo-sub {
   font-size: 10px;
-  color: #6e6c65;
-  letter-spacing: 0.06em;
+  color: var(--apex-silver);
+  letter-spacing: 0;
   margin-top: 2px;
 }
 
 .acip-brand-heading {
   font-size: 24px;
   font-weight: 600;
-  color: #f0ece3;
+  color: #ffffff;
   line-height: 1.25;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   margin-bottom: 0.5rem;
 }
 
 .acip-brand-desc {
   font-size: 13px;
-  color: #9a9890;
+  color: #d8dee6;
   line-height: 1.65;
 }
 
@@ -325,13 +404,21 @@ const CSS = `
   padding: 10px 12px;
   background: rgba(255,255,255,0.08);
   border-radius: var(--radius);
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(201,209,217,0.18);
 }
 
 .acip-feat-icon {
-  font-size: 16px;
-  color: var(--apex-blue-lt);
-  width: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--apex-red);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   flex-shrink: 0;
 }
@@ -339,21 +426,20 @@ const CSS = `
 .acip-feat-label {
   font-size: 12px;
   font-weight: 500;
-  color: #d8d4ca;
+  color: #ffffff;
   margin-bottom: 1px;
 }
 
 .acip-feat-sub {
   font-size: 11px;
-  color: #6e6c65;
+  color: var(--apex-silver);
 }
 
 .acip-footer {
   font-size: 11px;
-  color: #4e4c47;
+  color: var(--apex-silver);
 }
 
-/* ── Painel direito ── */
 .acip-form {
   background: #ffffff;
   padding: 2.5rem 2rem;
@@ -361,13 +447,67 @@ const CSS = `
   flex-direction: column;
 }
 
+.acip-form-brand {
+  display: none;
+  margin-bottom: 1rem;
+}
+
+.acip-form-brand strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--apex-navy);
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.acip-form-brand span {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--apex-red);
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+.acip-lang {
+  display: inline-flex;
+  align-self: flex-end;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--apex-silver);
+  border-radius: 999px;
+  background: var(--apex-silver-2);
+}
+
+.acip-lang-btn {
+  min-width: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4b5563;
+  background: transparent;
+  cursor: pointer;
+}
+
+.acip-lang-btn--active {
+  color: #ffffff;
+  background: var(--apex-red);
+}
+
 .acip-tabs {
   display: flex;
   gap: 4px;
   margin-bottom: 1.5rem;
-  background: #f0f3f8;
+  background: var(--apex-silver-2);
   padding: 4px;
   border-radius: 8px;
+  border: 1px solid var(--apex-silver);
 }
 
 .acip-tab {
@@ -380,27 +520,27 @@ const CSS = `
   cursor: pointer;
   font-family: inherit;
   background: transparent;
-  color: #9a9890;
+  color: #5f6b7a;
   transition: all 0.15s;
 }
 
 .acip-tab--active {
   background: #fff;
-  color: #1a1a18;
+  color: var(--apex-navy);
   box-shadow: 0 1px 4px rgba(0,0,0,0.10);
 }
 
 .acip-form-title {
   font-size: 20px;
   font-weight: 600;
-  color: #1a1a18;
-  letter-spacing: -0.01em;
+  color: var(--apex-ink);
+  letter-spacing: 0;
   margin-bottom: 0.25rem;
 }
 
 .acip-form-sub {
   font-size: 13px;
-  color: #6b6962;
+  color: #4b5563;
   margin-bottom: 1.5rem;
 }
 
@@ -412,8 +552,8 @@ const CSS = `
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #9a9890;
-  letter-spacing: 0.06em;
+  color: #5f6b7a;
+  letter-spacing: 0;
   margin-bottom: 6px;
 }
 
@@ -434,18 +574,18 @@ const CSS = `
   padding: 10px 12px 10px 34px;
   font-size: 13px;
   font-family: inherit;
-  color: #1a1a18;
-  background: #f9fafc;
-  border: 1px solid #d6e2f0;
+  color: var(--apex-ink);
+  background: #f8fafc;
+  border: 1px solid var(--apex-silver);
   border-radius: var(--radius);
   outline: none;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .acip-input:focus {
-  border-color: var(--apex-blue);
+  border-color: var(--apex-red);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(15,76,129,0.12);
+  box-shadow: 0 0 0 3px rgba(178,15,29,0.12);
 }
 
 .acip-input--pwd { padding-right: 38px; }
@@ -483,11 +623,11 @@ const CSS = `
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  background: rgba(15,76,129,.08);
-  border: 1px solid rgba(15,76,129,.22);
+  background: rgba(7,26,51,.06);
+  border: 1px solid rgba(7,26,51,.18);
   border-radius: var(--radius);
   font-size: 12px;
-  color: #0a3860;
+  color: var(--apex-navy);
   margin-bottom: 1rem;
   line-height: 1.5;
 }
@@ -495,7 +635,7 @@ const CSS = `
 .acip-btn-primary {
   width: 100%;
   padding: 12px;
-  background: var(--apex-blue);
+  background: var(--apex-red);
   border: none;
   border-radius: var(--radius);
   color: #fff;
@@ -510,7 +650,7 @@ const CSS = `
   transition: background 0.15s, transform 0.1s;
   margin-top: 0.25rem;
 }
-.acip-btn-primary:hover:not(:disabled) { background: var(--apex-blue-dk); }
+.acip-btn-primary:hover:not(:disabled) { background: var(--apex-red-dk); }
 .acip-btn-primary:active:not(:disabled) { transform: scale(0.98); }
 .acip-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -527,11 +667,11 @@ const CSS = `
 .acip-demo-note {
   margin-top: 1rem;
   padding: 10px 14px;
-  background: rgba(15,76,129,.08);
-  border: 1px solid rgba(15,76,129,.25);
+  background: rgba(7,26,51,.06);
+  border: 1px solid rgba(7,26,51,.18);
   border-radius: var(--radius);
   font-size: 12px;
-  color: #0a3860;
+  color: var(--apex-navy);
   line-height: 1.5;
 }
 
@@ -550,6 +690,9 @@ const CSS = `
   }
   .acip-brand {
     display: none;
+  }
+  .acip-form-brand {
+    display: block;
   }
   .acip-form {
     padding: 2rem 1.5rem;
