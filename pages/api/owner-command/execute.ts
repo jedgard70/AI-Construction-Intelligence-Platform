@@ -60,7 +60,7 @@ export default async function handler(
 
   try {
     // Get Bearer token
-    const token = getBearerToken(req)
+    const token = getBearerToken(req.headers.authorization)
     if (!token) {
       return res.status(401).json({
         success: false,
@@ -86,6 +86,13 @@ export default async function handler(
       })
     }
 
+    if (params !== undefined && (typeof params !== 'object' || params === null || Array.isArray(params))) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'BAD_REQUEST', message: 'Params must be an object when provided' },
+      })
+    }
+
     // Check if command is in allowlist
     if (!(command in ALLOWED_COMMANDS)) {
       return res.status(400).json({
@@ -103,7 +110,7 @@ export default async function handler(
 
     try {
       // Simple timeout wrapper
-      const promise = executeCommand(command as CommandKey, params)
+      const promise = executeCommand(command as CommandKey, params as Record<string, unknown> | undefined)
       const timeoutPromise = new Promise<{ status: 'timeout'; result: string }>((resolve) => {
         setTimeout(() => {
           resolve({
@@ -172,7 +179,7 @@ export default async function handler(
  */
 async function executeCommand(
   command: CommandKey,
-  params?: Record<string, string>
+  params?: Record<string, unknown>
 ): Promise<{ status: 'success' | 'error'; result: string }> {
   switch (command) {
     case 'health_check':
@@ -212,6 +219,12 @@ async function executeCommand(
       }
 
     case 'validate_module':
+      if (params?.module !== undefined && typeof params.module !== 'string') {
+        return {
+          status: 'error',
+          result: 'Parameter module must be a string',
+        }
+      }
       const moduleName = params?.module || 'unknown'
       return {
         status: 'success',

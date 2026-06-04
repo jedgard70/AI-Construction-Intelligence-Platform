@@ -25,11 +25,13 @@ const DESTRUCTIVE_KEYWORDS = [
   'move',
 ] as const
 
-export function classifyDestructiveRisk(actionText: string, candidatePaths: string[] = []): DestructiveRiskReport {
-  const lowered = actionText.toLowerCase()
+export function classifyDestructiveRisk(actionText: unknown, candidatePaths: unknown[] = []): DestructiveRiskReport {
+  const safeActionText = typeof actionText === 'string' ? actionText : ''
+  const safeCandidatePaths = candidatePaths.filter((path): path is string => typeof path === 'string')
+  const lowered = safeActionText.toLowerCase()
   const keywordMatch = DESTRUCTIVE_KEYWORDS.some(k => lowered.includes(k))
-  const extracted = extractWindowsPaths(actionText)
-  const targets = Array.from(new Set([...candidatePaths, ...extracted]))
+  const extracted = extractWindowsPaths(safeActionText)
+  const targets = Array.from(new Set([...safeCandidatePaths, ...extracted]))
   const reasons: string[] = []
 
   let risk: DestructiveRiskLevel = keywordMatch ? 'medium' : 'low'
@@ -60,7 +62,7 @@ export function classifyDestructiveRisk(actionText: string, candidatePaths: stri
   const requiresOwnerApproval = risk === 'high' || risk === 'critical'
   return {
     risk,
-    action: actionText,
+    action: safeActionText,
     targets,
     reasons,
     requiresOwnerApproval,
