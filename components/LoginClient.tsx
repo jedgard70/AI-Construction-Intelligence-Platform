@@ -15,20 +15,21 @@ const COPY = {
     loginTab: 'Sign in',
     signupTab: 'Create account',
     loginTitle: 'Sign in to the platform',
-    signupTitle: 'Create your account',
-    loginSub: 'Enter your credentials to access Apex Global AI.',
-    signupSub: 'Fill in the fields to create your access.',
-    email: 'EMAIL',
-    password: 'PASSWORD',
+    signupTitle: 'Create account',
+    loginSub: 'AI-powered platform for construction, BIM, EVM and executive intelligence.',
+    signupSub: 'AI-powered platform for construction, BIM, EVM and executive intelligence.',
+    email: 'Email',
+    password: 'Password',
     hidePassword: 'Hide password',
     showPassword: 'Show password',
     loading: 'Authenticating...',
-    loginCta: 'Sign in ->',
-    signupCta: 'Create account ->',
-    accessNote: 'Restricted access for authorized users',
+    loginCta: 'Sign in',
+    signupCta: 'Create account',
+    accessNote: 'Authorized users only',
     footer: '2026 Apex Global AI. All rights reserved.',
     heroTitle: 'CONSTRUCTION INTELLIGENCE PLATFORM',
-    heroDesc: 'AI command center for construction, BIM, EVM, project controls, and executive decision intelligence.',
+    heroKicker: 'Operational Intelligence for Construction & Business',
+    heroDesc: 'AI-powered platform for construction, BIM, EVM and executive intelligence.',
     features: [
       { icon: 'A', label: 'BIM Intelligence', sub: 'IFC, RVT, NWD, DWG, clash detection' },
       { icon: 'E', label: 'EVM Controls', sub: 'CPI, SPI, EAC, VAC, live performance signals' },
@@ -46,20 +47,21 @@ const COPY = {
     loginTab: 'Entrar',
     signupTab: 'Criar conta',
     loginTitle: 'Entrar na plataforma',
-    signupTitle: 'Criar sua conta',
-    loginSub: 'Insira suas credenciais para acessar a Apex Global AI.',
-    signupSub: 'Preencha os campos para criar seu acesso.',
-    email: 'E-MAIL',
-    password: 'SENHA',
+    signupTitle: 'Criar conta',
+    loginSub: 'Plataforma com IA para construcao, BIM, EVM e inteligencia executiva.',
+    signupSub: 'Plataforma com IA para construcao, BIM, EVM e inteligencia executiva.',
+    email: 'Email',
+    password: 'Senha',
     hidePassword: 'Ocultar senha',
     showPassword: 'Mostrar senha',
     loading: 'Autenticando...',
-    loginCta: 'Entrar ->',
-    signupCta: 'Criar conta ->',
-    accessNote: 'Acesso restrito a usuários autorizados',
+    loginCta: 'Entrar',
+    signupCta: 'Criar conta',
+    accessNote: 'Somente usuarios autorizados',
     footer: '2026 Apex Global AI. Todos os direitos reservados.',
     heroTitle: 'PLATAFORMA DE INTELIGÊNCIA PARA CONSTRUÇÃO',
-    heroDesc: 'Centro de comando com IA para construção, BIM, EVM, controles de projeto e inteligência executiva.',
+    heroKicker: 'Inteligencia operacional para construcao e negocios',
+    heroDesc: 'Plataforma com IA para construcao, BIM, EVM e inteligencia executiva.',
     features: [
       { icon: 'A', label: 'Inteligência BIM', sub: 'IFC, RVT, NWD, DWG, clash detection' },
       { icon: 'E', label: 'Controles EVM', sub: 'CPI, SPI, EAC, VAC, sinais em tempo real' },
@@ -140,14 +142,10 @@ export default function LoginClient() {
     <div className="acip-wrapper">
       <div className="acip-card">
 
-        {/* ── Branding panel ── */}
         <aside className="acip-brand">
           <div className="acip-logo-row">
             <div className="acip-logo-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                stroke="#b20f1d" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-4h6v4"/>
-              </svg>
+              <img src="/logo_apex_nova.jpeg" alt="APEX GLOBAL AI" />
             </div>
             <div>
               <p className="acip-logo-title">APEX GLOBAL AI</p>
@@ -159,6 +157,9 @@ export default function LoginClient() {
             <h1 className="acip-brand-heading">
               {copy.heroTitle}
             </h1>
+            <p className="acip-brand-kicker">
+              {copy.heroKicker}
+            </p>
             <p className="acip-brand-desc">
               {copy.heroDesc}
             </p>
@@ -181,7 +182,6 @@ export default function LoginClient() {
           </p>
         </aside>
 
-        {/* ── Form panel ── */}
         <main className="acip-form">
           <div className="acip-form-brand" aria-label="Apex Global AI">
             <strong>APEX GLOBAL AI</strong>
@@ -237,7 +237,7 @@ export default function LoginClient() {
                   </svg>
                 </span>
                 <input id="email" type="email" autoComplete="email"
-                  placeholder="nome@empresa.com.br" className="acip-input"
+                  placeholder="you@company.com" className="acip-input"
                   value={email} onChange={e => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
                   required disabled={loading} />
@@ -354,11 +354,20 @@ const CSS = `
 }
 
 .acip-logo-icon {
-  width: 36px; height: 36px;
+  width: 58px; height: 58px;
   background: #fff;
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(201,209,217,0.55);
+}
+
+.acip-logo-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .acip-logo-title {
@@ -383,6 +392,14 @@ const CSS = `
   line-height: 1.25;
   letter-spacing: 0;
   margin-bottom: 0.5rem;
+}
+
+.acip-brand-kicker {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+  line-height: 1.45;
 }
 
 .acip-brand-desc {
