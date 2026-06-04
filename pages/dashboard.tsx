@@ -111,6 +111,8 @@ export default function Dashboard() {
 
   // ✅ CONTROLE DE ACESSO:
   // Only diretor_executivo sees the global DashboardByRole with all metrics/projects
+  console.log(`[DASHBOARD GATE] Email: ${profile.email}, Role: ${profile.role}, Decision: ${profile.role && AUTHORIZED_OWNER_ROLES.has(profile.role) ? 'DASHBOARD' : 'SAFEENTRY'}`)
+
   if (profile.role && AUTHORIZED_OWNER_ROLES.has(profile.role)) {
     return <DashboardByRole profile={profile!} />
   }
