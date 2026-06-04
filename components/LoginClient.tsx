@@ -1,6 +1,7 @@
 import { useState, FormEvent, KeyboardEvent } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
+import { trackEvent } from '../lib/tracking'
 
 const FEATURES = [
   { icon: '⬡', label: 'Inteligência BIM',       sub: 'IFC, RVT, NWD, DWG · Clash Detection' },
@@ -61,6 +62,11 @@ export default function LoginClient() {
         setLoading(false)
         return
       }
+      // Track login event before redirecting
+      await trackEvent({
+        type: 'login',
+        page_path: '/login',
+      })
       // Full page navigation so the browser sends the fresh session cookie
       // to middleware — avoids the flicker/redirect loop
       window.location.href = redirectTarget
