@@ -1,4 +1,4 @@
-/* Atlas / ConstructAI landing — copy + data
+/* Apex Global AI landing — copy + data
  * Bilingual (pt-BR / en) string dictionary + all section content.
  * Exposes everything to window so other Babel scripts can pick it up.
  */
@@ -21,7 +21,7 @@ const COPY = {
       headlinePost: "por",
       headlineAccent: "agentes cognitivos.",
       subhead:
-        "ConstructAI é o sistema operacional da construção civil brasileira. 8 agentes especializados lendo seu BIM, seu orçamento e seus diários de campo — em tempo real, na sua norma.",
+        "Apex Global AI é o sistema operacional da construção civil brasileira. 8 agentes especializados lendo seu BIM, seu orçamento e seus diários de campo — em tempo real, na sua norma.",
       trust: "Sessão criptografada · LGPD compliant · ABNT NR-18",
       ctaPrimary: "Solicitar demonstração",
       ctaSecondary: "Entrar na plataforma",
@@ -47,7 +47,7 @@ const COPY = {
       eyebrow: "O que entregamos primeiro",
       title: "8 serviços. Um único portfólio digital.",
       lede:
-        "Atlas Construction Intelligence opera como sua engenharia estendida — do permit ao render, sob a mesma plataforma de agentes.",
+        "Apex Global AI opera como sua engenharia estendida — do permit ao render, sob a mesma plataforma de agentes.",
       items: [
         { title: "Permit Sets", desc: "Pacotes técnicos prontos para aprovação municipal, com checklist NR e ABNT por disciplina." },
         { title: "Residential Construction Docs", desc: "Documentação executiva residencial — plantas, cortes, detalhes, especificações." },
@@ -76,7 +76,7 @@ const COPY = {
       ],
     },
     dashboard: {
-      eyebrow: "Plataforma · ConstructAI",
+      eyebrow: "Plataforma · Apex Global AI",
       title: "Esse é o painel. Clique em qualquer coisa.",
       lede:
         "Uma plataforma, seis papéis. O painel se reorganiza para o Diretor, o Financeiro, o Coordenador, o Engenheiro de Campo, a Qualidade e o Investidor — sem código, sem dashboard novo.",
@@ -109,7 +109,7 @@ const COPY = {
     roles: {
       eyebrow: "Seis papéis. Seis painéis.",
       title: "Cada cargo lê o mesmo dado de um ângulo diferente.",
-      lede: "O ConstructAI não muda o pipeline — ele muda quem decide o quê, e com que evidência.",
+      lede: "O Apex Global AI não muda o pipeline — ele muda quem decide o quê, e com que evidência.",
       items: [
         { num: "01", title: "Diretor Executivo", desc: "Portfólio, semáforo de obras, NOI consolidado, comitê pronto em 1 clique.", tags: ["NOI", "TIR", "Portfólio"], color: "var(--role-diretor)" },
         { num: "02", title: "Financeiro", desc: "Curva-S, EVM, EAC, TCPI. Conciliação com SINAPI e contratos.", tags: ["CPI/SPI", "EAC", "SINAPI"], color: "var(--role-financeiro)" },
@@ -144,7 +144,7 @@ const COPY = {
       ],
       features: [
         {
-          quote: "Em quatro semanas o ConstructAI achou 3 inconsistências de armadura em um memorial de 112 páginas. Reduziu o retrabalho da Torre B em quase 40%.",
+          quote: "Em quatro semanas o Apex Global AI achou 3 inconsistências de armadura em um memorial de 112 páginas. Reduziu o retrabalho da Torre B em quase 40%.",
           author: "Eng. Camila Vieira",
           role: "Coordenadora BIM · Construtora Horizonte",
           kpi: "37%",
@@ -229,7 +229,7 @@ const COPY = {
       ],
     },
     footer: {
-      cta: "Pronto para ver sua obra dentro do ConstructAI?",
+      cta: "Pronto para ver sua obra dentro do Apex Global AI?",
       ctaBtn: "Solicitar demonstração",
       cols: [
         { h: "Plataforma", links: ["Agentes", "Painéis por papel", "BIM 6D/7D", "EVM analytics", "Conformidade"] },
@@ -238,8 +238,8 @@ const COPY = {
         { h: "Recursos", links: ["Manual", "Status", "Changelog v5.3", "Documentação API", "Webinars"] },
       ],
       legal:
-        "Atlas Construction Intelligence LLC · ConstructAI™ é uma plataforma operada sob responsabilidade técnica do Eng. José Edgard de Oliveira (CREA 5071162007).",
-      copyright: "© 2026 Atlas Construction Intelligence LLC · Todos os direitos reservados",
+        "Apex Global AI é uma plataforma operada sob responsabilidade técnica do Eng. José Edgard de Oliveira (CREA 5071162007).",
+      copyright: "© 2026 Apex Global AI · Todos os direitos reservados",
       version: "v5.3 · enterprise cognitive infrastructure",
     },
     dash: {
@@ -277,7 +277,7 @@ const COPY = {
       headlinePost: "with",
       headlineAccent: "cognitive agents.",
       subhead:
-        "ConstructAI is the operating system for Brazilian civil construction. 8 specialized agents reading your BIM, your budget and your field logs — in real time, on your standards.",
+        "Apex Global AI is the operating system for Brazilian civil construction. 8 specialized agents reading your BIM, your budget and your field logs — in real time, on your standards.",
       trust: "Encrypted session · LGPD compliant · ABNT NR-18",
       ctaPrimary: "Request a demo",
       ctaSecondary: "Sign in",
@@ -303,7 +303,7 @@ const COPY = {
       eyebrow: "What we ship first",
       title: "8 services. One digital portfolio.",
       lede:
-        "Atlas Construction Intelligence acts as your extended engineering team — permit to render, all under the agents platform.",
+        "Apex Global AI acts as your extended engineering team — permit to render, all under the agents platform.",
       items: [
         { title: "Permit Sets", desc: "Approval-ready technical sets, with NR/ABNT checklists by discipline." },
         { title: "Residential Construction Docs", desc: "Executive residential documentation — plans, sections, details, specifications." },
@@ -332,7 +332,7 @@ const COPY = {
       ],
     },
     dashboard: {
-      eyebrow: "Platform · ConstructAI",
+      eyebrow: "Platform · Apex Global AI",
       title: "This is the dashboard. Click anything.",
       lede:
         "One platform, six roles. The dashboard reshapes for the Director, the CFO lead, the Coordinator, the Field Engineer, the Quality lead and the Investor — no code, no new dashboard.",
@@ -365,7 +365,7 @@ const COPY = {
     roles: {
       eyebrow: "Six roles. Six dashboards.",
       title: "Each role reads the same data from a different angle.",
-      lede: "ConstructAI doesn't change the pipeline — it changes who decides what, with what evidence.",
+      lede: "Apex Global AI doesn't change the pipeline — it changes who decides what, with what evidence.",
       items: [
         { num: "01", title: "Executive Director", desc: "Portfolio, project traffic-light, consolidated NOI, board-ready report in one click.", tags: ["NOI", "IRR", "Portfolio"], color: "var(--role-diretor)" },
         { num: "02", title: "Finance", desc: "S-curve, EVM, EAC, TCPI. SINAPI and contract reconciliation.", tags: ["CPI/SPI", "EAC", "SINAPI"], color: "var(--role-financeiro)" },
@@ -400,7 +400,7 @@ const COPY = {
       ],
       features: [
         {
-          quote: "In four weeks ConstructAI surfaced 3 rebar inconsistencies in a 112-page spec document. It cut rework on Tower B by almost 40%.",
+          quote: "In four weeks Apex Global AI surfaced 3 rebar inconsistencies in a 112-page spec document. It cut rework on Tower B by almost 40%.",
           author: "Eng. Camila Vieira",
           role: "BIM Coordinator · Horizonte Builders",
           kpi: "37%",
@@ -485,7 +485,7 @@ const COPY = {
       ],
     },
     footer: {
-      cta: "Ready to see your project inside ConstructAI?",
+      cta: "Ready to see your project inside Apex Global AI?",
       ctaBtn: "Request a demo",
       cols: [
         { h: "Platform", links: ["Agents", "Role dashboards", "BIM 6D/7D", "EVM analytics", "Compliance"] },
@@ -494,8 +494,8 @@ const COPY = {
         { h: "Resources", links: ["Manual", "Status", "Changelog v5.3", "API docs", "Webinars"] },
       ],
       legal:
-        "Atlas Construction Intelligence LLC · ConstructAI™ is operated under the technical responsibility of Eng. José Edgard de Oliveira (CREA 5071162007).",
-      copyright: "© 2026 Atlas Construction Intelligence LLC · All rights reserved",
+        "Apex Global AI is operated under the technical responsibility of Eng. José Edgard de Oliveira (CREA 5071162007).",
+      copyright: "© 2026 Apex Global AI · All rights reserved",
       version: "v5.3 · enterprise cognitive infrastructure",
     },
     dash: {

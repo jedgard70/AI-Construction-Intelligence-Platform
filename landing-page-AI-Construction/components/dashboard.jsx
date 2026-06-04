@@ -163,7 +163,7 @@ function MiniDashboard({ t, lang, roleIndex, setRoleIndex }) {
   }, [roleIndex]);
 
   return (
-    <div className="dash-frame" id="dashboard-mock" data-screen-label="ConstructAI mini-dashboard">
+    <div className="dash-frame" id="dashboard-mock" data-screen-label="Apex Global AI mini-dashboard">
       <div className="dash-chrome">
         <div className="dash-dots"><span /><span /><span /></div>
         <div className="dash-url">{t.dash.url}</div>
@@ -171,7 +171,7 @@ function MiniDashboard({ t, lang, roleIndex, setRoleIndex }) {
         <div className="row" style={{ gap: 8 }}>
           <span className="chip chip-mono" style={{ background: "var(--success-soft-bg)", color: "var(--success)" }}>
             <span style={{ width: 6, height: 6, background: "currentColor", borderRadius: "50%", display: "inline-block" }} />
-            ConstructAI v5.3
+            Apex Global AI v5.3
           </span>
         </div>
       </div>
