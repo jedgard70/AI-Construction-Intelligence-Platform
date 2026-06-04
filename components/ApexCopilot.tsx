@@ -391,11 +391,13 @@ export default function ApexCopilot() {
         try {
           const formData = new FormData()
           formData.append('file', att.file)
+          const analysisHeaders: Record<string, string> = {}
+          if (authToken) {
+            analysisHeaders.Authorization = `Bearer ${authToken}`
+          }
           const analysisRes = await fetch('/api/chat/analyze-attachment', {
             method: 'POST',
-            headers: {
-              Authorization: `Bearer ${authToken}` || '',
-            },
+            headers: analysisHeaders,
             body: formData,
           })
           if (analysisRes.ok) {

@@ -1,7 +1,7 @@
 import { IncomingForm, File as FormidableFile } from 'formidable'
 import fs from 'fs'
 import path from 'path'
-import { getBearerToken } from '../../../lib/owner-auth'
+import { getBearerToken, resolveOwnerContext } from '../../../lib/owner-auth'
 
 export const config = {
   api: { bodyParser: false },
@@ -72,6 +72,11 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
+  const user = await resolveOwnerContext(bearerToken)
+  if (!user?.userId) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' })
@@ -82,6 +87,8 @@ export default async function handler(req: any, res: any) {
     maxFiles: 1,
   })
 
+  let uploadedFilePath: string | null = null
+
   try {
     const [fields, files] = await form.parse(req)
     const fileArray = Array.isArray(files.file) ? files.file : files.file ? [files.file] : []
@@ -91,6 +98,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const file = fileArray[0] as FormidableFile
+    uploadedFilePath = file.filepath
     const fileType = file.mimetype || ''
 
     if (fileType.startsWith('image/')) {
@@ -109,5 +117,11 @@ export default async function handler(req: any, res: any) {
   } catch (err) {
     console.error('[ANALYZE_ATTACHMENT] Error:', err)
     return res.status(500).json({ error: 'Failed to process attachment' })
+  } finally {
+    if (uploadedFilePath) {
+      try {
+        fs.unlinkSync(uploadedFilePath)
+      } catch {}
+    }
   }
 }
