@@ -519,6 +519,32 @@ export default function ApexCopilot() {
     else if (activeScreen === 'status') setStatusMessages([INITIAL_STATUS_MESSAGE])
   }
 
+  function copyResponse(text: string) {
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function speakResponse(text: string) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'pt-BR'
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function shareResponse(text: string) {
+    const payload = { title: 'Apex AI', text }
+    if (navigator.share) {
+      navigator.share(payload).catch(() => {})
+      return
+    }
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function showMoreForResponse(text: string) {
+    const detail = text.length > 900 ? `${text.slice(0, 900)}...` : text
+    window.alert(`Apex AI response\n\n${detail}`)
+  }
+
   async function addAttachment(file: File) {
     const validation = validateAttachment(file)
     if (!validation.valid) {
@@ -775,6 +801,14 @@ export default function ApexCopilot() {
                       ))}
                     </div>
                   )}
+                  {message.role === 'assistant' && (
+                    <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 2 }}>
+                      <button onClick={() => copyResponse(message.text)} style={responseActionStyle}>Copy</button>
+                      <button onClick={() => speakResponse(message.text)} style={responseActionStyle}>Speak</button>
+                      <button onClick={() => shareResponse(message.text)} style={responseActionStyle}>Share</button>
+                      <button onClick={() => showMoreForResponse(message.text)} style={responseActionStyle}>More</button>
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && <div style={{ fontSize: 12, color: '#667085' }}>Apex AI analisando...</div>}
@@ -944,6 +978,17 @@ const pillButtonStyle = {
   borderRadius: 999,
   padding: '6px 9px',
   fontSize: 11,
+  fontWeight: 800,
+  cursor: 'pointer',
+} as const
+
+const responseActionStyle = {
+  border: '1px solid #d8e0ee',
+  background: '#fff',
+  color: '#0f4c81',
+  borderRadius: 999,
+  padding: '4px 8px',
+  fontSize: 10,
   fontWeight: 800,
   cursor: 'pointer',
 } as const
