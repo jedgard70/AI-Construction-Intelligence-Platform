@@ -38,6 +38,9 @@ const MOBILE_MARGIN = 10
 const LAUNCHER_WIDTH = 98
 const LAUNCHER_HEIGHT = 48
 const DRAG_THRESHOLD = 6
+const CP1_RUNTIME_MARKER = 'CP1 runtime: ApexCopilot v125-forensic-universal-intake'
+const CP1_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const CP1_LARGE_FILE_MESSAGE = 'Arquivo recebido, mas excede o limite CP1 de 10MB. Será tratado em checkpoint de arquivos grandes.'
 
 const INITIAL_ASSISTANT_MESSAGE: Msg = {
   role: 'assistant',
@@ -61,6 +64,9 @@ const SCREEN_LABEL: Record<Screen, string> = {
 }
 
 function readAssistantText(payload: any): string {
+  if (typeof payload?.analysis === 'string' && payload.analysis.trim()) {
+    return payload.analysis.trim()
+  }
   if (typeof payload?.content?.[0]?.text === 'string' && payload.content[0].text.trim()) {
     return payload.content[0].text.trim()
   }
@@ -71,16 +77,27 @@ function readAssistantText(payload: any): string {
 }
 
 function validateAttachment(file: File): { valid: boolean; error?: string } {
-  const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
-  if (!validTypes.includes(file.type)) {
-    return { valid: false, error: 'Tipo de arquivo não suportado. Use PNG, JPEG, WebP ou PDF.' }
-  }
-  const maxSizes = { 'application/pdf': 10 * 1024 * 1024, default: 5 * 1024 * 1024 }
-  const maxSize = maxSizes[file.type as keyof typeof maxSizes] || maxSizes.default
-  if (file.size > maxSize) {
-    return { valid: false, error: `Arquivo muito grande. Máximo: ${maxSize / 1024 / 1024}MB` }
+  if (file.size > CP1_MAX_ATTACHMENT_BYTES) {
+    return { valid: false, error: CP1_LARGE_FILE_MESSAGE }
   }
   return { valid: true }
+}
+
+async function readJsonResponse(res: Response): Promise<any> {
+  const raw = await res.text()
+  if (!raw.trim()) return {}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return {
+      error: {
+        message: res.status === 413
+          ? CP1_LARGE_FILE_MESSAGE
+          : 'O servidor retornou uma resposta inesperada. O arquivo foi aceito no intake, mas a análise não foi concluída neste checkpoint.',
+      },
+      non_json_response: true,
+    }
+  }
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -105,6 +122,14 @@ function initWebSpeech(): { recognition: any; supported: boolean } {
   recognition.continuous = false
   recognition.interimResults = false
   return { recognition, supported: true }
+}
+
+function getValidSessionToken(session: any): string | null {
+  const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+  if (!token) return null
+  const expiresAt = typeof session?.expires_at === 'number' ? session.expires_at : null
+  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) + 30) return null
+  return token
 }
 
 export default function ApexCopilot() {
@@ -308,26 +333,74 @@ export default function ApexCopilot() {
 
     let active = true
 
+    async function refreshServerContext(token: string, fallbackEmail?: string | null) {
+      try {
+        const res = await fetch('/api/chat/session-context', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!active) return
+        if (!res.ok) {
+          setAuthToken(null)
+          setChatContext({
+            role: 'guest',
+            owner: false,
+            email: fallbackEmail || null,
+          })
+          return
+        }
+        setChatContext({
+          role: data?.role || 'user',
+          owner: Boolean(data?.is_owner),
+          email: data?.email || fallbackEmail || null,
+        })
+      } catch {
+        if (!active) return
+        setChatContext({
+          role: 'guest',
+          owner: false,
+          email: fallbackEmail || null,
+        })
+      }
+    }
+
     async function syncSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!active) return
-      setAuthToken(session?.access_token || null)
+      const token = getValidSessionToken(session)
+      const email = session?.user?.email || null
+      setAuthToken(token)
+      if (!token) {
+        setChatContext({ role: 'guest', owner: false, email })
+        return
+      }
       setChatContext(prev => ({
         ...prev,
-        email: session?.user?.email || null,
+        role: prev.role === 'guest' ? 'user' : prev.role,
+        email,
       }))
+      await refreshServerContext(token, email)
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthToken(session?.access_token || null)
+      const token = getValidSessionToken(session)
+      const email = session?.user?.email || null
+      setAuthToken(token)
+      if (!token) {
+        setChatContext({ role: 'guest', owner: false, email })
+        return
+      }
       setChatContext(prev => ({
         ...prev,
-        email: session?.user?.email || null,
+        role: prev.role === 'guest' ? 'user' : prev.role,
+        email,
       }))
+      refreshServerContext(token, email).catch(() => {})
     })
 
     syncSession().catch(() => {
@@ -408,18 +481,32 @@ export default function ApexCopilot() {
           prompt: question,
           attachment: {
             name: attachment.name,
-            type: attachment.type,
+            type: attachment.type || 'application/octet-stream',
             size: attachment.size,
             dataUrl: attachment.dataUrl,
           },
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) {
-        throw new Error(data?.error?.message || 'Falha ao analisar anexo.')
+        throw new Error(
+          res.status === 401
+            ? 'Please log in on this Preview before using protected attachment analysis.'
+            : res.status === 413
+              ? CP1_LARGE_FILE_MESSAGE
+              : data?.error?.message || 'Falha ao analisar anexo.',
+        )
+      }
+      if (data?.apex_context) {
+        setChatContext({
+          role: data.apex_context.role || 'user',
+          owner: Boolean(data.apex_context.is_owner),
+          email: data.apex_context.email || chatContext.email || null,
+        })
       }
       const text = readAssistantText(data)
-      analyses.push(`Anexo: ${attachment.name}\n${text || 'Analise vazia.'}`)
+      const typeLabel = data?.type ? `Tipo: ${data.type}` : 'Tipo: unknown'
+      analyses.push(`Anexo: ${attachment.name}\n${typeLabel}\n${text || 'Analise vazia.'}`)
     }
     return analyses.join('\n\n')
   }
@@ -452,6 +539,13 @@ export default function ApexCopilot() {
       }
 
       if (selectedAttachments.length > 0) {
+        if (!authToken) {
+          appendAssistantMessage({
+            role: 'assistant',
+            text: 'Please log in on this Preview before using protected attachment analysis.',
+          })
+          return
+        }
         const analysis = await analyzeAttachments(question, selectedAttachments, headers)
         appendAssistantMessage({
           role: 'assistant',
@@ -474,7 +568,7 @@ export default function ApexCopilot() {
           ],
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       setChatContext({
         role: data?.apex_context?.role || (authToken ? 'user' : 'guest'),
         owner: Boolean(data?.apex_context?.is_owner),
@@ -530,6 +624,32 @@ export default function ApexCopilot() {
     else if (activeScreen === 'status') setStatusMessages([INITIAL_STATUS_MESSAGE])
   }
 
+  function copyResponse(text: string) {
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function speakResponse(text: string) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'pt-BR'
+    window.speechSynthesis.speak(utterance)
+  }
+
+  function shareResponse(text: string) {
+    const payload = { title: 'Apex AI', text }
+    if (navigator.share) {
+      navigator.share(payload).catch(() => {})
+      return
+    }
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function showMoreForResponse(text: string) {
+    const detail = text.length > 900 ? `${text.slice(0, 900)}...` : text
+    window.alert(`Apex AI response\n\n${detail}`)
+  }
+
   async function addAttachment(file: File) {
     const validation = validateAttachment(file)
     if (!validation.valid) {
@@ -541,7 +661,7 @@ export default function ApexCopilot() {
       setAttachments(prev => [...prev, {
         id: `${Date.now()}-${file.name}`,
         name: file.name,
-        type: file.type,
+        type: file.type || 'application/octet-stream',
         size: file.size,
         dataUrl,
       }])
@@ -663,6 +783,7 @@ export default function ApexCopilot() {
               <div style={{ fontSize: 10, opacity: 0.82 }}>
                 {chatContext.owner ? 'Owner/Dr. Edgard ativo' : `Contexto ${seatLabel}`}
               </div>
+              <div style={{ fontSize: 9, opacity: 0.72 }}>{CP1_RUNTIME_MARKER}</div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
@@ -786,6 +907,14 @@ export default function ApexCopilot() {
                       ))}
                     </div>
                   )}
+                  {message.role === 'assistant' && (
+                    <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 6, flexWrap: 'wrap', marginLeft: 2 }}>
+                      <button onClick={() => copyResponse(message.text)} style={responseActionStyle}>Copy</button>
+                      <button onClick={() => speakResponse(message.text)} style={responseActionStyle}>Speak</button>
+                      <button onClick={() => shareResponse(message.text)} style={responseActionStyle}>Share</button>
+                      <button onClick={() => showMoreForResponse(message.text)} style={responseActionStyle}>More</button>
+                    </div>
+                  )}
                 </div>
               ))}
               {loading && <div style={{ fontSize: 12, color: '#667085' }}>Apex AI analisando...</div>}
@@ -846,7 +975,7 @@ export default function ApexCopilot() {
                     📎
                     <input
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="*/*"
                       onChange={e => {
                         if (e.target.files?.[0]) {
                           addAttachment(e.target.files[0])
@@ -955,6 +1084,17 @@ const pillButtonStyle = {
   borderRadius: 999,
   padding: '6px 9px',
   fontSize: 11,
+  fontWeight: 800,
+  cursor: 'pointer',
+} as const
+
+const responseActionStyle = {
+  border: '1px solid #d8e0ee',
+  background: '#fff',
+  color: '#0f4c81',
+  borderRadius: 999,
+  padding: '4px 8px',
+  fontSize: 10,
   fontWeight: 800,
   cursor: 'pointer',
 } as const

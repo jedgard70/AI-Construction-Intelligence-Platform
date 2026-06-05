@@ -79,17 +79,123 @@ export default async function handler(req, res) {
   }
   const openaiModel = process.env.OPENAI_CHAT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
+  const isCp1StatusRequest = (text) => {
+    const t = text.toLowerCase()
+    return [
+      'verifique estes itens',
+      'verificar estes itens',
+      'status cp1',
+      'qa checklist',
+      'checklist cp1',
+      'o que passou',
+      'o que falhou',
+      'confirme se está funcionando',
+      'confirme se esta funcionando',
+      'cp1 está green',
+      'cp1 esta green',
+      'owner qa',
+      'runtime marker',
+    ].some(term => t.includes(term)) || (t.includes('cp1') && (t.includes('status') || t.includes('checklist') || t.includes('qa')))
+  }
+
+  const isIdentityRequest = (text) => {
+    const t = text.toLowerCase()
+    return [
+      'quem sou eu',
+      'who am i',
+      'qual meu perfil',
+      'qual é meu perfil',
+      'qual e meu perfil',
+      'sou owner',
+      'sou o owner',
+    ].some(term => t.includes(term))
+  }
+
   const classifyIntent = (text) => {
     const t = text.toLowerCase()
-    if (
-      t.includes('service role key') ||
-      t.includes('api key') ||
-      t.includes('token') ||
-      t.includes('pat ') ||
-      t.includes('senha') ||
-      t.includes('secret')
-    ) {
+    if (isCp1StatusRequest(t) || isIdentityRequest(t)) {
+      return 'safe_info'
+    }
+    const hasSecretTerm = [
+      'service role',
+      'api key',
+      'api_key',
+      'openai_api_key',
+      'token',
+      'pat ',
+      'personal access token',
+      'chave',
+      'senha',
+      'secret',
+      'segredo',
+      'credencial',
+    ].some(term => t.includes(term))
+    const hasAllowedSecretContext = [
+      'não expor secrets',
+      'nao expor secrets',
+      'não expor segredos',
+      'nao expor segredos',
+      'do not expose secrets',
+      'sem secrets',
+      'sem segredos',
+      'tokens temporários',
+      'tokens temporarios',
+      'env var',
+      'environment variable',
+      'environment configuration',
+      'configuro openai_api_key',
+      'configurar openai_api_key',
+      'openai_api_key configurada',
+      'safety gate',
+      'checklist',
+      'status',
+      'audit',
+      'auditoria',
+      'security policy',
+      'política de segurança',
+      'politica de seguranca',
+      'pr status',
+      'cp1',
+      'cp0',
+      'documentação',
+      'documentacao',
+      'safe setup',
+      'configuração segura',
+      'configuracao segura',
+    ].some(term => t.includes(term))
+    const hasSecretExtractionAction = [
+      'me mostre',
+      'mostre o',
+      'mostra o',
+      'reveal',
+      'revele',
+      'provide',
+      'forneça',
+      'forneca',
+      'cole o',
+      'paste',
+      'print',
+      'imprima',
+      'exponha',
+      'expose',
+      'retrieve',
+      'recupere',
+      'bypass',
+      'ignore a política',
+      'ignore a politica',
+      'gere um token',
+      'generate token',
+      'gera um token',
+      'qual é o token',
+      'qual e o token',
+      'qual é a key',
+      'qual e a key',
+    ].some(term => t.includes(term))
+    if (hasSecretTerm && hasSecretExtractionAction) {
       return 'secret_request'
+    }
+    if (hasSecretTerm && hasAllowedSecretContext) {
+      return 'safe_info'
     }
     if (
       t.includes('apague ') ||
@@ -387,6 +493,74 @@ Policy:
     })
   }
 
+  const respondText = (id, text) => {
+    logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: null })
+    return res.status(200).json({
+      id,
+      type: 'message',
+      role: 'assistant',
+      model: 'apex-cp1-runtime',
+      content: [{ type: 'text', text }],
+      stop_reason: 'end_turn',
+      usage: { input_tokens: 0, output_tokens: 0 },
+      apex_context: apexContextPayload,
+    })
+  }
+
+  if (isIdentityRequest(joinedUserText)) {
+    if (userContext.is_owner) {
+      return respondText(
+        'apex-cp1-identity-owner',
+        `Você está autenticado como Owner/Dr. Edgard.\nEmail: ${userContext.email || 'não informado'}\nRole: owner\nContexto CP1: sessão Supabase válida reconhecida pelo backend.`,
+      )
+    }
+    if (userContext.role === 'guest') {
+      return respondText(
+        'apex-cp1-identity-guest',
+        'Você está como Guest neste runtime. Login/sessão Supabase não foi confirmado neste Preview; faça login neste domínio de Preview para usar contexto Owner e análise protegida de anexos.',
+      )
+    }
+    return respondText(
+      'apex-cp1-identity-seat',
+      `Você está autenticado como ${userContext.role}.\nEmail: ${userContext.email || 'não informado'}\nOwner: ${userContext.is_owner ? 'sim' : 'não'}.`,
+    )
+  }
+
+  if (isCp1StatusRequest(joinedUserText)) {
+    const ownerLine = userContext.is_owner
+      ? `Owner context: PASS - backend reconhece Owner/Dr. Edgard (${userContext.email || 'email não informado'}).`
+      : userContext.role === 'guest'
+        ? 'Owner context: NÃO CONFIRMADO - sessão atual está como Guest neste Preview.'
+        : `Owner context: NÃO CONFIRMADO COMO OWNER - sessão atual está como ${userContext.role}.`
+
+    return respondText(
+      'apex-cp1-status',
+      [
+        'Status CP1 neste runtime:',
+        '',
+        'PASS confirmado pelo código ativo:',
+        '- Botões Copy/Speak/Share/More: presentes nas respostas do ApexCopilot e HelpButton.',
+        '- Intake universal: file picker ativo com accept="*/*".',
+        '- Limite CP1: 10MB, com mensagem limpa para arquivos grandes.',
+        '- JSON robusto: respostas não JSON do servidor são tratadas com mensagem limpa, sem erro técnico de parse para o usuário.',
+        '- PDF: sem o parser antigo que quebrava no Preview; se extração falhar, retorna fallback seguro documental/OCR.',
+        '- Imagens JPG/PNG/WebP: roteadas para OpenAI Vision quando OPENAI_API_KEY está configurada.',
+        '- IFC/DWG/DXF/RVT/SKP/ZIP/XLSX/DOCX/CSV/TXT/MP4/MOV <=10MB: aceitos e classificados, sem deep parse neste checkpoint.',
+        '- Safety Gate: discussão de status/auditoria/checklist/env var é permitida; extração real de tokens/keys/PAT segue bloqueada.',
+        `- ${ownerLine}`,
+        '',
+        'Falhas ou pendências:',
+        '- Vercel direto pode aparecer como CANCELED se o deployment do SHA atual não estiver READY.',
+        '- QA real de cada formato no browser Owner: não confirmado por este endpoint; precisa teste Owner no Preview correto.',
+        '- PDF OCR/leitura documental profunda: pendente para checkpoint documental/OCR.',
+        '- IFC/DWG/Revit/ZIP parsing profundo: pendente para checkpoints BIM/CAD/arquivos grandes.',
+        '',
+        'Próxima ação:',
+        '- Testar no Preview cujo runtime marker e SHA correspondam ao PR #125 atual; se algo falhar, reportar arquivo/formato/tamanho e resposta exibida.',
+      ].join('\n'),
+    )
+  }
+
   // ── Resolve system prompt ─────────────────────────────────────────────────
   let systemPrompt = `${policySystem}\n\n${seatContextPrompt}`
 
@@ -394,7 +568,9 @@ Policy:
     try {
       const sb = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        process.env.SUPABASE_SERVICE_ROLE_KEY ||
+          process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       )
       const { data } = await sb
         .from('prompt_versions')

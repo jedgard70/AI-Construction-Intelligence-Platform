@@ -23,9 +23,8 @@
     "recharts": "^2.15.3",
     "react-is": "^19.0.0",
     "@vercel/speed-insights": "^1.1.0",
-    "pdf-parse": "^2.4.5",
-    "fflate": "^0.8.0",
-    "web-ifc": "^0.0.68"
+    "web-ifc": "^0.0.68",
+    "fflate": "^0.8.0"
   },
   "devDependencies": {
     "@types/node": "^20",
