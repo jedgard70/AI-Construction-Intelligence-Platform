@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer'
+import zlib from 'zlib'
 import { getBearerToken, resolveOwnerContext } from '../../../lib/owner-auth'
 
 export const config = {
@@ -9,22 +10,96 @@ export const config = {
   },
 }
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024
-const MAX_PDF_BYTES = 10 * 1024 * 1024
-const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp'])
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const TEXT_LIMIT = 18000
+const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
+const TEXT_TYPES = new Set([
+  'text/plain',
+  'text/csv',
+  'text/markdown',
+  'application/json',
+  'application/xml',
+  'text/xml',
+])
 const OPENAI_MODEL = process.env.OPENAI_VISION_MODEL || process.env.OPENAI_CHAT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+
+const EXTENSION_TYPE = {
+  png: 'image',
+  jpg: 'image',
+  jpeg: 'image',
+  webp: 'image',
+  pdf: 'pdf',
+  txt: 'text',
+  md: 'text',
+  csv: 'text',
+  json: 'text',
+  xml: 'text',
+  xls: 'spreadsheet',
+  xlsx: 'spreadsheet',
+  doc: 'office',
+  docx: 'office',
+  ppt: 'office',
+  pptx: 'office',
+  ifc: 'bim',
+  rvt: 'bim',
+  skp: 'bim',
+  dwg: 'cad',
+  dxf: 'cad',
+  zip: 'archive',
+  rar: 'archive',
+  '7z': 'archive',
+  mp4: 'video',
+  mov: 'video',
+  avi: 'video',
+  mkv: 'video',
+  webm: 'video',
+}
+
+function getExtension(fileName = '') {
+  const clean = String(fileName).toLowerCase().split('?')[0]
+  const parts = clean.split('.')
+  return parts.length > 1 ? parts.pop() : ''
+}
 
 function parseDataUrl(dataUrl) {
   if (typeof dataUrl !== 'string') return null
-  const match = dataUrl.match(/^data:([^;,]+);base64,([A-Za-z0-9+/=]+)$/)
+  const match = dataUrl.match(/^data:([^;,]*)(?:;[^,]*)?;base64,([A-Za-z0-9+/=]+)$/)
   if (!match) return null
-  const mediaType = match[1].toLowerCase()
+  const mediaType = (match[1] || 'application/octet-stream').toLowerCase()
   const base64 = match[2]
   return {
     mediaType,
     base64,
     bytes: Buffer.byteLength(base64, 'base64'),
   }
+}
+
+function classifyAttachment(fileName, mediaType) {
+  const extension = getExtension(fileName)
+  if (IMAGE_TYPES.has(mediaType)) return 'image'
+  if (mediaType === 'application/pdf') return 'pdf'
+  if (TEXT_TYPES.has(mediaType) || mediaType.startsWith('text/')) return 'text'
+  if (mediaType.includes('spreadsheet') || mediaType.includes('excel')) return 'spreadsheet'
+  if (mediaType.includes('wordprocessingml') || mediaType.includes('msword') || mediaType.includes('presentation')) return 'office'
+  if (mediaType.includes('zip') || mediaType.includes('compressed')) return 'archive'
+  if (mediaType.startsWith('video/')) return 'video'
+  return EXTENSION_TYPE[extension] || 'unknown'
+}
+
+function workflowFor(type) {
+  const workflows = {
+    image: 'image/vision analysis',
+    pdf: 'document analysis',
+    text: 'text/document intelligence',
+    spreadsheet: 'spreadsheet intelligence checkpoint',
+    bim: 'BIM/Revit/IFC checkpoint',
+    cad: 'CAD/DWG/DXF checkpoint',
+    office: 'office document intelligence checkpoint',
+    archive: 'archive ingestion checkpoint',
+    video: 'video/director analysis checkpoint',
+    unknown: 'universal file intake triage',
+  }
+  return workflows[type] || workflows.unknown
 }
 
 function extractOpenAIText(data) {
@@ -39,7 +114,7 @@ async function callOpenAI(messages, maxTokens = 900) {
     throw error
   }
 
-  // Direct fetch keeps CP1 independent from a new SDK dependency.
+  // Direct fetch keeps CP1 independent from a new OpenAI SDK dependency.
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -67,7 +142,7 @@ async function callOpenAI(messages, maxTokens = 900) {
 }
 
 async function analyzeImage({ dataUrl, mediaType, prompt, fileName }) {
-  return callOpenAI([
+  const result = await callOpenAI([
     {
       role: 'system',
       content:
@@ -91,37 +166,194 @@ async function analyzeImage({ dataUrl, mediaType, prompt, fileName }) {
       ],
     },
   ])
+  return {
+    analysis: result.text || 'Imagem recebida, mas a analise retornou vazia.',
+    supportedAnalysis: true,
+    model: result.model,
+    usage: result.usage,
+  }
+}
+
+function decodePdfLiteral(value) {
+  return value
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\b/g, '\b')
+    .replace(/\\f/g, '\f')
+    .replace(/\\\(/g, '(')
+    .replace(/\\\)/g, ')')
+    .replace(/\\\\/g, '\\')
+}
+
+function extractTextFromPdfChunk(text) {
+  const out = []
+  const literalMatches = text.matchAll(/\((?:\\.|[^\\()])*\)\s*Tj/g)
+  for (const match of literalMatches) {
+    out.push(decodePdfLiteral(match[0].replace(/\)\s*Tj$/, '').slice(1)))
+  }
+
+  const arrayMatches = text.matchAll(/\[((?:\s*\((?:\\.|[^\\()])*\)\s*)+)\]\s*TJ/g)
+  for (const match of arrayMatches) {
+    const literals = match[1].matchAll(/\((?:\\.|[^\\()])*\)/g)
+    const parts = []
+    for (const literal of literals) {
+      parts.push(decodePdfLiteral(literal[0].slice(1, -1)))
+    }
+    if (parts.length) out.push(parts.join(''))
+  }
+
+  return out.join('\n')
+}
+
+function inflatePdfStreams(raw) {
+  const chunks = []
+  const streamMatches = raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)
+  for (const match of streamMatches) {
+    const streamBytes = Buffer.from(match[1], 'binary')
+    try {
+      chunks.push(zlib.inflateSync(streamBytes).toString('latin1'))
+      continue
+    } catch {
+      // try raw deflate next
+    }
+    try {
+      chunks.push(zlib.inflateRawSync(streamBytes).toString('latin1'))
+    } catch {
+      // ignore unreadable compressed stream
+    }
+  }
+  return chunks
+}
+
+function extractPdfTextBestEffort(buffer) {
+  const raw = buffer.toString('latin1')
+  const chunks = [raw, ...inflatePdfStreams(raw)]
+  return chunks
+    .map(extractTextFromPdfChunk)
+    .join('\n')
+    .replace(/\s{3,}/g, ' ')
+    .trim()
+    .slice(0, TEXT_LIMIT)
 }
 
 async function analyzePdf({ base64, prompt, fileName }) {
-  const pdfParse = (await import('pdf-parse')).default
-  const buffer = Buffer.from(base64, 'base64')
-  const parsed = await pdfParse(buffer)
-  const text = String(parsed?.text || '').trim().slice(0, 18000)
+  try {
+    const buffer = Buffer.from(base64, 'base64')
+    const text = extractPdfTextBestEffort(buffer)
+    if (!text || text.length < 20) {
+      return {
+        analysis: 'PDF recebido, mas extração de texto falhou. O arquivo foi aceito e será encaminhado para análise documental.',
+        supportedAnalysis: false,
+        model: 'apex-pdf-best-effort',
+        usage: null,
+      }
+    }
+
+    const result = await callOpenAI([
+      {
+        role: 'system',
+        content:
+          'You are Apex Copilot. Analyze extracted PDF text for construction, BIM, EVM, operational and business context. Do not expose secrets.',
+      },
+      {
+        role: 'user',
+        content: [
+          `Attachment name: ${fileName || 'document.pdf'}`,
+          prompt ? `User request: ${prompt}` : 'User request: analyze this PDF.',
+          'Extracted PDF text:',
+          text,
+        ].join('\n\n'),
+      },
+    ], 1100)
+
+    return {
+      analysis: result.text || 'PDF recebido, mas a analise retornou vazia.',
+      supportedAnalysis: true,
+      model: result.model,
+      usage: result.usage,
+    }
+  } catch {
+    return {
+      analysis: 'PDF recebido, mas extração de texto falhou. O arquivo foi aceito e será encaminhado para análise documental.',
+      supportedAnalysis: false,
+      model: 'apex-pdf-best-effort',
+      usage: null,
+    }
+  }
+}
+
+async function analyzeText({ base64, prompt, fileName, mediaType }) {
+  const text = Buffer.from(base64, 'base64').toString('utf8').replace(/\0/g, '').trim().slice(0, TEXT_LIMIT)
   if (!text) {
     return {
-      text: 'Nao consegui extrair texto pesquisavel deste PDF. OCR ainda nao esta habilitado no CP1.',
-      model: 'pdf-parse',
+      analysis: `Arquivo recebido e classificado como texto, mas nao ha conteudo textual legivel. Workflow: ${workflowFor('text')}.`,
+      supportedAnalysis: false,
+      model: 'apex-text-intake',
       usage: null,
     }
   }
 
-  return callOpenAI([
+  const result = await callOpenAI([
     {
       role: 'system',
       content:
-        'You are Apex Copilot. Analyze extracted PDF text for construction, BIM, EVM, operational and business context. Do not expose secrets.',
+        'You are Apex Copilot. Summarize and classify text, CSV, JSON, Markdown or XML files for operational construction/business workflows. Do not expose secrets.',
     },
     {
       role: 'user',
       content: [
-        `Attachment name: ${fileName || 'document.pdf'}`,
-        prompt ? `User request: ${prompt}` : 'User request: analyze this PDF.',
-        'Extracted PDF text:',
+        `Attachment name: ${fileName}`,
+        `Media type: ${mediaType}`,
+        prompt ? `User request: ${prompt}` : 'User request: summarize and classify this file.',
+        'File text:',
         text,
       ].join('\n\n'),
     },
-  ], 1100)
+  ], 900)
+
+  return {
+    analysis: result.text || 'Arquivo textual recebido, mas a analise retornou vazia.',
+    supportedAnalysis: true,
+    model: result.model,
+    usage: result.usage,
+  }
+}
+
+function classifyOnly({ fileName, mediaType, type, bytes }) {
+  return {
+    analysis: [
+      'Arquivo recebido e classificado. Leitura profunda deste formato será implementada em checkpoint específico.',
+      `Arquivo: ${fileName}`,
+      `Tipo classificado: ${type}`,
+      `MIME: ${mediaType || 'application/octet-stream'}`,
+      `Tamanho: ${(bytes / 1024).toFixed(1)} KB`,
+      `Workflow recomendado: ${workflowFor(type)}.`,
+    ].join('\n'),
+    supportedAnalysis: false,
+    model: 'apex-universal-intake',
+    usage: null,
+  }
+}
+
+function sendNormalized(res, status, payload) {
+  return res.status(status).json({
+    id: 'apex-attachment-analysis',
+    role: 'assistant',
+    type: payload.type,
+    analysis: payload.analysis,
+    filename: payload.filename,
+    supportedAnalysis: payload.supportedAnalysis,
+    model: payload.model,
+    content: [{ type: 'text', text: payload.analysis }],
+    usage: payload.usage
+      ? {
+          input_tokens: payload.usage.prompt_tokens,
+          output_tokens: payload.usage.completion_tokens,
+        }
+      : null,
+    apex_context: payload.apex_context,
+  })
 }
 
 export default async function handler(req, res) {
@@ -142,52 +374,66 @@ export default async function handler(req, res) {
   const { attachment, prompt = '' } = req.body || {}
   const dataUrl = attachment?.dataUrl
   const fileName = typeof attachment?.name === 'string' ? attachment.name.slice(0, 180) : 'attachment'
+  const providedType = typeof attachment?.type === 'string' ? attachment.type.toLowerCase() : ''
   const parsed = parseDataUrl(dataUrl)
   if (!parsed) {
     return res.status(400).json({ error: { message: 'Invalid attachment payload.' } })
   }
 
+  const mediaType = providedType || parsed.mediaType || 'application/octet-stream'
+  const type = classifyAttachment(fileName, mediaType)
+  const apex_context = {
+    role: userContext.role,
+    is_owner: userContext.isOwner,
+    email: userContext.email,
+  }
+
+  if (parsed.bytes > MAX_ATTACHMENT_BYTES) {
+    return sendNormalized(res, 413, {
+      type,
+      filename: fileName,
+      analysis: `Arquivo recebido, mas excede o limite de ${(MAX_ATTACHMENT_BYTES / 1024 / 1024).toFixed(0)}MB do CP1.`,
+      supportedAnalysis: false,
+      model: 'apex-universal-intake',
+      usage: null,
+      apex_context,
+    })
+  }
+
   try {
     let result
-    if (ALLOWED_IMAGE_TYPES.has(parsed.mediaType)) {
-      if (parsed.bytes > MAX_IMAGE_BYTES) {
-        return res.status(413).json({ error: { message: 'Image attachment exceeds 5MB.' } })
-      }
+    if (type === 'image') {
       result = await analyzeImage({
         dataUrl,
-        mediaType: parsed.mediaType,
+        mediaType,
         prompt: String(prompt || '').slice(0, 2000),
         fileName,
       })
-    } else if (parsed.mediaType === 'application/pdf') {
-      if (parsed.bytes > MAX_PDF_BYTES) {
-        return res.status(413).json({ error: { message: 'PDF attachment exceeds 10MB.' } })
-      }
+    } else if (type === 'pdf') {
       result = await analyzePdf({
         base64: parsed.base64,
         prompt: String(prompt || '').slice(0, 2000),
         fileName,
       })
+    } else if (type === 'text') {
+      result = await analyzeText({
+        base64: parsed.base64,
+        prompt: String(prompt || '').slice(0, 2000),
+        fileName,
+        mediaType,
+      })
     } else {
-      return res.status(415).json({ error: { message: 'Unsupported attachment type.' } })
+      result = classifyOnly({ fileName, mediaType, type, bytes: parsed.bytes })
     }
 
-    return res.status(200).json({
-      id: 'apex-attachment-analysis',
-      role: 'assistant',
+    return sendNormalized(res, 200, {
+      type,
+      filename: fileName,
+      analysis: result.analysis,
+      supportedAnalysis: result.supportedAnalysis,
       model: result.model,
-      content: [{ type: 'text', text: result.text || 'OpenAI returned an empty attachment analysis.' }],
-      usage: result.usage
-        ? {
-            input_tokens: result.usage.prompt_tokens,
-            output_tokens: result.usage.completion_tokens,
-          }
-        : null,
-      apex_context: {
-        role: userContext.role,
-        is_owner: userContext.isOwner,
-        email: userContext.email,
-      },
+      usage: result.usage,
+      apex_context,
     })
   } catch (error) {
     return res.status(error?.statusCode || 500).json({

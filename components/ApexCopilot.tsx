@@ -61,6 +61,9 @@ const SCREEN_LABEL: Record<Screen, string> = {
 }
 
 function readAssistantText(payload: any): string {
+  if (typeof payload?.analysis === 'string' && payload.analysis.trim()) {
+    return payload.analysis.trim()
+  }
   if (typeof payload?.content?.[0]?.text === 'string' && payload.content[0].text.trim()) {
     return payload.content[0].text.trim()
   }
@@ -71,12 +74,7 @@ function readAssistantText(payload: any): string {
 }
 
 function validateAttachment(file: File): { valid: boolean; error?: string } {
-  const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf']
-  if (!validTypes.includes(file.type)) {
-    return { valid: false, error: 'Tipo de arquivo não suportado. Use PNG, JPEG, WebP ou PDF.' }
-  }
-  const maxSizes = { 'application/pdf': 10 * 1024 * 1024, default: 5 * 1024 * 1024 }
-  const maxSize = maxSizes[file.type as keyof typeof maxSizes] || maxSizes.default
+  const maxSize = 10 * 1024 * 1024
   if (file.size > maxSize) {
     return { valid: false, error: `Arquivo muito grande. Máximo: ${maxSize / 1024 / 1024}MB` }
   }
@@ -398,7 +396,7 @@ export default function ApexCopilot() {
           prompt: question,
           attachment: {
             name: attachment.name,
-            type: attachment.type,
+            type: attachment.type || 'application/octet-stream',
             size: attachment.size,
             dataUrl: attachment.dataUrl,
           },
@@ -409,7 +407,8 @@ export default function ApexCopilot() {
         throw new Error(data?.error?.message || 'Falha ao analisar anexo.')
       }
       const text = readAssistantText(data)
-      analyses.push(`Anexo: ${attachment.name}\n${text || 'Analise vazia.'}`)
+      const typeLabel = data?.type ? `Tipo: ${data.type}` : 'Tipo: unknown'
+      analyses.push(`Anexo: ${attachment.name}\n${typeLabel}\n${text || 'Analise vazia.'}`)
     }
     return analyses.join('\n\n')
   }
@@ -531,7 +530,7 @@ export default function ApexCopilot() {
       setAttachments(prev => [...prev, {
         id: `${Date.now()}-${file.name}`,
         name: file.name,
-        type: file.type,
+        type: file.type || 'application/octet-stream',
         size: file.size,
         dataUrl,
       }])
@@ -836,7 +835,7 @@ export default function ApexCopilot() {
                     📎
                     <input
                       type="file"
-                      accept="image/*,.pdf"
+                      accept="*/*"
                       onChange={e => {
                         if (e.target.files?.[0]) {
                           addAttachment(e.target.files[0])
