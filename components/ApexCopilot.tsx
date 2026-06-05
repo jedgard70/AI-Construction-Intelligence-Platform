@@ -4,12 +4,13 @@ import {
   useMemo,
   useRef,
   useState,
+  type ClipboardEvent as ReactClipboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
 import { getSupabase } from '../lib/supabase'
 
 type Screen = 'manual' | 'supervisor' | 'status'
-type Attachment = { id: string; name: string; type: string; size: number; preview?: string }
+type Attachment = { id: string; name: string; type: string; size: number; dataUrl?: string; preview?: string }
 type Msg = { role: 'user' | 'assistant'; text: string; attachments?: Attachment[] }
 type Pos = { x: number; y: number }
 type DragTarget = 'launcher' | 'panel' | null
@@ -80,6 +81,19 @@ function validateAttachment(file: File): { valid: boolean; error?: string } {
     return { valid: false, error: `Arquivo muito grande. Máximo: ${maxSize / 1024 / 1024}MB` }
   }
   return { valid: true }
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = event => {
+      const value = event.target?.result
+      if (typeof value === 'string') resolve(value)
+      else reject(new Error('Falha ao ler arquivo.'))
+    }
+    reader.onerror = () => reject(new Error('Falha ao ler arquivo.'))
+    reader.readAsDataURL(file)
+  })
 }
 
 function initWebSpeech(): { recognition: any; supported: boolean } {
@@ -280,13 +294,14 @@ export default function ApexCopilot() {
   useEffect(() => {
     const sb = getSupabase()
     if (!sb) return
+    const supabase = sb
 
     let active = true
 
     async function syncSession() {
       const {
         data: { session },
-      } = await sb.auth.getSession()
+      } = await supabase.auth.getSession()
       if (!active) return
       setAuthToken(session?.access_token || null)
       setChatContext(prev => ({
@@ -297,7 +312,7 @@ export default function ApexCopilot() {
 
     const {
       data: { subscription },
-    } = sb.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthToken(session?.access_token || null)
       setChatContext(prev => ({
         ...prev,
@@ -366,16 +381,51 @@ export default function ApexCopilot() {
     }
   }, [dragging, fullscreen, viewport.h, viewport.w, panelSize.height, panelSize.width])
 
+  function appendAssistantMessage(message: Msg) {
+    if (activeScreen === 'manual') setManualMessages(prev => [...prev, message])
+    else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, message])
+    else if (activeScreen === 'status') setStatusMessages(prev => [...prev, message])
+  }
+
+  async function analyzeAttachments(question: string, selectedAttachments: Attachment[], headers: Record<string, string>) {
+    const analyses: string[] = []
+    for (const attachment of selectedAttachments) {
+      if (!attachment.dataUrl) continue
+      const res = await fetch('/api/chat/analyze-attachment', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          prompt: question,
+          attachment: {
+            name: attachment.name,
+            type: attachment.type,
+            size: attachment.size,
+            dataUrl: attachment.dataUrl,
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error?.message || 'Falha ao analisar anexo.')
+      }
+      const text = readAssistantText(data)
+      analyses.push(`Anexo: ${attachment.name}\n${text || 'Analise vazia.'}`)
+    }
+    return analyses.join('\n\n')
+  }
+
   async function send(text?: string) {
     const question = (text ?? input).trim()
-    if (!question || loading) return
+    const selectedAttachments = attachments
+    if ((!question && selectedAttachments.length === 0) || loading) return
 
     setInput('')
+    setAttachments([])
     const nextMessages: Msg[] = activeScreen === 'manual'
-      ? [...manualMessages, { role: 'user', text: question }]
+      ? [...manualMessages, { role: 'user', text: question || 'Analisar anexo', attachments: selectedAttachments }]
       : activeScreen === 'supervisor'
-      ? [...supervisorMessages, { role: 'user', text: question }]
-      : [...statusMessages, { role: 'user', text: question }]
+      ? [...supervisorMessages, { role: 'user', text: question || 'Analisar anexo', attachments: selectedAttachments }]
+      : [...statusMessages, { role: 'user', text: question || 'Analisar anexo', attachments: selectedAttachments }]
 
     if (activeScreen === 'manual') setManualMessages(nextMessages)
     else if (activeScreen === 'supervisor') setSupervisorMessages(nextMessages)
@@ -391,11 +441,20 @@ export default function ApexCopilot() {
         headers.Authorization = `Bearer ${authToken}`
       }
 
+      if (selectedAttachments.length > 0) {
+        const analysis = await analyzeAttachments(question, selectedAttachments, headers)
+        appendAssistantMessage({
+          role: 'assistant',
+          text: analysis || 'Nao consegui obter analise valida do anexo.',
+        })
+        return
+      }
+
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'gpt-4o-mini',
           max_tokens: 900,
           messages: [
             {
@@ -414,23 +473,17 @@ export default function ApexCopilot() {
 
       if (!res.ok) {
         const serverError = data?.error?.message || 'API indisponivel no momento.'
-        const errorMsg = { role: 'assistant' as const, text: `Nao consegui concluir agora: ${serverError}` }
-        if (activeScreen === 'manual') setManualMessages(prev => [...prev, errorMsg])
-        else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, errorMsg])
-        else if (activeScreen === 'status') setStatusMessages(prev => [...prev, errorMsg])
+        appendAssistantMessage({ role: 'assistant', text: `Nao consegui concluir agora: ${serverError}` })
         return
       }
 
       const reply = readAssistantText(data)
-      const assistantMsg = { role: 'assistant' as const, text: reply || 'Nao consegui obter resposta valida do Copilot.' }
-      if (activeScreen === 'manual') setManualMessages(prev => [...prev, assistantMsg])
-      else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, assistantMsg])
-      else if (activeScreen === 'status') setStatusMessages(prev => [...prev, assistantMsg])
-    } catch {
-      const errorMsg = { role: 'assistant' as const, text: 'Sem conexao com o servidor do Copilot. Verifique sua internet ou tente novamente em instantes.' }
-      if (activeScreen === 'manual') setManualMessages(prev => [...prev, errorMsg])
-      else if (activeScreen === 'supervisor') setSupervisorMessages(prev => [...prev, errorMsg])
-      else if (activeScreen === 'status') setStatusMessages(prev => [...prev, errorMsg])
+      appendAssistantMessage({ role: 'assistant', text: reply || 'Nao consegui obter resposta valida do Copilot.' })
+    } catch (err: any) {
+      appendAssistantMessage({
+        role: 'assistant',
+        text: err?.message || 'Sem conexao com o servidor do Copilot. Verifique sua internet ou tente novamente em instantes.',
+      })
     } finally {
       setLoading(false)
     }
@@ -465,6 +518,41 @@ export default function ApexCopilot() {
     if (activeScreen === 'manual') setManualMessages([INITIAL_ASSISTANT_MESSAGE])
     else if (activeScreen === 'supervisor') setSupervisorMessages([INITIAL_SUPERVISOR_MESSAGE])
     else if (activeScreen === 'status') setStatusMessages([INITIAL_STATUS_MESSAGE])
+  }
+
+  async function addAttachment(file: File) {
+    const validation = validateAttachment(file)
+    if (!validation.valid) {
+      appendAssistantMessage({ role: 'assistant', text: validation.error || 'Anexo invalido.' })
+      return
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      setAttachments(prev => [...prev, {
+        id: `${Date.now()}-${file.name}`,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        dataUrl,
+      }])
+    } catch {
+      appendAssistantMessage({ role: 'assistant', text: 'Nao consegui ler o anexo.' })
+    }
+  }
+
+  function handlePaste(event: ReactClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(event.clipboardData?.items || [])
+      .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+      .map(item => item.getAsFile())
+      .filter((file): file is File => Boolean(file))
+
+    if (!files.length) return
+    event.preventDefault()
+    files.forEach(file => {
+      addAttachment(file).catch(() => {
+        appendAssistantMessage({ role: 'assistant', text: 'Nao consegui ler a imagem colada.' })
+      })
+    })
   }
 
   const getScreenButtons = () => {
@@ -720,6 +808,7 @@ export default function ApexCopilot() {
                 <textarea
                   value={input}
                   onChange={event => setInput(event.target.value)}
+                  onPaste={handlePaste}
                   onKeyDown={event => {
                     if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
                       event.preventDefault()
@@ -750,21 +839,9 @@ export default function ApexCopilot() {
                       accept="image/*,.pdf"
                       onChange={e => {
                         if (e.target.files?.[0]) {
-                          const file = e.target.files[0]
-                          const validation = validateAttachment(file)
-                          if (validation.valid) {
-                            const reader = new FileReader()
-                            reader.onload = ev => {
-                              setAttachments([...attachments, {
-                                id: Date.now().toString(),
-                                name: file.name,
-                                type: file.type,
-                                size: file.size,
-                              }])
-                            }
-                            reader.readAsArrayBuffer(file)
-                          }
+                          addAttachment(e.target.files[0])
                         }
+                        e.currentTarget.value = ''
                       }}
                       style={{ display: 'none' }}
                     />

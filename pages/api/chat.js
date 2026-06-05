@@ -11,8 +11,8 @@ import {
  * POST /api/chat
  *
  * Body params:
- *   model        — Anthropic model string (required)
- *   max_tokens   — integer (required)
+ *   model        — ignored for CP1 runtime; OpenAI model is server-side env controlled
+ *   max_tokens   — integer (optional)
  *   messages     — array of {role, content} (required)
  *   system       — inline system prompt (optional, used as fallback)
  *   promptKey    — key in prompt_versions table (optional, overrides system)
@@ -24,7 +24,6 @@ export default async function handler(req, res) {
   }
 
   const {
-    model = 'claude-sonnet-4-6',
     max_tokens = 1024,
     system: inlineSystem,
     messages,
@@ -71,13 +70,14 @@ export default async function handler(req, res) {
     email: userContext.email,
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) {
     return res.status(500).json({
-      error: { message: 'ANTHROPIC_API_KEY não configurada no servidor.' },
+      error: { message: 'OPENAI_API_KEY nao configurada no servidor.' },
       apex_context: apexContextPayload,
     })
   }
+  const openaiModel = process.env.OPENAI_CHAT_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini'
 
   const classifyIntent = (text) => {
     const t = text.toLowerCase()
@@ -265,7 +265,7 @@ Policy:
       id: 'help-ai-policy-block',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -285,7 +285,7 @@ Policy:
       id: 'help-ai-secret-block',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -309,7 +309,7 @@ Policy:
       id: 'help-ai-system-block',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -333,7 +333,7 @@ Policy:
       id: 'help-ai-approval-required',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -353,7 +353,7 @@ Policy:
       id: 'help-ai-seat-block',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -373,7 +373,7 @@ Policy:
       id: 'help-ai-guest-guard',
       type: 'message',
       role: 'assistant',
-      model,
+      model: openaiModel,
       content: [
         {
           type: 'text',
@@ -422,31 +422,68 @@ Policy:
     systemPrompt = `${systemPrompt}\n\n## Client Context\n${inlineSystem.trim()}`
   }
 
-  // ── Forward to Anthropic ──────────────────────────────────────────────────
-  const body = { model, max_tokens, messages }
-  if (systemPrompt) body.system = systemPrompt
+  const normalizeContent = (content) => {
+    if (typeof content === 'string') return content
+    if (Array.isArray(content)) {
+      return content
+        .map((part) => {
+          if (typeof part?.text === 'string') return part.text
+          if (typeof part?.content === 'string') return part.content
+          return ''
+        })
+        .filter(Boolean)
+        .join('\n')
+    }
+    return ''
+  }
+
+  const openaiMessages = [
+    { role: 'system', content: systemPrompt },
+    ...(Array.isArray(messages) ? messages : [])
+      .map((message) => ({
+        role: message?.role === 'assistant' ? 'assistant' : 'user',
+        content: normalizeContent(message?.content),
+      }))
+      .filter((message) => message.content.trim()),
+  ]
+
+  const body = {
+    model: openaiModel,
+    max_tokens,
+    messages: openaiMessages,
+  }
 
   try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify(body),
     })
 
-    const data = await anthropicRes.json()
+    const data = await openaiRes.json()
+    const text = data?.choices?.[0]?.message?.content || ''
     logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: null })
-    return res.status(anthropicRes.status).json({
-      ...data,
+    return res.status(openaiRes.status).json({
+      id: data?.id || 'openai-chat-completion',
+      type: 'message',
+      role: 'assistant',
+      model: data?.model || openaiModel,
+      content: [{ type: 'text', text }],
+      stop_reason: data?.choices?.[0]?.finish_reason || 'stop',
+      usage: {
+        input_tokens: data?.usage?.prompt_tokens,
+        output_tokens: data?.usage?.completion_tokens,
+      },
+      error: data?.error,
       apex_context: apexContextPayload,
     })
   } catch {
     logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: 'provider_error_fallback' })
     return res.status(500).json({
-      error: { message: 'Erro ao conectar com a API Anthropic.' },
+      error: { message: 'Erro ao conectar com a API OpenAI.' },
       apex_context: apexContextPayload,
     })
   }
