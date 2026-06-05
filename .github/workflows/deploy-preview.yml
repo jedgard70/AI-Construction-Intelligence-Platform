@@ -31,15 +31,19 @@ jobs:
           missing=()
 
           if [ "${VERCEL_CONFIGURED}" != "true" ]; then
+            echo "::error title=Missing VERCEL_CONFIGURED::Create repository variable VERCEL_CONFIGURED with value true."
             missing+=("Repository variable VERCEL_CONFIGURED=true")
           fi
           if [ -z "${VERCEL_TOKEN}" ]; then
+            echo "::error title=Missing VERCEL_TOKEN::Create repository secret VERCEL_TOKEN."
             missing+=("Repository secret VERCEL_TOKEN")
           fi
           if [ -z "${VERCEL_ORG_ID}" ]; then
+            echo "::error title=Missing VERCEL_ORG_ID::Create repository secret VERCEL_ORG_ID."
             missing+=("Repository secret VERCEL_ORG_ID")
           fi
           if [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "::error title=Missing VERCEL_PROJECT_ID::Create repository secret VERCEL_PROJECT_ID."
             missing+=("Repository secret VERCEL_PROJECT_ID")
           fi
 
