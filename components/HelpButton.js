@@ -4,6 +4,8 @@ import { getSupabase } from '../lib/supabase'
 // ─── Memória persistida em localStorage ───────────────────────────────────────
 const MEM_KEY = 'acip_memory_v2'
 const CP1_RUNTIME_MARKER = 'CP1 runtime: HelpButton v125-forensic-universal-intake'
+const CP1_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const CP1_LARGE_FILE_MESSAGE = 'Arquivo recebido, mas excede o limite CP1 de 10MB. Será tratado em checkpoint de arquivos grandes.'
 
 function loadMemory() {
   try {
@@ -141,6 +143,22 @@ function getValidSessionToken(session) {
   if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) + 30) return null
   return token
 }
+async function readJsonResponse(res) {
+  const raw = await res.text()
+  if (!raw.trim()) return {}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return {
+      error: {
+        message: res.status === 413
+          ? CP1_LARGE_FILE_MESSAGE
+          : 'O servidor retornou uma resposta inesperada. O arquivo foi aceito no intake, mas a análise não foi concluída neste checkpoint.',
+      },
+      non_json_response: true,
+    }
+  }
+}
 
 const FAQS = [
   '📊 Como interpretar o CPI e SPI?',
@@ -215,7 +233,20 @@ export default function HelpButton() {
   async function handleFiles(files) {
     const incoming = Array.from(files || []).filter(Boolean)
     if (!incoming.length) return
-    const previews = await Promise.all(incoming.map(async f => {
+    const accepted = []
+    const rejected = []
+    for (const f of incoming) {
+      if (f.size > CP1_MAX_ATTACHMENT_BYTES) rejected.push(f.name)
+      else accepted.push(f)
+    }
+    if (rejected.length) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: rejected.map(name => `Arquivo recebido: ${name}\n${CP1_LARGE_FILE_MESSAGE}`).join('\n\n'),
+      }])
+    }
+    if (!accepted.length) return
+    const previews = await Promise.all(accepted.map(async f => {
       const b64 = await fileToBase64(f)
       const mt  = getMediaType(f)
       return { name: f.name, base64: b64, mediaType: mt, previewUrl: URL.createObjectURL(f) }
@@ -274,8 +305,8 @@ export default function HelpButton() {
               },
             }),
           })
-          const data = await res.json()
-          const text = data?.analysis || data?.content?.[0]?.text || (res.status === 401 ? 'Please log in on this Preview before using protected attachment analysis.' : data?.error?.message) || 'Analise vazia.'
+          const data = await readJsonResponse(res)
+          const text = data?.analysis || data?.content?.[0]?.text || (res.status === 401 ? 'Please log in on this Preview before using protected attachment analysis.' : res.status === 413 ? CP1_LARGE_FILE_MESSAGE : data?.error?.message) || 'Analise vazia.'
           analyses.push(`Arquivo: ${a.name}\nTipo: ${data?.type || 'unknown'}\n${text}`)
         }
         const finalMessages = [...newMessages, { role:'assistant', content: analyses.join('\n\n') }]
@@ -297,7 +328,7 @@ export default function HelpButton() {
           messages: apiMsgs,
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       const reply = data?.content?.[0]?.text || 'Não consegui processar sua mensagem.'
       const finalMessages = [...newMessages, { role:'assistant', content: reply }]
       setMessages(finalMessages)

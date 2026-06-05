@@ -81,15 +81,86 @@ export default async function handler(req, res) {
 
   const classifyIntent = (text) => {
     const t = text.toLowerCase()
-    if (
-      t.includes('service role key') ||
-      t.includes('api key') ||
-      t.includes('token') ||
-      t.includes('pat ') ||
-      t.includes('senha') ||
-      t.includes('secret')
-    ) {
+    const hasSecretTerm = [
+      'service role',
+      'api key',
+      'api_key',
+      'openai_api_key',
+      'token',
+      'pat ',
+      'personal access token',
+      'chave',
+      'senha',
+      'secret',
+      'segredo',
+      'credencial',
+    ].some(term => t.includes(term))
+    const hasAllowedSecretContext = [
+      'não expor secrets',
+      'nao expor secrets',
+      'não expor segredos',
+      'nao expor segredos',
+      'do not expose secrets',
+      'sem secrets',
+      'sem segredos',
+      'tokens temporários',
+      'tokens temporarios',
+      'env var',
+      'environment variable',
+      'environment configuration',
+      'configuro openai_api_key',
+      'configurar openai_api_key',
+      'openai_api_key configurada',
+      'safety gate',
+      'checklist',
+      'status',
+      'audit',
+      'auditoria',
+      'security policy',
+      'política de segurança',
+      'politica de seguranca',
+      'pr status',
+      'cp1',
+      'cp0',
+      'documentação',
+      'documentacao',
+      'safe setup',
+      'configuração segura',
+      'configuracao segura',
+    ].some(term => t.includes(term))
+    const hasSecretExtractionAction = [
+      'me mostre',
+      'mostre o',
+      'mostra o',
+      'reveal',
+      'revele',
+      'provide',
+      'forneça',
+      'forneca',
+      'cole o',
+      'paste',
+      'print',
+      'imprima',
+      'exponha',
+      'expose',
+      'retrieve',
+      'recupere',
+      'bypass',
+      'ignore a política',
+      'ignore a politica',
+      'gere um token',
+      'generate token',
+      'gera um token',
+      'qual é o token',
+      'qual e o token',
+      'qual é a key',
+      'qual e a key',
+    ].some(term => t.includes(term))
+    if (hasSecretTerm && hasSecretExtractionAction) {
       return 'secret_request'
+    }
+    if (hasSecretTerm && hasAllowedSecretContext) {
+      return 'safe_info'
     }
     if (
       t.includes('apague ') ||

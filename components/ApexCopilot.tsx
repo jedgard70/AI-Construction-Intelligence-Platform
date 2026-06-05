@@ -39,6 +39,8 @@ const LAUNCHER_WIDTH = 98
 const LAUNCHER_HEIGHT = 48
 const DRAG_THRESHOLD = 6
 const CP1_RUNTIME_MARKER = 'CP1 runtime: ApexCopilot v125-forensic-universal-intake'
+const CP1_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const CP1_LARGE_FILE_MESSAGE = 'Arquivo recebido, mas excede o limite CP1 de 10MB. Será tratado em checkpoint de arquivos grandes.'
 
 const INITIAL_ASSISTANT_MESSAGE: Msg = {
   role: 'assistant',
@@ -75,11 +77,27 @@ function readAssistantText(payload: any): string {
 }
 
 function validateAttachment(file: File): { valid: boolean; error?: string } {
-  const maxSize = 10 * 1024 * 1024
-  if (file.size > maxSize) {
-    return { valid: false, error: `Arquivo muito grande. Máximo: ${maxSize / 1024 / 1024}MB` }
+  if (file.size > CP1_MAX_ATTACHMENT_BYTES) {
+    return { valid: false, error: CP1_LARGE_FILE_MESSAGE }
   }
   return { valid: true }
+}
+
+async function readJsonResponse(res: Response): Promise<any> {
+  const raw = await res.text()
+  if (!raw.trim()) return {}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return {
+      error: {
+        message: res.status === 413
+          ? CP1_LARGE_FILE_MESSAGE
+          : 'O servidor retornou uma resposta inesperada. O arquivo foi aceito no intake, mas a análise não foi concluída neste checkpoint.',
+      },
+      non_json_response: true,
+    }
+  }
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -459,12 +477,14 @@ export default function ApexCopilot() {
           },
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       if (!res.ok) {
         throw new Error(
           res.status === 401
             ? 'Please log in on this Preview before using protected attachment analysis.'
-            : data?.error?.message || 'Falha ao analisar anexo.',
+            : res.status === 413
+              ? CP1_LARGE_FILE_MESSAGE
+              : data?.error?.message || 'Falha ao analisar anexo.',
         )
       }
       if (data?.apex_context) {
@@ -538,7 +558,7 @@ export default function ApexCopilot() {
           ],
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       setChatContext({
         role: data?.apex_context?.role || (authToken ? 'user' : 'guest'),
         owner: Boolean(data?.apex_context?.is_owner),

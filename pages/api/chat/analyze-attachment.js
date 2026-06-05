@@ -11,6 +11,7 @@ export const config = {
 }
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const CP1_LARGE_FILE_MESSAGE = 'Arquivo recebido, mas excede o limite CP1 de 10MB. Será tratado em checkpoint de arquivos grandes.'
 const TEXT_LIMIT = 18000
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
 const CP1_ENDPOINT_MARKER = 'CP1 endpoint: analyze-attachment v125-forensic-universal-intake'
@@ -395,7 +396,7 @@ export default async function handler(req, res) {
     return sendNormalized(res, 413, {
       type,
       filename: fileName,
-      analysis: `Arquivo recebido, mas excede o limite de ${(MAX_ATTACHMENT_BYTES / 1024 / 1024).toFixed(0)}MB do CP1.`,
+      analysis: CP1_LARGE_FILE_MESSAGE,
       supportedAnalysis: false,
       model: 'apex-universal-intake',
       usage: null,
