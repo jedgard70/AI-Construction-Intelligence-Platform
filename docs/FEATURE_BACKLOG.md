@@ -593,10 +593,10 @@ CREATE TABLE suppliers (
 
 ### 🟡 I2 — Landing Pages Atlas / Apex Nova
 
-**Status:** Imagens e logos prontos em `D:\AI-constr\landing-page-AI-Construction\`
+**Status:** Website publico separado no repo `apex-global-website`. A plataforma privada nao deve manter landing duplicada.
 
 **O que falta:**
-- Conectar landing page ao domínio
+- Conectar landing page ao domínio no repo/projeto Vercel do website publico
 - Formulário de captura de leads → Supabase `leads`
 - CTA "Solicitar Demo" → notificação para Edgard
 

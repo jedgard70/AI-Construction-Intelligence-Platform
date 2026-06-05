@@ -9,42 +9,56 @@ type MenuItem = { label: string; href: string; ownerOnly?: boolean }
 type MenuGroup = { section: string; items: MenuItem[] }
 
 const MENU: MenuGroup[] = [
-  { section: 'Visao Geral', items: [
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Mission Control', href: '/mission-control', ownerOnly: true },
-    { label: 'Platform Map', href: '/platform', ownerOnly: true },
-  ]},
-  { section: 'Comercial', items: [
-    { label: 'Vendas', href: '/vendas' },
-    { label: 'Investimentos', href: '/investimentos' },
-  ]},
-  { section: 'Projetos', items: [
-    { label: 'Nova Analise', href: '/nova-analise' },
-    { label: 'Documentos', href: '/documentos' },
-    { label: 'Orcamento', href: '/orcamento' },
-    { label: 'RDO', href: '/rdo' },
-    { label: 'Qualidade', href: '/qualidade' },
-  ]},
-  { section: 'Operacao BIM', items: [
-    { label: 'BIM OPS', href: '/bim-ops' },
-    { label: 'BIM 3D', href: '/bim-3d' },
-    { label: 'Plantas', href: '/plantas' },
+  { section: 'Produção', items: [
+    { label: 'Análises', href: '/dashboard' },
+    { label: 'Produção EUA', href: '/platform?region=us' },
+    { label: 'Produção Europa', href: '/platform?region=eu' },
+    { label: 'Produção Brasil', href: '/platform?region=br' },
+    { label: 'Projetos', href: '/documentos' },
+    { label: 'Obras/Campo', href: '/rdo' },
+    { label: 'BIM / 3D / Render', href: '/bim-ops' },
     { label: 'ArchVis', href: '/archvis' },
-    { label: 'Director Cut', href: '/director-cut' },
   ]},
-  { section: 'Juridico', items: [
-    { label: 'Juridico', href: '/juridico' },
+  { section: 'Vendas', items: [
+    { label: 'CRM', href: '/vendas' },
+    { label: 'Leads', href: '/vendas?view=leads' },
+    { label: 'Oportunidades', href: '/vendas?view=oportunidades' },
+    { label: 'Propostas', href: '/crm/proposals' },
+    { label: 'Serviços', href: '/crm/services' },
+  ]},
+  { section: 'Juridico / Contratos', items: [
     { label: 'Contratos', href: '/juridico/contratos' },
-    { label: 'Assinatura', href: '/juridico/assinatura' },
+    { label: 'Permits', href: '/juridico/compliance?area=permits' },
+    { label: 'Endossos', href: '/juridico/contratos?tipo=endossos' },
     { label: 'Compliance', href: '/juridico/compliance' },
-    { label: 'Due Diligence', href: '/juridico/due-diligence' },
+    { label: 'Assinaturas', href: '/juridico/assinatura' },
+    { label: 'Documentos legais', href: '/juridico/due-diligence' },
+  ]},
+  { section: 'Marketing', items: [
+    { label: 'Portfolio', href: '/platform?area=portfolio' },
+    { label: 'Conteúdo', href: '/platform?area=content' },
+    { label: 'Render/Video', href: '/director-cut' },
+    { label: 'DirectCut', href: '/director-cut' },
+    { label: 'Design/Web Builder', href: '/platform?area=design' },
+    { label: 'Site / Materiais', href: '/platform?area=site' },
+    { label: 'Social Media', href: '/platform?area=social' },
+  ]},
+  { section: 'Diretoria', items: [
+    { label: 'Controle Owner', href: '/owner-command', ownerOnly: true },
+    { label: 'Dashboard Executivo', href: '/owner-dashboard', ownerOnly: true },
+    { label: 'Mission Control', href: '/mission-control', ownerOnly: true },
+    { label: 'Indicadores', href: '/platform', ownerOnly: true },
+    { label: 'Financeiro Geral', href: '/crm/revenue', ownerOnly: true },
+    { label: 'Relatórios', href: '/documentos?scope=executive', ownerOnly: true },
+    { label: 'Configurações', href: '/platform?area=settings', ownerOnly: true },
   ]},
 ]
 
 type Props = { children: ReactNode }
 
 function titleFromPath(pathname: string) {
-  if (pathname === '/dashboard') return 'Dashboard'
+  if (pathname === '/dashboard') return 'Análises'
+  if (pathname === '/owner-dashboard') return 'Dashboard Executivo'
   if (pathname === '/mission-control') return 'Mission Control'
   if (pathname.startsWith('/juridico')) return 'Juridico'
   return 'Apex Platform'
@@ -58,7 +72,15 @@ async function checkOwnerStatus(): Promise<boolean> {
     if (!session?.user) return false
     const email = (session.user.email || '').toLowerCase()
     const ownerEmails = (process.env.NEXT_PUBLIC_OWNER_EMAILS || process.env.NEXT_PUBLIC_APEX_OWNER_EMAILS || 'jedgard70@gmail.com').split(',').map(e => e.trim().toLowerCase())
-    return ownerEmails.includes(email)
+    if (ownerEmails.includes(email)) return true
+
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('role,is_owner')
+      .eq('id', session.user.id)
+      .maybeSingle()
+    const role = String(profile?.role || '').toLowerCase()
+    return Boolean(profile?.is_owner === true || role === 'owner' || role === 'admin' || role === 'diretor_executivo')
   } catch {
     return false
   }
@@ -79,11 +101,11 @@ export default function ApexShell({ children }: Props) {
   const title = useMemo(() => titleFromPath(router.pathname), [router.pathname])
 
   const filteredMenu = useMemo(() => {
-    if (!menuReady) return MENU
-    return MENU.map(group => ({
+    const baseMenu = menuReady ? MENU : MENU.filter(group => group.section !== 'Diretoria')
+    return baseMenu.map(group => ({
       ...group,
       items: group.items.filter(item => !item.ownerOnly || isOwner),
-    }))
+    })).filter(group => group.items.length > 0)
   }, [isOwner, menuReady])
 
   return (
@@ -99,7 +121,8 @@ export default function ApexShell({ children }: Props) {
             <div style={{ fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--apx-muted)', padding: '4px 8px 6px' }}>{group.section}</div>
             <div style={{ display: 'grid', gap: 2 }}>
               {group.items.map((item) => {
-                const active = router.pathname === item.href || router.pathname.startsWith(item.href + '/')
+                const itemPath = item.href.split('?')[0]
+                const active = router.pathname === itemPath || router.pathname.startsWith(itemPath + '/')
                 return (
                   <Link key={item.href} href={item.href} style={{ textDecoration: 'none', color: active ? '#fff' : 'var(--apx-text)', background: active ? 'var(--apx-primary)' : 'transparent', border: `1px solid ${active ? 'var(--apx-primary)' : 'transparent'}`, borderRadius: 8, padding: '6px 10px', fontSize: 13, fontWeight: active ? 700 : 500 }}>
                     {item.label}

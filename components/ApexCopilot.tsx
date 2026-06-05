@@ -304,6 +304,16 @@ export default function ApexCopilot() {
   }, [mounted])
 
   useEffect(() => {
+    const openFromWelcome = () => {
+      setOpen(true)
+      setMinimized(false)
+      setActiveScreen('manual')
+    }
+    window.addEventListener('apex-copilot-open', openFromWelcome)
+    return () => window.removeEventListener('apex-copilot-open', openFromWelcome)
+  }, [])
+
+  useEffect(() => {
     if (!mounted) return
     persistState()
     // eslint-disable-next-line react-hooks/exhaustive-deps
