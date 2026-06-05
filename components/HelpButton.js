@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { getSupabase } from '../lib/supabase'
 
 // ─── Memória persistida em localStorage ───────────────────────────────────────
 const MEM_KEY = 'acip_memory_v2'
+const CP1_RUNTIME_MARKER = 'CP1 runtime: HelpButton v125-forensic-universal-intake'
+const CP1_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+const CP1_LARGE_FILE_MESSAGE = 'Arquivo recebido, mas excede o limite CP1 de 10MB. Será tratado em checkpoint de arquivos grandes.'
 
 function loadMemory() {
   try {
@@ -118,12 +122,42 @@ function fileToBase64(file) {
 function getMediaType(file) {
   if (file.type) return file.type
   const ext = file.name.split('.').pop().toLowerCase()
-  return ({ jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp', pdf:'application/pdf' })[ext] || 'application/octet-stream'
+  return ({
+    jpg:'image/jpeg', jpeg:'image/jpeg', png:'image/png', gif:'image/gif', webp:'image/webp',
+    pdf:'application/pdf', csv:'text/csv', txt:'text/plain', md:'text/markdown', json:'application/json',
+    xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ifc:'application/octet-stream', rvt:'application/octet-stream', dwg:'application/octet-stream',
+    dxf:'application/octet-stream', zip:'application/zip',
+  })[ext] || 'application/octet-stream'
 }
 const isImage = mt => mt.startsWith('image/')
 const isPDF   = mt => mt === 'application/pdf'
 function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })
+}
+function getValidSessionToken(session) {
+  const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+  if (!token) return null
+  const expiresAt = typeof session?.expires_at === 'number' ? session.expires_at : null
+  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) + 30) return null
+  return token
+}
+async function readJsonResponse(res) {
+  const raw = await res.text()
+  if (!raw.trim()) return {}
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return {
+      error: {
+        message: res.status === 413
+          ? CP1_LARGE_FILE_MESSAGE
+          : 'O servidor retornou uma resposta inesperada. O arquivo foi aceito no intake, mas a análise não foi concluída neste checkpoint.',
+      },
+      non_json_response: true,
+    }
+  }
 }
 
 const FAQS = [
@@ -142,17 +176,38 @@ export default function HelpButton() {
   const [expanded, setExpanded] = useState(false)
   const [memory, setMemory]     = useState(() => typeof window !== 'undefined' ? loadMemory() : defaultMemory())
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: '👋 Olá! Sou o **ACIP Assistant** — aprendo com cada conversa e fico mais útil com o tempo.\n\nEnvie texto, imagem (print), ou PDF e vou analisar!' }
+    { role: 'assistant', content: '👋 Olá! Sou o **ACIP Assistant** — aprendo com cada conversa e fico mais útil com o tempo.\n\nEnvie texto, imagem, PDF ou qualquer arquivo; formatos sem leitura profunda serão classificados para o checkpoint correto.' }
   ])
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
   const [learning, setLearning] = useState(false)
   const [attachments, setAtts]  = useState([])
+  const [authToken, setAuthToken] = useState(null)
   const bottomRef               = useRef(null)
   const fileInputRef            = useRef(null)
   const exchangeRef             = useRef(0) // conta pares user/assistant
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior:'smooth' }) }, [messages, open, loading, tab])
+
+  useEffect(() => {
+    const sb = getSupabase()
+    if (!sb) return
+    let active = true
+    sb.auth.getSession()
+      .then(({ data }) => {
+        if (active) setAuthToken(getValidSessionToken(data?.session))
+      })
+      .catch(() => {
+        if (active) setAuthToken(null)
+      })
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
+      setAuthToken(getValidSessionToken(session))
+    })
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
 
   // ── Aprendizado automático a cada 3 trocas ──
   const triggerLearning = useCallback(async (msgs) => {
@@ -176,9 +231,22 @@ export default function HelpButton() {
   }, [learning])
 
   async function handleFiles(files) {
-    const allowed = Array.from(files).filter(f => { const mt = getMediaType(f); return isImage(mt) || isPDF(mt) })
-    if (!allowed.length) return
-    const previews = await Promise.all(allowed.map(async f => {
+    const incoming = Array.from(files || []).filter(Boolean)
+    if (!incoming.length) return
+    const accepted = []
+    const rejected = []
+    for (const f of incoming) {
+      if (f.size > CP1_MAX_ATTACHMENT_BYTES) rejected.push(f.name)
+      else accepted.push(f)
+    }
+    if (rejected.length) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: rejected.map(name => `Arquivo recebido: ${name}\n${CP1_LARGE_FILE_MESSAGE}`).join('\n\n'),
+      }])
+    }
+    if (!accepted.length) return
+    const previews = await Promise.all(accepted.map(async f => {
       const b64 = await fileToBase64(f)
       const mt  = getMediaType(f)
       return { name: f.name, base64: b64, mediaType: mt, previewUrl: URL.createObjectURL(f) }
@@ -203,11 +271,6 @@ export default function HelpButton() {
     setInput('')
 
     const blocks = []
-    for (const a of attachments) {
-      blocks.push(isImage(a.mediaType)
-        ? { type:'image',    source:{ type:'base64', media_type:a.mediaType, data:a.base64 } }
-        : { type:'document', source:{ type:'base64', media_type:a.mediaType, data:a.base64 } })
-    }
     if (question) blocks.push({ type:'text', text: question })
 
     const userMsg = {
@@ -223,18 +286,49 @@ export default function HelpButton() {
     setLoading(true)
 
     try {
+      if (attachments.length) {
+        const analyses = []
+        for (const a of attachments) {
+          if (!authToken) {
+            analyses.push(`Arquivo recebido: ${a.name}\nPlease log in on this Preview before using protected attachment analysis.`)
+            continue
+          }
+          const res = await fetch('/api/chat/analyze-attachment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+            body: JSON.stringify({
+              prompt: question,
+              attachment: {
+                name: a.name,
+                type: a.mediaType || 'application/octet-stream',
+                dataUrl: `data:${a.mediaType || 'application/octet-stream'};base64,${a.base64}`,
+              },
+            }),
+          })
+          const data = await readJsonResponse(res)
+          const text = data?.analysis || data?.content?.[0]?.text || (res.status === 401 ? 'Please log in on this Preview before using protected attachment analysis.' : res.status === 413 ? CP1_LARGE_FILE_MESSAGE : data?.error?.message) || 'Analise vazia.'
+          analyses.push(`Arquivo: ${a.name}\nTipo: ${data?.type || 'unknown'}\n${text}`)
+        }
+        const finalMessages = [...newMessages, { role:'assistant', content: analyses.join('\n\n') }]
+        setMessages(finalMessages)
+        exchangeRef.current++
+        if (exchangeRef.current % 3 === 0) triggerLearning(finalMessages.slice(-12))
+        setLoading(false)
+        return
+      }
+
       const apiMsgs = newMessages.map(m => ({ role: m.role, content: m.content }))
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'gpt-4o-mini',
           max_tokens: 1500,
           system: buildPrompt(memory),
           messages: apiMsgs,
         }),
       })
-      const data = await res.json()
+      const data = await readJsonResponse(res)
       const reply = data?.content?.[0]?.text || 'Não consegui processar sua mensagem.'
       const finalMessages = [...newMessages, { role:'assistant', content: reply }]
       setMessages(finalMessages)
@@ -254,6 +348,33 @@ export default function HelpButton() {
     const fresh = defaultMemory()
     setMemory(fresh)
     saveMemory(fresh)
+  }
+
+  function copyResponse(text) {
+    if (!text || typeof navigator === 'undefined') return
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function speakResponse(text) {
+    if (!text || typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text))
+  }
+
+  async function shareResponse(text) {
+    if (!text || typeof navigator === 'undefined') return
+    if (navigator.share) {
+      try {
+        await navigator.share({ text })
+        return
+      } catch {}
+    }
+    navigator.clipboard?.writeText(text).catch(() => {})
+  }
+
+  function showMoreForResponse(text) {
+    if (!text || typeof window === 'undefined') return
+    window.alert(text)
   }
 
   function renderMsgContent(m) {
@@ -329,6 +450,7 @@ export default function HelpButton() {
                 }
                 {learning && <span style={{ opacity:.7 }}>⏳</span>}
               </div>
+              <div style={{ fontSize:9, color:'rgba(255,255,255,0.65)', marginTop:2 }}>{CP1_RUNTIME_MARKER}</div>
             </div>
             {/* Tabs */}
             <div style={{ display:'flex', gap:4 }}>
@@ -367,6 +489,14 @@ export default function HelpButton() {
                       fontSize:12, lineHeight:1.65,
                       border: m.role==='assistant' ? '1px solid #e5e8f0' : 'none' }}>
                       {renderMsgContent(m)}
+                      {m.role === 'assistant' && (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
+                          <button onClick={() => copyResponse(typeof m.content === 'string' ? m.content : '')} style={responseActionStyle}>Copy</button>
+                          <button onClick={() => speakResponse(typeof m.content === 'string' ? m.content : '')} style={responseActionStyle}>Speak</button>
+                          <button onClick={() => shareResponse(typeof m.content === 'string' ? m.content : '')} style={responseActionStyle}>Share</button>
+                          <button onClick={() => showMoreForResponse(typeof m.content === 'string' ? m.content : '')} style={responseActionStyle}>More</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -426,9 +556,9 @@ export default function HelpButton() {
               {/* Input */}
               <div style={{ padding:'10px 12px', background:'#fff', borderTop:'1px solid #e5e8f0', flexShrink:0 }}>
                 <input type="file" ref={fileInputRef} style={{ display:'none' }} multiple
-                  accept="image/*,.pdf" onChange={e => handleFiles(e.target.files)} />
+                  accept="*/*" onChange={e => handleFiles(e.target.files)} />
                 <div style={{ display:'flex', gap:6, alignItems:'flex-end' }}>
-                  <button onClick={() => fileInputRef.current?.click()} title="Anexar imagem ou PDF"
+                  <button onClick={() => fileInputRef.current?.click()} title="Anexar arquivo"
                     style={{ width:34, height:34, borderRadius:8, background:'#f0f2f5',
                       border:'1px solid #e5e8f0', cursor:'pointer', fontSize:16, flexShrink:0,
                       display:'flex', alignItems:'center', justifyContent:'center' }}>📎</button>
@@ -585,4 +715,16 @@ export default function HelpButton() {
       )}
     </>
   )
+}
+
+const responseActionStyle = {
+  border: '1px solid #cfd6e6',
+  borderRadius: 6,
+  background: '#f8fafc',
+  color: '#1a1f36',
+  fontSize: 11,
+  fontWeight: 700,
+  padding: '4px 8px',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
 }
