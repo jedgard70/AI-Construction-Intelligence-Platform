@@ -106,6 +106,14 @@ function initWebSpeech(): { recognition: any; supported: boolean } {
   return { recognition, supported: true }
 }
 
+function getValidSessionToken(session: any): string | null {
+  const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+  if (!token) return null
+  const expiresAt = typeof session?.expires_at === 'number' ? session.expires_at : null
+  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) + 30) return null
+  return token
+}
+
 export default function ApexCopilot() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -297,26 +305,74 @@ export default function ApexCopilot() {
 
     let active = true
 
+    async function refreshServerContext(token: string, fallbackEmail?: string | null) {
+      try {
+        const res = await fetch('/api/chat/session-context', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!active) return
+        if (!res.ok) {
+          setAuthToken(null)
+          setChatContext({
+            role: 'guest',
+            owner: false,
+            email: fallbackEmail || null,
+          })
+          return
+        }
+        setChatContext({
+          role: data?.role || 'user',
+          owner: Boolean(data?.is_owner),
+          email: data?.email || fallbackEmail || null,
+        })
+      } catch {
+        if (!active) return
+        setChatContext({
+          role: 'guest',
+          owner: false,
+          email: fallbackEmail || null,
+        })
+      }
+    }
+
     async function syncSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession()
       if (!active) return
-      setAuthToken(session?.access_token || null)
+      const token = getValidSessionToken(session)
+      const email = session?.user?.email || null
+      setAuthToken(token)
+      if (!token) {
+        setChatContext({ role: 'guest', owner: false, email })
+        return
+      }
       setChatContext(prev => ({
         ...prev,
-        email: session?.user?.email || null,
+        role: prev.role === 'guest' ? 'user' : prev.role,
+        email,
       }))
+      await refreshServerContext(token, email)
     }
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthToken(session?.access_token || null)
+      const token = getValidSessionToken(session)
+      const email = session?.user?.email || null
+      setAuthToken(token)
+      if (!token) {
+        setChatContext({ role: 'guest', owner: false, email })
+        return
+      }
       setChatContext(prev => ({
         ...prev,
-        email: session?.user?.email || null,
+        role: prev.role === 'guest' ? 'user' : prev.role,
+        email,
       }))
+      refreshServerContext(token, email).catch(() => {})
     })
 
     syncSession().catch(() => {
@@ -405,7 +461,18 @@ export default function ApexCopilot() {
       })
       const data = await res.json()
       if (!res.ok) {
-        throw new Error(data?.error?.message || 'Falha ao analisar anexo.')
+        throw new Error(
+          res.status === 401
+            ? 'Please log in on this Preview before using protected attachment analysis.'
+            : data?.error?.message || 'Falha ao analisar anexo.',
+        )
+      }
+      if (data?.apex_context) {
+        setChatContext({
+          role: data.apex_context.role || 'user',
+          owner: Boolean(data.apex_context.is_owner),
+          email: data.apex_context.email || chatContext.email || null,
+        })
       }
       const text = readAssistantText(data)
       const typeLabel = data?.type ? `Tipo: ${data.type}` : 'Tipo: unknown'
@@ -442,6 +509,13 @@ export default function ApexCopilot() {
       }
 
       if (selectedAttachments.length > 0) {
+        if (!authToken) {
+          appendAssistantMessage({
+            role: 'assistant',
+            text: 'Please log in on this Preview before using protected attachment analysis.',
+          })
+          return
+        }
         const analysis = await analyzeAttachments(question, selectedAttachments, headers)
         appendAssistantMessage({
           role: 'assistant',

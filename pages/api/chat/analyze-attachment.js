@@ -366,12 +366,12 @@ export default async function handler(req, res) {
 
   const bearerToken = getBearerToken(req.headers.authorization)
   if (!bearerToken) {
-    return res.status(401).json({ error: { message: 'Authentication required.' } })
+    return res.status(401).json({ error: { message: 'Please log in on this Preview before using protected attachment analysis.' } })
   }
 
   const userContext = await resolveOwnerContext(bearerToken)
   if (!userContext.userId) {
-    return res.status(401).json({ error: { message: 'Invalid authentication token.' } })
+    return res.status(401).json({ error: { message: 'Please log in on this Preview before using protected attachment analysis.' } })
   }
 
   const { attachment, prompt = '' } = req.body || {}

@@ -134,6 +134,13 @@ const isPDF   = mt => mt === 'application/pdf'
 function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' })
 }
+function getValidSessionToken(session) {
+  const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+  if (!token) return null
+  const expiresAt = typeof session?.expires_at === 'number' ? session.expires_at : null
+  if (expiresAt && expiresAt < Math.floor(Date.now() / 1000) + 30) return null
+  return token
+}
 
 const FAQS = [
   '📊 Como interpretar o CPI e SPI?',
@@ -170,13 +177,13 @@ export default function HelpButton() {
     let active = true
     sb.auth.getSession()
       .then(({ data }) => {
-        if (active) setAuthToken(data?.session?.access_token || null)
+        if (active) setAuthToken(getValidSessionToken(data?.session))
       })
       .catch(() => {
         if (active) setAuthToken(null)
       })
     const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      setAuthToken(session?.access_token || null)
+      setAuthToken(getValidSessionToken(session))
     })
     return () => {
       active = false
@@ -252,7 +259,7 @@ export default function HelpButton() {
         const analyses = []
         for (const a of attachments) {
           if (!authToken) {
-            analyses.push(`Arquivo recebido: ${a.name}\nAutenticacao necessaria para analisar anexos.`)
+            analyses.push(`Arquivo recebido: ${a.name}\nPlease log in on this Preview before using protected attachment analysis.`)
             continue
           }
           const res = await fetch('/api/chat/analyze-attachment', {
@@ -268,7 +275,7 @@ export default function HelpButton() {
             }),
           })
           const data = await res.json()
-          const text = data?.analysis || data?.content?.[0]?.text || data?.error?.message || 'Analise vazia.'
+          const text = data?.analysis || data?.content?.[0]?.text || (res.status === 401 ? 'Please log in on this Preview before using protected attachment analysis.' : data?.error?.message) || 'Analise vazia.'
           analyses.push(`Arquivo: ${a.name}\nTipo: ${data?.type || 'unknown'}\n${text}`)
         }
         const finalMessages = [...newMessages, { role:'assistant', content: analyses.join('\n\n') }]
