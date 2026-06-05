@@ -94,6 +94,14 @@ Required capability: manage repository Actions variables/secrets.
 
 - The previous executor could not list repo secrets or variables: GitHub returned `HTTP 401`.
 - The first explicit workflow diagnosis showed `VERCEL_CONFIGURED` was missing.
+- After setting `VERCEL_CONFIGURED=true`, the workflow reached `vercel pull` and failed with:
+
+```text
+Error: The token provided via `--token` argument is not valid. Please provide a valid token.
+```
+
+- This means the repository secret `VERCEL_TOKEN` exists, but its current value is invalid, expired, revoked, or not authorized for the Vercel project/team.
+- Replace `VERCEL_TOKEN` once with a valid Vercel token from the correct Vercel account/team. Do not paste the token in chat.
 - No Supabase action is required.
 - No production deployment is required.
 - Public website code now belongs in the separate `apex-global-website` repository.
