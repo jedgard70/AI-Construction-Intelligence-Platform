@@ -91,17 +91,31 @@ function classifyAttachment(fileName, mediaType) {
 function workflowFor(type) {
   const workflows = {
     image: 'image/vision analysis',
-    pdf: 'document analysis',
-    text: 'text/document intelligence',
-    spreadsheet: 'spreadsheet intelligence checkpoint',
-    bim: 'BIM/Revit/IFC checkpoint',
-    cad: 'CAD/DWG/DXF checkpoint',
-    office: 'office document intelligence checkpoint',
-    archive: 'archive ingestion checkpoint',
-    video: 'video/director analysis checkpoint',
+    pdf: 'checkpoint documental/OCR',
+    text: 'checkpoint documental/text intelligence',
+    spreadsheet: 'checkpoint planilhas/Excel',
+    bim: 'checkpoint BIM/3D',
+    cad: 'checkpoint CAD/DWG/DXF',
+    office: 'checkpoint Office/document intelligence',
+    archive: 'checkpoint arquivos compactados',
+    video: 'checkpoint video/director analysis',
     unknown: 'universal file intake triage',
   }
   return workflows[type] || workflows.unknown
+}
+
+function humanFormatLabel(fileName, type) {
+  const ext = getExtension(fileName).toUpperCase()
+  if (type === 'bim') return ext ? `BIM/${ext}` : 'BIM'
+  if (type === 'cad') return ext ? `CAD/${ext}` : 'CAD'
+  if (type === 'spreadsheet') return ext ? `Spreadsheet/${ext}` : 'Spreadsheet'
+  if (type === 'office') return ext ? `Office/${ext}` : 'Office'
+  if (type === 'archive') return ext ? `Archive/${ext}` : 'Archive'
+  if (type === 'video') return ext ? `Video/${ext}` : 'Video'
+  if (type === 'text') return ext ? `Text/${ext}` : 'Text'
+  if (type === 'pdf') return 'PDF'
+  if (type === 'image') return ext ? `Image/${ext}` : 'Image'
+  return ext || 'unknown'
 }
 
 function extractOpenAIText(data) {
@@ -245,7 +259,7 @@ async function analyzePdf({ base64, prompt, fileName }) {
     const text = extractPdfTextBestEffort(buffer)
     if (!text || text.length < 20) {
       return {
-        analysis: 'PDF recebido, mas extração de texto falhou. O arquivo foi aceito e será encaminhado para análise documental.',
+        analysis: 'PDF recebido. Extração de texto falhou no CP1. O arquivo foi aceito e será tratado em checkpoint documental/OCR.',
         supportedAnalysis: false,
         model: 'apex-pdf-best-effort',
         usage: null,
@@ -277,7 +291,7 @@ async function analyzePdf({ base64, prompt, fileName }) {
     }
   } catch {
     return {
-      analysis: 'PDF recebido, mas extração de texto falhou. O arquivo foi aceito e será encaminhado para análise documental.',
+      analysis: 'PDF recebido. Extração de texto falhou no CP1. O arquivo foi aceito e será tratado em checkpoint documental/OCR.',
       supportedAnalysis: false,
       model: 'apex-pdf-best-effort',
       usage: null,
@@ -323,9 +337,11 @@ async function analyzeText({ base64, prompt, fileName, mediaType }) {
 }
 
 function classifyOnly({ fileName, mediaType, type, bytes }) {
+  const label = humanFormatLabel(fileName, type)
   return {
     analysis: [
-      'Arquivo recebido e classificado. Leitura profunda deste formato será implementada em checkpoint específico.',
+      `Arquivo recebido e classificado como ${label}.`,
+      'Leitura profunda será tratada em checkpoint específico; CP1 registra intake e classificação sem deep parse para este formato.',
       `Arquivo: ${fileName}`,
       `Tipo classificado: ${type}`,
       `MIME: ${mediaType || 'application/octet-stream'}`,
@@ -419,13 +435,6 @@ export default async function handler(req, res) {
         prompt: String(prompt || '').slice(0, 2000),
         fileName,
       })
-    } else if (type === 'text') {
-      result = await analyzeText({
-        base64: parsed.base64,
-        prompt: String(prompt || '').slice(0, 2000),
-        fileName,
-        mediaType,
-      })
     } else {
       result = classifyOnly({ fileName, mediaType, type, bytes: parsed.bytes })
     }
@@ -441,7 +450,11 @@ export default async function handler(req, res) {
     })
   } catch (error) {
     return res.status(error?.statusCode || 500).json({
-      error: { message: error?.message || 'Attachment analysis failed.' },
+      error: {
+        message: error?.statusCode
+          ? 'OpenAI Vision/analysis provider unavailable for this attachment. The file was accepted by CP1 intake; try again or route it to the next checkpoint.'
+          : 'Attachment analysis failed.',
+      },
     })
   }
 }
