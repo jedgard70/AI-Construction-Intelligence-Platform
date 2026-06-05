@@ -1,8 +1,9 @@
 name: Deploy Preview (Vercel)
 
 on:
-  pull_request:
-    branches: [main]
+  # PR previews are created automatically by the Vercel GitHub App.
+  # This workflow is a manual fallback/diagnostic path for cases where
+  # the GitHub App integration is unavailable.
   workflow_dispatch:
 
 permissions:
