@@ -46,7 +46,11 @@ Variable:
 
 ## Owner Setup Steps If Permissions Are Missing
 
-1. Open the GitHub repository.
+This is a one-time repository setup. The Owner should not need to repeat it for every PR.
+
+### Option A - GitHub UI
+
+1. Open the GitHub repository as `jedgard70` or another repository Admin.
 2. Go to `Settings -> Secrets and variables -> Actions`.
 3. In `Secrets`, create or verify:
    - `VERCEL_TOKEN`
@@ -60,8 +64,37 @@ Variable:
    - Select `Deploy Preview (Vercel)`.
    - Click `Re-run jobs`.
 
+### Option B - GitHub CLI
+
+Authenticate once with an Admin account:
+
+```powershell
+gh auth login -h github.com
+```
+
+Then set the repository variable:
+
+```powershell
+gh variable set VERCEL_CONFIGURED --body true
+```
+
+If the secrets are missing, set them without printing values in chat or logs:
+
+```powershell
+gh secret set VERCEL_TOKEN
+gh secret set VERCEL_ORG_ID
+gh secret set VERCEL_PROJECT_ID
+```
+
+Required account: `jedgard70` or another Admin of `jedgard70/AI-Construction-Intelligence-Platform`.
+
+Required capability: manage repository Actions variables/secrets.
+
 ## Notes
 
-- The current executor could not list repo secrets or variables: GitHub returned `HTTP 401`.
+- The previous executor could not list repo secrets or variables: GitHub returned `HTTP 401`.
+- The first explicit workflow diagnosis showed `VERCEL_CONFIGURED` was missing.
 - No Supabase action is required.
 - No production deployment is required.
+- Public website code now belongs in the separate `apex-global-website` repository.
+- This repository is the private platform/app repository.

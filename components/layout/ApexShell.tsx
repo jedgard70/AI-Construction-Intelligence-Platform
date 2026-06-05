@@ -11,7 +11,7 @@ type MenuGroup = { section: string; items: MenuItem[] }
 const MENU: MenuGroup[] = [
   { section: 'Produção', items: [
     { label: 'Análises', href: '/dashboard' },
-    { label: 'Produção EUA', href: '/us-brand' },
+    { label: 'Produção EUA', href: '/platform?region=us' },
     { label: 'Produção Europa', href: '/platform?region=eu' },
     { label: 'Produção Brasil', href: '/platform?region=br' },
     { label: 'Projetos', href: '/documentos' },
@@ -35,7 +35,7 @@ const MENU: MenuGroup[] = [
     { label: 'Documentos legais', href: '/juridico/due-diligence' },
   ]},
   { section: 'Marketing', items: [
-    { label: 'Portfolio', href: '/us-brand' },
+    { label: 'Portfolio', href: '/platform?area=portfolio' },
     { label: 'Conteúdo', href: '/platform?area=content' },
     { label: 'Render/Video', href: '/director-cut' },
     { label: 'DirectCut', href: '/director-cut' },

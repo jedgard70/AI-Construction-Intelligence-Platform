@@ -43,7 +43,8 @@ Camadas principais:
 - persistencia central em `contracts`.
 
 4. Marketing e Go-to-Market
-- branding/ICP/mensagens em `/us-brand` e `brand_assets`;
+- website publico e landing pages no repositorio separado `apex-global-website`;
+- plataforma privada mantem apenas rotas autenticadas, CRM/campanhas e modulos operacionais;
 - campanhas por webhook e orquestracao de pipeline.
 
 ## 3. Modelo de Dados Aprovado (002-A)

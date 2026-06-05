@@ -9,7 +9,6 @@ const LINKS = [
   { icon: '📊', label: 'Investimentos',     href: '/investimentos' },
   { icon: '🎨', label: 'ArchVis Pro',       href: '/archvis' },
   { icon: '🎬', label: 'Director Cut',      href: '/director-cut' },
-  { icon: '🌎', label: 'US Brand',          href: '/us-brand' },
   { icon: '🗺️', label: 'Platform Map',      href: '/platform' },
 ]
 
