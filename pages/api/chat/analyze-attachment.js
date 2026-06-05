@@ -13,6 +13,7 @@ export const config = {
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 const TEXT_LIMIT = 18000
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp'])
+const CP1_ENDPOINT_MARKER = 'CP1 endpoint: analyze-attachment v125-forensic-universal-intake'
 const TEXT_TYPES = new Set([
   'text/plain',
   'text/csv',
@@ -352,6 +353,8 @@ function sendNormalized(res, status, payload) {
           output_tokens: payload.usage.completion_tokens,
         }
       : null,
+    runtime_marker: CP1_ENDPOINT_MARKER,
+    deployed_commit: process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || null,
     apex_context: payload.apex_context,
   })
 }

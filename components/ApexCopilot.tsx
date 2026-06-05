@@ -38,6 +38,7 @@ const MOBILE_MARGIN = 10
 const LAUNCHER_WIDTH = 98
 const LAUNCHER_HEIGHT = 48
 const DRAG_THRESHOLD = 6
+const CP1_RUNTIME_MARKER = 'CP1 runtime: ApexCopilot v125-forensic-universal-intake'
 
 const INITIAL_ASSISTANT_MESSAGE: Msg = {
   role: 'assistant',
@@ -678,6 +679,7 @@ export default function ApexCopilot() {
               <div style={{ fontSize: 10, opacity: 0.82 }}>
                 {chatContext.owner ? 'Owner/Dr. Edgard ativo' : `Contexto ${seatLabel}`}
               </div>
+              <div style={{ fontSize: 9, opacity: 0.72 }}>{CP1_RUNTIME_MARKER}</div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <button

@@ -3,6 +3,7 @@ import { getSupabase } from '../lib/supabase'
 
 // ─── Memória persistida em localStorage ───────────────────────────────────────
 const MEM_KEY = 'acip_memory_v2'
+const CP1_RUNTIME_MARKER = 'CP1 runtime: HelpButton v125-forensic-universal-intake'
 
 function loadMemory() {
   try {
@@ -150,7 +151,7 @@ export default function HelpButton() {
   const [expanded, setExpanded] = useState(false)
   const [memory, setMemory]     = useState(() => typeof window !== 'undefined' ? loadMemory() : defaultMemory())
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: '👋 Olá! Sou o **ACIP Assistant** — aprendo com cada conversa e fico mais útil com o tempo.\n\nEnvie texto, imagem (print), ou PDF e vou analisar!' }
+    { role: 'assistant', content: '👋 Olá! Sou o **ACIP Assistant** — aprendo com cada conversa e fico mais útil com o tempo.\n\nEnvie texto, imagem, PDF ou qualquer arquivo; formatos sem leitura profunda serão classificados para o checkpoint correto.' }
   ])
   const [input, setInput]       = useState('')
   const [loading, setLoading]   = useState(false)
@@ -411,6 +412,7 @@ export default function HelpButton() {
                 }
                 {learning && <span style={{ opacity:.7 }}>⏳</span>}
               </div>
+              <div style={{ fontSize:9, color:'rgba(255,255,255,0.65)', marginTop:2 }}>{CP1_RUNTIME_MARKER}</div>
             </div>
             {/* Tabs */}
             <div style={{ display:'flex', gap:4 }}>
