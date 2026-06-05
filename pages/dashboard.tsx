@@ -3,20 +3,20 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { getSupabase } from '../lib/supabase'
 
-const DashboardByRole = dynamic(
-  () => import('../components/DashboardByRole'),
+const WelcomeAnalysis = dynamic(
+  () => import('../components/WelcomeAnalysis'),
   {
     ssr: false,
     loading: () => (
       <div style={{
-        minHeight: '100vh', background: '#0a0d12',
+        minHeight: '100vh', background: '#f6f8fb',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
         <span style={{
-          color: '#f0a500', fontFamily: 'monospace',
-          fontSize: '14px', letterSpacing: '2px',
+          color: '#071a33', fontFamily: 'monospace',
+          fontSize: '14px', letterSpacing: '1px',
         }}>
-          CARREGANDO...
+          Loading analyses...
         </span>
       </div>
     ),
@@ -31,6 +31,7 @@ export interface Profile {
   company: string | null
   avatar_url: string | null
   is_active: boolean
+  is_owner?: boolean | null
 }
 
 export default function Dashboard() {
@@ -85,17 +86,17 @@ export default function Dashboard() {
 
   if (loading) return (
     <div style={{
-      minHeight: '100vh', background: '#0a0d12',
+      minHeight: '100vh', background: '#f6f8fb',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <span style={{
-        color: '#f0a500', fontFamily: 'monospace',
-        fontSize: '14px', letterSpacing: '2px',
+        color: '#071a33', fontFamily: 'monospace',
+        fontSize: '14px', letterSpacing: '1px',
       }}>
-        CARREGANDO...
+        Loading analyses...
       </span>
     </div>
   )
 
-  return <DashboardByRole profile={profile!} />
+  return <WelcomeAnalysis profile={profile!} />
 }
