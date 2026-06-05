@@ -1,20 +1,60 @@
 name: Deploy Preview (Vercel)
 
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: vercel-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
     name: Deploy to Vercel Preview
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/claude/')) &&
-      vars.VERCEL_CONFIGURED == 'true'
 
     steps:
+      - name: Validate Vercel Actions configuration
+        shell: bash
+        env:
+          VERCEL_CONFIGURED: ${{ vars.VERCEL_CONFIGURED }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          missing=()
+
+          if [ "${VERCEL_CONFIGURED}" != "true" ]; then
+            missing+=("Repository variable VERCEL_CONFIGURED=true")
+          fi
+          if [ -z "${VERCEL_TOKEN}" ]; then
+            missing+=("Repository secret VERCEL_TOKEN")
+          fi
+          if [ -z "${VERCEL_ORG_ID}" ]; then
+            missing+=("Repository secret VERCEL_ORG_ID")
+          fi
+          if [ -z "${VERCEL_PROJECT_ID}" ]; then
+            missing+=("Repository secret VERCEL_PROJECT_ID")
+          fi
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error title=Vercel Preview is not configured::Missing GitHub Actions configuration for Vercel Preview."
+            echo "Missing required configuration:"
+            printf ' - %s\n' "${missing[@]}"
+            echo ""
+            echo "Configure these in GitHub: Settings > Secrets and variables > Actions."
+            echo "No secret values were printed."
+            exit 1
+          fi
+
+          echo "Vercel Preview configuration is present. Secret values are masked and were not printed."
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -28,23 +68,28 @@ jobs:
         run: npm install -g vercel@latest
 
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=preview --token="${VERCEL_TOKEN}"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build project
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --token="${VERCEL_TOKEN}"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Deploy to preview
         id: deploy
         run: |
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-          echo "preview_url=$URL" >> $GITHUB_OUTPUT
+          URL=$(vercel deploy --prebuilt --token="${VERCEL_TOKEN}")
+          echo "preview_url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "### Vercel Preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "${URL}" >> "$GITHUB_STEP_SUMMARY"
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
@@ -57,18 +102,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 **Preview deploy:** ${{ steps.deploy.outputs.preview_url }}`
+              body: `Vercel Preview READY: ${{ steps.deploy.outputs.preview_url }}`
             })
-
-  skip-notice:
-    name: Deploy to Vercel Preview
-    runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/claude/')) &&
-      vars.VERCEL_CONFIGURED != 'true'
-    steps:
-      - name: Vercel não configurado
-        run: |
-          echo "⏭️ Deploy Vercel ignorado — secrets não configurados."
-          echo "Para ativar, adicione VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID nos secrets"
-          echo "e crie a variável VERCEL_CONFIGURED=true no repositório."
