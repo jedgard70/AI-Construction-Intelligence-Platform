@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useRouter } from 'next/router'
+import { runCp32SmartRouting } from '../lib/cp3-smart-routing'
+import type { Cp32Objective, Cp32SmartRoute } from '../lib/cp3-smart-routing'
 import type { Profile } from '../pages/dashboard'
 
 type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
@@ -26,6 +28,7 @@ type IntakeResult = {
   explanation: string
   routes: RouteOption[]
   agents: LiveAgent[]
+  smartRoutes: Cp32SmartRoute[]
 }
 
 type IntentCard = {
@@ -288,6 +291,7 @@ function classify(fileName: string, intent: string, language: Language): IntakeR
     explanation: copy.explanation,
     routes: routesFor(kind, language),
     agents: AGENT_LIBRARY[kind],
+    smartRoutes: runCp32SmartRouting({ fileName, goal: intent, objective: kind as Cp32Objective }),
   }
 }
 
@@ -297,6 +301,17 @@ function previewLabel(file: File | null, language: Language) {
   return language === 'en' ? `${ext} received` : `${ext} recebido`
 }
 
+function routeHref(routeId: Cp32SmartRoute['routeId']) {
+  if (routeId === 'archvis-render') return '/archvis'
+  if (routeId === 'directcut-video') return '/director-cut'
+  if (routeId === 'bim-clash') return '/bim-3d'
+  if (routeId === 'quantity-budget') return '/orcamento'
+  if (routeId === 'legal-permits') return '/juridico/contratos'
+  if (routeId === 'marketing-social') return '/platform?area=marketing'
+  if (routeId === 'field-operations') return '/rdo'
+  return '/documentos'
+}
+
 export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -304,6 +319,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const [language, setLanguage] = useState<Language>('en')
   const [file, setFile] = useState<File | null>(null)
   const [intent, setIntent] = useState('')
+  const [selectedObjective, setSelectedObjective] = useState<IntakeKind>('generic')
   const [result, setResult] = useState<IntakeResult | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
   const copy = UI_COPY[language]
@@ -333,23 +349,37 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
   useEffect(() => {
     if (result) {
-      setResult(classify(file?.name || '', intent, language))
+      setResult(buildIntakeResult(file, intent, selectedObjective))
     }
   }, [language])
 
-  function runIntake(nextFile = file, nextIntent = intent, nextLanguage = language) {
-    setResult(classify(nextFile?.name || '', nextIntent, nextLanguage))
+  function buildIntakeResult(nextFile = file, nextIntent = intent, nextObjective = selectedObjective) {
+    const base = classify(nextFile?.name || '', nextIntent, language)
+    return {
+      ...base,
+      smartRoutes: runCp32SmartRouting({
+        fileName: nextFile?.name || '',
+        fileType: nextFile?.type || '',
+        goal: nextIntent,
+        objective: nextObjective as Cp32Objective,
+      }),
+    }
+  }
+
+  function runIntake(nextFile = file, nextIntent = intent, nextObjective = selectedObjective) {
+    setResult(buildIntakeResult(nextFile, nextIntent, nextObjective))
   }
 
   function selectIntent(card: IntentCard) {
     setIntent(card.prompt)
-    setResult(classify(file?.name || '', card.prompt, language))
+    setSelectedObjective(card.kind)
+    setResult(buildIntakeResult(file, card.prompt, card.kind))
   }
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null
     setFile(nextFile)
-    if (nextFile) runIntake(nextFile, intent)
+    if (nextFile) runIntake(nextFile, intent, selectedObjective)
   }
 
   return (
@@ -429,17 +459,20 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           <section style={styles.analysisPanel}>
             <div style={styles.sectionKicker}>{copy.analysis}</div>
             <div style={styles.code}>{result.code}</div>
-            <h2 style={styles.analysisTitle}>{result.headline}</h2>
-            <p style={styles.analysisText}>{result.explanation}</p>
+            <h2 style={styles.analysisTitle}>{result.smartRoutes[0]?.title[language] || result.headline}</h2>
+            <p style={styles.analysisText}>{result.smartRoutes[0]?.reason[language] || result.explanation}</p>
+            <p style={styles.nextAction}>{result.smartRoutes[0]?.recommendedNextAction[language]}</p>
           </section>
 
           <section style={styles.routesPanel}>
             <div style={styles.sectionKicker}>{copy.routes}</div>
-            <div style={styles.routeGrid}>
-              {result.routes.map(route => (
-                <button key={route.title} type="button" onClick={() => router.push(route.href)} style={styles.routeCard}>
-                  <strong>{route.title}</strong>
-                  <span>{route.description}</span>
+            <div style={styles.smartRouteGrid}>
+              {result.smartRoutes.map(route => (
+                <button key={route.routeId} type="button" onClick={() => router.push(routeHref(route.routeId))} style={styles.smartRouteCard}>
+                  <span style={styles.confidence}>{route.confidence}%</span>
+                  <strong>{route.title[language]}</strong>
+                  <span>{route.reason[language]}</span>
+                  <em>{route.recommendedNextAction[language]}</em>
                 </button>
               ))}
             </div>
@@ -451,12 +484,12 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
         <section style={styles.agentsPanel}>
           <div style={styles.sectionKicker}>{copy.agents}</div>
           <div style={styles.agentGrid}>
-            {result.agents.map(agent => (
-              <button key={agent.name} type="button" style={styles.agentCard}>
-                <span style={styles.agentSignal}>{agent.signal}</span>
-                <strong>{agent.name}</strong>
-                <span>{agent.finding}</span>
-                <em>{agent.action}</em>
+            {result.smartRoutes.flatMap(route => route.suggestedAgents).slice(0, 6).map(agentName => (
+              <button key={agentName} type="button" style={styles.agentCard}>
+                <span style={styles.agentSignal}>CP3.2</span>
+                <strong>{agentName}</strong>
+                <span>{language === 'en' ? 'Suggested for this routing decision.' : 'Sugerido para esta decisao de rota.'}</span>
+                <em>{language === 'en' ? 'Ready for next checkpoint execution.' : 'Pronto para execucao em checkpoint futuro.'}</em>
               </button>
             ))}
           </div>
@@ -733,11 +766,49 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 13,
     lineHeight: 1.65,
   },
+  nextAction: {
+    margin: '14px 0 0',
+    borderTop: '1px solid rgba(255,255,255,.18)',
+    paddingTop: 12,
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: 800,
+    lineHeight: 1.5,
+  },
   routesPanel: {
     border: '1px solid #dfe5ee',
     borderRadius: 8,
     background: '#ffffff',
     padding: 18,
+  },
+  smartRouteGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 10,
+  },
+  smartRouteCard: {
+    minHeight: 198,
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    color: '#071a33',
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 9,
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: '0 10px 22px rgba(7,26,51,.055)',
+  },
+  confidence: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    background: '#fff5f6',
+    color: '#b20f1d',
+    padding: '4px 8px',
+    fontSize: 11,
+    fontWeight: 900,
   },
   routeGrid: {
     display: 'grid',
