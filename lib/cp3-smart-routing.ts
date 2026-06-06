@@ -200,7 +200,7 @@ export function runCp32SmartRouting(input: Cp32SmartRoutingInput): Cp32SmartRout
     'general-unknown': 0,
   }
 
-  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'].includes(ext) || fileType.startsWith('image/')) {
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'].includes(ext) || fileType.startsWith('image/')) {
     addScore(scores, 'archvis-render', 34)
     addScore(scores, 'marketing-social', 8)
   }

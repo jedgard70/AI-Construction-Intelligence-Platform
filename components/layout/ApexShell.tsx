@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useMemo, useState, useEffect } from 'react'
+import { ChevronDown, Menu } from 'lucide-react'
 import { getSupabase } from '../../lib/supabase'
 
 type MenuItem = { label: string; href: string; ownerOnly?: boolean }
@@ -197,32 +198,42 @@ export default function ApexShell({ children }: Props) {
       )}
 
       <div style={{ minWidth: 0 }}>
-        <header style={{ height: guidedWelcome ? 68 : 56, borderBottom: '1px solid var(--apx-border)', background: 'var(--apx-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: guidedWelcome ? '0 26px' : '0 18px', position: 'sticky', top: 0, zIndex: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <header style={{ height: guidedWelcome ? 82 : 56, borderBottom: '1px solid var(--apx-border)', background: 'var(--apx-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: guidedWelcome ? '0 32px' : '0 18px', position: 'sticky', top: 0, zIndex: 20, boxShadow: guidedWelcome ? '0 10px 28px rgba(7,26,51,.04)' : 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: guidedWelcome ? 26 : 12 }}>
             {guidedWelcome && (
               <button
                 type="button"
                 aria-label="Open navigation menu"
                 onClick={() => setGuidedMenuOpen(true)}
                 style={{
-                  width: 38,
-                  height: 38,
-                  border: '1px solid var(--apx-border)',
+                  width: 50,
+                  height: 50,
+                  border: '1px solid #e21b2d',
                   borderRadius: 8,
                   background: '#ffffff',
-                  color: 'var(--apx-text)',
-                  fontSize: 22,
-                  lineHeight: 1,
+                  color: '#071a33',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                ≡
+                <Menu size={22} strokeWidth={2.2} />
               </button>
             )}
-            <div>
-              <div style={{ fontSize: guidedWelcome ? 15 : 11, color: guidedWelcome ? '#071a33' : 'var(--apx-muted)', letterSpacing: guidedWelcome ? '.06em' : '.08em', textTransform: 'uppercase', fontWeight: guidedWelcome ? 900 : 500 }}>APEX GLOBAL AI</div>
-              <div style={{ fontWeight: 700, color: 'var(--apx-muted)', fontSize: guidedWelcome ? 12 : 14 }}>{guidedWelcome ? 'Construction Intelligence Platform' : title}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: guidedWelcome ? 9 : 0 }}>
+              {guidedWelcome ? (
+                <>
+                  <span style={{ color: '#071a33', fontSize: 34, fontWeight: 950, letterSpacing: '.01em', lineHeight: 1 }}>APE<span style={{ color: '#d7192a' }}>X</span></span>
+                  <span style={{ color: '#d7192a', fontSize: 23, fontWeight: 950, letterSpacing: '.05em', lineHeight: 1 }}>GLOBAL AI</span>
+                </>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--apx-muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Apex Global</div>
+                  <div style={{ fontWeight: 700 }}>{title}</div>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -232,10 +243,14 @@ export default function ApexShell({ children }: Props) {
                   <button type="button" onClick={() => changeGuidedLanguage('en')} style={{ border: 'none', borderRadius: 6, background: guidedLanguage === 'en' ? '#071a33' : 'transparent', color: guidedLanguage === 'en' ? '#fff' : 'var(--apx-muted)', padding: '7px 10px', fontSize: 12, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>EN</button>
                   <button type="button" onClick={() => changeGuidedLanguage('pt')} style={{ border: 'none', borderRadius: 6, background: guidedLanguage === 'pt' ? '#071a33' : 'transparent', color: guidedLanguage === 'pt' ? '#fff' : 'var(--apx-muted)', padding: '7px 10px', fontSize: 12, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>PT</button>
                 </div>
-                <div style={{ textAlign: 'right', minWidth: 132 }}>
-                  <div style={{ color: '#071a33', fontSize: 13, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{shellUser.label}</div>
-                  <div style={{ color: 'var(--apx-muted)', fontSize: 11 }}>{shellUser.isOwner ? 'Owner' : shellUser.detail}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 999, background: '#072bb7', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 950, boxShadow: '0 10px 24px rgba(7,43,183,.18)' }}>
+                  {(shellUser.label || 'U').slice(0, 1).toUpperCase()}
                 </div>
+                <div style={{ textAlign: 'left', minWidth: 132 }}>
+                  <div style={{ color: '#071a33', fontSize: 14, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{shellUser.label}</div>
+                  <div style={{ color: '#0d2b52', fontSize: 12 }}>{shellUser.isOwner ? 'Apex Global' : shellUser.detail}</div>
+                </div>
+                <ChevronDown size={17} color="#071a33" />
               </>
             ) : (
               <>
