@@ -4,10 +4,12 @@ import { useRouter } from 'next/router'
 import {
   BadgeCheck,
   Bot,
+  Clapperboard,
   DollarSign,
   FileText,
   HardHat,
   ImageIcon,
+  ListChecks,
   Megaphone,
   MessageSquare,
   Play,
@@ -18,7 +20,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { runCp32SmartRouting } from '../lib/cp3-smart-routing'
-import type { Cp32Objective, Cp32SmartRoute } from '../lib/cp3-smart-routing'
+import type { Cp32Objective, Cp32RouteId, Cp32SmartRoute } from '../lib/cp3-smart-routing'
 import type { Profile } from '../pages/dashboard'
 
 type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
@@ -60,6 +62,30 @@ type IntentVisual = {
   background: string
 }
 
+type LivingAgentId =
+  | 'archvis-render'
+  | 'bim-clash'
+  | 'budget-quantity'
+  | 'contract-legal'
+  | 'marketing'
+  | 'field-operations'
+  | 'directcut-video'
+
+type LivingAgentCard = {
+  id: LivingAgentId
+  icon: LucideIcon
+  accent: string
+  tint: string
+  name: Record<Language, string>
+  category: Record<Language, string>
+  does: Record<Language, string>
+  inputs: Record<Language, string>
+  outputs: Record<Language, string>
+  correct: Record<Language, string>
+  attention: Record<Language, string>
+  action: Record<Language, string>
+}
+
 const UI_COPY = {
   en: {
     welcome: 'Welcome',
@@ -81,7 +107,15 @@ const UI_COPY = {
     intentCards: 'Choose an objective',
     analysis: 'Visual / technical analysis',
     routes: 'Smart routes',
-    agents: 'Living agents demo',
+    agents: 'Living Agents Workspace',
+    agentsIntro: 'These agents are ready to continue the recommended path. CP4 is local and deterministic; no backend execution yet.',
+    agentDoes: 'What it does',
+    agentInputs: 'Accepted inputs',
+    agentOutputs: 'Expected outputs',
+    agentCorrect: 'What looks correct',
+    agentAttention: 'Needs attention',
+    agentRecommended: 'Recommended first',
+    agentAvailable: 'Available',
     ownerTitle: 'Executive control',
     ownerText: 'Owner control and executive indicators remain separate from the first experience.',
     ownerButton: 'Executive Dashboard',
@@ -109,7 +143,15 @@ const UI_COPY = {
     intentCards: 'Escolha um objetivo',
     analysis: 'Analise visual / tecnica',
     routes: 'Rotas inteligentes',
-    agents: 'Agentes vivos demonstrativos',
+    agents: 'Living Agents Workspace',
+    agentsIntro: 'Estes agentes estao prontos para continuar a rota recomendada. O CP4 e local e deterministico; ainda sem execucao backend.',
+    agentDoes: 'O que faz',
+    agentInputs: 'Entradas aceitas',
+    agentOutputs: 'Saidas esperadas',
+    agentCorrect: 'O que parece correto',
+    agentAttention: 'Precisa de atencao',
+    agentRecommended: 'Recomendado primeiro',
+    agentAvailable: 'Disponivel',
     ownerTitle: 'Executive control',
     ownerText: 'Controle Owner e indicadores executivos continuam separados da primeira experiencia.',
     ownerButton: 'Dashboard Executivo',
@@ -127,6 +169,139 @@ const INTENT_VISUALS: Record<IntakeKind, IntentVisual> = {
   marketing: { icon: Megaphone, color: '#ff6f1a', background: '#ffe8d8' },
   field: { icon: HardHat, color: '#18b58c', background: '#dbf6ef' },
   generic: { icon: Bot, color: '#0d2b52', background: '#eaf2ff' },
+}
+
+const LIVING_AGENTS: Record<LivingAgentId, LivingAgentCard> = {
+  'archvis-render': {
+    id: 'archvis-render',
+    icon: ImageIcon,
+    accent: '#ff2d21',
+    tint: '#ffe1e1',
+    name: { en: 'ArchVis Render Agent', pt: 'Agente ArchVis Render' },
+    category: { en: 'Visual sales / presentation', pt: 'Venda visual / apresentacao' },
+    does: {
+      en: 'Turns plans, photos, sketches or visual intent into a render, facade study, humanized plan or presentation path.',
+      pt: 'Transforma plantas, fotos, croquis ou intencao visual em rota de render, fachada, planta humanizada ou apresentacao.',
+    },
+    inputs: { en: 'JPG, PNG, HEIC, PDF floor plan, sketch, visual brief.', pt: 'JPG, PNG, HEIC, PDF de planta, croqui, briefing visual.' },
+    outputs: { en: 'Render brief, visual direction, required views and next production step.', pt: 'Briefing de render, direcao visual, vistas necessarias e proximo passo produtivo.' },
+    correct: { en: 'Image/plan has enough context for view, style, material or sales purpose.', pt: 'Imagem/planta tem contexto suficiente de vista, estilo, material ou objetivo comercial.' },
+    attention: { en: 'Missing dimensions, unclear camera angle, low-resolution plans or no target audience.', pt: 'Faltam medidas, angulo de camera, planta legivel ou publico-alvo.' },
+    action: { en: 'Prepare ArchVis brief', pt: 'Preparar briefing ArchVis' },
+  },
+  'bim-clash': {
+    id: 'bim-clash',
+    icon: Workflow,
+    accent: '#1d32ff',
+    tint: '#e4e5ff',
+    name: { en: 'BIM / Clash Agent', pt: 'Agente BIM / Clash' },
+    category: { en: 'Model coordination', pt: 'Coordenacao de modelo' },
+    does: {
+      en: 'Routes IFC, RVT, DWG, DXF or SKP context to model review, coordination, clash triage and technical validation.',
+      pt: 'Encaminha IFC, RVT, DWG, DXF ou SKP para revisao de modelo, coordenacao, triagem de clash e validacao tecnica.',
+    },
+    inputs: { en: 'IFC, RVT, DWG, DXF, SKP, coordination notes.', pt: 'IFC, RVT, DWG, DXF, SKP, notas de compatibilizacao.' },
+    outputs: { en: 'Model review path, clash questions, discipline context and validation checklist.', pt: 'Rota de revisao, perguntas de clash, contexto por disciplina e checklist de validacao.' },
+    correct: { en: 'Model file type or intent clearly points to coordination, quantities or technical review.', pt: 'Arquivo ou intencao aponta claramente para coordenacao, quantitativo ou revisao tecnica.' },
+    attention: { en: 'No discipline list, no model version, no coordinate origin or unclear target deliverable.', pt: 'Sem lista de disciplinas, versao, origem de coordenadas ou entrega alvo clara.' },
+    action: { en: 'Prepare model review', pt: 'Preparar revisao do modelo' },
+  },
+  'budget-quantity': {
+    id: 'budget-quantity',
+    icon: DollarSign,
+    accent: '#14aa52',
+    tint: '#def9e8',
+    name: { en: 'Budget / Quantity Agent', pt: 'Agente Orcamento / Quantitativo' },
+    category: { en: 'Cost and proposal', pt: 'Custo e proposta' },
+    does: {
+      en: 'Organizes budget, quantity, invoice or spreadsheet intent into a controlled estimating path.',
+      pt: 'Organiza intencao de orcamento, quantitativo, nota ou planilha em uma rota controlada de estimativa.',
+    },
+    inputs: { en: 'XLSX, CSV, invoice, quantity list, scope notes, BIM quantity request.', pt: 'XLSX, CSV, nota, lista de quantitativos, escopo, pedido de quantitativo BIM.' },
+    outputs: { en: 'Budget draft, assumptions to collect, cost categories and proposal next step.', pt: 'Rascunho de orcamento, premissas a coletar, categorias de custo e proximo passo de proposta.' },
+    correct: { en: 'Scope, unit, quantity, budget or proposal intent is visible.', pt: 'Escopo, unidade, quantidade, orcamento ou intencao de proposta estao claros.' },
+    attention: { en: 'Missing units, region, currency, labor/material split or client approval stage.', pt: 'Faltam unidades, regiao, moeda, separacao mao de obra/material ou etapa de aprovacao.' },
+    action: { en: 'Start budget draft', pt: 'Iniciar rascunho de orcamento' },
+  },
+  'contract-legal': {
+    id: 'contract-legal',
+    icon: BadgeCheck,
+    accent: '#8d25de',
+    tint: '#efd9ff',
+    name: { en: 'Contract / Legal Agent', pt: 'Agente Contrato / Juridico' },
+    category: { en: 'Legal, permit and compliance', pt: 'Juridico, permit e compliance' },
+    does: {
+      en: 'Classifies contracts, permits, compliance documents and signature workflows before execution.',
+      pt: 'Classifica contratos, permits, documentos de compliance e fluxos de assinatura antes da execucao.',
+    },
+    inputs: { en: 'PDF, DOCX, contract, permit, compliance note, signature request.', pt: 'PDF, DOCX, contrato, permit, nota de compliance, pedido de assinatura.' },
+    outputs: { en: 'Document type, legal checklist, risk questions and responsible next step.', pt: 'Tipo documental, checklist juridico, perguntas de risco e proximo responsavel.' },
+    correct: { en: 'Document has parties, scope, jurisdiction, deadline or approval requirement.', pt: 'Documento tem partes, escopo, jurisdicao, prazo ou requisito de aprovacao.' },
+    attention: { en: 'Missing jurisdiction, signer, version control, attachments or execution deadline.', pt: 'Faltam jurisdicao, assinante, versao, anexos ou prazo de execucao.' },
+    action: { en: 'Open legal checklist', pt: 'Abrir checklist juridico' },
+  },
+  marketing: {
+    id: 'marketing',
+    icon: Megaphone,
+    accent: '#ff6f1a',
+    tint: '#ffe8d8',
+    name: { en: 'Marketing Agent', pt: 'Agente Marketing' },
+    category: { en: 'Campaign, website and sales story', pt: 'Campanha, website e narrativa de venda' },
+    does: {
+      en: 'Converts visual/project intent into campaign, portfolio, website, social or sales material direction.',
+      pt: 'Converte intencao visual/projeto em direcao de campanha, portfolio, website, social ou material de venda.',
+    },
+    inputs: { en: 'Render, photo, project story, brand goal, website/social request.', pt: 'Render, foto, narrativa do projeto, objetivo de marca, pedido de website/social.' },
+    outputs: { en: 'Campaign angle, asset list, content path and supporting ArchVis needs.', pt: 'Angulo de campanha, lista de ativos, rota de conteudo e necessidades ArchVis.' },
+    correct: { en: 'The goal is to sell, publish, promote or position the project.', pt: 'O objetivo e vender, publicar, divulgar ou posicionar o projeto.' },
+    attention: { en: 'Missing audience, offer, region, brand tone, visual assets or deadline.', pt: 'Faltam publico, oferta, regiao, tom de marca, ativos visuais ou prazo.' },
+    action: { en: 'Prepare campaign path', pt: 'Preparar rota de campanha' },
+  },
+  'field-operations': {
+    id: 'field-operations',
+    icon: HardHat,
+    accent: '#18b58c',
+    tint: '#dbf6ef',
+    name: { en: 'Field Operations Agent', pt: 'Agente Operacao de Obra' },
+    category: { en: 'Jobsite execution', pt: 'Execucao de campo' },
+    does: {
+      en: 'Routes jobsite evidence, RDO, quality, progress and execution requests into field operations.',
+      pt: 'Encaminha evidencias de obra, RDO, qualidade, progresso e pedidos de execucao para operacao de campo.',
+    },
+    inputs: { en: 'Site photos, RDO notes, quality issue, material/progress evidence.', pt: 'Fotos de obra, notas RDO, problema de qualidade, evidencia de material/progresso.' },
+    outputs: { en: 'Field record path, progress questions, risk flags and next operational action.', pt: 'Rota de registro de campo, perguntas de progresso, alertas de risco e proxima acao operacional.' },
+    correct: { en: 'Input includes location, progress, material, crew, quality or execution evidence.', pt: 'Entrada inclui local, progresso, material, equipe, qualidade ou evidencia de execucao.' },
+    attention: { en: 'Missing date, location, responsible party, photo context or severity.', pt: 'Faltam data, local, responsavel, contexto da foto ou severidade.' },
+    action: { en: 'Prepare field record', pt: 'Preparar registro de campo' },
+  },
+  'directcut-video': {
+    id: 'directcut-video',
+    icon: Clapperboard,
+    accent: '#0d2b52',
+    tint: '#eaf2ff',
+    name: { en: 'DirectCut Video Agent', pt: 'Agente DirectCut Video' },
+    category: { en: 'Video, tour and timelapse', pt: 'Video, tour e timelapse' },
+    does: {
+      en: 'Shapes video, timelapse, tour or audiovisual storytelling requests into a production brief.',
+      pt: 'Transforma pedidos de video, timelapse, tour ou narrativa audiovisual em briefing de producao.',
+    },
+    inputs: { en: 'MP4, MOV, image sequence, render set, project story, timelapse goal.', pt: 'MP4, MOV, sequencia de imagens, renders, historia do projeto, objetivo de timelapse.' },
+    outputs: { en: 'Scene outline, duration target, asset needs and delivery format.', pt: 'Roteiro de cenas, duracao alvo, ativos necessarios e formato de entrega.' },
+    correct: { en: 'Intent mentions video, movement, tour, sequence, timelapse or presentation.', pt: 'Intencao menciona video, movimento, tour, sequencia, timelapse ou apresentacao.' },
+    attention: { en: 'Missing scenes, duration, audience, music/voice direction or source asset order.', pt: 'Faltam cenas, duracao, publico, direcao de musica/voz ou ordem dos ativos.' },
+    action: { en: 'Prepare DirectCut brief', pt: 'Preparar briefing DirectCut' },
+  },
+}
+
+const ROUTE_AGENT_MAP: Record<Cp32RouteId, LivingAgentId[]> = {
+  'archvis-render': ['archvis-render', 'marketing', 'directcut-video'],
+  'directcut-video': ['directcut-video', 'marketing', 'archvis-render'],
+  'bim-clash': ['bim-clash', 'budget-quantity', 'field-operations'],
+  'quantity-budget': ['budget-quantity', 'bim-clash', 'field-operations'],
+  'legal-permits': ['contract-legal', 'field-operations', 'budget-quantity'],
+  'marketing-social': ['marketing', 'archvis-render', 'directcut-video'],
+  'field-operations': ['field-operations', 'budget-quantity', 'bim-clash'],
+  'general-unknown': ['archvis-render', 'bim-clash', 'budget-quantity'],
 }
 
 const INTENT_CARDS: Record<Language, IntentCard[]> = {
@@ -357,6 +532,27 @@ function routeHref(routeId: Cp32SmartRoute['routeId']) {
   return '/documentos'
 }
 
+function livingAgentsFor(routes: Cp32SmartRoute[]) {
+  const ordered: LivingAgentId[] = []
+  routes.forEach(route => {
+    ROUTE_AGENT_MAP[route.routeId].forEach(agentId => {
+      if (!ordered.includes(agentId)) ordered.push(agentId)
+    })
+  })
+  return ordered.slice(0, 5).map(agentId => LIVING_AGENTS[agentId])
+}
+
+function agentHref(agentId: LivingAgentId) {
+  if (agentId === 'archvis-render') return '/archvis'
+  if (agentId === 'directcut-video') return '/director-cut'
+  if (agentId === 'bim-clash') return '/bim-3d'
+  if (agentId === 'budget-quantity') return '/orcamento'
+  if (agentId === 'contract-legal') return '/juridico/contratos'
+  if (agentId === 'marketing') return '/platform?area=marketing'
+  if (agentId === 'field-operations') return '/rdo'
+  return '/documentos'
+}
+
 export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -539,16 +735,54 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
       {result && (
         <section style={styles.agentsPanel}>
-          <div style={styles.sectionKicker}>{copy.agents}</div>
+          <div style={styles.agentHeader}>
+            <div>
+              <div style={styles.sectionKicker}>{copy.agents}</div>
+              <p style={styles.agentIntro}>{copy.agentsIntro}</p>
+            </div>
+            <span style={styles.agentWorkspaceBadge}>CP4</span>
+          </div>
           <div style={styles.agentGrid}>
-            {result.smartRoutes.flatMap(route => route.suggestedAgents).slice(0, 6).map(agentName => (
-              <button key={agentName} type="button" style={styles.agentCard}>
-                <span style={styles.agentSignal}>CP3.2</span>
-                <strong>{agentName}</strong>
-                <span>{language === 'en' ? 'Suggested for this routing decision.' : 'Sugerido para esta decisao de rota.'}</span>
-                <em>{language === 'en' ? 'Ready for next checkpoint execution.' : 'Pronto para execucao em checkpoint futuro.'}</em>
-              </button>
-            ))}
+            {livingAgentsFor(result.smartRoutes).map((agent, index) => {
+              const AgentIcon = agent.icon
+              return (
+                <article key={agent.id} style={{ ...styles.agentCard, ...(index === 0 ? styles.agentCardPrimary : null) }}>
+                  <div style={styles.agentTopLine}>
+                    <span style={{ ...styles.agentIcon, color: agent.accent, background: agent.tint }}>
+                      <AgentIcon size={28} strokeWidth={2.15} />
+                    </span>
+                    <span style={styles.agentSignal}>{index === 0 ? copy.agentRecommended : copy.agentAvailable}</span>
+                  </div>
+                  <h3 style={styles.agentName}>{agent.name[language]}</h3>
+                  <p style={styles.agentCategory}>{agent.category[language]}</p>
+
+                  <div style={styles.agentFactGrid}>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentDoes}</strong>
+                      <em>{agent.does[language]}</em>
+                    </span>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentInputs}</strong>
+                      <em>{agent.inputs[language]}</em>
+                    </span>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentOutputs}</strong>
+                      <em>{agent.outputs[language]}</em>
+                    </span>
+                  </div>
+
+                  <div style={styles.agentQualityGrid}>
+                    <span style={styles.agentPositive}>{agent.correct[language]}</span>
+                    <span style={styles.agentAttention}>{agent.attention[language]}</span>
+                  </div>
+
+                  <button type="button" style={{ ...styles.agentAction, background: agent.accent }} onClick={() => router.push(agentHref(agent.id))}>
+                    <ListChecks size={17} strokeWidth={2.1} />
+                    {agent.action[language]}
+                  </button>
+                </article>
+              )
+            })}
           </div>
         </section>
       )}
@@ -937,37 +1171,144 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 20,
     border: '1px solid #dfe5ee',
     borderRadius: 8,
-    background: '#ffffff',
-    padding: 18,
+    background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
+    padding: 20,
+    boxShadow: '0 18px 42px rgba(7,26,51,.055)',
+  },
+  agentHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 20,
+    marginBottom: 16,
+  },
+  agentIntro: {
+    margin: '-4px 0 0',
+    color: '#5f6b7a',
+    fontSize: 14,
+    lineHeight: 1.55,
+    maxWidth: 760,
+  },
+  agentWorkspaceBadge: {
+    borderRadius: 999,
+    background: '#071a33',
+    color: '#ffffff',
+    padding: '7px 11px',
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: '.04em',
   },
   agentGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 10,
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 14,
   },
   agentCard: {
-    minHeight: 164,
+    minHeight: 360,
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
-    padding: 14,
+    padding: 18,
     display: 'flex',
     flexDirection: 'column',
-    gap: 9,
+    gap: 12,
     textAlign: 'left',
-    cursor: 'pointer',
     color: '#071a33',
     fontFamily: 'inherit',
+    boxShadow: '0 14px 28px rgba(7,26,51,.06)',
+  },
+  agentCardPrimary: {
+    borderColor: '#d7192a',
+    boxShadow: '0 0 0 3px rgba(215,25,42,.08), 0 20px 38px rgba(7,26,51,.09)',
+  },
+  agentTopLine: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  agentIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   agentSignal: {
-    alignSelf: 'flex-start',
     borderRadius: 999,
     background: '#fff5f6',
     color: '#d7192a',
-    padding: '4px 8px',
+    padding: '5px 9px',
     fontSize: 11,
     fontWeight: 900,
     textTransform: 'uppercase',
+  },
+  agentName: {
+    margin: 0,
+    color: '#071a33',
+    fontSize: 22,
+    lineHeight: 1.15,
+  },
+  agentCategory: {
+    margin: '-6px 0 0',
+    color: '#5f6b7a',
+    fontSize: 13,
+    fontWeight: 800,
+  },
+  agentFactGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 9,
+  },
+  agentFact: {
+    border: '1px solid #e3e8f2',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    padding: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    minHeight: 118,
+  },
+  agentQualityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 10,
+  },
+  agentPositive: {
+    borderLeft: '4px solid #14aa52',
+    borderRadius: 8,
+    background: '#f0fbf4',
+    color: '#0d2b52',
+    padding: 11,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
+  agentAttention: {
+    borderLeft: '4px solid #d7192a',
+    borderRadius: 8,
+    background: '#fff5f6',
+    color: '#0d2b52',
+    padding: 11,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
+  agentAction: {
+    marginTop: 'auto',
+    border: 'none',
+    borderRadius: 8,
+    color: '#ffffff',
+    padding: '12px 14px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    fontSize: 13,
+    fontWeight: 900,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: '0 12px 24px rgba(7,26,51,.14)',
   },
   ownerArea: {
     marginTop: 18,
