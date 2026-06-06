@@ -57,6 +57,9 @@ const UI_COPY = {
     ownerTitle: 'Executive control',
     ownerText: 'Owner control and executive indicators remain separate from the first experience.',
     ownerButton: 'Executive Dashboard',
+    trustOne: 'Secure intake',
+    trustTwo: 'AI routing',
+    trustThree: 'Owner governed',
   },
   pt: {
     welcome: 'Bem-vindo',
@@ -79,6 +82,9 @@ const UI_COPY = {
     ownerTitle: 'Executive control',
     ownerText: 'Controle Owner e indicadores executivos continuam separados da primeira experiencia.',
     ownerButton: 'Dashboard Executivo',
+    trustOne: 'Intake seguro',
+    trustTwo: 'Rota por IA',
+    trustThree: 'Governanca Owner',
   },
 } satisfies Record<Language, Record<string, string>>
 
@@ -313,15 +319,26 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
     return () => URL.revokeObjectURL(url)
   }, [file])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = window.localStorage.getItem('apex-language')
+    if (saved === 'en' || saved === 'pt') setLanguage(saved)
+    function handleLanguage(event: Event) {
+      const nextLanguage = (event as CustomEvent<Language>).detail
+      if (nextLanguage === 'en' || nextLanguage === 'pt') setLanguage(nextLanguage)
+    }
+    window.addEventListener('apex-language-change', handleLanguage)
+    return () => window.removeEventListener('apex-language-change', handleLanguage)
+  }, [])
+
+  useEffect(() => {
+    if (result) {
+      setResult(classify(file?.name || '', intent, language))
+    }
+  }, [language])
+
   function runIntake(nextFile = file, nextIntent = intent, nextLanguage = language) {
     setResult(classify(nextFile?.name || '', nextIntent, nextLanguage))
-  }
-
-  function changeLanguage(nextLanguage: Language) {
-    setLanguage(nextLanguage)
-    if (result) {
-      setResult(classify(file?.name || '', intent, nextLanguage))
-    }
   }
 
   function selectIntent(card: IntentCard) {
@@ -341,10 +358,6 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
       <div style={styles.hero}>
         <div style={styles.heroCopy}>
-          <div style={styles.languageToggle} aria-label="Language selector">
-            <button type="button" onClick={() => changeLanguage('en')} style={{ ...styles.languageButton, ...(language === 'en' ? styles.languageButtonActive : null) }}>EN</button>
-            <button type="button" onClick={() => changeLanguage('pt')} style={{ ...styles.languageButton, ...(language === 'pt' ? styles.languageButtonActive : null) }}>PT</button>
-          </div>
           <span style={styles.kicker}>APEX GLOBAL AI</span>
           <h1 style={styles.title}>{copy.welcome}</h1>
           <p style={styles.lead}>{copy.lead}</p>
@@ -352,6 +365,11 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.primaryButton}>{copy.attach}</button>
             <button type="button" onClick={openApexAi} style={styles.secondaryButton}>{copy.talk}</button>
             <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}>{copy.start}</button>
+          </div>
+          <div style={styles.trustGrid}>
+            <span style={styles.trustItem}>{copy.trustOne}</span>
+            <span style={styles.trustItem}>{copy.trustTwo}</span>
+            <span style={styles.trustItem}>{copy.trustThree}</span>
           </div>
         </div>
         <div style={styles.previewPanel}>
@@ -464,49 +482,26 @@ const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: 'calc(100vh - 88px)',
     background: '#ffffff',
-    border: '1px solid #dfe5ee',
+    border: '1px solid #e7ecf4',
     borderRadius: 8,
-    padding: 28,
+    padding: '34px 36px 28px',
     color: '#071a33',
+    maxWidth: 1320,
+    margin: '0 auto',
+    boxShadow: '0 18px 45px rgba(7,26,51,.05)',
   },
   hero: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(320px, .85fr) minmax(420px, 1.15fr)',
-    gap: 24,
+    gridTemplateColumns: 'minmax(360px, .78fr) minmax(460px, 1.22fr)',
+    gap: 34,
     alignItems: 'stretch',
   },
   heroCopy: {
     borderLeft: '5px solid #b20f1d',
-    padding: '8px 0 8px 22px',
+    padding: '14px 0 14px 24px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-  },
-  languageToggle: {
-    alignSelf: 'flex-start',
-    display: 'inline-grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 4,
-    border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    padding: 4,
-    background: '#ffffff',
-    marginBottom: 18,
-  },
-  languageButton: {
-    border: 'none',
-    borderRadius: 6,
-    background: 'transparent',
-    color: '#5f6b7a',
-    padding: '7px 10px',
-    fontSize: 12,
-    fontWeight: 900,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  },
-  languageButtonActive: {
-    background: '#071a33',
-    color: '#ffffff',
   },
   kicker: {
     color: '#b20f1d',
@@ -516,7 +511,7 @@ const styles: Record<string, CSSProperties> = {
   },
   title: {
     margin: '10px 0 0',
-    fontSize: 44,
+    fontSize: 52,
     lineHeight: 1,
     letterSpacing: 0,
     color: '#071a33',
@@ -533,6 +528,23 @@ const styles: Record<string, CSSProperties> = {
     gap: 10,
     flexWrap: 'wrap',
     marginTop: 24,
+  },
+  trustGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 10,
+    marginTop: 28,
+    maxWidth: 520,
+  },
+  trustItem: {
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    color: '#0d2b52',
+    padding: '10px 11px',
+    fontSize: 12,
+    fontWeight: 900,
+    textAlign: 'center',
   },
   primaryButton: {
     border: 'none',
@@ -560,14 +572,14 @@ const styles: Record<string, CSSProperties> = {
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#f7f9fc',
-    padding: 14,
-    minHeight: 380,
+    padding: 16,
+    minHeight: 430,
     display: 'grid',
     gridTemplateRows: '1fr auto',
     gap: 12,
   },
   previewStage: {
-    minHeight: 320,
+    minHeight: 360,
     border: '1px solid #dfe5ee',
     borderRadius: 8,
     background: '#ffffff',
@@ -585,7 +597,7 @@ const styles: Record<string, CSSProperties> = {
   previewPlaceholder: {
     width: '100%',
     height: '100%',
-    minHeight: 320,
+    minHeight: 360,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -611,7 +623,7 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 12,
   },
   intentCardsPanel: {
-    marginTop: 22,
+    marginTop: 26,
     border: '1px solid #dfe5ee',
     borderRadius: 8,
     background: '#f9fbfd',
@@ -620,15 +632,15 @@ const styles: Record<string, CSSProperties> = {
   intentCardsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 10,
+    gap: 12,
   },
   intentCard: {
-    minHeight: 112,
+    minHeight: 118,
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
     color: '#071a33',
-    padding: 14,
+    padding: 16,
     display: 'flex',
     flexDirection: 'column',
     gap: 8,

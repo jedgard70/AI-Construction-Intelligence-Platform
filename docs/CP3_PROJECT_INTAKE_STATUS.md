@@ -38,6 +38,11 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
   - A top-left hamburger button opens navigation only when clicked.
   - Welcome / Analises uses the full page width.
   - Other platform pages keep the normal sidebar layout.
+- CP3.1E approved cockpit layout:
+  - Header shows hamburger, `APEX GLOBAL AI`, EN/PT toggle, and user/profile block.
+  - Left hero keeps the red vertical accent line, guidance copy, three actions, and three trust/status items.
+  - Right panel is a large upload/preview area with file status and waiting status.
+  - Objective cards and intent box remain below the hero.
 
 ## Current Classifications
 
@@ -111,6 +116,7 @@ It does not persist projects, clients, files, storage records, agent events, or 
 - `/dashboard` opens without left sidebar visible.
 - Hamburger/menu button is visible in the top-left header.
 - Clicking the hamburger reveals navigation.
+- Header shows `APEX GLOBAL AI`, EN/PT toggle, and user/profile block.
 - No confusing client/location/service form on first screen.
 - EN/PT toggle is visible and switches primary labels.
 - File upload opens from `Anexar documento`.

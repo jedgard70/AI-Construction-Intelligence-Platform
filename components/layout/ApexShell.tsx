@@ -7,6 +7,7 @@ import { getSupabase } from '../../lib/supabase'
 
 type MenuItem = { label: string; href: string; ownerOnly?: boolean }
 type MenuGroup = { section: string; items: MenuItem[] }
+type ShellUser = { isOwner: boolean; label: string; detail: string }
 
 const MENU: MenuGroup[] = [
   { section: 'Produção', items: [
@@ -64,25 +65,30 @@ function titleFromPath(pathname: string) {
   return 'Apex Platform'
 }
 
-async function checkOwnerStatus(): Promise<boolean> {
+async function getShellUser(): Promise<ShellUser> {
   try {
     const sb = getSupabase()
-    if (!sb) return false
+    if (!sb) return { isOwner: false, label: 'Guest', detail: 'Session unavailable' }
     const { data: { session } } = await sb.auth.getSession()
-    if (!session?.user) return false
+    if (!session?.user) return { isOwner: false, label: 'Guest', detail: 'Not signed in' }
     const email = (session.user.email || '').toLowerCase()
+    const fallbackName = session.user.user_metadata?.full_name || email || 'User'
     const ownerEmails = (process.env.NEXT_PUBLIC_OWNER_EMAILS || process.env.NEXT_PUBLIC_APEX_OWNER_EMAILS || 'jedgard70@gmail.com').split(',').map(e => e.trim().toLowerCase())
-    if (ownerEmails.includes(email)) return true
 
     const { data: profile } = await sb
       .from('profiles')
-      .select('role,is_owner')
+      .select('role,is_owner,full_name,email')
       .eq('id', session.user.id)
       .maybeSingle()
     const role = String(profile?.role || '').toLowerCase()
-    return Boolean(profile?.is_owner === true || role === 'owner' || role === 'admin' || role === 'diretor_executivo')
+    const isOwner = Boolean(profile?.is_owner === true || role === 'owner' || role === 'admin' || role === 'diretor_executivo' || ownerEmails.includes(email))
+    return {
+      isOwner,
+      label: profile?.full_name || fallbackName,
+      detail: isOwner ? 'Owner access' : (role || 'Platform user'),
+    }
   } catch {
-    return false
+    return { isOwner: false, label: 'Guest', detail: 'Session check failed' }
   }
 }
 
@@ -91,18 +97,34 @@ export default function ApexShell({ children }: Props) {
   const [isOwner, setIsOwner] = useState(false)
   const [menuReady, setMenuReady] = useState(false)
   const [guidedMenuOpen, setGuidedMenuOpen] = useState(false)
+  const [guidedLanguage, setGuidedLanguage] = useState<'en' | 'pt'>('en')
+  const [shellUser, setShellUser] = useState<ShellUser>({ isOwner: false, label: 'User', detail: 'Loading' })
   const guidedWelcome = router.pathname === '/dashboard'
 
   useEffect(() => {
-    checkOwnerStatus().then(result => {
-      setIsOwner(result)
+    getShellUser().then(result => {
+      setIsOwner(result.isOwner)
+      setShellUser(result)
       setMenuReady(true)
     })
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = window.localStorage.getItem('apex-language')
+    if (saved === 'en' || saved === 'pt') setGuidedLanguage(saved)
+  }, [])
+
+  useEffect(() => {
     setGuidedMenuOpen(false)
   }, [router.pathname])
+
+  function changeGuidedLanguage(nextLanguage: 'en' | 'pt') {
+    setGuidedLanguage(nextLanguage)
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('apex-language', nextLanguage)
+    window.dispatchEvent(new CustomEvent('apex-language-change', { detail: nextLanguage }))
+  }
 
   const title = useMemo(() => titleFromPath(router.pathname), [router.pathname])
 
@@ -175,7 +197,7 @@ export default function ApexShell({ children }: Props) {
       )}
 
       <div style={{ minWidth: 0 }}>
-        <header style={{ height: 56, borderBottom: '1px solid var(--apx-border)', background: 'var(--apx-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px', position: 'sticky', top: 0, zIndex: 20 }}>
+        <header style={{ height: guidedWelcome ? 68 : 56, borderBottom: '1px solid var(--apx-border)', background: 'var(--apx-surface)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: guidedWelcome ? '0 26px' : '0 18px', position: 'sticky', top: 0, zIndex: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {guidedWelcome && (
               <button
@@ -199,13 +221,28 @@ export default function ApexShell({ children }: Props) {
               </button>
             )}
             <div>
-              <div style={{ fontSize: 11, color: 'var(--apx-muted)', letterSpacing: '.08em', textTransform: 'uppercase' }}>Apex Global</div>
-              <div style={{ fontWeight: 700 }}>{title}</div>
+              <div style={{ fontSize: guidedWelcome ? 15 : 11, color: guidedWelcome ? '#071a33' : 'var(--apx-muted)', letterSpacing: guidedWelcome ? '.06em' : '.08em', textTransform: 'uppercase', fontWeight: guidedWelcome ? 900 : 500 }}>APEX GLOBAL AI</div>
+              <div style={{ fontWeight: 700, color: 'var(--apx-muted)', fontSize: guidedWelcome ? 12 : 14 }}>{guidedWelcome ? 'Construction Intelligence Platform' : title}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--apx-muted)' }}>{guidedWelcome ? 'Guided AI cockpit' : 'Profile-ready layout'}</span>
-            <span style={{ background: 'var(--apx-primary-soft)', color: 'var(--apx-primary)', border: '1px solid #bfd6ff', borderRadius: 999, padding: '4px 8px', fontSize: 11, fontWeight: 700 }}>UX-I</span>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {guidedWelcome ? (
+              <>
+                <div style={{ display: 'inline-grid', gridTemplateColumns: '1fr 1fr', gap: 4, border: '1px solid var(--apx-border)', borderRadius: 8, padding: 4, background: '#fff' }}>
+                  <button type="button" onClick={() => changeGuidedLanguage('en')} style={{ border: 'none', borderRadius: 6, background: guidedLanguage === 'en' ? '#071a33' : 'transparent', color: guidedLanguage === 'en' ? '#fff' : 'var(--apx-muted)', padding: '7px 10px', fontSize: 12, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>EN</button>
+                  <button type="button" onClick={() => changeGuidedLanguage('pt')} style={{ border: 'none', borderRadius: 6, background: guidedLanguage === 'pt' ? '#071a33' : 'transparent', color: guidedLanguage === 'pt' ? '#fff' : 'var(--apx-muted)', padding: '7px 10px', fontSize: 12, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>PT</button>
+                </div>
+                <div style={{ textAlign: 'right', minWidth: 132 }}>
+                  <div style={{ color: '#071a33', fontSize: 13, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 220 }}>{shellUser.label}</div>
+                  <div style={{ color: 'var(--apx-muted)', fontSize: 11 }}>{shellUser.isOwner ? 'Owner' : shellUser.detail}</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: 12, color: 'var(--apx-muted)' }}>Profile-ready layout</span>
+                <span style={{ background: 'var(--apx-primary-soft)', color: 'var(--apx-primary)', border: '1px solid #bfd6ff', borderRadius: 999, padding: '4px 8px', fontSize: 11, fontWeight: 700 }}>UX-I</span>
+              </>
+            )}
           </div>
         </header>
         <main style={{ padding: guidedWelcome ? 20 : 16 }}>{children}</main>
