@@ -33,6 +33,11 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
 - Intelligent route suggestions.
 - Demonstrative live-agent cards.
 - Owner dashboard remains separate and owner-only.
+- CP3.1D guided cockpit shell:
+  - `/dashboard` no longer shows the left sidebar by default.
+  - A top-left hamburger button opens navigation only when clicked.
+  - Welcome / Analises uses the full page width.
+  - Other platform pages keep the normal sidebar layout.
 
 ## Current Classifications
 
@@ -103,6 +108,9 @@ It does not persist projects, clients, files, storage records, agent events, or 
 ## QA Checklist
 
 - `/dashboard` opens clean Welcome / Analises first.
+- `/dashboard` opens without left sidebar visible.
+- Hamburger/menu button is visible in the top-left header.
+- Clicking the hamburger reveals navigation.
 - No confusing client/location/service form on first screen.
 - EN/PT toggle is visible and switches primary labels.
 - File upload opens from `Anexar documento`.
