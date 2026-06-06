@@ -43,6 +43,11 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
   - Left hero keeps the red vertical accent line, guidance copy, three actions, and three trust/status items.
   - Right panel is a large upload/preview area with file status and waiting status.
   - Objective cards and intent box remain below the hero.
+- CP3.2 Smart Routing Engine:
+  - Local deterministic routing only, with no backend/API calls.
+  - Analyzes selected file name/type, typed user goal, and selected objective card.
+  - Returns route id, EN/PT title, confidence, EN/PT reason, EN/PT next action, and suggested agents.
+  - Shows consultative recommendations on the Welcome / Analises page after upload, objective click, or Identify path.
 
 ## Current Classifications
 
@@ -67,6 +72,17 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
 - DirectCut
 - Obras / Campo
 - Qualidade
+
+## CP3.2 Smart Routes
+
+- ArchVis / Render
+- DirectCut / Video / Timelapse
+- BIM / 3D / Clash
+- Quantity / Budget
+- Contract / Legal / Permits
+- Marketing / Website / Social
+- Field Operations / Jobsite
+- General / Unknown
 
 ## Demonstrative Agents
 
@@ -103,6 +119,7 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
 - No real clash detection.
 - No real budget generation.
 - No real contract generation.
+- No backend/API routing calls in CP3.2.
 
 ## Temporary Limitation
 
@@ -132,6 +149,16 @@ It does not persist projects, clients, files, storage records, agent events, or 
 - Contract/legal text classifies as Juridico.
 - Finance/invoice text classifies as Financeiro.
 - Marketing/video text classifies as Marketing/DirectCut.
+- `I want to sell this project` recommends Marketing plus ArchVis.
+- `I need a realistic render` recommends ArchVis / Render.
+- `check IFC clashes` recommends BIM / 3D / Clash.
+- `generate budget` recommends Quantity / Budget.
+- `prepare permit documents` recommends Contract / Legal / Permits.
+- `make a construction timelapse` recommends DirectCut.
+- `.ifc` or `.rvt` upload recommends BIM / 3D / Clash.
+- `.png` or `.jpg` floor plan upload recommends ArchVis / Render.
+- `.pdf` contract upload recommends Legal.
+- `.xlsx` invoice/budget upload recommends Quantity / Budget.
 - Owner still sees Dashboard Executivo button.
 - Non-owner does not see Owner dashboard button.
 - Build passes.
