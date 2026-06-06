@@ -4,10 +4,12 @@ import { useRouter } from 'next/router'
 import {
   BadgeCheck,
   Bot,
+  Clapperboard,
   DollarSign,
   FileText,
   HardHat,
   ImageIcon,
+  ListChecks,
   Megaphone,
   MessageSquare,
   Play,
@@ -18,7 +20,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { runCp32SmartRouting } from '../lib/cp3-smart-routing'
-import type { Cp32Objective, Cp32SmartRoute } from '../lib/cp3-smart-routing'
+import type { Cp32Objective, Cp32RouteId, Cp32SmartRoute } from '../lib/cp3-smart-routing'
 import type { Profile } from '../pages/dashboard'
 
 type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
@@ -42,6 +44,8 @@ type IntakeResult = {
   kind: IntakeKind
   headline: string
   explanation: string
+  interpretation: string
+  nextSteps: RouteOption[]
   routes: RouteOption[]
   agents: LiveAgent[]
   smartRoutes: Cp32SmartRoute[]
@@ -58,6 +62,30 @@ type IntentVisual = {
   icon: LucideIcon
   color: string
   background: string
+}
+
+type LivingAgentId =
+  | 'archvis-render'
+  | 'bim-clash'
+  | 'budget-quantity'
+  | 'contract-legal'
+  | 'marketing'
+  | 'field-operations'
+  | 'directcut-video'
+
+type LivingAgentCard = {
+  id: LivingAgentId
+  icon: LucideIcon
+  accent: string
+  tint: string
+  name: Record<Language, string>
+  category: Record<Language, string>
+  does: Record<Language, string>
+  inputs: Record<Language, string>
+  outputs: Record<Language, string>
+  correct: Record<Language, string>
+  attention: Record<Language, string>
+  action: Record<Language, string>
 }
 
 const UI_COPY = {
@@ -80,8 +108,19 @@ const UI_COPY = {
     identify: 'Identify path',
     intentCards: 'Choose an objective',
     analysis: 'Visual / technical analysis',
+    aiUnderstood: 'Apex AI understood',
+    recommendedNextSteps: 'Recommended next steps',
+    emptyGuidance: 'Upload a file or describe your goal so Apex AI can identify the path.',
     routes: 'Smart routes',
-    agents: 'Living agents demo',
+    agents: 'Living Agents Workspace',
+    agentsIntro: 'These agents are ready to continue the recommended path. CP4 is local and deterministic; no backend execution yet.',
+    agentDoes: 'What it does',
+    agentInputs: 'Accepted inputs',
+    agentOutputs: 'Expected outputs',
+    agentCorrect: 'What looks correct',
+    agentAttention: 'Needs attention',
+    agentRecommended: 'Recommended first',
+    agentAvailable: 'Available',
     ownerTitle: 'Executive control',
     ownerText: 'Owner control and executive indicators remain separate from the first experience.',
     ownerButton: 'Executive Dashboard',
@@ -108,8 +147,19 @@ const UI_COPY = {
     identify: 'Identificar caminho',
     intentCards: 'Escolha um objetivo',
     analysis: 'Analise visual / tecnica',
+    aiUnderstood: 'Apex AI entendeu',
+    recommendedNextSteps: 'Proximos passos recomendados',
+    emptyGuidance: 'Anexe um arquivo ou descreva seu objetivo para a Apex AI identificar o caminho.',
     routes: 'Rotas inteligentes',
-    agents: 'Agentes vivos demonstrativos',
+    agents: 'Living Agents Workspace',
+    agentsIntro: 'Estes agentes estao prontos para continuar a rota recomendada. O CP4 e local e deterministico; ainda sem execucao backend.',
+    agentDoes: 'O que faz',
+    agentInputs: 'Entradas aceitas',
+    agentOutputs: 'Saidas esperadas',
+    agentCorrect: 'O que parece correto',
+    agentAttention: 'Precisa de atencao',
+    agentRecommended: 'Recomendado primeiro',
+    agentAvailable: 'Disponivel',
     ownerTitle: 'Executive control',
     ownerText: 'Controle Owner e indicadores executivos continuam separados da primeira experiencia.',
     ownerButton: 'Dashboard Executivo',
@@ -127,6 +177,139 @@ const INTENT_VISUALS: Record<IntakeKind, IntentVisual> = {
   marketing: { icon: Megaphone, color: '#ff6f1a', background: '#ffe8d8' },
   field: { icon: HardHat, color: '#18b58c', background: '#dbf6ef' },
   generic: { icon: Bot, color: '#0d2b52', background: '#eaf2ff' },
+}
+
+const LIVING_AGENTS: Record<LivingAgentId, LivingAgentCard> = {
+  'archvis-render': {
+    id: 'archvis-render',
+    icon: ImageIcon,
+    accent: '#ff2d21',
+    tint: '#ffe1e1',
+    name: { en: 'ArchVis Render Agent', pt: 'Agente ArchVis Render' },
+    category: { en: 'Visual sales / presentation', pt: 'Venda visual / apresentacao' },
+    does: {
+      en: 'Turns plans, photos, sketches or visual intent into a render, facade study, humanized plan or presentation path.',
+      pt: 'Transforma plantas, fotos, croquis ou intencao visual em rota de render, fachada, planta humanizada ou apresentacao.',
+    },
+    inputs: { en: 'JPG, PNG, HEIC, PDF floor plan, sketch, visual brief.', pt: 'JPG, PNG, HEIC, PDF de planta, croqui, briefing visual.' },
+    outputs: { en: 'Render brief, visual direction, required views and next production step.', pt: 'Briefing de render, direcao visual, vistas necessarias e proximo passo produtivo.' },
+    correct: { en: 'Image/plan has enough context for view, style, material or sales purpose.', pt: 'Imagem/planta tem contexto suficiente de vista, estilo, material ou objetivo comercial.' },
+    attention: { en: 'Missing dimensions, unclear camera angle, low-resolution plans or no target audience.', pt: 'Faltam medidas, angulo de camera, planta legivel ou publico-alvo.' },
+    action: { en: 'Prepare ArchVis brief', pt: 'Preparar briefing ArchVis' },
+  },
+  'bim-clash': {
+    id: 'bim-clash',
+    icon: Workflow,
+    accent: '#1d32ff',
+    tint: '#e4e5ff',
+    name: { en: 'BIM / Clash Agent', pt: 'Agente BIM / Clash' },
+    category: { en: 'Model coordination', pt: 'Coordenacao de modelo' },
+    does: {
+      en: 'Routes IFC, RVT, DWG, DXF or SKP context to model review, coordination, clash triage and technical validation.',
+      pt: 'Encaminha IFC, RVT, DWG, DXF ou SKP para revisao de modelo, coordenacao, triagem de clash e validacao tecnica.',
+    },
+    inputs: { en: 'IFC, RVT, DWG, DXF, SKP, coordination notes.', pt: 'IFC, RVT, DWG, DXF, SKP, notas de compatibilizacao.' },
+    outputs: { en: 'Model review path, clash questions, discipline context and validation checklist.', pt: 'Rota de revisao, perguntas de clash, contexto por disciplina e checklist de validacao.' },
+    correct: { en: 'Model file type or intent clearly points to coordination, quantities or technical review.', pt: 'Arquivo ou intencao aponta claramente para coordenacao, quantitativo ou revisao tecnica.' },
+    attention: { en: 'No discipline list, no model version, no coordinate origin or unclear target deliverable.', pt: 'Sem lista de disciplinas, versao, origem de coordenadas ou entrega alvo clara.' },
+    action: { en: 'Prepare model review', pt: 'Preparar revisao do modelo' },
+  },
+  'budget-quantity': {
+    id: 'budget-quantity',
+    icon: DollarSign,
+    accent: '#14aa52',
+    tint: '#def9e8',
+    name: { en: 'Budget / Quantity Agent', pt: 'Agente Orcamento / Quantitativo' },
+    category: { en: 'Cost and proposal', pt: 'Custo e proposta' },
+    does: {
+      en: 'Organizes budget, quantity, invoice or spreadsheet intent into a controlled estimating path.',
+      pt: 'Organiza intencao de orcamento, quantitativo, nota ou planilha em uma rota controlada de estimativa.',
+    },
+    inputs: { en: 'XLSX, CSV, invoice, quantity list, scope notes, BIM quantity request.', pt: 'XLSX, CSV, nota, lista de quantitativos, escopo, pedido de quantitativo BIM.' },
+    outputs: { en: 'Budget draft, assumptions to collect, cost categories and proposal next step.', pt: 'Rascunho de orcamento, premissas a coletar, categorias de custo e proximo passo de proposta.' },
+    correct: { en: 'Scope, unit, quantity, budget or proposal intent is visible.', pt: 'Escopo, unidade, quantidade, orcamento ou intencao de proposta estao claros.' },
+    attention: { en: 'Missing units, region, currency, labor/material split or client approval stage.', pt: 'Faltam unidades, regiao, moeda, separacao mao de obra/material ou etapa de aprovacao.' },
+    action: { en: 'Start budget draft', pt: 'Iniciar rascunho de orcamento' },
+  },
+  'contract-legal': {
+    id: 'contract-legal',
+    icon: BadgeCheck,
+    accent: '#8d25de',
+    tint: '#efd9ff',
+    name: { en: 'Contract / Legal Agent', pt: 'Agente Contrato / Juridico' },
+    category: { en: 'Legal, permit and compliance', pt: 'Juridico, permit e compliance' },
+    does: {
+      en: 'Classifies contracts, permits, compliance documents and signature workflows before execution.',
+      pt: 'Classifica contratos, permits, documentos de compliance e fluxos de assinatura antes da execucao.',
+    },
+    inputs: { en: 'PDF, DOCX, contract, permit, compliance note, signature request.', pt: 'PDF, DOCX, contrato, permit, nota de compliance, pedido de assinatura.' },
+    outputs: { en: 'Document type, legal checklist, risk questions and responsible next step.', pt: 'Tipo documental, checklist juridico, perguntas de risco e proximo responsavel.' },
+    correct: { en: 'Document has parties, scope, jurisdiction, deadline or approval requirement.', pt: 'Documento tem partes, escopo, jurisdicao, prazo ou requisito de aprovacao.' },
+    attention: { en: 'Missing jurisdiction, signer, version control, attachments or execution deadline.', pt: 'Faltam jurisdicao, assinante, versao, anexos ou prazo de execucao.' },
+    action: { en: 'Open legal checklist', pt: 'Abrir checklist juridico' },
+  },
+  marketing: {
+    id: 'marketing',
+    icon: Megaphone,
+    accent: '#ff6f1a',
+    tint: '#ffe8d8',
+    name: { en: 'Marketing Agent', pt: 'Agente Marketing' },
+    category: { en: 'Campaign, website and sales story', pt: 'Campanha, website e narrativa de venda' },
+    does: {
+      en: 'Converts visual/project intent into campaign, portfolio, website, social or sales material direction.',
+      pt: 'Converte intencao visual/projeto em direcao de campanha, portfolio, website, social ou material de venda.',
+    },
+    inputs: { en: 'Render, photo, project story, brand goal, website/social request.', pt: 'Render, foto, narrativa do projeto, objetivo de marca, pedido de website/social.' },
+    outputs: { en: 'Campaign angle, asset list, content path and supporting ArchVis needs.', pt: 'Angulo de campanha, lista de ativos, rota de conteudo e necessidades ArchVis.' },
+    correct: { en: 'The goal is to sell, publish, promote or position the project.', pt: 'O objetivo e vender, publicar, divulgar ou posicionar o projeto.' },
+    attention: { en: 'Missing audience, offer, region, brand tone, visual assets or deadline.', pt: 'Faltam publico, oferta, regiao, tom de marca, ativos visuais ou prazo.' },
+    action: { en: 'Prepare campaign path', pt: 'Preparar rota de campanha' },
+  },
+  'field-operations': {
+    id: 'field-operations',
+    icon: HardHat,
+    accent: '#18b58c',
+    tint: '#dbf6ef',
+    name: { en: 'Field Operations Agent', pt: 'Agente Operacao de Obra' },
+    category: { en: 'Jobsite execution', pt: 'Execucao de campo' },
+    does: {
+      en: 'Routes jobsite evidence, RDO, quality, progress and execution requests into field operations.',
+      pt: 'Encaminha evidencias de obra, RDO, qualidade, progresso e pedidos de execucao para operacao de campo.',
+    },
+    inputs: { en: 'Site photos, RDO notes, quality issue, material/progress evidence.', pt: 'Fotos de obra, notas RDO, problema de qualidade, evidencia de material/progresso.' },
+    outputs: { en: 'Field record path, progress questions, risk flags and next operational action.', pt: 'Rota de registro de campo, perguntas de progresso, alertas de risco e proxima acao operacional.' },
+    correct: { en: 'Input includes location, progress, material, crew, quality or execution evidence.', pt: 'Entrada inclui local, progresso, material, equipe, qualidade ou evidencia de execucao.' },
+    attention: { en: 'Missing date, location, responsible party, photo context or severity.', pt: 'Faltam data, local, responsavel, contexto da foto ou severidade.' },
+    action: { en: 'Prepare field record', pt: 'Preparar registro de campo' },
+  },
+  'directcut-video': {
+    id: 'directcut-video',
+    icon: Clapperboard,
+    accent: '#0d2b52',
+    tint: '#eaf2ff',
+    name: { en: 'DirectCut Video Agent', pt: 'Agente DirectCut Video' },
+    category: { en: 'Video, tour and timelapse', pt: 'Video, tour e timelapse' },
+    does: {
+      en: 'Shapes video, timelapse, tour or audiovisual storytelling requests into a production brief.',
+      pt: 'Transforma pedidos de video, timelapse, tour ou narrativa audiovisual em briefing de producao.',
+    },
+    inputs: { en: 'MP4, MOV, image sequence, render set, project story, timelapse goal.', pt: 'MP4, MOV, sequencia de imagens, renders, historia do projeto, objetivo de timelapse.' },
+    outputs: { en: 'Scene outline, duration target, asset needs and delivery format.', pt: 'Roteiro de cenas, duracao alvo, ativos necessarios e formato de entrega.' },
+    correct: { en: 'Intent mentions video, movement, tour, sequence, timelapse or presentation.', pt: 'Intencao menciona video, movimento, tour, sequencia, timelapse ou apresentacao.' },
+    attention: { en: 'Missing scenes, duration, audience, music/voice direction or source asset order.', pt: 'Faltam cenas, duracao, publico, direcao de musica/voz ou ordem dos ativos.' },
+    action: { en: 'Prepare DirectCut brief', pt: 'Preparar briefing DirectCut' },
+  },
+}
+
+const ROUTE_AGENT_MAP: Record<Cp32RouteId, LivingAgentId[]> = {
+  'archvis-render': ['archvis-render', 'marketing', 'directcut-video'],
+  'directcut-video': ['directcut-video', 'marketing', 'archvis-render'],
+  'bim-clash': ['bim-clash', 'budget-quantity', 'field-operations'],
+  'quantity-budget': ['budget-quantity', 'bim-clash', 'field-operations'],
+  'legal-permits': ['contract-legal', 'field-operations', 'budget-quantity'],
+  'marketing-social': ['marketing', 'archvis-render', 'directcut-video'],
+  'field-operations': ['field-operations', 'budget-quantity', 'bim-clash'],
+  'general-unknown': ['archvis-render', 'bim-clash', 'budget-quantity'],
 }
 
 const INTENT_CARDS: Record<Language, IntentCard[]> = {
@@ -302,6 +485,97 @@ function routesFor(kind: IntakeKind, language: Language): RouteOption[] {
   ]
 }
 
+function interpretationFor(kind: IntakeKind, fileName: string, intent: string, language: Language) {
+  const ext = extensionFrom(fileName).toUpperCase()
+  const hasFile = Boolean(fileName)
+  const label = ext || (language === 'en' ? 'input' : 'entrada')
+
+  if (!hasFile && !intent.trim()) {
+    return UI_COPY[language].emptyGuidance
+  }
+  if (kind === 'visual') {
+    return language === 'en'
+      ? `I received a ${label} visual asset. This appears to be an architectural image, floor plan, render source or sales visual that can move directly into visual production.`
+      : `Recebi um ativo visual ${label}. Isto parece uma imagem arquitetonica, planta, base de render ou material visual de venda que pode seguir direto para producao visual.`
+  }
+  if (kind === 'bim') {
+    return language === 'en'
+      ? `I received a ${label} BIM/CAD asset. This should be routed as a technical model for BIM / 3D / Clash, quantity review or coordination.`
+      : `Recebi um ativo BIM/CAD ${label}. Ele deve ser encaminhado como modelo tecnico para BIM / 3D / Clash, quantitativo ou coordenacao.`
+  }
+  if (kind === 'legal') {
+    return language === 'en'
+      ? `I received a ${label} document that looks legal, contractual, regulatory or permit-related. Apex recommends legal classification before execution.`
+      : `Recebi um documento ${label} com perfil juridico, contratual, regulatorio ou de permit. A Apex recomenda classificacao juridica antes da execucao.`
+  }
+  if (kind === 'finance') {
+    return language === 'en'
+      ? `I received a ${label} financial or estimating input. This can become a budget, quantity, invoice or proposal workflow.`
+      : `Recebi uma entrada financeira ou de orcamento ${label}. Ela pode virar fluxo de orcamento, quantitativo, invoice, nota ou proposta.`
+  }
+  if (kind === 'marketing') {
+    return language === 'en'
+      ? `I received a ${label} marketing or video-oriented asset. This can become campaign, website, social, portfolio or DirectCut material.`
+      : `Recebi um ativo ${label} com perfil de marketing ou video. Ele pode virar campanha, website, social, portfolio ou material DirectCut.`
+  }
+  if (kind === 'field') {
+    return language === 'en'
+      ? `I received jobsite or field operations context. This should be routed to RDO, progress, quality, materials or execution coordination.`
+      : `Recebi contexto de obra ou operacao de campo. Isto deve seguir para RDO, progresso, qualidade, materiais ou coordenacao de execucao.`
+  }
+  return language === 'en'
+    ? `I received the input and classified it for triage. Tell me the desired outcome and I will route it to the safest operational path.`
+    : `Recebi a entrada e classifiquei para triagem. Diga o resultado desejado e eu encaminho para a rota operacional mais segura.`
+}
+
+function nextStepsFor(kind: IntakeKind, language: Language): RouteOption[] {
+  const visual = [
+    { title: language === 'en' ? 'Create render' : 'Criar render', description: language === 'en' ? 'Start ArchVis with this image or plan as the source.' : 'Iniciar ArchVis usando esta imagem ou planta como base.', href: '/archvis' },
+    { title: language === 'en' ? 'Humanize plan' : 'Humanizar planta', description: language === 'en' ? 'Prepare a humanized plan or facade study.' : 'Preparar planta humanizada ou estudo de fachada.', href: '/archvis' },
+    { title: language === 'en' ? 'Build marketing presentation' : 'Criar apresentacao de marketing', description: language === 'en' ? 'Turn the asset into a portfolio, sales board or campaign piece.' : 'Transformar o ativo em portfolio, prancha comercial ou campanha.', href: '/platform?area=marketing' },
+    { title: language === 'en' ? 'Generate visual sales package' : 'Gerar pacote visual de venda', description: language === 'en' ? 'Combine renders, story, social and sales-ready visuals.' : 'Combinar renders, narrativa, social e visuais de venda.', href: '/platform?area=portfolio' },
+    { title: language === 'en' ? 'Continue with BIM/3D if applicable' : 'Continuar com BIM/3D se aplicavel', description: language === 'en' ? 'Use technical model review if the image comes from a model.' : 'Usar revisao tecnica se a imagem vier de um modelo.', href: '/bim-3d' },
+  ]
+  if (kind === 'visual') return visual
+  if (kind === 'bim') {
+    return [
+      { title: 'BIM / 3D / Clash', description: language === 'en' ? 'Review model, coordination and clash context.' : 'Revisar modelo, coordenacao e contexto de clash.', href: '/bim-3d' },
+      { title: language === 'en' ? 'Quantity / Budget' : 'Quantitativo / Orcamento', description: language === 'en' ? 'Prepare quantities, cost assumptions and proposal path.' : 'Preparar quantitativos, premissas de custo e rota de proposta.', href: '/orcamento' },
+      { title: 'Render / ArchVis', description: language === 'en' ? 'Use the model as a visual output source if the goal is presentation.' : 'Usar o modelo como fonte visual se o objetivo for apresentacao.', href: '/archvis' },
+      { title: language === 'en' ? 'Field coordination' : 'Coordenacao de campo', description: language === 'en' ? 'Route to execution if construction coordination is the goal.' : 'Encaminhar para execucao se o objetivo for coordenar obra.', href: '/rdo' },
+    ]
+  }
+  if (kind === 'legal') {
+    return [
+      { title: language === 'en' ? 'Classify contract/legal document' : 'Classificar contrato/documento juridico', description: language === 'en' ? 'Identify document type, parties, scope and jurisdiction.' : 'Identificar tipo, partes, escopo e jurisdicao.', href: '/juridico/contratos' },
+      { title: language === 'en' ? 'Prepare permit/compliance checklist' : 'Preparar checklist de permit/compliance', description: language === 'en' ? 'Check regulatory or approval path before execution.' : 'Checar rota regulatoria ou de aprovacao antes da execucao.', href: '/juridico/compliance' },
+      { title: language === 'en' ? 'Organize legal documents' : 'Organizar documentos legais', description: language === 'en' ? 'Keep attachments and evidence ready for the legal workflow.' : 'Manter anexos e evidencias prontos para o fluxo juridico.', href: '/documentos' },
+    ]
+  }
+  if (kind === 'finance') {
+    return [
+      { title: language === 'en' ? 'Generate budget' : 'Gerar orcamento', description: language === 'en' ? 'Start a cost or quantity draft from this input.' : 'Iniciar rascunho de custo ou quantitativo a partir da entrada.', href: '/orcamento' },
+      { title: language === 'en' ? 'Prepare proposal' : 'Preparar proposta', description: language === 'en' ? 'Connect costs to a commercial proposal path.' : 'Conectar custos a uma rota de proposta comercial.', href: '/crm/proposals' },
+      { title: language === 'en' ? 'Review invoice/cost evidence' : 'Revisar invoice/nota/custo', description: language === 'en' ? 'Classify financial evidence for audit or approval.' : 'Classificar evidencia financeira para auditoria ou aprovacao.', href: '/crm/revenue' },
+    ]
+  }
+  if (kind === 'marketing') {
+    return [
+      { title: language === 'en' ? 'Build marketing presentation' : 'Criar apresentacao de marketing', description: language === 'en' ? 'Prepare campaign, portfolio or website story.' : 'Preparar campanha, portfolio ou narrativa de website.', href: '/platform?area=marketing' },
+      { title: 'DirectCut', description: language === 'en' ? 'Shape video, tour, reel or timelapse material.' : 'Estruturar video, tour, reel ou timelapse.', href: '/director-cut' },
+      { title: 'ArchVis', description: language === 'en' ? 'Generate visual assets that support the campaign.' : 'Gerar ativos visuais que apoiam a campanha.', href: '/archvis' },
+    ]
+  }
+  if (kind === 'field') {
+    return [
+      { title: language === 'en' ? 'Create field record' : 'Criar registro de campo', description: language === 'en' ? 'Route evidence to RDO, progress or quality context.' : 'Encaminhar evidencia para RDO, progresso ou qualidade.', href: '/rdo' },
+      { title: language === 'en' ? 'Review quality issue' : 'Revisar qualidade', description: language === 'en' ? 'Prepare nonconformity or inspection path.' : 'Preparar rota de nao conformidade ou inspecao.', href: '/qualidade' },
+      { title: language === 'en' ? 'Connect budget impact' : 'Conectar impacto financeiro', description: language === 'en' ? 'Relate field evidence to material, measurement or cost.' : 'Relacionar evidencia de campo com material, medicao ou custo.', href: '/orcamento' },
+    ]
+  }
+  return routesFor(kind, language)
+}
+
 function classify(fileName: string, intent: string, language: Language): IntakeResult {
   const ext = extensionFrom(fileName)
   const text = `${fileName} ${intent}`.toLowerCase()
@@ -311,10 +585,10 @@ function classify(fileName: string, intent: string, language: Language): IntakeR
     kind = 'visual'
   } else if (['ifc', 'rvt', 'dwg', 'dxf', 'skp'].includes(ext) || /(bim|revit|ifc|dwg|cad|clash|modelo|quantitativo)/i.test(text)) {
     kind = 'bim'
-  } else if (/(contrato|juridico|jurídico|permit|compliance|assinatura|aditivo|memorial)/i.test(text)) {
-    kind = 'legal'
-  } else if (/(nota fiscal|invoice|financeiro|orcamento|orçamento|custo|pagamento|budget|proposta)/i.test(text)) {
+  } else if (['xlsx', 'xls', 'csv'].includes(ext) || /(nota fiscal|invoice|financeiro|orcamento|orçamento|custo|pagamento|budget|proposta|planilha)/i.test(text)) {
     kind = 'finance'
+  } else if (['pdf', 'doc', 'docx'].includes(ext) || /(contrato|juridico|jurídico|permit|compliance|assinatura|aditivo|memorial|report|relatorio|relatório)/i.test(text)) {
+    kind = 'legal'
   } else if (['mp4', 'mov', 'avi', 'mkv'].includes(ext) || /(marketing|website|site|social|instagram|video|vídeo|directcut|portfolio|campanha)/i.test(text)) {
     kind = 'marketing'
   } else if (/(obra|campo|rdo|equipe|material|medicao|medição|diario|diário|nci|qualidade)/i.test(text)) {
@@ -327,6 +601,8 @@ function classify(fileName: string, intent: string, language: Language): IntakeR
     kind,
     headline: copy.headline,
     explanation: copy.explanation,
+    interpretation: interpretationFor(kind, fileName, intent, language),
+    nextSteps: nextStepsFor(kind, language),
     routes: routesFor(kind, language),
     agents: AGENT_LIBRARY[kind],
     smartRoutes: runCp32SmartRouting({ fileName, goal: intent, objective: kind as Cp32Objective }),
@@ -354,6 +630,27 @@ function routeHref(routeId: Cp32SmartRoute['routeId']) {
   if (routeId === 'legal-permits') return '/juridico/contratos'
   if (routeId === 'marketing-social') return '/platform?area=marketing'
   if (routeId === 'field-operations') return '/rdo'
+  return '/documentos'
+}
+
+function livingAgentsFor(routes: Cp32SmartRoute[]) {
+  const ordered: LivingAgentId[] = []
+  routes.forEach(route => {
+    ROUTE_AGENT_MAP[route.routeId].forEach(agentId => {
+      if (!ordered.includes(agentId)) ordered.push(agentId)
+    })
+  })
+  return ordered.slice(0, 5).map(agentId => LIVING_AGENTS[agentId])
+}
+
+function agentHref(agentId: LivingAgentId) {
+  if (agentId === 'archvis-render') return '/archvis'
+  if (agentId === 'directcut-video') return '/director-cut'
+  if (agentId === 'bim-clash') return '/bim-3d'
+  if (agentId === 'budget-quantity') return '/orcamento'
+  if (agentId === 'contract-legal') return '/juridico/contratos'
+  if (agentId === 'marketing') return '/platform?area=marketing'
+  if (agentId === 'field-operations') return '/rdo'
   return '/documentos'
 }
 
@@ -514,23 +811,28 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
       {result && (
         <div style={styles.analysisBand}>
           <section style={styles.analysisPanel}>
-            <div style={styles.sectionKicker}>{copy.analysis}</div>
+            <div style={styles.sectionKicker}>{copy.aiUnderstood}</div>
             <div style={styles.code}>{result.code}</div>
             <h2 style={styles.analysisTitle}>{result.smartRoutes[0]?.title[language] || result.headline}</h2>
-            <p style={styles.analysisText}>{result.smartRoutes[0]?.reason[language] || result.explanation}</p>
-            <p style={styles.nextAction}>{result.smartRoutes[0]?.recommendedNextAction[language]}</p>
+            <p style={styles.analysisText}>{result.interpretation}</p>
+            <p style={styles.nextAction}>{result.smartRoutes[0]?.recommendedNextAction[language] || result.explanation}</p>
           </section>
 
           <section style={styles.routesPanel}>
-            <div style={styles.sectionKicker}>{copy.routes}</div>
-            <div style={styles.smartRouteGrid}>
-              {result.smartRoutes.map(route => (
-                <button key={route.routeId} type="button" onClick={() => router.push(routeHref(route.routeId))} style={styles.smartRouteCard}>
-                  <span style={styles.confidence}>{route.confidence}%</span>
-                  <strong>{route.title[language]}</strong>
-                  <span>{route.reason[language]}</span>
-                  <em>{route.recommendedNextAction[language]}</em>
+            <div style={styles.sectionKicker}>{copy.recommendedNextSteps}</div>
+            <div style={styles.nextStepGrid}>
+              {result.nextSteps.slice(0, 6).map(step => (
+                <button key={`${step.title}-${step.href}`} type="button" onClick={() => router.push(step.href)} style={styles.nextStepCard}>
+                  <strong>{step.title}</strong>
+                  <span>{step.description}</span>
                 </button>
+              ))}
+            </div>
+            <div style={styles.smartRouteStrip}>
+              {result.smartRoutes.map(route => (
+                <span key={route.routeId} style={styles.smartRoutePill}>
+                  {route.confidence}% · {route.title[language]}
+                </span>
               ))}
             </div>
           </section>
@@ -539,16 +841,54 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
       {result && (
         <section style={styles.agentsPanel}>
-          <div style={styles.sectionKicker}>{copy.agents}</div>
+          <div style={styles.agentHeader}>
+            <div>
+              <div style={styles.sectionKicker}>{copy.agents}</div>
+              <p style={styles.agentIntro}>{copy.agentsIntro}</p>
+            </div>
+            <span style={styles.agentWorkspaceBadge}>CP4</span>
+          </div>
           <div style={styles.agentGrid}>
-            {result.smartRoutes.flatMap(route => route.suggestedAgents).slice(0, 6).map(agentName => (
-              <button key={agentName} type="button" style={styles.agentCard}>
-                <span style={styles.agentSignal}>CP3.2</span>
-                <strong>{agentName}</strong>
-                <span>{language === 'en' ? 'Suggested for this routing decision.' : 'Sugerido para esta decisao de rota.'}</span>
-                <em>{language === 'en' ? 'Ready for next checkpoint execution.' : 'Pronto para execucao em checkpoint futuro.'}</em>
-              </button>
-            ))}
+            {livingAgentsFor(result.smartRoutes).map((agent, index) => {
+              const AgentIcon = agent.icon
+              return (
+                <article key={agent.id} style={{ ...styles.agentCard, ...(index === 0 ? styles.agentCardPrimary : null) }}>
+                  <div style={styles.agentTopLine}>
+                    <span style={{ ...styles.agentIcon, color: agent.accent, background: agent.tint }}>
+                      <AgentIcon size={28} strokeWidth={2.15} />
+                    </span>
+                    <span style={styles.agentSignal}>{index === 0 ? copy.agentRecommended : copy.agentAvailable}</span>
+                  </div>
+                  <h3 style={styles.agentName}>{agent.name[language]}</h3>
+                  <p style={styles.agentCategory}>{agent.category[language]}</p>
+
+                  <div style={styles.agentFactGrid}>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentDoes}</strong>
+                      <em>{agent.does[language]}</em>
+                    </span>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentInputs}</strong>
+                      <em>{agent.inputs[language]}</em>
+                    </span>
+                    <span style={styles.agentFact}>
+                      <strong>{copy.agentOutputs}</strong>
+                      <em>{agent.outputs[language]}</em>
+                    </span>
+                  </div>
+
+                  <div style={styles.agentQualityGrid}>
+                    <span style={styles.agentPositive}>{agent.correct[language]}</span>
+                    <span style={styles.agentAttention}>{agent.attention[language]}</span>
+                  </div>
+
+                  <button type="button" style={{ ...styles.agentAction, background: agent.accent }} onClick={() => router.push(agentHref(agent.id))}>
+                    <ListChecks size={17} strokeWidth={2.1} />
+                    {agent.action[language]}
+                  </button>
+                </article>
+              )
+            })}
           </div>
         </section>
       )}
@@ -885,6 +1225,41 @@ const styles: Record<string, CSSProperties> = {
     background: '#ffffff',
     padding: 18,
   },
+  nextStepGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 10,
+  },
+  nextStepCard: {
+    minHeight: 112,
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    color: '#071a33',
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 9,
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: '0 10px 22px rgba(7,26,51,.055)',
+  },
+  smartRouteStrip: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+  },
+  smartRoutePill: {
+    borderRadius: 999,
+    background: '#fff5f6',
+    color: '#d7192a',
+    border: '1px solid #ffd7dc',
+    padding: '5px 9px',
+    fontSize: 11,
+    fontWeight: 900,
+  },
   smartRouteGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
@@ -937,37 +1312,144 @@ const styles: Record<string, CSSProperties> = {
     marginTop: 20,
     border: '1px solid #dfe5ee',
     borderRadius: 8,
-    background: '#ffffff',
-    padding: 18,
+    background: 'linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)',
+    padding: 20,
+    boxShadow: '0 18px 42px rgba(7,26,51,.055)',
+  },
+  agentHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 20,
+    marginBottom: 16,
+  },
+  agentIntro: {
+    margin: '-4px 0 0',
+    color: '#5f6b7a',
+    fontSize: 14,
+    lineHeight: 1.55,
+    maxWidth: 760,
+  },
+  agentWorkspaceBadge: {
+    borderRadius: 999,
+    background: '#071a33',
+    color: '#ffffff',
+    padding: '7px 11px',
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: '.04em',
   },
   agentGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 10,
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 14,
   },
   agentCard: {
-    minHeight: 164,
+    minHeight: 360,
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
-    padding: 14,
+    padding: 18,
     display: 'flex',
     flexDirection: 'column',
-    gap: 9,
+    gap: 12,
     textAlign: 'left',
-    cursor: 'pointer',
     color: '#071a33',
     fontFamily: 'inherit',
+    boxShadow: '0 14px 28px rgba(7,26,51,.06)',
+  },
+  agentCardPrimary: {
+    borderColor: '#d7192a',
+    boxShadow: '0 0 0 3px rgba(215,25,42,.08), 0 20px 38px rgba(7,26,51,.09)',
+  },
+  agentTopLine: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  agentIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   agentSignal: {
-    alignSelf: 'flex-start',
     borderRadius: 999,
     background: '#fff5f6',
     color: '#d7192a',
-    padding: '4px 8px',
+    padding: '5px 9px',
     fontSize: 11,
     fontWeight: 900,
     textTransform: 'uppercase',
+  },
+  agentName: {
+    margin: 0,
+    color: '#071a33',
+    fontSize: 22,
+    lineHeight: 1.15,
+  },
+  agentCategory: {
+    margin: '-6px 0 0',
+    color: '#5f6b7a',
+    fontSize: 13,
+    fontWeight: 800,
+  },
+  agentFactGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 9,
+  },
+  agentFact: {
+    border: '1px solid #e3e8f2',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    padding: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    minHeight: 118,
+  },
+  agentQualityGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 10,
+  },
+  agentPositive: {
+    borderLeft: '4px solid #14aa52',
+    borderRadius: 8,
+    background: '#f0fbf4',
+    color: '#0d2b52',
+    padding: 11,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
+  agentAttention: {
+    borderLeft: '4px solid #d7192a',
+    borderRadius: 8,
+    background: '#fff5f6',
+    color: '#0d2b52',
+    padding: 11,
+    fontSize: 13,
+    lineHeight: 1.45,
+  },
+  agentAction: {
+    marginTop: 'auto',
+    border: 'none',
+    borderRadius: 8,
+    color: '#ffffff',
+    padding: '12px 14px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    fontSize: 13,
+    fontWeight: 900,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: '0 12px 24px rgba(7,26,51,.14)',
   },
   ownerArea: {
     marginTop: 18,
