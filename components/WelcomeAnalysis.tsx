@@ -1,40 +1,87 @@
-import { useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, CSSProperties } from 'react'
 import { useRouter } from 'next/router'
 import type { Profile } from '../pages/dashboard'
 
-type IntakeKind = 'project' | 'document' | 'legal' | 'finance' | 'marketing' | 'generic'
-type ClientMode = 'new' | 'existing'
+type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
 
-type IntakeDraft = {
+type RouteOption = {
+  title: string
+  description: string
+  href: string
+}
+
+type LiveAgent = {
+  name: string
+  signal: string
+  finding: string
+  action: string
+}
+
+type IntakeResult = {
   code: string
   kind: IntakeKind
-  label: string
-  confidence: string
-  destination: string
-  routeHint: string
-  fileName: string
-  supportedDeepAnalysis: boolean
+  headline: string
+  explanation: string
+  routes: RouteOption[]
+  agents: LiveAgent[]
 }
 
-type Action = {
-  label: string
-  description: string
-  onClick: () => void
-  primary?: boolean
-}
-
-const SERVICES = [
-  'Render',
-  'Projeto 3D',
-  'BIM',
-  'Orcamento',
-  'Obra/Campo',
-  'ArchVis',
-  'DirectCut',
-  'Design/Web',
-  'Juridico/Contrato',
+const DEFAULT_ROUTES: RouteOption[] = [
+  {
+    title: 'ArchVis',
+    description: 'Transformar imagem, planta ou modelo em material visual vendavel.',
+    href: '/archvis',
+  },
+  {
+    title: 'BIM / 3D',
+    description: 'Abrir caminho tecnico para modelo, compatibilizacao, clash e quantitativo.',
+    href: '/bim-3d',
+  },
+  {
+    title: 'Orcamento',
+    description: 'Preparar base para custo, proposta e cronograma fisico-financeiro.',
+    href: '/orcamento',
+  },
 ]
+
+const AGENT_LIBRARY: Record<IntakeKind, LiveAgent[]> = {
+  visual: [
+    { name: 'Render Agent', signal: 'visual', finding: 'Material pode virar planta humanizada, fachada, interior ou prancha comercial.', action: 'Encaminhar para ArchVis' },
+    { name: 'DirectCut Agent', signal: 'motion', finding: 'Se houver sequencia de imagens, pode virar video, tour ou timelapse.', action: 'Preparar roteiro audiovisual' },
+    { name: 'Marketing Agent', signal: 'brand', finding: 'Imagem pode alimentar portfolio, website, social media e material de venda.', action: 'Abrir rota Marketing' },
+  ],
+  bim: [
+    { name: 'BIM Agent', signal: 'model', finding: 'Arquivo parece tecnico e deve ser tratado como modelo/coordenação, nao como imagem simples.', action: 'Abrir BIM / 3D' },
+    { name: 'Clash Agent', signal: 'coordination', finding: 'Checkpoint futuro pode sobrepor disciplinas e destacar interferencias.', action: 'Preparar compatibilizacao' },
+    { name: 'Quantitativo Agent', signal: 'measure', finding: 'Modelo tecnico pode alimentar quantitativo, orçamento e cronograma.', action: 'Encaminhar para Orcamento' },
+  ],
+  legal: [
+    { name: 'Legal Agent', signal: 'contract', finding: 'Documento deve ser classificado para contrato, aditivo, compliance, permit ou assinatura.', action: 'Abrir Juridico / Contratos' },
+    { name: 'Compliance Agent', signal: 'risk', finding: 'Pode exigir regras por pais, cidade, county ou norma local.', action: 'Preparar checklist legal' },
+    { name: 'Signature Agent', signal: 'workflow', finding: 'Se for documento final, pode seguir para assinatura e controle de status.', action: 'Encaminhar assinatura' },
+  ],
+  finance: [
+    { name: 'Finance Agent', signal: 'cost', finding: 'Entrada parece custo, nota, orcamento, invoice ou documento financeiro.', action: 'Abrir Financeiro / Orcamento' },
+    { name: 'Proposal Agent', signal: 'commercial', finding: 'Pode alimentar proposta, curva de desembolso ou fluxo financeiro.', action: 'Preparar proposta' },
+    { name: 'Audit Agent', signal: 'control', finding: 'Documento financeiro deve preservar rastreabilidade e evitar exposicao sensivel.', action: 'Registrar trilha futura' },
+  ],
+  marketing: [
+    { name: 'Marketing Agent', signal: 'campaign', finding: 'Entrada aponta para website, portfolio, posts, campanha ou material institucional.', action: 'Abrir Design/Web' },
+    { name: 'DirectCut Agent', signal: 'video', finding: 'Arquivos de video ou sequencia visual podem virar reels, tour ou apresentacao.', action: 'Abrir DirectCut' },
+    { name: 'Brand Agent', signal: 'identity', finding: 'Logos, fotos e renders podem montar kit visual da empresa/projeto.', action: 'Preparar material' },
+  ],
+  field: [
+    { name: 'Field Agent', signal: 'obra', finding: 'Entrada parece relacionada a obra, campo, equipe, RDO ou execucao.', action: 'Abrir Obras/Campo' },
+    { name: 'Progress Agent', signal: 'status', finding: 'Pode virar registro de avanço fisico, pendencia ou evidencia de obra.', action: 'Preparar RDO' },
+    { name: 'Cost Agent', signal: 'materials', finding: 'Campo pode acionar material, compra, medicao e pagamento.', action: 'Conectar financeiro' },
+  ],
+  generic: [
+    { name: 'Apex Router', signal: 'triage', finding: 'Ainda preciso de uma intencao para escolher a rota com seguranca.', action: 'Perguntar objetivo' },
+    { name: 'Document Agent', signal: 'file', finding: 'Arquivo aceito no intake; leitura profunda depende do formato e checkpoint.', action: 'Classificar entrada' },
+    { name: 'Operations Agent', signal: 'next step', finding: 'Posso encaminhar para visual, tecnico, juridico, financeiro, marketing ou obra.', action: 'Sugerir rotas' },
+  ],
+}
 
 function ownerEmails() {
   return (process.env.NEXT_PUBLIC_OWNER_EMAILS || process.env.NEXT_PUBLIC_APEX_OWNER_EMAILS || 'jedgard70@gmail.com')
@@ -64,130 +111,134 @@ function extensionFrom(fileName: string) {
   return parts.length > 1 ? parts.pop() || '' : ''
 }
 
-function buildDraftCode() {
+function intakeCode() {
   const now = new Date()
-  const stamp = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0'),
-  ].join('')
-  return `APX-INT-${stamp}-${String(now.getTime()).slice(-5)}`
+  return `APX-${now.getFullYear()}-${String(now.getTime()).slice(-6)}`
 }
 
-function classifyIntake(fileName: string, objective: string, service: string, country: string): IntakeDraft {
-  const text = `${fileName} ${objective} ${service}`.toLowerCase()
+function routesFor(kind: IntakeKind): RouteOption[] {
+  if (kind === 'visual') {
+    return [
+      { title: 'ArchVis', description: 'Render, planta humanizada, fachada, interiores e prancha comercial.', href: '/archvis' },
+      { title: 'Marketing / Design', description: 'Portfolio, apresentacao, website, social media e material de venda.', href: '/platform' },
+      { title: 'DirectCut', description: 'Video, tour, timelapse e roteiro visual do projeto.', href: '/director-cut' },
+    ]
+  }
+  if (kind === 'bim') {
+    return [
+      { title: 'BIM / 3D', description: 'Visualizacao tecnica, compatibilizacao, clash e validacao.', href: '/bim-3d' },
+      { title: 'Orcamento', description: 'Quantitativo, custos, proposta e cronograma fisico-financeiro.', href: '/orcamento' },
+      { title: 'Obras / Campo', description: 'Preparar execucao, RDO, equipes e controle de obra.', href: '/rdo' },
+    ]
+  }
+  if (kind === 'legal') {
+    return [
+      { title: 'Juridico / Contratos', description: 'Contrato, memorial, aditivo, compliance, permit e assinatura.', href: '/juridico/contratos' },
+      { title: 'Documentos legais', description: 'Organizar evidencias, anexos e trilha documental.', href: '/documentos' },
+      { title: 'Compliance', description: 'Checar regras por pais, cidade, county ou norma aplicavel.', href: '/juridico/compliance' },
+    ]
+  }
+  if (kind === 'finance') {
+    return [
+      { title: 'Financeiro / Orcamento', description: 'Nota, invoice, custo, composicao, proposta e fluxo financeiro.', href: '/orcamento' },
+      { title: 'CRM Revenue', description: 'Conectar proposta, contrato, parcelas e status financeiro.', href: '/crm/revenue' },
+      { title: 'Documentos', description: 'Guardar suporte documental para auditoria futura.', href: '/documentos' },
+    ]
+  }
+  if (kind === 'marketing') {
+    return [
+      { title: 'Marketing / Design', description: 'Website, materiais, portfolio, conteudo e campanhas.', href: '/platform' },
+      { title: 'DirectCut', description: 'Video, reels, tour e apresentacao audiovisual.', href: '/director-cut' },
+      { title: 'ArchVis', description: 'Gerar imagens vendaveis para alimentar campanha.', href: '/archvis' },
+    ]
+  }
+  if (kind === 'field') {
+    return [
+      { title: 'Obras / Campo', description: 'RDO, equipes, materiais, pendencias e execucao.', href: '/rdo' },
+      { title: 'Qualidade', description: 'NCIs, evidencias, fotos e nao conformidades.', href: '/qualidade' },
+      { title: 'Financeiro / Orcamento', description: 'Materiais, medicao, pagamento e custo real.', href: '/orcamento' },
+    ]
+  }
+  return DEFAULT_ROUTES
+}
+
+function classify(fileName: string, intent: string): IntakeResult {
   const ext = extensionFrom(fileName)
-  const isUs = /(usa|eua|united states|estados unidos|texas|florida|california|new york)/i.test(country)
-  const isEurope = /(portugal|espanha|france|franca|italy|italia|germany|alemanha|europa|europe)/i.test(country)
-
+  const text = `${fileName} ${intent}`.toLowerCase()
   let kind: IntakeKind = 'generic'
-  let label = 'Arquivo generico'
-  let destination = 'Produção'
-  let routeHint = '/documentos'
-  let supportedDeepAnalysis = false
+  let headline = 'Entrada recebida para triagem inteligente'
+  let explanation = 'A Apex AI precisa da intencao do usuario para escolher o caminho operacional correto.'
 
-  if (['ifc', 'rvt', 'dwg', 'dxf', 'skp'].includes(ext) || /(bim|cad|planta|obra|projeto|render|3d|arquitet)/i.test(text)) {
-    kind = 'project'
-    label = ext === 'ifc' ? 'BIM/IFC' : ext === 'dwg' || ext === 'dxf' ? 'CAD/Planta' : 'Projeto/Obra'
-    destination = isUs ? 'Produção EUA' : isEurope ? 'Produção Europa' : 'Produção Brasil'
-    routeHint = service === 'ArchVis' ? '/archvis' : service === 'BIM' ? '/bim-3d' : service === 'Obra/Campo' ? '/rdo' : '/projeto/draft'
-    supportedDeepAnalysis = ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'txt', 'csv', 'json', 'md'].includes(ext)
-  } else if (/(contrato|juridico|jurídico|compliance|assinatura|permit|endosso)/i.test(text)) {
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || /(render|imagem|fachada|interior|planta humanizada|vendavel|visual)/i.test(text)) {
+    kind = 'visual'
+    headline = 'Imagem ou material visual detectado'
+    explanation = 'Esta entrada pode virar render, planta humanizada, portfolio, prancha comercial, marketing ou video.'
+  } else if (['ifc', 'rvt', 'dwg', 'dxf', 'skp'].includes(ext) || /(bim|revit|ifc|dwg|cad|clash|modelo|quantitativo)/i.test(text)) {
+    kind = 'bim'
+    headline = 'Modelo tecnico BIM/CAD detectado'
+    explanation = 'Este material deve seguir para BIM/3D, compatibilizacao, validacao tecnica, clash, quantitativo ou orcamento.'
+  } else if (/(contrato|juridico|jurídico|permit|compliance|assinatura|aditivo|memorial)/i.test(text)) {
     kind = 'legal'
-    label = 'Juridico/Contrato'
-    destination = 'Jurídico / Contratos'
-    routeHint = '/juridico/contratos'
-    supportedDeepAnalysis = ['pdf', 'txt', 'md', 'json'].includes(ext)
-  } else if (/(nota fiscal|invoice|financeiro|orcamento|orçamento|pagamento|custo|budget)/i.test(text)) {
+    headline = 'Documento juridico ou regulatorio detectado'
+    explanation = 'O caminho correto envolve contratos, permits, compliance, assinatura ou organizacao legal.'
+  } else if (/(nota fiscal|invoice|financeiro|orcamento|orçamento|custo|pagamento|budget|proposta)/i.test(text)) {
     kind = 'finance'
-    label = 'Financeiro/Orçamento'
-    destination = 'Financeiro / Orçamento'
-    routeHint = '/orcamento'
-    supportedDeepAnalysis = ['pdf', 'xlsx', 'csv', 'txt'].includes(ext)
-  } else if (/(rg|cpf|cnpj|documento cliente|identidade|passport|passaporte)/i.test(text)) {
-    kind = 'document'
-    label = 'Documento de cliente'
-    destination = 'Atendimento / Documentos'
-    routeHint = '/documentos'
-    supportedDeepAnalysis = ['jpg', 'jpeg', 'png', 'webp', 'pdf'].includes(ext)
-  } else if (/(marketing|design|site|web|video|vídeo|social|portfolio|portfólio|directcut)/i.test(text) || ['mp4', 'mov', 'avi', 'mkv'].includes(ext)) {
+    headline = 'Entrada financeira ou comercial detectada'
+    explanation = 'A entrada pode alimentar orcamento, proposta, fluxo financeiro, revenue ou auditoria de custos.'
+  } else if (['mp4', 'mov', 'avi', 'mkv'].includes(ext) || /(marketing|website|site|social|instagram|video|vídeo|directcut|portfolio|campanha)/i.test(text)) {
     kind = 'marketing'
-    label = 'Marketing/Design'
-    destination = service === 'DirectCut' ? 'Marketing / DirectCut' : 'Marketing / Design/Web'
-    routeHint = service === 'DirectCut' ? '/director-cut' : '/platform'
-    supportedDeepAnalysis = ['jpg', 'jpeg', 'png', 'webp', 'txt', 'md'].includes(ext)
+    headline = 'Material de marketing, design ou video detectado'
+    explanation = 'A entrada pode seguir para Design/Web, DirectCut, portfolio, campanha ou conteudo institucional.'
+  } else if (/(obra|campo|rdo|equipe|material|medicao|medição|diario|diário|nci|qualidade)/i.test(text)) {
+    kind = 'field'
+    headline = 'Entrada operacional de obra detectada'
+    explanation = 'A entrada pode ser tratada como evidencia de campo, RDO, pendencia, qualidade, medicao ou custo real.'
   }
 
   return {
-    code: buildDraftCode(),
+    code: intakeCode(),
     kind,
-    label,
-    confidence: fileName || objective ? 'initial' : 'pending',
-    destination,
-    routeHint,
-    fileName: fileName || 'Entrada manual',
-    supportedDeepAnalysis,
+    headline,
+    explanation,
+    routes: routesFor(kind),
+    agents: AGENT_LIBRARY[kind],
   }
+}
+
+function previewLabel(file: File | null) {
+  if (!file) return 'Mostre o que você tem'
+  const ext = extensionFrom(file.name).toUpperCase() || 'FILE'
+  return `${ext} recebido`
 }
 
 export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isOwner = useMemo(() => isOwnerProfile(profile), [profile])
-  const firstName = profile.full_name?.split(' ')[0] || 'Welcome'
   const [file, setFile] = useState<File | null>(null)
-  const [manualEntry, setManualEntry] = useState('')
-  const [clientMode, setClientMode] = useState<ClientMode>('new')
-  const [clientName, setClientName] = useState('')
-  const [city, setCity] = useState('')
-  const [region, setRegion] = useState('')
-  const [country, setCountry] = useState('Brasil')
-  const [service, setService] = useState('BIM')
-  const [draft, setDraft] = useState<IntakeDraft | null>(null)
-  const [notice, setNotice] = useState('')
+  const [intent, setIntent] = useState('')
+  const [result, setResult] = useState<IntakeResult | null>(null)
+  const [previewUrl, setPreviewUrl] = useState('')
 
-  function startIntake(nextFile?: File | null) {
-    setNotice('')
-    const selectedFile = nextFile ?? file
-    const nextDraft = classifyIntake(selectedFile?.name || '', manualEntry, service, country)
-    setDraft(nextDraft)
+  useEffect(() => {
+    if (!file || !file.type.startsWith('image/')) {
+      setPreviewUrl('')
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  function runIntake(nextFile = file, nextIntent = intent) {
+    setResult(classify(nextFile?.name || '', nextIntent))
   }
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null
     setFile(nextFile)
-    if (nextFile) startIntake(nextFile)
+    if (nextFile) runIntake(nextFile, intent)
   }
-
-  function prepareDraft() {
-    const nextDraft = classifyIntake(file?.name || '', manualEntry, service, country)
-    setDraft(nextDraft)
-    setNotice('Intake draft preparado localmente. CP3 ainda não grava este fluxo no banco.')
-  }
-
-  const actions: Action[] = [
-    {
-      label: 'Anexar documento/projeto',
-      description: 'Selecionar qualquer arquivo e iniciar classificacao CP3 sem rejeitar formato.',
-      onClick: () => fileInputRef.current?.click(),
-      primary: true,
-    },
-    {
-      label: 'Falar com Apex AI',
-      description: 'Abrir o copiloto para perguntas, triagem inicial e apoio ao atendimento.',
-      onClick: openApexAi,
-    },
-    {
-      label: 'Iniciar analise',
-      description: 'Criar um intake draft com cliente, local, servico e destino inicial.',
-      onClick: () => startIntake(),
-    },
-    {
-      label: 'Continuar atendimento/projeto',
-      description: 'Retomar documentos, projetos e entregas existentes pela area operacional.',
-      onClick: () => router.push('/documentos'),
-    },
-  ]
 
   return (
     <section style={styles.page}>
@@ -195,146 +246,93 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
       <div style={styles.hero}>
         <div style={styles.heroCopy}>
-          <span style={styles.kicker}>Apex Global AI</span>
-          <h1 style={styles.title}>Welcome, {firstName}</h1>
+          <span style={styles.kicker}>APEX GLOBAL AI</span>
+          <h1 style={styles.title}>Welcome</h1>
           <p style={styles.lead}>Anexe seu arquivo ou fale com a Apex AI para iniciar.</p>
-          <p style={styles.body}>
-            CP3 adiciona intake automatico local: a plataforma classifica a entrada, prepara um projeto draft e indica o modulo correto sem alterar Supabase.
-          </p>
-        </div>
-        <div style={styles.signalPanel} aria-label="Apex project intake">
-          <div style={styles.signalHeader}>
-            <span style={styles.signalDot} />
-            <span>Project intake draft</span>
-          </div>
-          <div style={styles.signalGrid}>
-            <div style={styles.signalItem}><strong>Entrada</strong><span>arquivo ou descricao manual</span></div>
-            <div style={styles.signalItem}><strong>Apex AI</strong><span>classificacao e destino inicial</span></div>
-            <div style={styles.signalItem}><strong>Estado</strong><span>draft local, sem banco no CP3</span></div>
+          <div style={styles.heroActions}>
+            <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.primaryButton}>Anexar documento</button>
+            <button type="button" onClick={openApexAi} style={styles.secondaryButton}>Falar com Apex AI</button>
+            <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}>Iniciar analise</button>
           </div>
         </div>
-      </div>
-
-      <div style={styles.actionsGrid}>
-        {actions.map(action => (
-          <button
-            key={action.label}
-            type="button"
-            onClick={action.onClick}
-            style={{ ...styles.actionCard, ...(action.primary ? styles.actionCardPrimary : null) }}
-          >
-            <span style={{ ...styles.actionLabel, ...(action.primary ? styles.actionLabelPrimary : null) }}>{action.label}</span>
-            <span style={{ ...styles.actionDescription, ...(action.primary ? styles.actionDescriptionPrimary : null) }}>{action.description}</span>
-          </button>
-        ))}
-      </div>
-
-      <div style={styles.intakeGrid}>
-        <section style={styles.intakePanel}>
-          <div style={styles.sectionLabel}>Intake CP3</div>
-          <label style={styles.label}>Arquivo recebido</label>
-          <button type="button" style={styles.fileBox} onClick={() => fileInputRef.current?.click()}>
-            <strong>{file ? file.name : 'Selecionar arquivo ou usar entrada manual'}</strong>
-            <span>{file ? `${Math.max(1, Math.round(file.size / 1024))} KB registrados no draft` : 'Aceita qualquer tipo de arquivo no intake.'}</span>
-          </button>
-
-          <label style={styles.label}>Entrada manual / objetivo</label>
-          <textarea
-            value={manualEntry}
-            onChange={event => setManualEntry(event.target.value)}
-            style={styles.textarea}
-            placeholder="Ex: planta residencial em Dallas para render e orçamento, contrato para revisão, nota fiscal para análise financeira..."
-          />
-
-          <div style={styles.formRow}>
-            <div>
-              <label style={styles.label}>Cliente</label>
-              <div style={styles.segmented}>
-                <button type="button" onClick={() => setClientMode('new')} style={{ ...styles.segmentButton, ...(clientMode === 'new' ? styles.segmentButtonActive : null) }}>Novo</button>
-                <button type="button" onClick={() => setClientMode('existing')} style={{ ...styles.segmentButton, ...(clientMode === 'existing' ? styles.segmentButtonActive : null) }}>Existente</button>
+        <div style={styles.previewPanel}>
+          <div style={styles.previewStage}>
+            {previewUrl ? (
+              <img src={previewUrl} alt="Preview do arquivo enviado" style={styles.previewImage} />
+            ) : (
+              <div style={styles.previewPlaceholder}>
+                <span style={styles.previewLabel}>{previewLabel(file)}</span>
+                <strong>{file ? file.name : 'Arquivo, imagem, BIM, contrato, nota ou texto livre'}</strong>
+                <small>{file ? 'Preview profundo será tratado pelo módulo correto.' : 'A Apex AI identifica o caminho.'}</small>
               </div>
-            </div>
-            <div>
-              <label style={styles.label}>Nome do cliente</label>
-              <input value={clientName} onChange={event => setClientName(event.target.value)} style={styles.input} placeholder="Nome ou empresa" />
-            </div>
+            )}
           </div>
-
-          <div style={styles.formRowThree}>
-            <div>
-              <label style={styles.label}>Cidade</label>
-              <input value={city} onChange={event => setCity(event.target.value)} style={styles.input} placeholder="Cidade" />
-            </div>
-            <div>
-              <label style={styles.label}>Estado/Regiao</label>
-              <input value={region} onChange={event => setRegion(event.target.value)} style={styles.input} placeholder="Estado" />
-            </div>
-            <div>
-              <label style={styles.label}>Pais</label>
-              <input value={country} onChange={event => setCountry(event.target.value)} style={styles.input} placeholder="Pais" />
-            </div>
+          <div style={styles.previewMeta}>
+            <span>{file ? file.name : 'Nenhum arquivo selecionado'}</span>
+            <strong>{file ? `${Math.max(1, Math.round(file.size / 1024))} KB` : 'Aguardando entrada'}</strong>
           </div>
+        </div>
+      </div>
 
-          <label style={styles.label}>Servico desejado</label>
-          <div style={styles.serviceGrid}>
-            {SERVICES.map(item => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setService(item)}
-                style={{ ...styles.serviceButton, ...(service === item ? styles.serviceButtonActive : null) }}
-              >
-                {item}
+      <div style={styles.intentPanel}>
+        <label style={styles.intentLabel}>O que você deseja fazer com isso?</label>
+        <div style={styles.intentRow}>
+          <input
+            value={intent}
+            onChange={event => setIntent(event.target.value)}
+            onKeyDown={event => {
+              if (event.key === 'Enter') runIntake()
+            }}
+            style={styles.intentInput}
+            placeholder="Ex: transformar em render vendavel, validar IFC, revisar contrato, gerar orcamento..."
+          />
+          <button type="button" onClick={() => runIntake()} style={styles.redButton}>Identificar caminho</button>
+        </div>
+      </div>
+
+      {result && (
+        <div style={styles.analysisBand}>
+          <section style={styles.analysisPanel}>
+            <div style={styles.sectionKicker}>Analise visual / tecnica</div>
+            <div style={styles.code}>{result.code}</div>
+            <h2 style={styles.analysisTitle}>{result.headline}</h2>
+            <p style={styles.analysisText}>{result.explanation}</p>
+          </section>
+
+          <section style={styles.routesPanel}>
+            <div style={styles.sectionKicker}>Rotas inteligentes</div>
+            <div style={styles.routeGrid}>
+              {result.routes.map(route => (
+                <button key={route.title} type="button" onClick={() => router.push(route.href)} style={styles.routeCard}>
+                  <strong>{route.title}</strong>
+                  <span>{route.description}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
+
+      {result && (
+        <section style={styles.agentsPanel}>
+          <div style={styles.sectionKicker}>Agentes vivos demonstrativos</div>
+          <div style={styles.agentGrid}>
+            {result.agents.map(agent => (
+              <button key={agent.name} type="button" style={styles.agentCard}>
+                <span style={styles.agentSignal}>{agent.signal}</span>
+                <strong>{agent.name}</strong>
+                <span>{agent.finding}</span>
+                <em>{agent.action}</em>
               </button>
             ))}
           </div>
-
-          <button type="button" onClick={prepareDraft} style={styles.primaryButton}>
-            Preparar intake draft
-          </button>
-          {notice && <div style={styles.notice}>{notice}</div>}
         </section>
-
-        <aside style={styles.resultPanel}>
-          <div style={styles.sectionLabel}>Classificacao Apex AI</div>
-          {draft ? (
-            <>
-              <div style={styles.draftCode}>{draft.code}</div>
-              <div style={styles.pillRow}>
-                <span style={styles.pill}>{draft.label}</span>
-                <span style={styles.pill}>{draft.confidence}</span>
-                <span style={styles.pill}>{draft.supportedDeepAnalysis ? 'analise CP1 disponivel' : 'classificacao CP3'}</span>
-              </div>
-              <dl style={styles.summaryList}>
-                <div><dt>Arquivo</dt><dd>{draft.fileName}</dd></div>
-                <div><dt>Cliente</dt><dd>{clientMode === 'new' ? 'Novo cliente' : 'Cliente existente'}{clientName ? ` - ${clientName}` : ''}</dd></div>
-                <div><dt>Local</dt><dd>{[city, region, country].filter(Boolean).join(', ') || 'Nao informado'}</dd></div>
-                <div><dt>Servico</dt><dd>{service}</dd></div>
-                <div><dt>Destino</dt><dd>{draft.destination}</dd></div>
-                <div><dt>Proximo modulo</dt><dd>{draft.routeHint}</dd></div>
-              </dl>
-              <p style={styles.resultText}>
-                Draft local criado para encaminhamento. A gravacao definitiva em projetos/clientes fica bloqueada ate checkpoint de banco aprovado.
-              </p>
-              <div style={styles.resultActions}>
-                <button type="button" onClick={openApexAi} style={styles.secondaryButton}>Abrir Apex AI</button>
-                <button type="button" onClick={() => router.push(draft.routeHint === '/projeto/draft' ? '/documentos' : draft.routeHint)} style={styles.secondaryButton}>Ir para modulo</button>
-              </div>
-            </>
-          ) : (
-            <p style={styles.resultText}>
-              Selecione um arquivo ou descreva a demanda e clique em Iniciar analise. O draft mostrara codigo provisório, cliente, servico e destino.
-            </p>
-          )}
-        </aside>
-      </div>
+      )}
 
       <div style={styles.ownerArea}>
         <div>
           <h2 style={styles.ownerTitle}>Executive control</h2>
-          <p style={styles.ownerText}>
-            Controle Owner e indicadores executivos permanecem disponiveis apenas para Owner/diretoria.
-          </p>
+          <p style={styles.ownerText}>Controle Owner e indicadores executivos continuam separados da primeira experiência.</p>
         </div>
         {isOwner && (
           <button type="button" onClick={() => router.push('/owner-dashboard')} style={styles.ownerButton}>
@@ -357,321 +355,260 @@ const styles: Record<string, CSSProperties> = {
   },
   hero: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)',
-    gap: 22,
+    gridTemplateColumns: 'minmax(320px, .85fr) minmax(420px, 1.15fr)',
+    gap: 24,
     alignItems: 'stretch',
   },
   heroCopy: {
     borderLeft: '5px solid #b20f1d',
     padding: '8px 0 8px 22px',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   kicker: {
-    display: 'block',
     color: '#b20f1d',
     fontSize: 12,
-    fontWeight: 800,
+    fontWeight: 900,
     letterSpacing: '.08em',
-    textTransform: 'uppercase',
-    marginBottom: 10,
   },
   title: {
-    fontSize: 34,
-    lineHeight: 1.12,
-    margin: 0,
+    margin: '10px 0 0',
+    fontSize: 44,
+    lineHeight: 1,
     letterSpacing: 0,
     color: '#071a33',
   },
   lead: {
-    margin: '14px 0 0',
+    margin: '16px 0 0',
     color: '#0d2b52',
-    fontSize: 20,
-    fontWeight: 700,
+    fontSize: 21,
+    fontWeight: 800,
     lineHeight: 1.35,
   },
-  body: {
-    maxWidth: 720,
-    margin: '10px 0 0',
-    color: '#5f6b7a',
-    fontSize: 14,
-    lineHeight: 1.65,
-  },
-  signalPanel: {
-    background: '#f7f9fc',
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    padding: 18,
+  heroActions: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
-  signalHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    color: '#071a33',
-    fontSize: 13,
-    fontWeight: 800,
-    textTransform: 'uppercase',
-    letterSpacing: '.04em',
-  },
-  signalDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    background: '#b20f1d',
-    boxShadow: '0 0 0 5px rgba(178,15,29,.10)',
-  },
-  signalGrid: {
-    display: 'grid',
     gap: 10,
-  },
-  signalItem: {
-    background: '#fff',
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    padding: '12px 14px',
-    display: 'grid',
-    gap: 3,
-    color: '#5f6b7a',
-    fontSize: 12,
-  },
-  actionsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-    gap: 14,
-    marginTop: 26,
-  },
-  actionCard: {
-    minHeight: 136,
-    textAlign: 'left',
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    background: '#ffffff',
-    padding: 18,
-    cursor: 'pointer',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    gap: 18,
-    fontFamily: 'inherit',
-    boxShadow: '0 10px 24px rgba(7,26,51,.05)',
-  },
-  actionCardPrimary: {
-    background: '#071a33',
-    borderColor: '#071a33',
-  },
-  actionLabel: {
-    color: '#071a33',
-    fontWeight: 800,
-    fontSize: 15,
-    lineHeight: 1.25,
-  },
-  actionLabelPrimary: {
-    color: '#ffffff',
-  },
-  actionDescription: {
-    color: '#5f6b7a',
-    fontSize: 12,
-    lineHeight: 1.55,
-  },
-  actionDescriptionPrimary: {
-    color: '#d6dde8',
-  },
-  intakeGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.1fr) minmax(300px, .9fr)',
-    gap: 18,
+    flexWrap: 'wrap',
     marginTop: 24,
   },
-  intakePanel: {
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    background: '#f9fbfd',
-    padding: 18,
-  },
-  resultPanel: {
-    border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    background: '#ffffff',
-    padding: 18,
-    boxShadow: '0 10px 24px rgba(7,26,51,.05)',
-  },
-  sectionLabel: {
-    color: '#b20f1d',
-    fontSize: 11,
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    letterSpacing: '.08em',
-    marginBottom: 14,
-  },
-  label: {
-    display: 'block',
-    color: '#0d2b52',
-    fontSize: 12,
-    fontWeight: 800,
-    margin: '12px 0 6px',
-  },
-  fileBox: {
-    width: '100%',
-    minHeight: 76,
-    border: '1px dashed #9facbf',
-    borderRadius: 8,
-    background: '#ffffff',
-    color: '#071a33',
-    cursor: 'pointer',
-    display: 'grid',
-    gap: 4,
-    padding: 14,
-    textAlign: 'left',
-    fontFamily: 'inherit',
-  },
-  textarea: {
-    width: '100%',
-    minHeight: 96,
-    border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontSize: 13,
-    resize: 'vertical',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-  },
-  input: {
-    width: '100%',
-    border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    padding: '10px 12px',
-    fontSize: 13,
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-  },
-  formRow: {
-    display: 'grid',
-    gridTemplateColumns: '210px minmax(0, 1fr)',
-    gap: 12,
-  },
-  formRowThree: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 12,
-  },
-  segmented: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 4,
-    background: '#eef2f7',
-    borderRadius: 8,
-    padding: 4,
-  },
-  segmentButton: {
-    border: 'none',
-    borderRadius: 6,
-    background: 'transparent',
-    color: '#5f6b7a',
-    padding: '9px 10px',
-    cursor: 'pointer',
-    fontWeight: 800,
-    fontFamily: 'inherit',
-  },
-  segmentButtonActive: {
-    background: '#ffffff',
-    color: '#071a33',
-    boxShadow: '0 3px 10px rgba(7,26,51,.08)',
-  },
-  serviceGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 8,
-  },
-  serviceButton: {
-    border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    background: '#ffffff',
-    color: '#0d2b52',
-    padding: '9px 8px',
-    cursor: 'pointer',
-    fontSize: 12,
-    fontWeight: 800,
-    fontFamily: 'inherit',
-  },
-  serviceButtonActive: {
-    borderColor: '#b20f1d',
-    background: '#fff5f6',
-    color: '#b20f1d',
-  },
   primaryButton: {
-    width: '100%',
-    marginTop: 16,
     border: 'none',
     borderRadius: 8,
     background: '#b20f1d',
     color: '#ffffff',
-    padding: '12px 18px',
+    padding: '12px 16px',
     fontSize: 13,
     fontWeight: 900,
     cursor: 'pointer',
     fontFamily: 'inherit',
-  },
-  notice: {
-    marginTop: 10,
-    border: '1px solid #d7e0ec',
-    borderRadius: 8,
-    background: '#ffffff',
-    color: '#5f6b7a',
-    padding: '10px 12px',
-    fontSize: 12,
-  },
-  draftCode: {
-    display: 'inline-flex',
-    background: '#071a33',
-    color: '#ffffff',
-    borderRadius: 8,
-    padding: '8px 10px',
-    fontSize: 13,
-    fontWeight: 900,
-    letterSpacing: '.03em',
-  },
-  pillRow: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 12,
-  },
-  pill: {
-    display: 'inline-flex',
-    borderRadius: 999,
-    background: '#eef3fb',
-    color: '#0d2b52',
-    padding: '5px 9px',
-    fontSize: 11,
-    fontWeight: 800,
-  },
-  summaryList: {
-    display: 'grid',
-    gap: 10,
-    margin: '16px 0',
-  },
-  resultText: {
-    color: '#5f6b7a',
-    fontSize: 13,
-    lineHeight: 1.6,
-  },
-  resultActions: {
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginTop: 14,
   },
   secondaryButton: {
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
     color: '#071a33',
-    padding: '9px 12px',
-    cursor: 'pointer',
-    fontSize: 12,
+    padding: '11px 14px',
+    fontSize: 13,
     fontWeight: 800,
+    cursor: 'pointer',
     fontFamily: 'inherit',
+  },
+  previewPanel: {
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    background: '#f7f9fc',
+    padding: 14,
+    minHeight: 380,
+    display: 'grid',
+    gridTemplateRows: '1fr auto',
+    gap: 12,
+  },
+  previewStage: {
+    minHeight: 320,
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#ffffff',
+    overflow: 'hidden',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    background: '#ffffff',
+  },
+  previewPlaceholder: {
+    width: '100%',
+    height: '100%',
+    minHeight: 320,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    color: '#5f6b7a',
+    textAlign: 'center',
+    padding: 24,
+  },
+  previewLabel: {
+    color: '#b20f1d',
+    fontSize: 12,
+    fontWeight: 900,
+    textTransform: 'uppercase',
+    letterSpacing: '.08em',
+  },
+  previewMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    color: '#5f6b7a',
+    fontSize: 12,
+  },
+  intentPanel: {
+    marginTop: 22,
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#ffffff',
+    padding: 16,
+  },
+  intentLabel: {
+    display: 'block',
+    color: '#071a33',
+    fontSize: 14,
+    fontWeight: 900,
+    marginBottom: 10,
+  },
+  intentRow: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: 10,
+  },
+  intentInput: {
+    width: '100%',
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    padding: '12px 14px',
+    fontSize: 14,
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+  },
+  redButton: {
+    border: 'none',
+    borderRadius: 8,
+    background: '#b20f1d',
+    color: '#ffffff',
+    padding: '0 16px',
+    fontSize: 13,
+    fontWeight: 900,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  },
+  analysisBand: {
+    display: 'grid',
+    gridTemplateColumns: '.8fr 1.2fr',
+    gap: 18,
+    marginTop: 20,
+  },
+  analysisPanel: {
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#071a33',
+    color: '#ffffff',
+    padding: 18,
+  },
+  sectionKicker: {
+    color: '#b20f1d',
+    fontSize: 11,
+    fontWeight: 900,
+    textTransform: 'uppercase',
+    letterSpacing: '.08em',
+    marginBottom: 12,
+  },
+  code: {
+    display: 'inline-flex',
+    border: '1px solid rgba(255,255,255,.22)',
+    borderRadius: 8,
+    padding: '6px 9px',
+    fontSize: 12,
+    fontWeight: 900,
+    marginBottom: 14,
+  },
+  analysisTitle: {
+    margin: 0,
+    fontSize: 22,
+    lineHeight: 1.2,
+  },
+  analysisText: {
+    margin: '12px 0 0',
+    color: '#d6dde8',
+    fontSize: 13,
+    lineHeight: 1.65,
+  },
+  routesPanel: {
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#ffffff',
+    padding: 18,
+  },
+  routeGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 10,
+  },
+  routeCard: {
+    minHeight: 130,
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    color: '#071a33',
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  agentsPanel: {
+    marginTop: 20,
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: '#ffffff',
+    padding: 18,
+  },
+  agentGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    gap: 10,
+  },
+  agentCard: {
+    minHeight: 164,
+    border: '1px solid #cfd7e6',
+    borderRadius: 8,
+    background: '#ffffff',
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 9,
+    textAlign: 'left',
+    cursor: 'pointer',
+    color: '#071a33',
+    fontFamily: 'inherit',
+  },
+  agentSignal: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    background: '#fff5f6',
+    color: '#b20f1d',
+    padding: '4px 8px',
+    fontSize: 11,
+    fontWeight: 900,
+    textTransform: 'uppercase',
   },
   ownerArea: {
     marginTop: 30,
