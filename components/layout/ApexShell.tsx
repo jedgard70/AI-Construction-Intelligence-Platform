@@ -225,8 +225,8 @@ export default function ApexShell({ children }: Props) {
             <div style={{ display: 'flex', alignItems: 'baseline', gap: guidedWelcome ? 9 : 0 }}>
               {guidedWelcome ? (
                 <>
-                  <span style={{ color: '#071a33', fontSize: 34, fontWeight: 950, letterSpacing: '.01em', lineHeight: 1 }}>APE<span style={{ color: '#d7192a' }}>X</span></span>
-                  <span style={{ color: '#d7192a', fontSize: 23, fontWeight: 950, letterSpacing: '.05em', lineHeight: 1 }}>GLOBAL AI</span>
+                  <span style={{ color: '#071a33', fontSize: 38, fontWeight: 950, letterSpacing: '.01em', lineHeight: 1 }}>APEX</span>
+                  <span style={{ color: '#d7192a', fontSize: 24, fontWeight: 950, letterSpacing: '.055em', lineHeight: 1 }}>GLOBAL AI</span>
                 </>
               ) : (
                 <div>

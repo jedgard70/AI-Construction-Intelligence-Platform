@@ -443,9 +443,9 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}><Play size={17} />{copy.start}</button>
           </div>
           <div style={styles.trustGrid}>
-            <span style={styles.trustItem}><FileText size={20} />{copy.trustOne}</span>
-            <span style={styles.trustItem}><Bot size={20} />{copy.trustTwo}</span>
-            <span style={styles.trustItem}><ShieldCheck size={20} />{copy.trustThree}</span>
+            <span style={styles.trustItem}><FileText size={17} strokeWidth={2.1} />{copy.trustOne}</span>
+            <span style={styles.trustItem}><Bot size={17} strokeWidth={2.1} />{copy.trustTwo}</span>
+            <span style={styles.trustItem}><ShieldCheck size={17} strokeWidth={2.1} />{copy.trustThree}</span>
           </div>
         </div>
         <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.previewPanel}>
@@ -626,19 +626,19 @@ const styles: Record<string, CSSProperties> = {
   trustGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 18,
+    gap: 20,
     marginTop: 36,
     maxWidth: 570,
   },
   trustItem: {
-    borderLeft: '1px solid #dfe5ee',
     color: '#0d2b52',
-    padding: '6px 12px',
-    fontSize: 15,
+    padding: '4px 0',
+    fontSize: 14,
     fontWeight: 700,
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 12,
+    gap: 11,
+    lineHeight: 1.35,
   },
   primaryButton: {
     border: 'none',
