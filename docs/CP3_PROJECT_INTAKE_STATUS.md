@@ -48,6 +48,15 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
   - Analyzes selected file name/type, typed user goal, and selected objective card.
   - Returns route id, EN/PT title, confidence, EN/PT reason, EN/PT next action, and suggested agents.
   - Shows consultative recommendations on the Welcome / Analises page after upload, objective click, or Identify path.
+- CP3.2A Preview/production note and HEIC fallback:
+  - PR Preview can show CP3.2 before production; `apexglobalai.com` updates only after merge and production deploy.
+  - HEIC/HEIF files are accepted as visual assets and show a premium placeholder when the browser cannot render them.
+- CP3.2B production layout parity:
+  - `/dashboard` uses the approved wide cockpit layout instead of the narrow/admin-like container.
+  - Header uses the larger hamburger + `APEX GLOBAL AI` wordmark with EN/PT and profile controls on the right.
+  - Hero and upload areas use more horizontal space.
+  - Objective cards use colored premium icons in a 3-column desktop grid.
+  - Smart Routing and HEIC fallback behavior remain local and unchanged.
 
 ## Current Classifications
 
@@ -138,8 +147,10 @@ It does not persist projects, clients, files, storage records, agent events, or 
 - EN/PT toggle is visible and switches primary labels.
 - File upload opens from `Anexar documento`.
 - Image upload shows large preview.
+- HEIC/HEIF upload shows a clear placeholder instead of a blank/broken preview.
 - Non-image upload shows large file placeholder.
 - Objective cards are visible before analysis.
+- Objective cards show colored icons in the approved 3-column cockpit layout.
 - Clicking an objective card fills intention and runs classification.
 - User sees intention question.
 - `Identificar caminho` produces visual/technical analysis.

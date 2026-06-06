@@ -7,6 +7,7 @@ import {
   type ClipboardEvent as ReactClipboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react'
+import { Sparkles } from 'lucide-react'
 import { getSupabase } from '../lib/supabase'
 
 type Screen = 'manual' | 'supervisor' | 'status'
@@ -35,8 +36,8 @@ const PANEL_WIDTH = 430
 const PANEL_HEIGHT = 610
 const FULLSCREEN_MARGIN = 18
 const MOBILE_MARGIN = 10
-const LAUNCHER_WIDTH = 98
-const LAUNCHER_HEIGHT = 48
+const LAUNCHER_WIDTH = 96
+const LAUNCHER_HEIGHT = 96
 const DRAG_THRESHOLD = 6
 const CP1_RUNTIME_MARKER = 'CP1 runtime: ApexCopilot v125-forensic-universal-intake'
 const CP1_MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
@@ -727,21 +728,29 @@ export default function ApexCopilot() {
           left: activeLauncherPos.x,
           top: activeLauncherPos.y,
           zIndex: 30000,
-          border: 0,
-          borderRadius: 999,
-          background: open ? '#1f3f5d' : '#0f4c81',
+          border: '1px solid rgba(255,255,255,.24)',
+          borderRadius: '50%',
+          background: open ? '#0d2b52' : 'linear-gradient(145deg, #071a33 0%, #0d2b52 58%, #123d73 100%)',
           color: '#fff',
-          padding: '12px 16px',
-          minWidth: LAUNCHER_WIDTH,
-          minHeight: LAUNCHER_HEIGHT,
-          fontSize: 12,
+          width: LAUNCHER_WIDTH,
+          height: LAUNCHER_HEIGHT,
+          padding: 0,
+          fontSize: 14,
           fontWeight: 900,
-          boxShadow: '0 12px 30px rgba(0,0,0,.26)',
+          boxShadow: '0 22px 46px rgba(7,26,51,.32), inset 0 1px 0 rgba(255,255,255,.18)',
           cursor: dragging === 'launcher' ? 'grabbing' : 'grab',
           touchAction: 'none',
+          display: 'inline-flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 7,
+          letterSpacing: 0,
+          fontFamily: "'Geist', system-ui, sans-serif",
         }}
       >
-        Apex AI
+        <Sparkles size={28} strokeWidth={2.15} />
+        <span style={{ lineHeight: 1, whiteSpace: 'nowrap' }}>Apex AI</span>
       </button>
 
       {open && (
