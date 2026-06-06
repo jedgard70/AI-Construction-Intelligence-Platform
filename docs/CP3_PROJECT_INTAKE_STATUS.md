@@ -11,15 +11,24 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
 - Clean first screen:
   - `APEX GLOBAL AI`
   - `Welcome`
-  - `Anexe seu arquivo ou fale com a Apex AI para iniciar.`
+  - `Attach a file or talk to Apex AI to begin.`
+- EN/PT toggle on the Welcome / Analises surface.
 - Three main actions:
-  - Anexar documento
-  - Falar com Apex AI
-  - Iniciar analise
+  - Attach document / Anexar documento
+  - Talk to Apex AI / Falar com Apex AI
+  - Start analysis / Iniciar analise
 - Large preview area for image/file intake.
 - Any file type accepted by the file picker.
+- Objective cards:
+  - Create render / Criar render
+  - Analyze BIM/CAD / Analisar BIM/CAD
+  - Estimate cost / Gerar orcamento
+  - Review contract / Revisar contrato
+  - Build marketing / Criar marketing
+  - Route field work / Encaminhar obra
 - Intention question:
-  - `O que você deseja fazer com isso?`
+  - `What do you want to do with this?`
+  - `O que voce deseja fazer com isso?`
 - Local pre-analysis by file type and user intention.
 - Intelligent route suggestions.
 - Demonstrative live-agent cards.
@@ -95,9 +104,12 @@ It does not persist projects, clients, files, storage records, agent events, or 
 
 - `/dashboard` opens clean Welcome / Analises first.
 - No confusing client/location/service form on first screen.
+- EN/PT toggle is visible and switches primary labels.
 - File upload opens from `Anexar documento`.
 - Image upload shows large preview.
 - Non-image upload shows large file placeholder.
+- Objective cards are visible before analysis.
+- Clicking an objective card fills intention and runs classification.
 - User sees intention question.
 - `Identificar caminho` produces visual/technical analysis.
 - Routes appear after analysis.
