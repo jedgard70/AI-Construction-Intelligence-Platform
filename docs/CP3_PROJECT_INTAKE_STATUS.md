@@ -43,6 +43,12 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
   - Left hero keeps the red vertical accent line, guidance copy, three actions, and three trust/status items.
   - Right panel is a large upload/preview area with file status and waiting status.
   - Objective cards and intent box remain below the hero.
+- CP3.1F final reference alignment:
+  - `/dashboard` uses near-full viewport width instead of a narrow centered container.
+  - Header removes the small subtitle and uses a larger `APEX GLOBAL AI` wordmark.
+  - Objective cards use colored icons, larger spacing, and subtle premium shadows.
+  - Upload panel is wider and aligned with the hero row.
+  - Executive Dashboard appears only as the lower-right Owner action.
 
 ## Current Classifications
 
@@ -117,12 +123,14 @@ It does not persist projects, clients, files, storage records, agent events, or 
 - Hamburger/menu button is visible in the top-left header.
 - Clicking the hamburger reveals navigation.
 - Header shows `APEX GLOBAL AI`, EN/PT toggle, and user/profile block.
+- Header uses the approved large `APEX GLOBAL AI` wordmark without the extra small subtitle.
 - No confusing client/location/service form on first screen.
 - EN/PT toggle is visible and switches primary labels.
 - File upload opens from `Anexar documento`.
 - Image upload shows large preview.
 - Non-image upload shows large file placeholder.
 - Objective cards are visible before analysis.
+- Objective cards have colored icons and premium spacing.
 - Clicking an objective card fills intention and runs classification.
 - User sees intention question.
 - `Identificar caminho` produces visual/technical analysis.

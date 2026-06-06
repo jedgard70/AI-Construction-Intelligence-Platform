@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, CSSProperties } from 'react'
 import { useRouter } from 'next/router'
+import {
+  BadgeCheck,
+  Bot,
+  DollarSign,
+  FileText,
+  HardHat,
+  ImageIcon,
+  Megaphone,
+  MessageSquare,
+  Play,
+  Send,
+  ShieldCheck,
+  Upload,
+  Workflow,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import type { Profile } from '../pages/dashboard'
 
 type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
@@ -35,16 +51,23 @@ type IntentCard = {
   prompt: string
 }
 
+type IntentVisual = {
+  icon: LucideIcon
+  color: string
+  background: string
+}
+
 const UI_COPY = {
   en: {
     welcome: 'Welcome',
-    lead: 'Attach a file or talk to Apex AI to begin.',
+    lead: 'Show what you have or tell Apex AI what you want to do.',
+    sublead: 'Apex AI identifies the path and opens the next step.',
     attach: 'Attach document',
     talk: 'Talk to Apex AI',
     start: 'Start analysis',
-    previewEmpty: 'File, image, BIM, contract, invoice or free text',
+    dropTitle: 'Drop a file here or click to select',
+    dropText: 'Images, BIM/IFC, CAD, PDF, videos, spreadsheets and more.',
     previewDeep: 'Deep preview will be handled by the correct module.',
-    previewHint: 'Apex AI identifies the path.',
     noFile: 'No file selected',
     waiting: 'Waiting for input',
     intentQuestion: 'What do you want to do with this?',
@@ -63,13 +86,14 @@ const UI_COPY = {
   },
   pt: {
     welcome: 'Bem-vindo',
-    lead: 'Anexe seu arquivo ou fale com a Apex AI para iniciar.',
+    lead: 'Mostre o que voce tem ou diga a Apex AI o que deseja fazer.',
+    sublead: 'A Apex AI identifica o caminho e abre o proximo passo.',
     attach: 'Anexar documento',
     talk: 'Falar com Apex AI',
     start: 'Iniciar analise',
-    previewEmpty: 'Arquivo, imagem, BIM, contrato, nota ou texto livre',
+    dropTitle: 'Solte um arquivo aqui ou clique para selecionar',
+    dropText: 'Imagens, BIM/IFC, CAD, PDF, videos, planilhas e mais.',
     previewDeep: 'Preview profundo sera tratado pelo modulo correto.',
-    previewHint: 'A Apex AI identifica o caminho.',
     noFile: 'Nenhum arquivo selecionado',
     waiting: 'Aguardando entrada',
     intentQuestion: 'O que voce deseja fazer com isso?',
@@ -87,6 +111,16 @@ const UI_COPY = {
     trustThree: 'Governanca Owner',
   },
 } satisfies Record<Language, Record<string, string>>
+
+const INTENT_VISUALS: Record<IntakeKind, IntentVisual> = {
+  visual: { icon: ImageIcon, color: '#ff2d21', background: '#ffe1e1' },
+  bim: { icon: Workflow, color: '#1d32ff', background: '#e4e5ff' },
+  finance: { icon: DollarSign, color: '#14aa52', background: '#def9e8' },
+  legal: { icon: BadgeCheck, color: '#8d25de', background: '#efd9ff' },
+  marketing: { icon: Megaphone, color: '#ff6f1a', background: '#ffe8d8' },
+  field: { icon: HardHat, color: '#18b58c', background: '#dbf6ef' },
+  generic: { icon: Bot, color: '#0d2b52', background: '#eaf2ff' },
+}
 
 const INTENT_CARDS: Record<Language, IntentCard[]> = {
   en: [
@@ -361,26 +395,27 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           <span style={styles.kicker}>APEX GLOBAL AI</span>
           <h1 style={styles.title}>{copy.welcome}</h1>
           <p style={styles.lead}>{copy.lead}</p>
+          <p style={styles.sublead}>{copy.sublead}</p>
           <div style={styles.heroActions}>
-            <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.primaryButton}>{copy.attach}</button>
-            <button type="button" onClick={openApexAi} style={styles.secondaryButton}>{copy.talk}</button>
-            <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}>{copy.start}</button>
+            <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.primaryButton}><Upload size={17} />{copy.attach}</button>
+            <button type="button" onClick={openApexAi} style={styles.secondaryButton}><MessageSquare size={17} />{copy.talk}</button>
+            <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}><Play size={17} />{copy.start}</button>
           </div>
           <div style={styles.trustGrid}>
-            <span style={styles.trustItem}>{copy.trustOne}</span>
-            <span style={styles.trustItem}>{copy.trustTwo}</span>
-            <span style={styles.trustItem}>{copy.trustThree}</span>
+            <span style={styles.trustItem}><FileText size={18} />{copy.trustOne}</span>
+            <span style={styles.trustItem}><Bot size={18} />{copy.trustTwo}</span>
+            <span style={styles.trustItem}><ShieldCheck size={18} />{copy.trustThree}</span>
           </div>
         </div>
-        <div style={styles.previewPanel}>
+        <button type="button" style={styles.previewPanel} onClick={() => fileInputRef.current?.click()}>
           <div style={styles.previewStage}>
             {previewUrl ? (
               <img src={previewUrl} alt="Preview do arquivo enviado" style={styles.previewImage} />
             ) : (
               <div style={styles.previewPlaceholder}>
-                <span style={styles.previewLabel}>{previewLabel(file, language)}</span>
-                <strong>{file ? file.name : copy.previewEmpty}</strong>
-                <small>{file ? copy.previewDeep : copy.previewHint}</small>
+                <span style={styles.uploadIcon}><Upload size={30} /></span>
+                <strong>{file ? previewLabel(file, language) : copy.dropTitle}</strong>
+                <small>{file ? copy.previewDeep : copy.dropText}</small>
               </div>
             )}
           </div>
@@ -388,22 +423,31 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             <span>{file ? file.name : copy.noFile}</span>
             <strong>{file ? `${Math.max(1, Math.round(file.size / 1024))} KB` : copy.waiting}</strong>
           </div>
-        </div>
+        </button>
       </div>
 
       <section style={styles.intentCardsPanel}>
         <div style={styles.sectionKicker}>{copy.intentCards}</div>
         <div style={styles.intentCardsGrid}>
           {intentCards.map(card => (
+            (() => {
+              const visual = INTENT_VISUALS[card.kind]
+              const Icon = visual.icon
+              return (
             <button
               key={card.label}
               type="button"
               onClick={() => selectIntent(card)}
               style={{ ...styles.intentCard, ...(result?.kind === card.kind ? styles.intentCardActive : null) }}
             >
-              <strong>{card.label}</strong>
-              <span>{card.description}</span>
+              <span style={{ ...styles.intentIcon, color: visual.color, background: visual.background }}><Icon size={30} strokeWidth={2.1} /></span>
+              <span style={styles.intentCopy}>
+                <strong>{card.label}</strong>
+                <span>{card.description}</span>
+              </span>
             </button>
+              )
+            })()
           ))}
         </div>
       </section>
@@ -420,7 +464,9 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             style={styles.intentInput}
             placeholder={copy.intentPlaceholder}
           />
-          <button type="button" onClick={() => runIntake()} style={styles.redButton}>{copy.identify}</button>
+          <button type="button" onClick={() => runIntake()} style={styles.redButton} aria-label={copy.identify} title={copy.identify}>
+            <Send size={21} />
+          </button>
         </div>
       </div>
 
@@ -463,17 +509,13 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
         </section>
       )}
 
-      <div style={styles.ownerArea}>
-        <div>
-          <h2 style={styles.ownerTitle}>{copy.ownerTitle}</h2>
-          <p style={styles.ownerText}>{copy.ownerText}</p>
-        </div>
-        {isOwner && (
+      {isOwner && (
+        <div style={styles.ownerArea}>
           <button type="button" onClick={() => router.push('/owner-dashboard')} style={styles.ownerButton}>
             {copy.ownerButton}
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   )
 }
@@ -482,105 +524,127 @@ const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: 'calc(100vh - 88px)',
     background: '#ffffff',
-    border: '1px solid #e7ecf4',
-    borderRadius: 8,
-    padding: '34px 36px 28px',
+    border: 'none',
+    borderRadius: 0,
+    padding: '34px 42px 28px',
     color: '#071a33',
-    maxWidth: 1320,
+    maxWidth: 1600,
+    width: 'calc(100% - 32px)',
     margin: '0 auto',
-    boxShadow: '0 18px 45px rgba(7,26,51,.05)',
+    boxShadow: 'none',
   },
   hero: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(360px, .78fr) minmax(460px, 1.22fr)',
-    gap: 34,
+    gridTemplateColumns: 'minmax(460px, .43fr) minmax(620px, .57fr)',
+    gap: 48,
     alignItems: 'stretch',
   },
   heroCopy: {
     borderLeft: '5px solid #b20f1d',
-    padding: '14px 0 14px 24px',
+    padding: '20px 0 18px 28px',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
   },
   kicker: {
     color: '#b20f1d',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 900,
     letterSpacing: '.08em',
   },
   title: {
     margin: '10px 0 0',
-    fontSize: 52,
+    fontSize: 46,
     lineHeight: 1,
     letterSpacing: 0,
     color: '#071a33',
   },
   lead: {
-    margin: '16px 0 0',
+    margin: '18px 0 0',
     color: '#0d2b52',
-    fontSize: 21,
-    fontWeight: 800,
+    fontSize: 17,
+    fontWeight: 700,
     lineHeight: 1.35,
+  },
+  sublead: {
+    margin: '8px 0 0',
+    color: '#0d2b52',
+    fontSize: 16,
+    lineHeight: 1.45,
   },
   heroActions: {
     display: 'flex',
-    gap: 10,
+    gap: 16,
     flexWrap: 'wrap',
-    marginTop: 24,
+    marginTop: 30,
   },
   trustGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 10,
-    marginTop: 28,
-    maxWidth: 520,
+    gap: 18,
+    marginTop: 36,
+    maxWidth: 560,
   },
   trustItem: {
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    background: '#f9fbfd',
+    borderRight: '1px solid #dfe5ee',
+    borderRadius: 0,
+    background: '#ffffff',
     color: '#0d2b52',
-    padding: '10px 11px',
-    fontSize: 12,
-    fontWeight: 900,
-    textAlign: 'center',
+    padding: '5px 16px 5px 0',
+    fontSize: 14,
+    fontWeight: 700,
+    textAlign: 'left',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 12,
   },
   primaryButton: {
     border: 'none',
     borderRadius: 8,
     background: '#b20f1d',
     color: '#ffffff',
-    padding: '12px 16px',
-    fontSize: 13,
+    padding: '14px 21px',
+    fontSize: 14,
     fontWeight: 900,
     cursor: 'pointer',
     fontFamily: 'inherit',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 9,
+    boxShadow: '0 12px 22px rgba(178,15,29,.16)',
   },
   secondaryButton: {
     border: '1px solid #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
     color: '#071a33',
-    padding: '11px 14px',
-    fontSize: 13,
+    padding: '13px 21px',
+    fontSize: 14,
     fontWeight: 800,
     cursor: 'pointer',
     fontFamily: 'inherit',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 9,
+    boxShadow: '0 8px 18px rgba(7,26,51,.04)',
   },
   previewPanel: {
     border: '1px solid #cfd7e6',
-    borderRadius: 8,
-    background: '#f7f9fc',
-    padding: 16,
-    minHeight: 430,
+    borderRadius: 10,
+    background: '#ffffff',
+    padding: 22,
+    minHeight: 390,
     display: 'grid',
     gridTemplateRows: '1fr auto',
-    gap: 12,
+    gap: 14,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    textAlign: 'left',
+    boxShadow: '0 18px 40px rgba(7,26,51,.08)',
   },
   previewStage: {
-    minHeight: 360,
-    border: '1px solid #dfe5ee',
+    minHeight: 302,
+    border: '1px dashed #cfd7e6',
     borderRadius: 8,
     background: '#ffffff',
     overflow: 'hidden',
@@ -597,7 +661,7 @@ const styles: Record<string, CSSProperties> = {
   previewPlaceholder: {
     width: '100%',
     height: '100%',
-    minHeight: 360,
+    minHeight: 302,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -607,32 +671,37 @@ const styles: Record<string, CSSProperties> = {
     textAlign: 'center',
     padding: 24,
   },
-  previewLabel: {
-    color: '#b20f1d',
-    fontSize: 12,
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    letterSpacing: '.08em',
+  uploadIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    background: '#e8ebf2',
+    color: '#071a33',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 26,
   },
   previewMeta: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
-    color: '#5f6b7a',
-    fontSize: 12,
+    color: '#0d2b52',
+    fontSize: 14,
   },
   intentCardsPanel: {
     marginTop: 26,
     border: '1px solid #dfe5ee',
-    borderRadius: 8,
-    background: '#f9fbfd',
-    padding: 16,
+    borderRadius: 12,
+    background: '#ffffff',
+    padding: '20px 22px 24px',
+    boxShadow: '0 14px 32px rgba(7,26,51,.04)',
   },
   intentCardsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 12,
+    gap: 14,
   },
   intentCard: {
     minHeight: 118,
@@ -640,24 +709,43 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     background: '#ffffff',
     color: '#071a33',
-    padding: 16,
+    padding: '18px 18px',
     display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
+    alignItems: 'center',
+    gap: 24,
     textAlign: 'left',
     cursor: 'pointer',
     fontFamily: 'inherit',
+    boxShadow: '0 10px 22px rgba(7,26,51,.055)',
   },
   intentCardActive: {
     borderColor: '#b20f1d',
     boxShadow: '0 0 0 3px rgba(178,15,29,.10)',
   },
+  intentIcon: {
+    width: 66,
+    height: 66,
+    borderRadius: 12,
+    flex: '0 0 auto',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  intentCopy: {
+    display: 'grid',
+    gap: 8,
+    color: '#0d2b52',
+    fontSize: 14,
+    lineHeight: 1.45,
+  },
   intentPanel: {
-    marginTop: 22,
+    marginTop: 0,
     border: '1px solid #dfe5ee',
-    borderRadius: 8,
+    borderRadius: 10,
     background: '#ffffff',
-    padding: 16,
+    padding: 24,
+    width: 'min(100%, 1280px)',
+    boxShadow: '0 14px 30px rgba(7,26,51,.04)',
   },
   intentLabel: {
     display: 'block',
@@ -668,14 +756,14 @@ const styles: Record<string, CSSProperties> = {
   },
   intentRow: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'minmax(0, 1fr) 58px',
     gap: 10,
   },
   intentInput: {
     width: '100%',
     border: '1px solid #cfd7e6',
     borderRadius: 8,
-    padding: '12px 14px',
+    padding: '15px 16px',
     fontSize: 14,
     boxSizing: 'border-box',
     fontFamily: 'inherit',
@@ -683,9 +771,9 @@ const styles: Record<string, CSSProperties> = {
   redButton: {
     border: 'none',
     borderRadius: 8,
-    background: '#b20f1d',
+    background: '#d7dce8',
     color: '#ffffff',
-    padding: '0 16px',
+    padding: 0,
     fontSize: 13,
     fontWeight: 900,
     cursor: 'pointer',
@@ -795,12 +883,12 @@ const styles: Record<string, CSSProperties> = {
     textTransform: 'uppercase',
   },
   ownerArea: {
-    marginTop: 30,
-    borderTop: '1px solid #dfe5ee',
-    paddingTop: 22,
+    marginTop: 24,
+    borderTop: 'none',
+    paddingTop: 0,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     gap: 16,
   },
   ownerTitle: {
@@ -816,11 +904,11 @@ const styles: Record<string, CSSProperties> = {
   ownerButton: {
     border: 'none',
     borderRadius: 8,
-    background: '#b20f1d',
+    background: '#071a33',
     color: '#fff',
-    padding: '12px 18px',
-    fontSize: 13,
-    fontWeight: 800,
+    padding: '18px 32px',
+    fontSize: 16,
+    fontWeight: 900,
     cursor: 'pointer',
     fontFamily: 'inherit',
     whiteSpace: 'nowrap',
