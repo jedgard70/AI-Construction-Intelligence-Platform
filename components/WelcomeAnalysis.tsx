@@ -48,6 +48,7 @@ const UI_COPY = {
     previewEmpty: 'File, image, BIM, contract, invoice or free text',
     previewDeep: 'Deep preview will be handled by the correct module.',
     previewHint: 'Apex AI identifies the path.',
+    heicPreview: 'HEIC image received. Preview conversion will be handled in a future checkpoint.',
     noFile: 'No file selected',
     waiting: 'Waiting for input',
     intentQuestion: 'What do you want to do with this?',
@@ -73,6 +74,7 @@ const UI_COPY = {
     previewEmpty: 'Arquivo, imagem, BIM, contrato, nota ou texto livre',
     previewDeep: 'Preview profundo sera tratado pelo modulo correto.',
     previewHint: 'A Apex AI identifica o caminho.',
+    heicPreview: 'Imagem HEIC recebida. A conversao para preview sera tratada em checkpoint futuro.',
     noFile: 'Nenhum arquivo selecionado',
     waiting: 'Aguardando entrada',
     intentQuestion: 'O que voce deseja fazer com isso?',
@@ -269,7 +271,7 @@ function classify(fileName: string, intent: string, language: Language): IntakeR
   const text = `${fileName} ${intent}`.toLowerCase()
   let kind: IntakeKind = 'generic'
 
-  if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) || /(render|imagem|fachada|interior|planta humanizada|vendavel|visual)/i.test(text)) {
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif'].includes(ext) || /(render|imagem|fachada|interior|planta humanizada|vendavel|visual)/i.test(text)) {
     kind = 'visual'
   } else if (['ifc', 'rvt', 'dwg', 'dxf', 'skp'].includes(ext) || /(bim|revit|ifc|dwg|cad|clash|modelo|quantitativo)/i.test(text)) {
     kind = 'bim'
@@ -301,6 +303,13 @@ function previewLabel(file: File | null, language: Language) {
   return language === 'en' ? `${ext} received` : `${ext} recebido`
 }
 
+function isHeicFile(file: File | null) {
+  if (!file) return false
+  const ext = extensionFrom(file.name)
+  const mime = file.type.toLowerCase()
+  return ext === 'heic' || ext === 'heif' || mime === 'image/heic' || mime === 'image/heif'
+}
+
 function routeHref(routeId: Cp32SmartRoute['routeId']) {
   if (routeId === 'archvis-render') return '/archvis'
   if (routeId === 'directcut-video') return '/director-cut'
@@ -326,7 +335,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const intentCards = INTENT_CARDS[language]
 
   useEffect(() => {
-    if (!file || !file.type.startsWith('image/')) {
+    if (!file || isHeicFile(file) || !file.type.startsWith('image/')) {
       setPreviewUrl('')
       return
     }
@@ -407,10 +416,10 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             {previewUrl ? (
               <img src={previewUrl} alt="Preview do arquivo enviado" style={styles.previewImage} />
             ) : (
-              <div style={styles.previewPlaceholder}>
+              <div style={{ ...styles.previewPlaceholder, ...(isHeicFile(file) ? styles.heicPlaceholder : null) }}>
                 <span style={styles.previewLabel}>{previewLabel(file, language)}</span>
                 <strong>{file ? file.name : copy.previewEmpty}</strong>
-                <small>{file ? copy.previewDeep : copy.previewHint}</small>
+                <small>{isHeicFile(file) ? copy.heicPreview : file ? copy.previewDeep : copy.previewHint}</small>
               </div>
             )}
           </div>
@@ -639,6 +648,12 @@ const styles: Record<string, CSSProperties> = {
     color: '#5f6b7a',
     textAlign: 'center',
     padding: 24,
+  },
+  heicPlaceholder: {
+    border: '1px dashed #cfd7e6',
+    borderRadius: 8,
+    background: '#f9fbfd',
+    color: '#0d2b52',
   },
   previewLabel: {
     color: '#b20f1d',

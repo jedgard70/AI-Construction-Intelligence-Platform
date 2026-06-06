@@ -6,6 +6,12 @@ CP3 follows `docs/APEX_GLOBAL_AI_MASTER_VISION.md`.
 
 CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
 
+## Preview vs Production
+
+- PR Preview shows CP3.2 before production.
+- `apexglobalAI.com` updates only after the PR is merged and a production deploy completes.
+- Do not treat the Preview/production difference as a UI regression while the PR is still open.
+
 ## Implemented In PR #127
 
 - Clean first screen:
@@ -48,6 +54,10 @@ CP3 is not a form. CP3 is the first visual/intelligent router of the platform.
   - Analyzes selected file name/type, typed user goal, and selected objective card.
   - Returns route id, EN/PT title, confidence, EN/PT reason, EN/PT next action, and suggested agents.
   - Shows consultative recommendations on the Welcome / Analises page after upload, objective click, or Identify path.
+- CP3.2A HEIC/HEIF preview fallback:
+  - `.heic`, `.heif`, `image/heic`, and `image/heif` are accepted as image/visual assets.
+  - Browser preview conversion is deferred to a future checkpoint.
+  - Unsupported browser preview shows a premium placeholder instead of a blank or broken image.
 
 ## Current Classifications
 
@@ -157,6 +167,7 @@ It does not persist projects, clients, files, storage records, agent events, or 
 - `make a construction timelapse` recommends DirectCut.
 - `.ifc` or `.rvt` upload recommends BIM / 3D / Clash.
 - `.png` or `.jpg` floor plan upload recommends ArchVis / Render.
+- `.heic` or `.heif` upload shows the HEIC preview fallback and recommends visual routes.
 - `.pdf` contract upload recommends Legal.
 - `.xlsx` invoice/budget upload recommends Quantity / Budget.
 - Owner still sees Dashboard Executivo button.
