@@ -21,9 +21,20 @@ The `/dashboard` cockpit already classifies user intent by file, text goal, and 
 
 ## Automatic Intake Reaction
 
+- The file input accepts any file type with `accept="*/*"`.
+- Unknown extensions are accepted and do not block upload, Smart Routing, or the Living Agents Workspace.
 - Image files (`PNG`, `JPG`, `JPEG`, `WEBP`, `GIF`) show a large preview and receive a visual/architectural interpretation.
 - BIM/CAD files (`RVT`, `IFC`, `DWG`, `DXF`, `SKP`) show a premium file placeholder and route to BIM / 3D / Clash, Quantity / Budget, ArchVis, or Field coordination as appropriate.
 - PDF, DOC/DOCX, spreadsheet and CSV files show a premium placeholder and classify toward legal/contracts, budget, invoice, report or proposal workflows.
+- Unknown files show a generic intelligent placeholder and the guidance:
+  - EN: `File received. Apex AI will inspect the filename, extension and your objective to decide the best route.`
+  - PT: `Arquivo recebido. A Apex AI irá analisar o nome, a extensão e seu objetivo para decidir o melhor caminho.`
+- Unknown files still offer next actions:
+  - Ask Apex AI
+  - Describe objective
+  - Send to technical review
+  - Build marketing path
+  - Review as document
 - `Start analysis` remains available as a manual fallback, but it is not required after upload.
 - `Talk to Apex AI` opens the same global floating Apex AI assistant.
 
@@ -72,6 +83,10 @@ It does not execute agents, persist agent events, create projects, write to stor
 - Uploading an RVT file shows BIM/Revit interpretation immediately.
 - Uploading an IFC file shows BIM / Clash route automatically.
 - Uploading PDF/DOCX/XLSX/CSV classifies into the appropriate document, legal or budget path.
+- Uploading any random file extension does not fail.
+- Unknown files show file name, size, type/extension and Apex AI guidance.
+- Unknown files still suggest next steps.
+- User is never left with only a filename.
 - User does not need to click `Start analysis` after upload.
 - `Start analysis` asks for a file or goal when no input exists.
 - `Talk to Apex AI` opens the same floating assistant.

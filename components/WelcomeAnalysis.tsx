@@ -524,8 +524,8 @@ function interpretationFor(kind: IntakeKind, fileName: string, intent: string, l
       : `Recebi contexto de obra ou operacao de campo. Isto deve seguir para RDO, progresso, qualidade, materiais ou coordenacao de execucao.`
   }
   return language === 'en'
-    ? `I received the input and classified it for triage. Tell me the desired outcome and I will route it to the safest operational path.`
-    : `Recebi a entrada e classifiquei para triagem. Diga o resultado desejado e eu encaminho para a rota operacional mais segura.`
+    ? 'File received. Apex AI will inspect the filename, extension and your objective to decide the best route.'
+    : 'Arquivo recebido. A Apex AI irá analisar o nome, a extensão e seu objetivo para decidir o melhor caminho.'
 }
 
 function nextStepsFor(kind: IntakeKind, language: Language): RouteOption[] {
@@ -573,7 +573,13 @@ function nextStepsFor(kind: IntakeKind, language: Language): RouteOption[] {
       { title: language === 'en' ? 'Connect budget impact' : 'Conectar impacto financeiro', description: language === 'en' ? 'Relate field evidence to material, measurement or cost.' : 'Relacionar evidencia de campo com material, medicao ou custo.', href: '/orcamento' },
     ]
   }
-  return routesFor(kind, language)
+  return [
+    { title: language === 'en' ? 'Ask Apex AI' : 'Perguntar para Apex AI', description: language === 'en' ? 'Open the assistant with this file context and clarify the best route.' : 'Abrir o assistente com o contexto do arquivo e esclarecer a melhor rota.', href: '/dashboard' },
+    { title: language === 'en' ? 'Describe objective' : 'Descrever objetivo', description: language === 'en' ? 'Tell Apex what outcome you want from this file.' : 'Diga a Apex qual resultado deseja a partir deste arquivo.', href: '/dashboard' },
+    { title: language === 'en' ? 'Send to technical review' : 'Enviar para revisao tecnica', description: language === 'en' ? 'Treat the file as a technical asset until the route is clear.' : 'Tratar o arquivo como ativo tecnico ate a rota ficar clara.', href: '/bim-3d' },
+    { title: language === 'en' ? 'Build marketing path' : 'Construir rota de marketing', description: language === 'en' ? 'Use the file as source material for portfolio, website or campaign planning.' : 'Usar o arquivo como base para portfolio, website ou campanha.', href: '/platform?area=marketing' },
+    { title: language === 'en' ? 'Review as document' : 'Revisar como documento', description: language === 'en' ? 'Classify it as a document and organize the next review step.' : 'Classificar como documento e organizar o proximo passo de revisao.', href: '/documentos' },
+  ]
 }
 
 function classify(fileName: string, intent: string, language: Language): IntakeResult {
@@ -613,6 +619,14 @@ function previewLabel(file: File | null, language: Language) {
   if (!file) return language === 'en' ? 'Show what you have' : 'Mostre o que voce tem'
   const ext = extensionFrom(file.name).toUpperCase() || 'FILE'
   return language === 'en' ? `${ext} received` : `${ext} recebido`
+}
+
+function fileKindLabel(file: File | null, language: Language) {
+  if (!file) return ''
+  const ext = extensionFrom(file.name).toUpperCase() || (language === 'en' ? 'UNKNOWN' : 'DESCONHECIDO')
+  const mime = file.type || (language === 'en' ? 'Unknown type' : 'Tipo desconhecido')
+  const size = `${Math.max(1, Math.round(file.size / 1024))} KB`
+  return `${ext} · ${mime} · ${size}`
 }
 
 function isHeicFile(file: File | null) {
@@ -753,6 +767,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
               <div style={styles.previewPlaceholder}>
                 <span style={styles.uploadIcon}><Upload size={31} strokeWidth={2.1} /></span>
                 <strong>{file ? previewLabel(file, language) : copy.dropTitle}</strong>
+                {file && <span style={styles.fileKind}>{fileKindLabel(file, language)}</span>}
                 <small>{file ? (isHeicFile(file) ? copy.heicPreview : copy.previewDeep) : copy.dropText}</small>
               </div>
             )}
@@ -822,7 +837,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             <div style={styles.sectionKicker}>{copy.recommendedNextSteps}</div>
             <div style={styles.nextStepGrid}>
               {result.nextSteps.slice(0, 6).map(step => (
-                <button key={`${step.title}-${step.href}`} type="button" onClick={() => router.push(step.href)} style={styles.nextStepCard}>
+                <button key={`${step.title}-${step.href}`} type="button" onClick={() => (step.href === '/dashboard' ? openApexAi() : router.push(step.href))} style={styles.nextStepCard}>
                   <strong>{step.title}</strong>
                   <span>{step.description}</span>
                 </button>
@@ -1069,6 +1084,18 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 900,
     textTransform: 'uppercase',
     letterSpacing: '.08em',
+  },
+  fileKind: {
+    borderRadius: 999,
+    background: '#f1f5fb',
+    color: '#5f6b7a',
+    padding: '5px 9px',
+    fontSize: 12,
+    fontWeight: 800,
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   previewMeta: {
     display: 'flex',
