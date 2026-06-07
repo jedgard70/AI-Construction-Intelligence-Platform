@@ -20,6 +20,12 @@ type Language = 'en' | 'pt'
 type StudioRoute = 'archvis' | 'directcut' | 'bim' | 'document' | 'unknown'
 type ViewerState = 'idle' | 'loading' | 'ready' | 'empty' | 'error'
 type ChatMessage = { id: string; role: 'user' | 'assistant'; text: string }
+type AttachmentUnderstanding = {
+  kind: 'image'
+  filename: string
+  analysis: string
+  model?: string
+}
 type StudioResult = {
   route: StudioRoute
   title: string
@@ -120,6 +126,21 @@ function fileSize(size: number) {
   return `${size} bytes`
 }
 
+function isPreviewableImage(file: File | null) {
+  if (!file) return false
+  const ext = extension(file.name)
+  return file.type.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)
+}
+
+function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(reader.error || new Error('File read failed'))
+    reader.readAsDataURL(file)
+  })
+}
+
 function routeFor(file: File | null, goal: string): StudioRoute {
   const ext = file ? extension(file.name) : ''
   const text = `${file?.name || ''} ${file?.type || ''} ${goal}`.toLowerCase()
@@ -202,7 +223,13 @@ function systemPrompt(language: Language) {
   ].join('\n')
 }
 
-function userPrompt(file: File | null, goal: string, result: StudioResult, language: Language) {
+function userPrompt(
+  file: File | null,
+  goal: string,
+  result: StudioResult,
+  language: Language,
+  attachmentUnderstanding: AttachmentUnderstanding | null,
+) {
   const skill = selectApexCopilotSkill({
     text: goal,
     fileName: file?.name || '',
@@ -219,6 +246,15 @@ function userPrompt(file: File | null, goal: string, result: StudioResult, langu
     `Route context: ${result.summary}`,
     `Conversation guidance: ${result.prompt}`,
     `Apex Copilot registry hint: ${skill.domain} - ${skill.title}`,
+    attachmentUnderstanding
+      ? [
+          'Actual attachment content analysis was completed successfully.',
+          `Attachment analysis type: ${attachmentUnderstanding.kind}`,
+          `Attachment analysis model: ${attachmentUnderstanding.model || 'OpenAI vision-capable model'}`,
+          `Ground the answer in this visual understanding:\n${attachmentUnderstanding.analysis}`,
+          'Because actual image content was analyzed, do not say you cannot inspect the image. Mention visible construction/architectural features from the analysis.',
+        ].join('\n')
+      : 'Actual attachment content analysis was not available. If this is not an image, or if analysis failed, be honest and use metadata only.',
     'Now answer as Apex Copilot in a live chat message. Do not output dashboard cards. Do not produce a mechanical report. Ask one useful next-step question.',
   ].join('\n\n')
 }
@@ -483,6 +519,39 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (authToken) headers.Authorization = `Bearer ${authToken}`
+      let attachmentUnderstanding: AttachmentUnderstanding | null = null
+      if (nextFile && isPreviewableImage(nextFile) && authToken) {
+        try {
+          const dataUrl = await readFileAsDataUrl(nextFile)
+          const imagePrompt = language === 'en'
+            ? 'Analyze this uploaded construction/architecture image directly. Describe visible elements such as floor plan layout, rooms, pool, road, landscaping, deck, circulation, facade, materials, site context, and useful ArchVis/BIM/marketing next steps. Answer factually from what is visible.'
+            : 'Analise diretamente esta imagem de construcao/arquitetura enviada. Descreva elementos visiveis como planta, ambientes, piscina, rua, paisagismo, deck, circulacao, fachada, materiais, contexto do terreno e proximos passos uteis para ArchVis/BIM/marketing. Responda com base no que esta visivel.'
+          const analysisRes = await fetch('/api/chat/analyze-attachment', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              attachment: {
+                name: nextFile.name,
+                type: nextFile.type || 'image/*',
+                size: nextFile.size,
+                dataUrl,
+              },
+              prompt: imagePrompt,
+            }),
+          })
+          const analysisData = await analysisRes.json().catch(() => ({}))
+          if (analysisRes.ok && analysisData?.analysis) {
+            attachmentUnderstanding = {
+              kind: 'image',
+              filename: nextFile.name,
+              analysis: String(analysisData.analysis).slice(0, 2400),
+              model: analysisData.model,
+            }
+          }
+        } catch {
+          attachmentUnderstanding = null
+        }
+      }
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers,
@@ -491,7 +560,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           system: systemPrompt(language),
           messages: [
             ...messages.slice(-8).map(message => ({ role: message.role, content: message.text })),
-            { role: 'user', content: userPrompt(nextFile, nextGoal, nextResult, language) },
+            { role: 'user', content: userPrompt(nextFile, nextGoal, nextResult, language, attachmentUnderstanding) },
           ],
         }),
       })

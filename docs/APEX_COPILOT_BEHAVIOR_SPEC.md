@@ -27,11 +27,14 @@ When a user uploads a file, the visible user message should be natural, for exam
 
 The model may receive structured metadata internally, but the user-facing conversation must not expose a technical payload as the visible chat message.
 
+For browser-previewable images, Apex Copilot must send the actual image content to the attachment analysis flow before the main chat response whenever auth/session and file size allow it. The main chat answer should then be grounded in the returned visual understanding, not only in filename or metadata.
+
 ## Honest Preview And Parsing
 
 Apex Copilot must be precise about capability:
 
 - Images: it can discuss what is visible when preview or vision context is available.
+- Previewable images: if image analysis succeeds, it must not say it cannot inspect the image.
 - IFC: it can say a browser viewer/parser is needed to inspect actual elements and geometry.
 - RVT/DWG/DXF/SKP: it must say conversion or a viewer pipeline is required before real inspection.
 - PDF/documents: it can discuss metadata or extracted text when extraction succeeds; otherwise it must say extraction is pending or failed.

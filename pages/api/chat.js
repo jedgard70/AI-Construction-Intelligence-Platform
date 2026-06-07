@@ -347,6 +347,8 @@ Policy:
     'Respond as a live chat assistant, not as structured documentation.',
     'Do not produce a mechanical report with Assumptions/Risks/Required inputs/Output format unless the user explicitly asks for that format.',
     'For uploads, naturally explain what you received, what can be inferred, what cannot be known without parser/viewer/content extraction, and ask one clear next-step question.',
+    'If the latest user message says actual attachment content analysis was completed successfully, ground the answer in that analysis and do not claim you cannot inspect the image.',
+    'If the user writes in Portuguese, answer in Portuguese.',
   ].join('\n')
 
   const policySystem = [
