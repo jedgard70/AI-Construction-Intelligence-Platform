@@ -183,40 +183,43 @@ function buildResult(file: File | null, goal: string, language: Language): Studi
     title: titleMap[route],
     summary: summaryMap[route],
     prompt: en
-      ? `Create a construction-specialized next-step plan for a ${ext} intake. Include assumptions, risks, required inputs and output format.`
-      : `Crie um plano especializado de construcao para um intake ${ext}. Inclua premissas, riscos, entradas necessarias e formato de saida.`,
+      ? `Respond naturally to this ${ext} intake as a construction consultant. Explain what you can understand now and guide the next practical step.`
+      : `Responda naturalmente a este intake ${ext} como consultor de construcao. Explique o que voce consegue entender agora e oriente o proximo passo pratico.`,
     chips: quickChips(route, language),
   }
 }
 
 function systemPrompt(language: Language) {
   return [
-    'You are Apex Copilot, a real construction-specialized AI assistant inside Apex Global AI.',
-    'Behave like ChatGPT in a live conversation, not like a dashboard card classifier.',
+    'You are Apex Copilot, a real conversational construction AI assistant inside Apex Global AI.',
+    'Behave like ChatGPT in a live conversation: natural, attentive, practical, and specialized in construction.',
+    'Do not answer as a classifier or report generator. Do not use sections like Assumptions, Risks, Required inputs, or Output format unless the user asks for a formal report.',
     'Specialize in architecture, construction, BIM/Revit/IFC/CAD, ArchVis/render, humanized floor plans, budgets, quantity takeoff, schedules, field operations, contracts, permits, compliance and construction marketing.',
-    'When a file is uploaded, respond conversationally: I received this file; I understand it as; here are the best construction paths; what do you want to do next?',
-    'Be honest about viewer limitations: IFC can be attempted in-browser; RVT/DWG/DXF/SKP require conversion/viewer strategy and must not be faked.',
+    'When a file is uploaded, react naturally: say what you received, what you can understand from preview or metadata, what you cannot know yet, and the best next practical step.',
+    'If only metadata is available, say that clearly. If a viewer, parser or converter is needed, say so honestly and guide the user.',
+    'End with one clear next-step question. Offer options in natural language, not card-style output.',
     `Reply in ${language === 'en' ? 'English' : 'Brazilian Portuguese'}.`,
   ].join('\n')
 }
 
-function userPrompt(file: File | null, goal: string, result: StudioResult) {
+function userPrompt(file: File | null, goal: string, result: StudioResult, language: Language) {
   const skill = selectApexCopilotSkill({
     text: goal,
     fileName: file?.name || '',
     fileType: file?.type || '',
   })
   return [
-    'Apex Copilot Studio intake.',
+    'Apex Copilot Studio live chat request.',
+    `Language: ${language === 'en' ? 'English' : 'Brazilian Portuguese'}`,
     file
-      ? `Uploaded file:\n- name: ${file.name}\n- extension: ${extension(file.name) || 'unknown'}\n- MIME: ${file.type || 'unknown'}\n- size: ${fileSize(file.size)}`
+      ? `File metadata:\n- name: ${file.name}\n- extension: ${extension(file.name) || 'unknown'}\n- MIME: ${file.type || 'unknown'}\n- size: ${fileSize(file.size)}`
       : 'No file uploaded yet.',
     `User goal: ${goal.trim() || '(not provided)'}`,
-    `Suggested route: ${result.title}`,
-    `Route summary: ${result.summary}`,
-    `Output prompt draft: ${result.prompt}`,
+    `Internal route hint: ${result.title}`,
+    `Route context: ${result.summary}`,
+    `Conversation guidance: ${result.prompt}`,
     `Apex Copilot registry hint: ${skill.domain} - ${skill.title}`,
-    'Now answer as Apex Copilot in a live chat message. Do not output cards. Ask one useful next question.',
+    'Now answer as Apex Copilot in a live chat message. Do not output dashboard cards. Do not produce a mechanical report. Ask one useful next-step question.',
   ].join('\n\n')
 }
 
@@ -465,7 +468,11 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   async function askCopilot(nextFile = file, nextGoal = goal, userLabel?: string) {
     const nextResult = buildResult(nextFile, nextGoal, language)
     setResult(nextResult)
-    const userText = userLabel || nextGoal.trim() || (nextFile ? `Uploaded ${nextFile.name}` : copy.start)
+    const userText = userLabel || nextGoal.trim() || (nextFile
+      ? language === 'en'
+        ? `I uploaded ${nextFile.name}. Please inspect it and guide me.`
+        : `Anexei ${nextFile.name}. Por favor, analise e me oriente.`
+      : copy.start)
     setMessages(prev => [...prev, { id: id(), role: 'user', text: userText }])
     if (!nextFile && !nextGoal.trim()) {
       setMessages(prev => [...prev, { id: id(), role: 'assistant', text: copy.emptyChat }])
@@ -484,7 +491,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           system: systemPrompt(language),
           messages: [
             ...messages.slice(-8).map(message => ({ role: message.role, content: message.text })),
-            { role: 'user', content: userPrompt(nextFile, nextGoal, nextResult) },
+            { role: 'user', content: userPrompt(nextFile, nextGoal, nextResult, language) },
           ],
         }),
       })
@@ -501,7 +508,10 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   function onFile(event: ChangeEvent<HTMLInputElement>) {
     const next = event.target.files?.[0] || null
     setFile(next)
-    if (next) askCopilot(next, goal, language === 'en' ? `Uploaded ${next.name}` : `Arquivo enviado: ${next.name}`).catch(() => {})
+    if (next) askCopilot(next, goal, language === 'en'
+      ? `I uploaded ${next.name}. Please inspect it and guide me.`
+      : `Anexei ${next.name}. Por favor, analise e me oriente.`
+    ).catch(() => {})
   }
 
   function send(event?: KeyboardEvent<HTMLInputElement>) {

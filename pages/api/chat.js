@@ -330,17 +330,30 @@ Policy:
         .toLowerCase()
     : ''
 
-  const uploadedFileMatch = joinedUserText.match(/(?:uploaded file|file|arquivo|name):\s*([^\n]+)/i)
+  const uploadedFileMatch =
+    joinedUserText.match(/-\s*name:\s*([^\n]+)/i) ||
+    joinedUserText.match(/(?:uploaded file|file|arquivo|name):\s*([^\n]+)/i)
+  const userLanguageMatch = joinedUserText.match(/language:\s*([^\n]+)/i)
   const selectedApexSkill = selectApexCopilotSkill({
     text: joinedUserText,
     fileName: uploadedFileMatch?.[1]?.trim() || '',
   })
   const apexMemoryContext = buildApexCopilotMemoryContext(selectedApexSkill)
+  const liveConversationInstruction = [
+    '## Apex Copilot Live Response Contract',
+    `Current user language: ${userLanguageMatch?.[1]?.trim() || 'infer from user message; default to English'}`,
+    `Selected skill domain: ${selectedApexSkill.domain}`,
+    uploadedFileMatch?.[1]?.trim() ? `File metadata name: ${uploadedFileMatch[1].trim()}` : 'File metadata name: none detected',
+    'Respond as a live chat assistant, not as structured documentation.',
+    'Do not produce a mechanical report with Assumptions/Risks/Required inputs/Output format unless the user explicitly asks for that format.',
+    'For uploads, naturally explain what you received, what can be inferred, what cannot be known without parser/viewer/content extraction, and ask one clear next-step question.',
+  ].join('\n')
 
   const policySystem = [
     serverGovernancePrompt || fallbackSystem,
     buildApexCopilotSystemPrompt(selectedApexSkill),
     apexMemoryContext,
+    liveConversationInstruction,
     skillsPrompt && `## Apex Skills Knowledge\n${skillsPrompt}`,
   ]
     .filter(Boolean)
