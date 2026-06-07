@@ -6,6 +6,11 @@ import {
   getSeatPermissionSummary,
   resolveOwnerContext,
 } from '../../lib/owner-auth'
+import { selectApexCopilotSkill } from '../../lib/apex-copilot/skill-router'
+import {
+  buildApexCopilotSkillContext,
+  buildApexCopilotSystemPrompt,
+} from '../../lib/apex-copilot/system-prompt'
 
 /**
  * POST /api/chat
@@ -297,10 +302,6 @@ Regras obrigatorias:
         .join('\n\n')
     : ''
 
-  const policySystem = [serverGovernancePrompt || fallbackSystem, skillsPrompt && `## Apex Skills Knowledge\n${skillsPrompt}`]
-    .filter(Boolean)
-    .join('\n\n')
-
   const seatContextPrompt = `## Seat Context
 role: ${userContext.role}
 is_owner: ${userContext.is_owner ? 'true' : 'false'}
@@ -327,6 +328,20 @@ Policy:
         .join(' ')
         .toLowerCase()
     : ''
+
+  const uploadedFileMatch = joinedUserText.match(/(?:uploaded file|file|arquivo|name):\s*([^\n]+)/i)
+  const selectedApexSkill = selectApexCopilotSkill({
+    text: joinedUserText,
+    fileName: uploadedFileMatch?.[1]?.trim() || '',
+  })
+
+  const policySystem = [
+    serverGovernancePrompt || fallbackSystem,
+    buildApexCopilotSystemPrompt(selectedApexSkill),
+    skillsPrompt && `## Apex Skills Knowledge\n${skillsPrompt}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   const intentClass = classifyIntent(joinedUserText)
 
@@ -504,6 +519,10 @@ Policy:
       stop_reason: 'end_turn',
       usage: { input_tokens: 0, output_tokens: 0 },
       apex_context: apexContextPayload,
+      apex_skill: {
+        domain: selectedApexSkill.domain,
+        title: selectedApexSkill.title,
+      },
     })
   }
 
@@ -563,6 +582,7 @@ Policy:
 
   // ── Resolve system prompt ─────────────────────────────────────────────────
   let systemPrompt = `${policySystem}\n\n${seatContextPrompt}`
+  let promptVersionBlock = ''
 
   if (promptKey) {
     try {
@@ -587,12 +607,20 @@ Policy:
         for (const [k, v] of Object.entries(vars)) {
           resolved = resolved.replaceAll(`{{${k}}}`, String(v))
         }
-        systemPrompt = `${policySystem}\n\n${seatContextPrompt}\n\n## Prompt Version\n${resolved}`
+        promptVersionBlock = `## Prompt Version\n${resolved}`
       }
     } catch {
       // keep policySystem fallback
     }
   }
+
+  systemPrompt = [
+    systemPrompt,
+    buildApexCopilotSkillContext(selectedApexSkill),
+    promptVersionBlock,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 
   if (inlineSystem && typeof inlineSystem === 'string' && inlineSystem.trim()) {
     systemPrompt = `${systemPrompt}\n\n## Client Context\n${inlineSystem.trim()}`
@@ -655,12 +683,20 @@ Policy:
       },
       error: data?.error,
       apex_context: apexContextPayload,
+      apex_skill: {
+        domain: selectedApexSkill.domain,
+        title: selectedApexSkill.title,
+      },
     })
   } catch {
     logHelpAudit({ ...safeAuditMeta, blocked_by_policy: false, reason: 'provider_error_fallback' })
     return res.status(500).json({
       error: { message: 'Erro ao conectar com a API OpenAI.' },
       apex_context: apexContextPayload,
+      apex_skill: {
+        domain: selectedApexSkill.domain,
+        title: selectedApexSkill.title,
+      },
     })
   }
 }
