@@ -178,4 +178,4 @@ It does not persist projects, clients, files, storage records, agent events, or 
 
 GREEN.
 
-CP3 Intelligent Intake Router is complete as the local deterministic intake and routing foundation. The next checkpoint is CP4 Living Agents Workspace.
+CP3 Intelligent Intake Router is complete as the local deterministic intake and routing foundation. The next checkpoint is CP4 Apex Copilot Live Construction Intelligence, where Apex Copilot leads the post-upload conversation and routing/cards become supporting context only.

@@ -6,7 +6,7 @@ This document replaces the previous CP4 direction based on static local routing,
 
 CP4 is now defined as **Apex AI Live Construction Intelligence**, led by **Apex Copilot**.
 
-No implementation is approved by this document. This is the product truth and checkpoint definition for the next approved work.
+Implementation is now authorized for the controlled CP4 branch `feature/cp4-apex-copilot-real-ai`. This document remains the product truth for that work.
 
 ## 1. Product Definition
 

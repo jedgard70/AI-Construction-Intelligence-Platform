@@ -21,6 +21,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { runCp32SmartRouting } from '../lib/cp3-smart-routing'
 import type { Cp32Objective, Cp32RouteId, Cp32SmartRoute } from '../lib/cp3-smart-routing'
+import { getSupabase } from '../lib/supabase'
 import type { Profile } from '../pages/dashboard'
 
 type IntakeKind = 'visual' | 'bim' | 'legal' | 'finance' | 'marketing' | 'field' | 'generic'
@@ -88,18 +89,24 @@ type LivingAgentCard = {
   action: Record<Language, string>
 }
 
+type CopilotMessage = {
+  id: string
+  role: 'user' | 'assistant'
+  text: string
+}
+
 const UI_COPY = {
   en: {
     welcome: 'Welcome',
-    lead: 'Show what you have or tell Apex AI what you want to do.',
-    sublead: 'Apex AI identifies the path and opens the next step.',
+    lead: 'Show what you have or tell Apex Copilot what you want to do.',
+    sublead: 'Apex Copilot reads the context, explains what it sees and opens the next step.',
     attach: 'Attach document',
-    talk: 'Talk to Apex AI',
+    talk: 'Talk to Apex Copilot',
     start: 'Start analysis',
     dropTitle: 'Drop a file here or click to select',
     dropText: 'Images, BIM/IFC, CAD, PDF, videos, spreadsheets and more.',
     previewDeep: 'Deep preview will be handled by the correct module.',
-    previewHint: 'Apex AI identifies the path.',
+    previewHint: 'Apex Copilot identifies the path.',
     heicPreview: 'HEIC image received. Preview conversion will be handled in a future checkpoint.',
     noFile: 'No file selected',
     waiting: 'Waiting for input',
@@ -108,12 +115,16 @@ const UI_COPY = {
     identify: 'Identify path',
     intentCards: 'Choose an objective',
     analysis: 'Visual / technical analysis',
-    aiUnderstood: 'Apex AI understood',
+    copilotConversation: 'Apex Copilot conversation',
+    copilotThinking: 'Apex Copilot is reading this intake...',
+    copilotEmpty: 'Upload any file or describe your goal. Apex Copilot will answer here like a construction specialist.',
+    copilotConnectionError: 'Apex Copilot could not complete the live AI response. The file was received; try again or continue with a short objective.',
+    aiUnderstood: 'Apex Copilot understood',
     recommendedNextSteps: 'Recommended next steps',
-    emptyGuidance: 'Upload a file or describe your goal so Apex AI can identify the path.',
+    emptyGuidance: 'Upload a file or describe your goal so Apex Copilot can identify the path.',
     routes: 'Smart routes',
-    agents: 'Living Agents Workspace',
-    agentsIntro: 'These agents are ready to continue the recommended path. CP4 is local and deterministic; no backend execution yet.',
+    agents: 'Supporting actions',
+    agentsIntro: 'Supporting modules can continue the workflow after Apex Copilot leads the conversation.',
     agentDoes: 'What it does',
     agentInputs: 'Accepted inputs',
     agentOutputs: 'Expected outputs',
@@ -130,15 +141,15 @@ const UI_COPY = {
   },
   pt: {
     welcome: 'Bem-vindo',
-    lead: 'Mostre o que voce tem ou diga a Apex AI o que deseja fazer.',
-    sublead: 'A Apex AI identifica o caminho e abre o proximo passo.',
+    lead: 'Mostre o que voce tem ou diga ao Apex Copilot o que deseja fazer.',
+    sublead: 'O Apex Copilot le o contexto, explica o que entendeu e abre o proximo passo.',
     attach: 'Anexar documento',
-    talk: 'Falar com Apex AI',
+    talk: 'Falar com Apex Copilot',
     start: 'Iniciar analise',
     dropTitle: 'Solte um arquivo aqui ou clique para selecionar',
     dropText: 'Imagens, BIM/IFC, CAD, PDF, videos, planilhas e mais.',
     previewDeep: 'Preview profundo sera tratado pelo modulo correto.',
-    previewHint: 'A Apex AI identifica o caminho.',
+    previewHint: 'O Apex Copilot identifica o caminho.',
     heicPreview: 'Imagem HEIC recebida. A conversao para preview sera tratada em checkpoint futuro.',
     noFile: 'Nenhum arquivo selecionado',
     waiting: 'Aguardando entrada',
@@ -147,12 +158,16 @@ const UI_COPY = {
     identify: 'Identificar caminho',
     intentCards: 'Escolha um objetivo',
     analysis: 'Analise visual / tecnica',
-    aiUnderstood: 'Apex AI entendeu',
+    copilotConversation: 'Conversa com Apex Copilot',
+    copilotThinking: 'Apex Copilot esta lendo este intake...',
+    copilotEmpty: 'Anexe qualquer arquivo ou descreva o objetivo. O Apex Copilot respondera aqui como especialista em construcao.',
+    copilotConnectionError: 'O Apex Copilot nao conseguiu concluir a resposta de IA ao vivo. O arquivo foi recebido; tente novamente ou continue com um objetivo curto.',
+    aiUnderstood: 'Apex Copilot entendeu',
     recommendedNextSteps: 'Proximos passos recomendados',
-    emptyGuidance: 'Anexe um arquivo ou descreva seu objetivo para a Apex AI identificar o caminho.',
+    emptyGuidance: 'Anexe um arquivo ou descreva seu objetivo para o Apex Copilot identificar o caminho.',
     routes: 'Rotas inteligentes',
-    agents: 'Living Agents Workspace',
-    agentsIntro: 'Estes agentes estao prontos para continuar a rota recomendada. O CP4 e local e deterministico; ainda sem execucao backend.',
+    agents: 'Acoes de apoio',
+    agentsIntro: 'Modulos de apoio podem continuar o fluxo depois que o Apex Copilot lidera a conversa.',
     agentDoes: 'O que faz',
     agentInputs: 'Entradas aceitas',
     agentOutputs: 'Saidas esperadas',
@@ -339,7 +354,7 @@ const CLASSIFY_COPY: Record<Language, Record<IntakeKind, { headline: string; exp
     finance: { headline: 'Financial or commercial input detected', explanation: 'The input can support estimating, proposals, financial flow, revenue tracking or cost audit.' },
     marketing: { headline: 'Marketing, design or video material detected', explanation: 'The input can move to Design/Web, DirectCut, portfolio, campaign or institutional content.' },
     field: { headline: 'Field operations input detected', explanation: 'The input can become jobsite evidence, RDO, pending item, quality record, measurement or real cost support.' },
-    generic: { headline: 'Input received for intelligent triage', explanation: 'Apex AI needs the user intention to choose the safest operational path.' },
+    generic: { headline: 'Input received for intelligent triage', explanation: 'Apex Copilot needs the user intention to choose the safest operational path.' },
   },
   pt: {
     visual: { headline: 'Imagem ou material visual detectado', explanation: 'Esta entrada pode virar render, planta humanizada, portfolio, prancha comercial, marketing ou video.' },
@@ -348,7 +363,7 @@ const CLASSIFY_COPY: Record<Language, Record<IntakeKind, { headline: string; exp
     finance: { headline: 'Entrada financeira ou comercial detectada', explanation: 'A entrada pode alimentar orcamento, proposta, fluxo financeiro, revenue ou auditoria de custos.' },
     marketing: { headline: 'Material de marketing, design ou video detectado', explanation: 'A entrada pode seguir para Design/Web, DirectCut, portfolio, campanha ou conteudo institucional.' },
     field: { headline: 'Entrada operacional de obra detectada', explanation: 'A entrada pode ser tratada como evidencia de campo, RDO, pendencia, qualidade, medicao ou custo real.' },
-    generic: { headline: 'Entrada recebida para triagem inteligente', explanation: 'A Apex AI precisa da intencao do usuario para escolher o caminho operacional correto.' },
+    generic: { headline: 'Entrada recebida para triagem inteligente', explanation: 'O Apex Copilot precisa da intencao do usuario para escolher o caminho operacional correto.' },
   },
 }
 
@@ -390,6 +405,18 @@ const AGENT_LIBRARY: Record<IntakeKind, LiveAgent[]> = {
   ],
 }
 
+const CP4_ATTACHMENT_ANALYSIS_LIMIT = 10 * 1024 * 1024
+
+function messageId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function formatFileSize(size: number, language: Language) {
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  if (size >= 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
+  return language === 'en' ? `${size} bytes` : `${size} bytes`
+}
+
 function ownerEmails() {
   return (process.env.NEXT_PUBLIC_OWNER_EMAILS || process.env.NEXT_PUBLIC_APEX_OWNER_EMAILS || 'jedgard70@gmail.com')
     .split(',')
@@ -411,6 +438,19 @@ function isOwnerProfile(profile: Profile) {
 function openApexAi() {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent('apex-copilot-open'))
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = event => {
+      const value = event.target?.result
+      if (typeof value === 'string') resolve(value)
+      else reject(new Error('Failed to read file.'))
+    }
+    reader.onerror = () => reject(new Error('Failed to read file.'))
+    reader.readAsDataURL(file)
+  })
 }
 
 function extensionFrom(fileName: string) {
@@ -524,8 +564,8 @@ function interpretationFor(kind: IntakeKind, fileName: string, intent: string, l
       : `Recebi contexto de obra ou operacao de campo. Isto deve seguir para RDO, progresso, qualidade, materiais ou coordenacao de execucao.`
   }
   return language === 'en'
-    ? 'File received. Apex AI will inspect the filename, extension and your objective to decide the best route.'
-    : 'Arquivo recebido. A Apex AI irá analisar o nome, a extensão e seu objetivo para decidir o melhor caminho.'
+    ? 'File received. Apex Copilot will inspect the filename, extension and your objective to decide the best route.'
+    : 'Arquivo recebido. O Apex Copilot ira analisar o nome, a extensao e seu objetivo para decidir o melhor caminho.'
 }
 
 function nextStepsFor(kind: IntakeKind, language: Language): RouteOption[] {
@@ -574,7 +614,7 @@ function nextStepsFor(kind: IntakeKind, language: Language): RouteOption[] {
     ]
   }
   return [
-    { title: language === 'en' ? 'Ask Apex AI' : 'Perguntar para Apex AI', description: language === 'en' ? 'Open the assistant with this file context and clarify the best route.' : 'Abrir o assistente com o contexto do arquivo e esclarecer a melhor rota.', href: '/dashboard' },
+    { title: language === 'en' ? 'Ask Apex Copilot' : 'Perguntar ao Apex Copilot', description: language === 'en' ? 'Open the assistant with this file context and clarify the best route.' : 'Abrir o assistente com o contexto do arquivo e esclarecer a melhor rota.', href: '/dashboard' },
     { title: language === 'en' ? 'Describe objective' : 'Descrever objetivo', description: language === 'en' ? 'Tell Apex what outcome you want from this file.' : 'Diga a Apex qual resultado deseja a partir deste arquivo.', href: '/dashboard' },
     { title: language === 'en' ? 'Send to technical review' : 'Enviar para revisao tecnica', description: language === 'en' ? 'Treat the file as a technical asset until the route is clear.' : 'Tratar o arquivo como ativo tecnico ate a rota ficar clara.', href: '/bim-3d' },
     { title: language === 'en' ? 'Build marketing path' : 'Construir rota de marketing', description: language === 'en' ? 'Use the file as source material for portfolio, website or campaign planning.' : 'Usar o arquivo como base para portfolio, website ou campanha.', href: '/platform?area=marketing' },
@@ -613,6 +653,69 @@ function classify(fileName: string, intent: string, language: Language): IntakeR
     agents: AGENT_LIBRARY[kind],
     smartRoutes: runCp32SmartRouting({ fileName, goal: intent, objective: kind as Cp32Objective }),
   }
+}
+
+function buildCopilotSystemPrompt(language: Language) {
+  return [
+    'You are Apex Copilot, the live conversational construction AI inside Apex Global AI.',
+    'You behave like ChatGPT, but your domain is construction, architecture, engineering, BIM/Revit/IFC/CAD, render/ArchVis, construction budget, quantity takeoff, schedule, field operations, contracts, permits/compliance, and marketing for construction projects.',
+    'You are not a static card classifier. You must speak naturally as the assistant leading the workflow.',
+    'After upload, answer in this structure: I received this file; I understand it as; here are the best construction paths; what do you want to do next?',
+    'If only metadata is available, be transparent that deep file parsing/viewer conversion is not complete yet.',
+    'Do not ask for secrets. Do not expose tokens, keys, service role, PATs, or private credentials.',
+    `Reply in ${language === 'en' ? 'English' : 'Brazilian Portuguese'}.`,
+  ].join('\n')
+}
+
+function buildCopilotUserPrompt(params: {
+  file: File | null
+  intent: string
+  objective: IntakeKind
+  result: IntakeResult
+  language: Language
+  attachmentAnalysis?: string
+}) {
+  const { file, intent, objective, result, language, attachmentAnalysis } = params
+  const routes = result.smartRoutes
+    .map(route => `- ${route.title.en} / ${route.title.pt} (${route.confidence}%): ${route.reason[language]}`)
+    .join('\n')
+  const nextSteps = result.nextSteps.slice(0, 6).map(step => `- ${step.title}: ${step.description}`).join('\n')
+  const fileSummary = file
+    ? [
+        `name: ${file.name}`,
+        `extension: ${extensionFrom(file.name) || 'unknown'}`,
+        `mime: ${file.type || 'unknown'}`,
+        `size: ${formatFileSize(file.size, language)}`,
+      ].join('\n')
+    : 'No file uploaded.'
+
+  return [
+    'Apex Copilot intake event.',
+    '',
+    'User-visible language:',
+    language,
+    '',
+    'Uploaded file metadata:',
+    fileSummary,
+    '',
+    'User objective / typed intent:',
+    intent.trim() || '(not provided yet)',
+    '',
+    'Selected objective:',
+    objective,
+    '',
+    'Local routing context for support only, not as final answer:',
+    routes || '- General / Unknown',
+    '',
+    'Suggested construction paths for support only:',
+    nextSteps || '- Ask a clarifying construction question',
+    '',
+    attachmentAnalysis
+      ? `Image/file analysis context from the existing attachment analyzer:\n${attachmentAnalysis}`
+      : 'No deep file analysis is available yet. Use file metadata and the user objective.',
+    '',
+    'Write the actual Apex Copilot chat response now. The main response must be conversational, construction-specialized, and must ask the user what they want to do next.',
+  ].join('\n')
 }
 
 function previewLabel(file: File | null, language: Language) {
@@ -671,6 +774,8 @@ function agentHref(agentId: LivingAgentId) {
 export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const copilotRef = useRef<HTMLDivElement>(null)
+  const copilotRequestRef = useRef(0)
   const isOwner = useMemo(() => isOwnerProfile(profile), [profile])
   const [language, setLanguage] = useState<Language>('en')
   const [file, setFile] = useState<File | null>(null)
@@ -678,6 +783,9 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   const [selectedObjective, setSelectedObjective] = useState<IntakeKind>('generic')
   const [result, setResult] = useState<IntakeResult | null>(null)
   const [previewUrl, setPreviewUrl] = useState('')
+  const [authToken, setAuthToken] = useState<string | null>(null)
+  const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([])
+  const [copilotLoading, setCopilotLoading] = useState(false)
   const copy = UI_COPY[language]
   const intentCards = INTENT_CARDS[language]
 
@@ -704,6 +812,37 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
   }, [])
 
   useEffect(() => {
+    const sb = getSupabase()
+    if (!sb) return
+    let active = true
+
+    async function syncSession() {
+      const {
+        data: { session },
+      } = await sb.auth.getSession()
+      if (!active) return
+      const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+      setAuthToken(token || null)
+    }
+
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange((_event, session) => {
+      const token = typeof session?.access_token === 'string' ? session.access_token.trim() : ''
+      setAuthToken(token || null)
+    })
+
+    syncSession().catch(() => {
+      if (active) setAuthToken(null)
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
     if (result) {
       setResult(buildIntakeResult(file, intent, selectedObjective))
     }
@@ -722,20 +861,145 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
     }
   }
 
+  async function analyzePreviewableImage(nextFile: File, prompt: string) {
+    if (!authToken) return ''
+    if (nextFile.size > CP4_ATTACHMENT_ANALYSIS_LIMIT) return ''
+    if (!nextFile.type.startsWith('image/') || isHeicFile(nextFile)) return ''
+
+    try {
+      const dataUrl = await readFileAsDataUrl(nextFile)
+      const res = await fetch('/api/chat/analyze-attachment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({
+          prompt,
+          attachment: {
+            name: nextFile.name,
+            type: nextFile.type || 'application/octet-stream',
+            size: nextFile.size,
+            dataUrl,
+          },
+        }),
+      })
+      const raw = await res.text()
+      const data = raw ? JSON.parse(raw) : {}
+      if (!res.ok) return ''
+      return typeof data?.analysis === 'string' ? data.analysis.trim() : ''
+    } catch {
+      return ''
+    }
+  }
+
+  async function requestCopilotResponse(nextFile: File | null, nextIntent: string, nextObjective: IntakeKind, nextResult: IntakeResult) {
+    const requestId = ++copilotRequestRef.current
+    const promptSeed = nextIntent.trim() || nextResult.interpretation
+    const userText = nextFile
+      ? language === 'en'
+        ? `Uploaded ${nextFile.name}`
+        : `Arquivo enviado: ${nextFile.name}`
+      : promptSeed
+
+    setCopilotMessages(prev => [
+      ...prev,
+      { id: messageId(), role: 'user', text: userText || (language === 'en' ? 'Start analysis' : 'Iniciar analise') },
+    ])
+
+    if (!nextFile && !nextIntent.trim()) {
+      setCopilotMessages(prev => [
+        ...prev,
+        { id: messageId(), role: 'assistant', text: copy.emptyGuidance },
+      ])
+      return
+    }
+
+    setCopilotLoading(true)
+    window.setTimeout(() => {
+      copilotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+
+    try {
+      const attachmentAnalysis = nextFile
+        ? await analyzePreviewableImage(nextFile, promptSeed)
+        : ''
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (authToken) headers.Authorization = `Bearer ${authToken}`
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 900,
+          system: buildCopilotSystemPrompt(language),
+          messages: [
+            {
+              role: 'user',
+              content: buildCopilotUserPrompt({
+                file: nextFile,
+                intent: nextIntent,
+                objective: nextObjective,
+                result: nextResult,
+                language,
+                attachmentAnalysis,
+              }),
+            },
+          ],
+        }),
+      })
+      const raw = await res.text()
+      const data = raw ? JSON.parse(raw) : {}
+      const text =
+        typeof data?.content?.[0]?.text === 'string'
+          ? data.content[0].text.trim()
+          : typeof data?.reply === 'string'
+            ? data.reply.trim()
+            : ''
+
+      if (requestId !== copilotRequestRef.current) return
+
+      setCopilotMessages(prev => [
+        ...prev,
+        {
+          id: messageId(),
+          role: 'assistant',
+          text: res.ok && text ? text : data?.error?.message || copy.copilotConnectionError,
+        },
+      ])
+    } catch {
+      if (requestId !== copilotRequestRef.current) return
+      setCopilotMessages(prev => [
+        ...prev,
+        { id: messageId(), role: 'assistant', text: copy.copilotConnectionError },
+      ])
+    } finally {
+      if (requestId === copilotRequestRef.current) setCopilotLoading(false)
+    }
+  }
+
   function runIntake(nextFile = file, nextIntent = intent, nextObjective = selectedObjective) {
-    setResult(buildIntakeResult(nextFile, nextIntent, nextObjective))
+    const nextResult = buildIntakeResult(nextFile, nextIntent, nextObjective)
+    setResult(nextResult)
+    requestCopilotResponse(nextFile, nextIntent, nextObjective, nextResult).catch(() => {})
   }
 
   function selectIntent(card: IntentCard) {
     setIntent(card.prompt)
     setSelectedObjective(card.kind)
-    setResult(buildIntakeResult(file, card.prompt, card.kind))
+    runIntake(file, card.prompt, card.kind)
   }
 
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const nextFile = event.target.files?.[0] ?? null
     setFile(nextFile)
     if (nextFile) runIntake(nextFile, intent, selectedObjective)
+  }
+
+  function focusCopilot() {
+    copilotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    openApexAi()
   }
 
   return (
@@ -750,7 +1014,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           <p style={styles.sublead}>{copy.sublead}</p>
           <div style={styles.heroActions}>
             <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.primaryButton}><Upload size={17} />{copy.attach}</button>
-            <button type="button" onClick={openApexAi} style={styles.secondaryButton}><MessageSquare size={17} />{copy.talk}</button>
+            <button type="button" onClick={focusCopilot} style={styles.secondaryButton}><MessageSquare size={17} />{copy.talk}</button>
             <button type="button" onClick={() => runIntake()} style={styles.secondaryButton}><Play size={17} />{copy.start}</button>
           </div>
           <div style={styles.trustGrid}>
@@ -824,20 +1088,48 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
       </div>
 
       {result && (
-        <div style={styles.analysisBand}>
-          <section style={styles.analysisPanel}>
-            <div style={styles.sectionKicker}>{copy.aiUnderstood}</div>
-            <div style={styles.code}>{result.code}</div>
-            <h2 style={styles.analysisTitle}>{result.smartRoutes[0]?.title[language] || result.headline}</h2>
-            <p style={styles.analysisText}>{result.interpretation}</p>
-            <p style={styles.nextAction}>{result.smartRoutes[0]?.recommendedNextAction[language] || result.explanation}</p>
+        <div ref={copilotRef} style={styles.analysisBand}>
+          <section style={styles.copilotPanel}>
+            <div style={styles.copilotHeader}>
+              <div>
+                <div style={styles.sectionKicker}>{copy.copilotConversation}</div>
+                <h2 style={styles.analysisTitle}>Apex Copilot</h2>
+              </div>
+              <span style={styles.code}>{result.code}</span>
+            </div>
+            <div style={styles.chatStack}>
+              {copilotMessages.length === 0 && (
+                <p style={styles.copilotEmpty}>{copy.copilotEmpty}</p>
+              )}
+              {copilotMessages.map(message => (
+                <article
+                  key={message.id}
+                  style={{
+                    ...styles.chatBubble,
+                    ...(message.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAssistant),
+                  }}
+                >
+                  <strong>{message.role === 'user' ? (language === 'en' ? 'You' : 'Voce') : 'Apex Copilot'}</strong>
+                  <span>{message.text}</span>
+                </article>
+              ))}
+              {copilotLoading && (
+                <article style={{ ...styles.chatBubble, ...styles.chatBubbleAssistant }}>
+                  <strong>Apex Copilot</strong>
+                  <span>{copy.copilotThinking}</span>
+                </article>
+              )}
+            </div>
           </section>
 
           <section style={styles.routesPanel}>
             <div style={styles.sectionKicker}>{copy.recommendedNextSteps}</div>
+            <p style={styles.routesIntro}>
+              {result.smartRoutes[0]?.recommendedNextAction[language] || result.explanation}
+            </p>
             <div style={styles.nextStepGrid}>
               {result.nextSteps.slice(0, 6).map(step => (
-                <button key={`${step.title}-${step.href}`} type="button" onClick={() => (step.href === '/dashboard' ? openApexAi() : router.push(step.href))} style={styles.nextStepCard}>
+                <button key={`${step.title}-${step.href}`} type="button" onClick={() => (step.href === '/dashboard' ? focusCopilot() : router.push(step.href))} style={styles.nextStepCard}>
                   <strong>{step.title}</strong>
                   <span>{step.description}</span>
                 </button>
@@ -852,60 +1144,6 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             </div>
           </section>
         </div>
-      )}
-
-      {result && (
-        <section style={styles.agentsPanel}>
-          <div style={styles.agentHeader}>
-            <div>
-              <div style={styles.sectionKicker}>{copy.agents}</div>
-              <p style={styles.agentIntro}>{copy.agentsIntro}</p>
-            </div>
-            <span style={styles.agentWorkspaceBadge}>CP4</span>
-          </div>
-          <div style={styles.agentGrid}>
-            {livingAgentsFor(result.smartRoutes).map((agent, index) => {
-              const AgentIcon = agent.icon
-              return (
-                <article key={agent.id} style={{ ...styles.agentCard, ...(index === 0 ? styles.agentCardPrimary : null) }}>
-                  <div style={styles.agentTopLine}>
-                    <span style={{ ...styles.agentIcon, color: agent.accent, background: agent.tint }}>
-                      <AgentIcon size={28} strokeWidth={2.15} />
-                    </span>
-                    <span style={styles.agentSignal}>{index === 0 ? copy.agentRecommended : copy.agentAvailable}</span>
-                  </div>
-                  <h3 style={styles.agentName}>{agent.name[language]}</h3>
-                  <p style={styles.agentCategory}>{agent.category[language]}</p>
-
-                  <div style={styles.agentFactGrid}>
-                    <span style={styles.agentFact}>
-                      <strong>{copy.agentDoes}</strong>
-                      <em>{agent.does[language]}</em>
-                    </span>
-                    <span style={styles.agentFact}>
-                      <strong>{copy.agentInputs}</strong>
-                      <em>{agent.inputs[language]}</em>
-                    </span>
-                    <span style={styles.agentFact}>
-                      <strong>{copy.agentOutputs}</strong>
-                      <em>{agent.outputs[language]}</em>
-                    </span>
-                  </div>
-
-                  <div style={styles.agentQualityGrid}>
-                    <span style={styles.agentPositive}>{agent.correct[language]}</span>
-                    <span style={styles.agentAttention}>{agent.attention[language]}</span>
-                  </div>
-
-                  <button type="button" style={{ ...styles.agentAction, background: agent.accent }} onClick={() => router.push(agentHref(agent.id))}>
-                    <ListChecks size={17} strokeWidth={2.1} />
-                    {agent.action[language]}
-                  </button>
-                </article>
-              )
-            })}
-          </div>
-        </section>
       )}
 
       {isOwner && (
@@ -1198,9 +1436,63 @@ const styles: Record<string, CSSProperties> = {
   },
   analysisBand: {
     display: 'grid',
-    gridTemplateColumns: '.8fr 1.2fr',
+    gridTemplateColumns: 'minmax(0, 1.05fr) minmax(420px, .95fr)',
     gap: 18,
     marginTop: 20,
+  },
+  copilotPanel: {
+    border: '1px solid #dfe5ee',
+    borderRadius: 8,
+    background: 'linear-gradient(180deg, #071a33 0%, #0d2b52 100%)',
+    color: '#ffffff',
+    padding: 18,
+    minHeight: 360,
+    boxShadow: '0 20px 46px rgba(7,26,51,.12)',
+  },
+  copilotHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 16,
+  },
+  chatStack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  copilotEmpty: {
+    margin: 0,
+    border: '1px solid rgba(255,255,255,.16)',
+    borderRadius: 8,
+    background: 'rgba(255,255,255,.08)',
+    color: '#d6dde8',
+    padding: 14,
+    fontSize: 14,
+    lineHeight: 1.6,
+  },
+  chatBubble: {
+    borderRadius: 8,
+    padding: '13px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    fontSize: 14,
+    lineHeight: 1.58,
+    whiteSpace: 'pre-wrap',
+  },
+  chatBubbleAssistant: {
+    alignSelf: 'stretch',
+    border: '1px solid rgba(255,255,255,.16)',
+    background: 'rgba(255,255,255,.09)',
+    color: '#ffffff',
+  },
+  chatBubbleUser: {
+    alignSelf: 'flex-end',
+    maxWidth: '78%',
+    background: '#ffffff',
+    color: '#071a33',
+    boxShadow: '0 12px 24px rgba(0,0,0,.12)',
   },
   analysisPanel: {
     border: '1px solid #dfe5ee',
@@ -1251,6 +1543,13 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
     background: '#ffffff',
     padding: 18,
+  },
+  routesIntro: {
+    margin: '-4px 0 14px',
+    color: '#5f6b7a',
+    fontSize: 14,
+    fontWeight: 700,
+    lineHeight: 1.55,
   },
   nextStepGrid: {
     display: 'grid',
