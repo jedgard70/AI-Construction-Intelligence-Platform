@@ -11,6 +11,7 @@ import {
   buildApexCopilotSkillContext,
   buildApexCopilotSystemPrompt,
 } from '../../lib/apex-copilot/system-prompt'
+import { buildApexCopilotMemoryContext } from '../../lib/apex-copilot/memory-loader'
 
 /**
  * POST /api/chat
@@ -334,10 +335,12 @@ Policy:
     text: joinedUserText,
     fileName: uploadedFileMatch?.[1]?.trim() || '',
   })
+  const apexMemoryContext = buildApexCopilotMemoryContext(selectedApexSkill)
 
   const policySystem = [
     serverGovernancePrompt || fallbackSystem,
     buildApexCopilotSystemPrompt(selectedApexSkill),
+    apexMemoryContext,
     skillsPrompt && `## Apex Skills Knowledge\n${skillsPrompt}`,
   ]
     .filter(Boolean)
