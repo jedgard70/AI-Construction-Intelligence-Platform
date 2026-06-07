@@ -13,6 +13,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { getSupabase } from '../lib/supabase'
+import { selectApexCopilotSkill } from '../lib/apex-copilot/skill-router'
 import type { Profile } from '../pages/dashboard'
 
 type Language = 'en' | 'pt'
@@ -200,6 +201,11 @@ function systemPrompt(language: Language) {
 }
 
 function userPrompt(file: File | null, goal: string, result: StudioResult) {
+  const skill = selectApexCopilotSkill({
+    text: goal,
+    fileName: file?.name || '',
+    fileType: file?.type || '',
+  })
   return [
     'Apex Copilot Studio intake.',
     file
@@ -209,6 +215,7 @@ function userPrompt(file: File | null, goal: string, result: StudioResult) {
     `Suggested route: ${result.title}`,
     `Route summary: ${result.summary}`,
     `Output prompt draft: ${result.prompt}`,
+    `Apex Copilot registry hint: ${skill.domain} - ${skill.title}`,
     'Now answer as Apex Copilot in a live chat message. Do not output cards. Ask one useful next question.',
   ].join('\n\n')
 }
