@@ -68,6 +68,7 @@ export default function DirectorCutPage() {
   // AI analysis
   const [aiLoading, setAiLoading] = useState(false)
   const [aiText, setAiText]       = useState('')
+  const [studioContext, setStudioContext] = useState<any>(null)
 
   // Supabase load
   const loadData = useCallback(async () => {
@@ -84,6 +85,20 @@ export default function DirectorCutPage() {
   }, [])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('apex_directcut_context')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setStudioContext(parsed)
+        setView('editor')
+        if (parsed?.fileName && !newTitle) setNewTitle(parsed.fileName.replace(/\.[^.]+$/, ''))
+      }
+    } catch {
+      setStudioContext(null)
+    }
+  }, [])
 
   async function createProject() {
     if (!newTitle.trim()) return
@@ -307,6 +322,26 @@ export default function DirectorCutPage() {
 
         <main style={c.main}>
           <div style={c.body}>
+            {studioContext && (
+              <section style={{ ...c.card, borderColor: '#00dbe9', background: '#172224' }}>
+                <div style={{ fontSize: 10, color: '#00dbe9', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>
+                  Apex Copilot Studio Context
+                </div>
+                <h2 style={{ margin: '0 0 8px', fontSize: 22, color: '#e5e2e1' }}>DirectCut workflow ready</h2>
+                <p style={{ margin: 0, color: '#b9cacb', fontSize: 13, lineHeight: 1.6 }}>
+                  Source: <strong>{studioContext.fileName || 'manual objective'}</strong>. {studioContext.result?.summary || 'Use this workspace to create a video plan, script, shot list or timeline.'}
+                </p>
+                <div style={{ marginTop: 12, background: '#0e0e0e', border: '1px solid #3b494b', borderRadius: 10, padding: 12, color: '#e5e2e1', fontSize: 12, lineHeight: 1.6 }}>
+                  {studioContext.result?.prompt || 'Prepare a construction video plan with story, scenes, duration, assets, delivery format and review steps.'}
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+                  <button onClick={() => setShowNew(true)} style={c.btnCyan}><Plus size={15} /> Create video project</button>
+                  <button onClick={() => setAiText(studioContext.result?.prompt || '')} style={{ background: 'transparent', border: '1px solid rgba(0,219,233,.45)', borderRadius: 8, color: '#00dbe9', padding: '8px 14px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Load script prompt
+                  </button>
+                </div>
+              </section>
+            )}
 
             {/* ── DASHBOARD ─────────────────────────────── */}
             {view === 'dashboard' && (
