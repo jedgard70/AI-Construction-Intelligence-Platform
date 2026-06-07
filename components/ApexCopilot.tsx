@@ -615,6 +615,10 @@ export default function ApexCopilot() {
 
   function toggleOpenFromLauncher() {
     if (suppressLauncherClick.current) return
+    if (router.pathname === '/dashboard') {
+      window.dispatchEvent(new CustomEvent('apex-welcome-copilot-focus'))
+      return
+    }
     setOpen(value => !value)
     setMinimized(false)
   }

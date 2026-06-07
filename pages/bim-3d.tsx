@@ -226,15 +226,16 @@ export default function BIM3DViewer() {
             if (meshGroup.children.length > 0) {
               fitCamera(meshGroup)
             } else {
-              // Empty IFC — show placeholder but keep going
-              buildingPlaceholder(THREE, scene)
+              setLoadMsg('IFC carregado, mas nenhum mesh renderizavel foi encontrado no arquivo enviado.')
+              setStatus('error')
+              return
             }
             setStatus('ready')
           } catch (e) {
             console.error('IFC load error:', e)
-            // Fall back gracefully — at least show something
-            buildingPlaceholder(THREE, scene)
-            setStatus('ready')
+            setLoadMsg(`Erro real ao carregar IFC: ${e instanceof Error ? e.message : String(e)}`)
+            setStatus('error')
+            return
           }
 
         // ─── STEP / STP — partial geometry via placeholder ───
@@ -249,8 +250,9 @@ export default function BIM3DViewer() {
 
         // ─── Unknown / no file ───
         } else {
-          buildingPlaceholder(THREE, scene)
-          setStatus('ready')
+          setLoadMsg('Nenhum modelo real foi encontrado para carregar no viewer.')
+          setStatus('error')
+          return
         }
 
         // Animate
@@ -459,7 +461,8 @@ ${canvasImg}
               alignItems:'center',justifyContent:'center',gap:12,color:'#f87171',padding:32,textAlign:'center' }}>
               <div style={{ fontSize:40 }}>⚠️</div>
               <div style={{ fontSize:14,fontWeight:600 }}>Erro ao carregar modelo</div>
-              <div style={{ fontSize:12,color:'#6b7a9e' }}>A análise BIM está disponível no painel ao lado.</div>
+              <div style={{ fontSize:12,color:'#aab0c0',maxWidth:560,lineHeight:1.6 }}>{loadMsg}</div>
+              <div style={{ fontSize:12,color:'#6b7a9e' }}>A análise BIM está disponível no painel ao lado sem viewer falso.</div>
             </div>
           )}
 

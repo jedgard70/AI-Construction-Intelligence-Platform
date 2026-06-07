@@ -61,6 +61,7 @@ export default function ArchVisPage() {
   const [syncMsg, setSyncMsg]     = useState('')
   const [activeMat, setActiveMat] = useState<string | null>(null)
   const [showPrint, setShowPrint] = useState(false)
+  const [studioContext, setStudioContext] = useState<any>(null)
 
   const STYLE_OPTIONS = ['Contemporary','Minimalist','Mediterranean','Industrial','Tropical','Japanese','Biophilic','Scandinavian']
   const PLACEHOLDER_IMGS = [
@@ -86,6 +87,20 @@ export default function ArchVisPage() {
   }, [])
 
   useEffect(() => { loadProjects() }, [loadProjects])
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('apex_archvis_context')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setStudioContext(parsed)
+        setTab('editor')
+        if (parsed?.fileName && !newName) setNewName(parsed.fileName.replace(/\.[^.]+$/, ''))
+      }
+    } catch {
+      setStudioContext(null)
+    }
+  }, [])
 
   async function createProject() {
     if (!newName.trim()) return
@@ -256,6 +271,26 @@ export default function ArchVisPage() {
         </header>
 
         <div style={s.body}>
+          {studioContext && (
+            <section style={{ ...s.card, marginBottom: 20, borderColor: '#d0bcff', background: '#241f2e' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#d0bcff', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: 8 }}>
+                Apex Copilot Studio Context
+              </div>
+              <h2 style={{ margin: '0 0 8px', fontSize: 22, color: '#fff' }}>Humanizacao / Render workflow ready</h2>
+              <p style={{ margin: 0, color: '#cac4d0', lineHeight: 1.6, fontSize: 13 }}>
+                Source: <strong>{studioContext.fileName || 'manual objective'}</strong>. {studioContext.result?.summary || 'Use this workspace to prepare a visual output, render prompt or humanized plan direction.'}
+              </p>
+              <div style={{ marginTop: 12, background: '#0f0e11', border: '1px solid #49454f', borderRadius: 10, padding: 12, color: '#e6e1e5', fontSize: 12, lineHeight: 1.6 }}>
+                {studioContext.result?.prompt || 'Prepare a construction visual prompt with style, camera angle, materials, target audience and output format.'}
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+                <button onClick={() => setShowModal(true)} style={s.btnPrimary}><Plus size={15} /> Create visual project</button>
+                <button onClick={() => setAiResult(studioContext.result?.prompt || '')} style={{ background: 'transparent', border: '1px solid rgba(208,188,255,.35)', borderRadius: 10, color: '#d0bcff', padding: '9px 14px', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Load render prompt
+                </button>
+              </div>
+            </section>
+          )}
 
           {/* ── DASHBOARD ──────────────────────────────────── */}
           {tab === 'dashboard' && (
