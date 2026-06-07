@@ -66,9 +66,9 @@ The file intake must not stop at filename display. The long-term platform requir
 
 - Images: show the real image preview.
 - PDF: show document preview and extract text when possible.
-- IFC: provide a web 3D viewer.
-- RVT: provide a conversion or viewer pipeline.
-- DWG, DXF, and SKP: define a viewer or conversion strategy.
+- IFC: provide a real interactive web 3D viewer in the intake preview.
+- RVT: do not fake browser viewing; explain that Revit conversion to IFC or glTF is required.
+- DWG, DXF, and SKP: do not fake browser viewing; define a viewer or conversion strategy before claiming direct preview.
 - Unknown files: accept the file, inspect metadata, and ask the user what the goal is.
 
 Unknown files must not break the intake. They must remain part of the conversation.
@@ -80,6 +80,8 @@ CP4 must not fake intelligence with deterministic copy as the final product.
 Apex Copilot must connect to a real AI model, support file and context interpretation, and be construction-specialized through system prompt, tools, routing, and platform context.
 
 The assistant must produce conversational responses. Local routing can support the experience, but it cannot replace the live assistant.
+
+The primary interface is the Apex Copilot chat thread. Suggested routes may appear as small quick-reply chips after the assistant answer, but cards or grids cannot be the main response.
 
 ## 7. Future Technical Architecture
 

@@ -95,6 +95,8 @@ type CopilotMessage = {
   text: string
 }
 
+type IfcViewerStatus = 'idle' | 'loading' | 'ready' | 'empty' | 'error'
+
 const UI_COPY = {
   en: {
     welcome: 'Welcome',
@@ -113,12 +115,21 @@ const UI_COPY = {
     intentQuestion: 'What do you want to do with this?',
     intentPlaceholder: 'Example: turn this into a sellable render, validate IFC, review contract, create budget...',
     identify: 'Identify path',
-    intentCards: 'Choose an objective',
+    intentCards: 'Quick construction intents',
     analysis: 'Visual / technical analysis',
     copilotConversation: 'Apex Copilot conversation',
     copilotThinking: 'Apex Copilot is reading this intake...',
     copilotEmpty: 'Upload any file or describe your goal. Apex Copilot will answer here like a construction specialist.',
     copilotConnectionError: 'Apex Copilot could not complete the live AI response. The file was received; try again or continue with a short objective.',
+    chatPlaceholder: 'Message Apex Copilot about this file or objective...',
+    sendMessage: 'Send message',
+    chooseAnother: 'Choose file',
+    ifcLoading: 'Loading IFC model...',
+    ifcReady: 'IFC model loaded. Drag to orbit, scroll to zoom.',
+    ifcEmpty: 'IFC received, but no renderable mesh was found in this model.',
+    ifcError: 'IFC viewer could not load this file. Apex Copilot can still guide the BIM review from metadata.',
+    rvtConversion: 'RVT received. Revit files require conversion to IFC or glTF before browser viewing.',
+    cadConversion: 'CAD/SKP received. This format requires a viewer/conversion pipeline before browser viewing.',
     aiUnderstood: 'Apex Copilot understood',
     recommendedNextSteps: 'Recommended next steps',
     emptyGuidance: 'Upload a file or describe your goal so Apex Copilot can identify the path.',
@@ -156,12 +167,21 @@ const UI_COPY = {
     intentQuestion: 'O que voce deseja fazer com isso?',
     intentPlaceholder: 'Ex: transformar em render vendavel, validar IFC, revisar contrato, gerar orcamento...',
     identify: 'Identificar caminho',
-    intentCards: 'Escolha um objetivo',
+    intentCards: 'Intencoes rapidas de construcao',
     analysis: 'Analise visual / tecnica',
     copilotConversation: 'Conversa com Apex Copilot',
     copilotThinking: 'Apex Copilot esta lendo este intake...',
     copilotEmpty: 'Anexe qualquer arquivo ou descreva o objetivo. O Apex Copilot respondera aqui como especialista em construcao.',
     copilotConnectionError: 'O Apex Copilot nao conseguiu concluir a resposta de IA ao vivo. O arquivo foi recebido; tente novamente ou continue com um objetivo curto.',
+    chatPlaceholder: 'Escreva para o Apex Copilot sobre este arquivo ou objetivo...',
+    sendMessage: 'Enviar mensagem',
+    chooseAnother: 'Escolher arquivo',
+    ifcLoading: 'Carregando modelo IFC...',
+    ifcReady: 'Modelo IFC carregado. Arraste para orbitar, role para zoom.',
+    ifcEmpty: 'IFC recebido, mas nenhum mesh renderizavel foi encontrado neste modelo.',
+    ifcError: 'O viewer IFC nao conseguiu carregar este arquivo. O Apex Copilot ainda pode orientar a revisao BIM por metadados.',
+    rvtConversion: 'RVT recebido. Arquivos Revit exigem conversao para IFC ou glTF antes da visualizacao no navegador.',
+    cadConversion: 'CAD/SKP recebido. Este formato exige pipeline de viewer/conversao antes da visualizacao no navegador.',
     aiUnderstood: 'Apex Copilot entendeu',
     recommendedNextSteps: 'Proximos passos recomendados',
     emptyGuidance: 'Anexe um arquivo ou descreva seu objetivo para o Apex Copilot identificar o caminho.',
@@ -688,6 +708,15 @@ function buildCopilotUserPrompt(params: {
         `size: ${formatFileSize(file.size, language)}`,
       ].join('\n')
     : 'No file uploaded.'
+  const ext = file ? extensionFrom(file.name) : ''
+  const viewerRule =
+    ext === 'ifc'
+      ? 'IFC viewer is available in the preview. Refer to the visible model and guide BIM/model review.'
+      : ext === 'rvt'
+        ? 'RVT cannot be viewed directly in this browser checkpoint. Do not pretend it is viewable; explain that Revit conversion to IFC or glTF is required.'
+        : ['dwg', 'dxf', 'skp'].includes(ext)
+          ? 'This CAD/SKP format cannot be viewed directly in this checkpoint. Do not pretend it is viewable; explain that a viewer/conversion pipeline is required.'
+          : 'Use the available preview/metadata honestly.'
 
   return [
     'Apex Copilot intake event.',
@@ -697,6 +726,9 @@ function buildCopilotUserPrompt(params: {
     '',
     'Uploaded file metadata:',
     fileSummary,
+    '',
+    'Viewer/conversion rule:',
+    viewerRule,
     '',
     'User objective / typed intent:',
     intent.trim() || '(not provided yet)',
@@ -737,6 +769,200 @@ function isHeicFile(file: File | null) {
   const ext = extensionFrom(file.name)
   const mime = file.type.toLowerCase()
   return ext === 'heic' || ext === 'heif' || mime === 'image/heic' || mime === 'image/heif'
+}
+
+function isIfcFile(file: File | null) {
+  return Boolean(file && extensionFrom(file.name) === 'ifc')
+}
+
+function needsRevitConversion(file: File | null) {
+  return Boolean(file && extensionFrom(file.name) === 'rvt')
+}
+
+function needsCadConversion(file: File | null) {
+  if (!file) return false
+  return ['dwg', 'dxf', 'skp'].includes(extensionFrom(file.name))
+}
+
+function IfcModelViewer({ file, language }: { file: File; language: Language }) {
+  const mountRef = useRef<HTMLDivElement>(null)
+  const [status, setStatus] = useState<IfcViewerStatus>('loading')
+  const copy = UI_COPY[language]
+
+  useEffect(() => {
+    const mount = mountRef.current
+    if (!mount) return
+    let disposed = false
+    let frameId = 0
+    let renderer: any = null
+    let cleanupResize: (() => void) | null = null
+
+    const init = async () => {
+      setStatus('loading')
+      try {
+        const THREE = await import('three')
+        const { OrbitControls } = await import('three/examples/jsm/controls/OrbitControls' as any)
+        const { IfcAPI } = await import('web-ifc')
+        if (disposed || !mountRef.current) return
+
+        const width = Math.max(320, mount.clientWidth)
+        const height = Math.max(240, mount.clientHeight)
+        const scene = new THREE.Scene()
+        scene.background = new THREE.Color(0xf8fbff)
+
+        const camera = new THREE.PerspectiveCamera(45, width / height, 0.01, 5000)
+        camera.position.set(12, 10, 16)
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false })
+        renderer.setSize(width, height)
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+        mount.appendChild(renderer.domElement)
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8))
+        const key = new THREE.DirectionalLight(0xffffff, 1.15)
+        key.position.set(12, 18, 10)
+        scene.add(key)
+        scene.add(new THREE.HemisphereLight(0xbfd9ff, 0x43566f, 0.5))
+        scene.add(new THREE.GridHelper(80, 40, 0xcfd7e6, 0xe8edf5))
+
+        const controls = new OrbitControls(camera, renderer.domElement)
+        controls.enableDamping = true
+        controls.dampingFactor = 0.08
+
+        const fitCamera = (object: any) => {
+          const box = new THREE.Box3().setFromObject(object)
+          const center = new THREE.Vector3()
+          const size = new THREE.Vector3()
+          box.getCenter(center)
+          box.getSize(size)
+          object.position.sub(center)
+          const maxDim = Math.max(size.x, size.y, size.z) || 10
+          camera.position.set(maxDim * 1.1, maxDim * 0.9, maxDim * 1.25)
+          camera.near = Math.max(0.01, maxDim * 0.001)
+          camera.far = maxDim * 80
+          camera.updateProjectionMatrix()
+          controls.target.set(0, 0, 0)
+          controls.update()
+        }
+
+        const bytes = new Uint8Array(await file.arrayBuffer())
+        const ifcAPI = new IfcAPI()
+        ifcAPI.SetWasmPath('https://cdn.jsdelivr.net/npm/web-ifc@0.0.68/')
+        await ifcAPI.Init()
+        const modelID = ifcAPI.OpenModel(bytes)
+        const group = new THREE.Group()
+
+        ifcAPI.StreamAllMeshes(modelID, (mesh: any) => {
+          const placedGeometries = mesh.geometries
+          for (let i = 0; i < placedGeometries.size(); i += 1) {
+            const placedGeometry = placedGeometries.get(i)
+            const geometry = ifcAPI.GetGeometry(modelID, placedGeometry.geometryExpressID)
+            const verts = ifcAPI.GetVertexArray(geometry.GetVertexData(), geometry.GetVertexDataSize())
+            const indices = ifcAPI.GetIndexArray(geometry.GetIndexData(), geometry.GetIndexDataSize())
+            if (!verts.length || !indices.length) {
+              geometry.delete()
+              continue
+            }
+
+            const vertexCount = verts.length / 6
+            const positions = new Float32Array(vertexCount * 3)
+            const normals = new Float32Array(vertexCount * 3)
+            for (let j = 0; j < vertexCount; j += 1) {
+              positions[j * 3] = verts[j * 6]
+              positions[j * 3 + 1] = verts[j * 6 + 1]
+              positions[j * 3 + 2] = verts[j * 6 + 2]
+              normals[j * 3] = verts[j * 6 + 3]
+              normals[j * 3 + 1] = verts[j * 6 + 4]
+              normals[j * 3 + 2] = verts[j * 6 + 5]
+            }
+
+            const bufferGeometry = new THREE.BufferGeometry()
+            bufferGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+            bufferGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+            bufferGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1))
+
+            const c = placedGeometry.color
+            const material = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(c.x, c.y, c.z),
+              opacity: c.w,
+              transparent: c.w < 1,
+              side: THREE.DoubleSide,
+              metalness: 0.05,
+              roughness: 0.72,
+            })
+            const part = new THREE.Mesh(bufferGeometry, material)
+            part.applyMatrix4(new THREE.Matrix4().fromArray(placedGeometry.flatTransformation))
+            group.add(part)
+            geometry.delete()
+          }
+        })
+
+        ifcAPI.CloseModel(modelID)
+        scene.add(group)
+        if (group.children.length) {
+          fitCamera(group)
+          setStatus('ready')
+        } else {
+          setStatus('empty')
+        }
+
+        const animate = () => {
+          if (disposed) return
+          frameId = requestAnimationFrame(animate)
+          controls.update()
+          renderer.render(scene, camera)
+        }
+        animate()
+
+        const onResize = () => {
+          if (!mountRef.current || !renderer) return
+          const nextWidth = Math.max(320, mountRef.current.clientWidth)
+          const nextHeight = Math.max(240, mountRef.current.clientHeight)
+          camera.aspect = nextWidth / nextHeight
+          camera.updateProjectionMatrix()
+          renderer.setSize(nextWidth, nextHeight)
+        }
+        window.addEventListener('resize', onResize)
+        cleanupResize = () => window.removeEventListener('resize', onResize)
+      } catch {
+        if (!disposed) setStatus('error')
+      }
+    }
+
+    init()
+
+    return () => {
+      disposed = true
+      if (frameId) cancelAnimationFrame(frameId)
+      cleanupResize?.()
+      if (renderer) {
+        renderer.dispose?.()
+        renderer.domElement?.remove?.()
+      }
+      while (mount.firstChild) mount.removeChild(mount.firstChild)
+    }
+  }, [file])
+
+  const statusText =
+    status === 'ready'
+      ? copy.ifcReady
+      : status === 'empty'
+        ? copy.ifcEmpty
+        : status === 'error'
+          ? copy.ifcError
+          : copy.ifcLoading
+
+  return (
+    <div style={styles.ifcViewerShell}>
+      <div ref={mountRef} style={styles.ifcCanvas} />
+      <span style={{
+        ...styles.viewerStatus,
+        ...(status === 'error' ? styles.viewerStatusError : null),
+      }}>
+        {statusText}
+      </span>
+    </div>
+  )
 }
 
 function routeHref(routeId: Cp32SmartRoute['routeId']) {
@@ -809,6 +1035,15 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
     }
     window.addEventListener('apex-language-change', handleLanguage)
     return () => window.removeEventListener('apex-language-change', handleLanguage)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const focus = () => {
+      copilotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    window.addEventListener('apex-welcome-copilot-focus', focus)
+    return () => window.removeEventListener('apex-welcome-copilot-focus', focus)
   }, [])
 
   useEffect(() => {
@@ -895,11 +1130,12 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
   async function requestCopilotResponse(nextFile: File | null, nextIntent: string, nextObjective: IntakeKind, nextResult: IntakeResult) {
     const requestId = ++copilotRequestRef.current
+    const previousMessages = copilotMessages
     const promptSeed = nextIntent.trim() || nextResult.interpretation
     const userText = nextFile
-      ? language === 'en'
+      ? nextIntent.trim() || (language === 'en'
         ? `Uploaded ${nextFile.name}`
-        : `Arquivo enviado: ${nextFile.name}`
+        : `Arquivo enviado: ${nextFile.name}`)
       : promptSeed
 
     setCopilotMessages(prev => [
@@ -935,6 +1171,10 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
           max_tokens: 900,
           system: buildCopilotSystemPrompt(language),
           messages: [
+            ...previousMessages.slice(-8).map(message => ({
+              role: message.role,
+              content: message.text,
+            })),
             {
               role: 'user',
               content: buildCopilotUserPrompt({
@@ -999,7 +1239,6 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
 
   function focusCopilot() {
     copilotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    openApexAi()
   }
 
   return (
@@ -1023,24 +1262,38 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
             <span style={styles.trustItem}><ShieldCheck size={17} strokeWidth={2.1} />{copy.trustThree}</span>
           </div>
         </div>
-        <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.previewPanel}>
+        <div style={styles.previewPanel}>
           <div style={styles.previewStage}>
-            {previewUrl ? (
+            {file && isIfcFile(file) ? (
+              <IfcModelViewer file={file} language={language} />
+            ) : previewUrl ? (
               <img src={previewUrl} alt="Preview do arquivo enviado" style={styles.previewImage} />
             ) : (
               <div style={styles.previewPlaceholder}>
                 <span style={styles.uploadIcon}><Upload size={31} strokeWidth={2.1} /></span>
                 <strong>{file ? previewLabel(file, language) : copy.dropTitle}</strong>
                 {file && <span style={styles.fileKind}>{fileKindLabel(file, language)}</span>}
-                <small>{file ? (isHeicFile(file) ? copy.heicPreview : copy.previewDeep) : copy.dropText}</small>
+                <small>
+                  {file
+                    ? isHeicFile(file)
+                      ? copy.heicPreview
+                      : needsRevitConversion(file)
+                        ? copy.rvtConversion
+                        : needsCadConversion(file)
+                          ? copy.cadConversion
+                          : copy.previewDeep
+                    : copy.dropText}
+                </small>
               </div>
             )}
           </div>
           <div style={styles.previewMeta}>
             <span>{file ? file.name : copy.noFile}</span>
-            <strong>{file ? `${Math.max(1, Math.round(file.size / 1024))} KB` : copy.waiting}</strong>
+            <button type="button" onClick={() => fileInputRef.current?.click()} style={styles.previewChooseButton}>
+              {file ? copy.chooseAnother : copy.waiting}
+            </button>
           </div>
-        </button>
+        </div>
       </div>
 
       <section style={styles.intentCardsPanel}>
@@ -1057,11 +1310,10 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
                 style={{ ...styles.intentCard, ...(result?.kind === card.kind ? styles.intentCardActive : null) }}
               >
                 <span style={{ ...styles.intentIcon, color: visual.color, background: visual.background }}>
-                  <Icon size={31} strokeWidth={2.2} />
+                  <Icon size={18} strokeWidth={2.2} />
                 </span>
                 <span style={styles.intentCopy}>
                   <strong>{card.label}</strong>
-                  <span>{card.description}</span>
                 </span>
               </button>
             )
@@ -1079,7 +1331,7 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
               if (event.key === 'Enter') runIntake()
             }}
             style={styles.intentInput}
-            placeholder={copy.intentPlaceholder}
+            placeholder={result ? copy.chatPlaceholder : copy.intentPlaceholder}
           />
           <button type="button" onClick={() => runIntake()} style={styles.redButton} aria-label={copy.identify} title={copy.identify}>
             <Send size={22} strokeWidth={2.1} />
@@ -1131,7 +1383,6 @@ export default function WelcomeAnalysis({ profile }: { profile: Profile }) {
               {result.nextSteps.slice(0, 6).map(step => (
                 <button key={`${step.title}-${step.href}`} type="button" onClick={() => (step.href === '/dashboard' ? focusCopilot() : router.push(step.href))} style={styles.nextStepCard}>
                   <strong>{step.title}</strong>
-                  <span>{step.description}</span>
                 </button>
               ))}
             </div>
@@ -1272,7 +1523,6 @@ const styles: Record<string, CSSProperties> = {
     display: 'grid',
     gridTemplateRows: '1fr auto',
     gap: 14,
-    cursor: 'pointer',
     fontFamily: 'inherit',
     textAlign: 'left',
     boxShadow: '0 20px 46px rgba(7,26,51,.07)',
@@ -1343,33 +1593,75 @@ const styles: Record<string, CSSProperties> = {
     color: '#0d2b52',
     fontSize: 14,
   },
+  previewChooseButton: {
+    border: 'none',
+    borderRadius: 999,
+    background: '#e9edf5',
+    color: '#071a33',
+    padding: '8px 12px',
+    fontSize: 12,
+    fontWeight: 900,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  },
+  ifcViewerShell: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    minHeight: 276,
+    background: '#f8fbff',
+  },
+  ifcCanvas: {
+    width: '100%',
+    height: '100%',
+    minHeight: 276,
+  },
+  viewerStatus: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 12,
+    borderRadius: 999,
+    background: 'rgba(7, 26, 51, .88)',
+    color: '#ffffff',
+    padding: '8px 12px',
+    fontSize: 12,
+    fontWeight: 800,
+    textAlign: 'center',
+    boxShadow: '0 12px 24px rgba(7,26,51,.20)',
+    pointerEvents: 'none',
+  },
+  viewerStatusError: {
+    background: 'rgba(215, 25, 42, .92)',
+  },
   intentCardsPanel: {
-    marginTop: 8,
-    border: '1px solid #dfe5ee',
-    borderRadius: 8,
+    marginTop: 12,
+    border: 'none',
+    borderRadius: 0,
     background: '#ffffff',
-    padding: '14px 16px 16px',
-    boxShadow: '0 18px 42px rgba(7,26,51,.045)',
+    padding: 0,
+    boxShadow: 'none',
   },
   intentCardsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 12,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   intentCard: {
-    minHeight: 92,
+    minHeight: 0,
     border: '1px solid #cfd7e6',
-    borderRadius: 8,
+    borderRadius: 999,
     background: '#ffffff',
     color: '#071a33',
-    padding: '14px 18px',
+    padding: '8px 12px',
     display: 'flex',
     alignItems: 'center',
-    gap: 18,
+    gap: 9,
     textAlign: 'left',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    boxShadow: '0 12px 26px rgba(7,26,51,.055)',
+    boxShadow: '0 8px 18px rgba(7,26,51,.045)',
   },
   intentCardActive: {
     borderColor: '#d7192a',
@@ -1377,9 +1669,9 @@ const styles: Record<string, CSSProperties> = {
   },
   intentIcon: {
     flex: '0 0 auto',
-    width: 56,
-    height: 56,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1387,9 +1679,9 @@ const styles: Record<string, CSSProperties> = {
   intentCopy: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 8,
-    fontSize: 15,
-    lineHeight: 1.42,
+    gap: 0,
+    fontSize: 13,
+    lineHeight: 1.2,
   },
   intentPanel: {
     marginTop: 14,
@@ -1436,7 +1728,7 @@ const styles: Record<string, CSSProperties> = {
   },
   analysisBand: {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1.05fr) minmax(420px, .95fr)',
+    gridTemplateColumns: 'minmax(0, 1fr)',
     gap: 18,
     marginTop: 20,
   },
@@ -1446,7 +1738,7 @@ const styles: Record<string, CSSProperties> = {
     background: 'linear-gradient(180deg, #071a33 0%, #0d2b52 100%)',
     color: '#ffffff',
     padding: 18,
-    minHeight: 360,
+    minHeight: 420,
     boxShadow: '0 20px 46px rgba(7,26,51,.12)',
   },
   copilotHeader: {
@@ -1460,6 +1752,9 @@ const styles: Record<string, CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    maxHeight: 520,
+    overflowY: 'auto',
+    paddingRight: 4,
   },
   copilotEmpty: {
     margin: 0,
@@ -1542,7 +1837,7 @@ const styles: Record<string, CSSProperties> = {
     border: '1px solid #dfe5ee',
     borderRadius: 8,
     background: '#ffffff',
-    padding: 18,
+    padding: 14,
   },
   routesIntro: {
     margin: '-4px 0 14px',
@@ -1552,24 +1847,24 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.55,
   },
   nextStepGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-    gap: 10,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 9,
   },
   nextStepCard: {
-    minHeight: 112,
     border: '1px solid #cfd7e6',
-    borderRadius: 8,
+    borderRadius: 999,
     background: '#f9fbfd',
     color: '#071a33',
-    padding: 14,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 9,
-    textAlign: 'left',
+    padding: '9px 12px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    textAlign: 'center',
     cursor: 'pointer',
     fontFamily: 'inherit',
-    boxShadow: '0 10px 22px rgba(7,26,51,.055)',
+    fontSize: 13,
+    boxShadow: '0 8px 18px rgba(7,26,51,.045)',
   },
   smartRouteStrip: {
     display: 'flex',

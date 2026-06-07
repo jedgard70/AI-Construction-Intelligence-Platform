@@ -46,10 +46,12 @@ Active CP4 implementation must:
 
 - Keep universal file intake.
 - Keep preview when possible.
+- Render IFC files in a real browser 3D viewer when possible.
+- Avoid fake RVT, DWG, DXF, or SKP viewers; those formats require conversion/viewer strategy.
 - Call the existing AI/chat backend for the primary assistant response.
 - Send file metadata, user objective, routing context, and construction-specialized prompt.
 - Let Apex Copilot speak first.
-- Show supporting routes/actions only after the Copilot response.
+- Show supporting routes/actions only as small quick-reply chips after the Copilot response.
 
 ## Hard Rule
 
